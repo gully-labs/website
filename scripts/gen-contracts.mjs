@@ -129,50 +129,9 @@ for (const [chainId, address] of [
   })
 }
 
-// ------------------------------------------------------------------------------------------ DeepCore (SDK address book)
-{
-  const source = 'deepcore:packages/sdk/src/deployments/index.ts'
-  const text = read(source)
-  const SKIP = new Set(['permit2', 'weth', 'create3Factory', 'clPoolManagerOwner', 'binPoolManagerOwner'])
-  const ROLE = {
-    vault: 'The shared Vault that holds all pool liquidity for the chain. Immutable.',
-    clPoolManager: 'Concentrated-liquidity pool manager of the core.',
-    binPoolManager: 'Liquidity-bin pool manager of the core.',
-    universalRouter: 'The router users trade through.',
-    fillRouter: 'Best-price router across DeepCore pools and the major DEXes.',
-    governanceSafe: 'The Safe that governs this chain deployment (owner of the registry and timelocks).',
-    feeController: 'Sets and collects protocol fees within their caps.',
-    registry: 'Registry of hosted Launchpads and DEXes.',
-    launchRegistry: 'Registry of tokens launched on the core.',
-    padFactory: 'Opens a hosted Launchpad or DEX in one transaction.',
-    launchAndBuy: 'Launches a token and buys it in one transaction.',
-    timelockCustody: 'Timelock in front of custody changes.',
-    clLPLocker: 'Locks launch liquidity (concentrated) forever.',
-    binLPLocker: 'Locks launch liquidity (bins) forever.',
-  }
-  const chainBlocks = [...text.matchAll(/\n {2}(\d+): \{\n {4}chainId: (\d+),\n {4}key: "(\w+)",\n {4}name: "([^"]+)",\n {4}explorer: "([^"]+)",\n {4}isMainnet: (\w+),/g)]
-  const starts = chainBlocks.map((m) => m.index)
-  chainBlocks.forEach((m, i) => {
-    const chainId = Number(m[2])
-    if (m[6] !== 'true') return
-    if (!CHAINS[chainId]) throw new Error(`DeepCore chain ${chainId} unknown to the generator`)
-    const block = text.slice(starts[i], starts[i + 1] ?? text.length)
-    // Only the top-level and launchpadV2 fields; the token list and the revShareHooks history are left out.
-    const head = block.split(/\n {4}tokens: \[/)[0].replace(/\n {4}revShareHooks: \[[\s\S]*?\n {4}\],/, '')
-    for (const f of head.matchAll(/\n {4,6}(\w+): "(0x[0-9a-fA-F]{40})"/g)) {
-      const [, key, address] = f
-      if (SKIP.has(key) || address.toLowerCase() === ZERO) continue
-      add({
-        chainId,
-        address,
-        name: `DeepCore ${label(key)}`,
-        role: ROLE[key] ?? `Part of the DeepCore protocol on this chain: ${label(key).toLowerCase()}.`,
-        project: 'DeepCore',
-        source,
-      })
-    }
-  })
-}
+// DeepCore's own deployments (deepcore:packages/sdk address book) were listed here until the partnership ended on
+// 2026-10-29: they are DeepCore's contracts, not addresses Gully Labs uses. Gully Core, our fork, is live on Gully Chain
+// testnet since 2026-10-29 (l3/generated/gully-core.json); adding its entries here is a follow-up.
 
 // ------------------------------------------------------------------------------------------ Peddles (deployment records)
 for (const chainId of [56, 4663, 8453, 5042]) {
@@ -258,7 +217,7 @@ fs.mkdirSync(path.dirname(CACHE), { recursive: true })
 fs.writeFileSync(CACHE, JSON.stringify(cache, null, 1) + '\n')
 
 // ------------------------------------------------------------------------------------------ write
-const order = { 'Gully Labs': 0, DeepCore: 1, Peddles: 2, PeddleSwap: 3, PeddleQuest: 4 }
+const order = { 'Gully Labs': 0, Peddles: 1, PeddleSwap: 2, PeddleQuest: 3 }
 entries.sort((a, b) => order[a.project] - order[b.project] || a.chainId - b.chainId || a.name.localeCompare(b.name))
 const block = `// BEGIN ENTRIES\nexport const contracts: ContractEntry[] = [\n${entries.map((e) => `  ${JSON.stringify(e)},`).join('\n')}\n]\n// END ENTRIES`
 const src = fs.readFileSync(OUT, 'utf8')

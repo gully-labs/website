@@ -12,7 +12,7 @@ const logoUrl = (chain: string, address: string, px: number) => `/api/logo/${enc
 /**
  * A token's logo, round, at a fixed size (no layout shift).
  *
- * With `chain` and `address` it comes from the logo service (/api/logo, which resolves DeepCore, DexScreener,
+ * With `chain` and `address` it comes from the logo service (/api/logo, which resolves DexScreener,
  * Jupiter, xStocks, CoinGecko and Trust Wallet server-side and answers the kit's neutral token glyph when
  * nothing is found): a lazy <img> with a 1x/2x srcset, a round mask and a hairline ring in the kit's slate,
  * alt "{symbol} logo". If the request itself fails, the same neutral glyph is drawn here (never a letter tile).

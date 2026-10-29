@@ -10,8 +10,10 @@
 //   - a figure published in a token (Peddles' creator fees, in ETH) is passed through as-is and
 //     never added to a dollar total;
 //   - "all-time" volume is what the venue has recorded since its own `volumeAllSince`, stated
-//     beside the figure: DeepCore's is the sum of its daily
-//     index, Peddles' is its all-time legs valued at the prices its own token endpoint reports.
+//     beside the figure: Peddles' is its all-time legs valued at the prices its own token endpoint reports.
+//
+// DeepCore (deepcore.fun) was a venue here until the partnership ended on 2026-10-29. It is a third-party
+// platform now, so its figures are no longer read or served (Gully Core, our fork, lives on Gully Chain).
 
 // Under the page's 60 s poll, so every poll lands on a fresh read and the "read HH:MM" stamp moves each time.
 import { divergence, mergeDaily, onchainSnapshot } from './peddles.mjs'
@@ -47,7 +49,7 @@ async function getJson(url, ms = TIMEOUT_MS) {
 
 /* ------------------------------------------------------------- DefiLlama --- */
 
-// DefiLlama lists Peddles (volume + fees), PeddleQuest (TVL + fees) and DeepCore (all three),
+// DefiLlama lists Peddles (volume + fees) and PeddleQuest (TVL + fees),
 // each from an adapter in its public repositories with a stated methodology. Where a venue's own
 // API has no dollar figure or no daily history, DefiLlama's is used and named as the source. Its
 // figures lag the venue's own by up to a day (DefiLlama runs adapters daily), which the provenance says.
@@ -180,109 +182,6 @@ export async function buildSeries(spec) {
 const seriesFields = (b) => ({ series: b.series, sources: b.sources, lastActivity: b.lastActivity, daily: b.series.volume })
 
 /* ---------------------------------------------------------------- venues --- */
-
-// DeepCore's documented public API host. The old path on the app host is read only if the API
-// host refuses, so a move or outage of one never blanks the venue.
-export const DEEPCORE_HOSTS = ['https://api.deepcore.fun', 'https://deepcore.fun']
-
-// Every chain must state a figure for the sum to be stated: a chain that leaves it out makes the
-// total unknown, never a smaller number.
-const sumAll = (xs) => (xs.length && xs.every((x) => x !== null && x !== undefined) ? xs.reduce((a, b) => a + b, 0) : null)
-
-/** The figures the landing shows beside DeepCore's dollars, from one /v1/overview document:
-    hosted sites (pads), launches in the last 24 hours, locks and the dollars they hold. */
-export function deepcoreExtras(items) {
-  const lockUsd = items.map((it) => num(it.locks?.usd))
-  const unpricedLocks = items.reduce((a, it) => a + (num(it.locks?.unpricedLocks) ?? 0), 0)
-  return {
-    sites: sumAll(items.map((it) => num(it.sites?.total))),
-    sites24h: sumAll(items.map((it) => num(it.sites?.last24h))),
-    launches24h: sumAll(items.map((it) => num(it.launches?.last24h))),
-    locks: sumAll(items.map((it) => num(it.locks?.count))),
-    lockedUsd: sumAll(lockUsd),
-    unpricedLocks,
-  }
-}
-
-async function deepcore() {
-  let url = null
-  let j = null
-  const failed = []
-  for (const host of DEEPCORE_HOSTS) {
-    try {
-      j = await getJson(`${host}/v1/overview`, 25_000)
-      if (!Array.isArray(j?.data?.items)) throw new Error('no items in the overview')
-      url = `${host}/v1/overview`
-      break
-    } catch (e) {
-      failed.push(`${host.replace('https://', '')} ${String(e?.message ?? e)}`)
-      j = null
-    }
-  }
-  if (!j) throw new Error(`every DeepCore host refused: ${failed.join('; ')}`)
-  const items = j.data.items
-  const byDay = new Map()
-  let unpriced = 0
-  let launches = 0
-  let pools = 0
-  const chains = []
-  for (const it of items) {
-    launches += it.launches?.total ?? 0
-    pools += it.pools?.total ?? 0
-    const v24 = it.volume?.last24h ?? {}
-    unpriced += (v24.unpricedTokens ?? 0) + (it.valueLocked?.unpricedTokens ?? 0)
-    for (const d of it.volume?.daily ?? []) byDay.set(dayKey(d.t), (byDay.get(dayKey(d.t)) ?? 0) + (num(d.usd) ?? 0))
-    chains.push({
-      chainId: it.chainId,
-      // A day with no swaps and nothing unpriced is a true zero, which the index reports as null.
-      volume24hUsd: num(v24.usd) ?? (v24.swaps === 0 && !v24.unpricedTokens ? 0 : null),
-      tvlUsd: num(it.valueLocked?.usd),
-      feesPaidUsd: num(it.fees?.paid?.usd),
-      feesAccruedUsd: num(it.fees?.accrued?.usd),
-    })
-  }
-  const daily = seriesOf(byDay)
-  const extras = deepcoreExtras(items)
-  const notes = failed.map((f) => `${f} could not be read; the fallback host was used.`)
-  if (extras.unpricedLocks) notes.push(`${extras.unpricedLocks} lock${extras.unpricedLocks === 1 ? '' : 's'} could not be priced and are left out of the locked dollars.`)
-  if (unpriced) notes.push(`${unpriced} token${unpriced === 1 ? '' : 's'} could not be priced and are left out of the dollar figures.`)
-  const prov = j.provenance ?? {}
-  // The index's fee figures carry no window: `paid` is what the protocol has collected and
-  // `accrued` what is owed and not yet collected, so together they are fees earned to date.
-  const feesAllUsd = sumKnown(chains.flatMap((c) => [c.feesPaidUsd, c.feesAccruedUsd]))
-  let fees24hUsd = null
-  const sources = [url]
-  try {
-    const f = await llama('fees', 'deepcore')
-    fees24hUsd = f.total24h
-    sources.push(f.url)
-    notes.push("Fees in the last 24 hours are read from DefiLlama's DeepCore adapter, which lags by up to a day.")
-  } catch (e) {
-    notes.push(`DefiLlama could not be read for 24h fees (${String(e?.message ?? e)}).`)
-  }
-  const own = { name: 'DeepCore API', url }
-  const tvlUsd = sumKnown(chains.map((c) => c.tvlUsd))
-  const built = await buildSeries({ volume: { own: daily, ownSource: own, llama: 'deepcore' }, fees: { llama: 'deepcore' }, tvl: { llama: 'deepcore', now: tvlUsd, ownSource: own } })
-  notes.push(...built.notes)
-  return {
-    ...seriesFields(built),
-    volume24hUsd: sumKnown(chains.map((c) => c.volume24hUsd)),
-    // The index's daily dollars, summed from the first day it holds.
-    volumeAllUsd: daily.length ? daily.reduce((a, p) => a + p.v, 0) : null,
-    volumeAllSince: daily.length ? new Date(daily[0].t * 1000).toISOString() : null,
-    tvlUsd,
-    fees24hUsd,
-    feesAllUsd,
-    // Dollars held in DeepCore locks (launch liquidity locked forever, timed LP locks, token locks
-    // and vesting), as the index values them. Not added to any total: it overlaps value locked.
-    lockedUsd: extras.lockedUsd,
-    chains,
-    sourceNote: "DeepCore's own index, daily",
-    counts: { launches, pools, chains: items.length, sites: extras.sites, sites24h: extras.sites24h, launches24h: extras.launches24h, locks: extras.locks },
-    notes,
-    source: { url: sources.join(' + '), readAt: prov.generatedAt ?? new Date().toISOString() },
-  }
-}
 
 /** Each chain's daily TVL summed by day. A chain without a point for a day counts at its last known value
     (the APIs skip days), and a day before a chain's first point counts it as nothing. */
@@ -560,7 +459,6 @@ async function gullychain() {
 }
 
 export const VENUES = [
-  { key: 'deepcore', read: deepcore },
   { key: 'peddleswap', read: peddleswap },
   { key: 'peddles', read: peddles },
   { key: 'peddlequest', read: peddlequest },

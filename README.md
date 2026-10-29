@@ -73,7 +73,7 @@ server/              Node ESM, no runtime dependencies
   telegram*.mjs      bot, Mini App, inline mode and broadcasts
   ask*.mjs           Gully AI
   access.mjs, plans.mjs, siwe.mjs, billing.mjs   keys, limits and wallet sign-in
-  stats.mjs, status.mjs, deepcore.mjs, ecosystem.mjs   ledger and status
+  stats.mjs, status.mjs, ecosystem.mjs   ledger and status
   data/              token lists and static data
 scripts/             build, test, brand and e2e scripts
 ghost/, ops/         blog theme and operations

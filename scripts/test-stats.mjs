@@ -24,7 +24,6 @@ const dayN = (n) => today - n * DAY // n days ago, seconds
 /* ---- the stubbed network ---- */
 const calls = []
 let llamaDown = false
-let deepcoreDaily = Array.from({ length: 9 }, (_, i) => ({ t: dayN(8 - i), usd: '0.00' }))
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 const llamaChart = (pts) => ({ total24h: pts.at(-1)?.[1] ?? 0, total7d: 0, totalAllTime: pts.reduce((a, p) => a + p[1], 0), chains: ['Robinhood'], totalDataChart: pts })
 const tvlDoc = (pts) => ({ currentChainTvls: { Robinhood: pts.at(-1).totalLiquidityUSD }, tvl: pts })
@@ -46,11 +45,7 @@ globalThis.fetch = async (input) => {
     if (u.pathname === '/protocol/peddles') return json(tvlDoc(peddlesTvl))
     if (u.pathname === '/summary/fees/peddlequest') return json(llamaChart(Array.from({ length: 20 }, (_, i) => [dayN(19 - i), i % 3 === 0 ? 2 : 0])))
     if (u.pathname === '/protocol/peddlequest') return json(tvlDoc(questTvl))
-    if (u.pathname === '/summary/fees/deepcore') return json(llamaChart([[dayN(1), 0], [dayN(0), 0]]))
     return json({ message: 'Protocol not found' }, 404)
-  }
-  if (u.hostname === 'api.deepcore.fun') {
-    return json({ data: { items: [{ chainId: 4663, launches: { total: 3, last24h: 0 }, pools: { total: 2 }, volume: { last24h: { usd: '0.00', swaps: 0 }, daily: deepcoreDaily }, valueLocked: { usd: '1200.00' }, fees: { paid: { usd: '1.5' }, accrued: { usd: '0.5' } }, sites: { total: 1, last24h: 0 }, locks: { count: 0, usd: '0', unpricedLocks: 0 } }] } })
   }
   if (u.hostname.endsWith('peddleswap.xyz')) {
     if (u.hostname !== 'api.peddleswap.xyz') throw new TypeError('fetch failed')
@@ -89,8 +84,10 @@ const iso = (t) => new Date(t * 1000).toISOString()
 test('every venue carries series for volume, fees and value locked, with a source per series', async () => {
   S.resetStatsForTest()
   const doc = await S.readStats()
-  assert.equal(doc.venues.length, 5)
+  assert.equal(doc.venues.length, 4)
   assert.ok(!doc.venues.some((v) => /cartel/i.test(v.key)), 'Cartel Family never comes back')
+  assert.ok(!doc.venues.some((v) => v.key === 'deepcore'), 'DeepCore is not read since the partnership ended (2026-10-29)')
+  assert.ok(!calls.some((c) => /deepcore/i.test(c)), 'nothing asks DeepCore or its DefiLlama adapter')
   for (const v of doc.venues) {
     assert.equal(v.state, 'ok', `${v.key} read`)
     assert.deepEqual(Object.keys(v.series).sort(), ['fees', 'tvl', 'volume'])
@@ -145,23 +142,10 @@ test('lastActivity is the last day with non-zero volume, even when the window si
 
 test("the venue's own series comes first; DefiLlama only when it is empty or flat while DefiLlama shows activity", async () => {
   S.resetStatsForTest()
-  // DeepCore: its own 9 days are all zero, DefiLlama has no DeepCore volume (404): the own series stays, labelled as the venue's.
-  let d = venue(await S.readStats(), 'deepcore')
-  assert.equal(d.series.volume.length, 9)
-  assert.equal(d.sources.volume.name, 'DeepCore API')
-  assert.equal(d.sources.volume.fallback, false)
-  assert.equal(d.lastActivity, null)
   // PeddleSwap: own 30 zeros, no DefiLlama: own.
   const ps = venue(await S.readStats(), 'peddleswap')
   assert.equal(ps.series.volume.length, 30)
   assert.equal(ps.sources.volume.fallback, false)
-  // DeepCore with real own activity keeps its own even though DefiLlama could answer.
-  S.resetStatsForTest()
-  deepcoreDaily = deepcoreDaily.map((x, i) => ({ ...x, usd: i === 3 ? '55.00' : '0.00' }))
-  d = venue(await S.readStats(), 'deepcore')
-  assert.equal(d.sources.volume.name, 'DeepCore API')
-  assert.equal(d.lastActivity, iso(dayN(5)))
-  deepcoreDaily = deepcoreDaily.map((x) => ({ ...x, usd: '0.00' }))
 })
 
 test("TVL: DefiLlama's history, with the venue's own reading as today's point and the source saying so", async () => {
@@ -278,7 +262,7 @@ const docOf = (...venues) => ({ venues })
 const NOW = Date.parse('2026-10-19T10:00:00Z')
 
 test('findIssues: unreadable, missing series, and a flat series over a moving venue', () => {
-  assert.deepEqual(W.findIssues(docOf(good('deepcore'), good('peddles'))), [])
+  assert.deepEqual(W.findIssues(docOf(good('peddleswap'), good('peddles'))), [])
   const err = W.findIssues(docOf({ key: 'peddles', state: 'error', error: 'HTTP 502' }))
   assert.deepEqual(err.map((i) => i.kind), ['error'])
   assert.match(err[0].detail, /HTTP 502/)
@@ -295,7 +279,7 @@ test('findIssues: unreadable, missing series, and a flat series over a moving ve
 })
 
 test('watchdog: ONE alert per venue per day, however many passes', async () => {
-  const bad = docOf({ key: 'peddles', state: 'error', error: 'HTTP 502' }, good('deepcore'))
+  const bad = docOf({ key: 'peddles', state: 'error', error: 'HTTP 502' }, good('peddleswap'))
   sent.length = 0
   let r = await W.watchdogTick({ now: NOW, doc: bad })
   assert.deepEqual(r.alerted, ['peddles'])
@@ -309,12 +293,12 @@ test('watchdog: ONE alert per venue per day, however many passes', async () => {
   r = await W.watchdogTick({ now: NOW + 86_400_000, doc: bad })
   assert.equal(sent.length, 1, 'the next UTC day, the same problem: no repeat')
   assert.match(sent[0], /when this changes, or in 7 days/)
-  const worse = docOf({ key: 'peddles', state: 'error', error: 'HTTP 503' }, good('deepcore'))
+  const worse = docOf({ key: 'peddles', state: 'error', error: 'HTTP 503' }, good('peddleswap'))
   await W.watchdogTick({ now: NOW + 86_400_000 + 60_000, doc: worse })
   assert.equal(sent.length, 2, 'the problem changed: one more')
   await W.watchdogTick({ now: NOW + 8 * 86_400_000 + 60_000, doc: worse })
   assert.equal(sent.length, 3, 'still the same after 7 days: a reminder')
-  await W.watchdogTick({ now: NOW + 9 * 86_400_000, doc: docOf(good('peddles'), good('deepcore')) })
+  await W.watchdogTick({ now: NOW + 9 * 86_400_000, doc: docOf(good('peddles'), good('peddleswap')) })
   await W.watchdogTick({ now: NOW + 9 * 86_400_000 + 60_000, doc: worse })
   assert.equal(sent.length, 4, 'fine, then broken again: a relapse alerts at once')
 })
@@ -322,7 +306,7 @@ test('watchdog: ONE alert per venue per day, however many passes', async () => {
 test('watchdog: another venue is its own alert; the daily total is capped; a failed send waits an hour', async () => {
   sent.length = 0
   const day = NOW + 13 * 86_400_000
-  const many = docOf(...['deepcore', 'peddleswap', 'peddles', 'peddlequest', 'x1', 'x2', 'x3', 'x4'].map((key) => ({ key, state: 'error', error: 'down' })))
+  const many = docOf(...['peddleswap', 'peddles', 'peddlequest', 'x1', 'x2', 'x3', 'x4', 'x5'].map((key) => ({ key, state: 'error', error: 'down' })))
   await W.watchdogTick({ now: day, doc: many })
   assert.equal(sent.length, W.MAX_PER_DAY, `capped at ${W.MAX_PER_DAY}`)
   await W.watchdogTick({ now: day + 20 * 60_000, doc: many })

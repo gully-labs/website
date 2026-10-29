@@ -84,7 +84,7 @@ export function IpfsDocs() {
 
       <Section id="uses" title="What we pin">
         <List>
-          <li>DeepCore token images and metadata, so launch pages and wallets always find them.</li>
+          <li>Token images and metadata of Gully Chain launches, so launch pages and wallets always find them.</li>
           <li>NFT art, such as Gully passes.</li>
           <li>Sites behind <C>.gully</C> names: a name&apos;s contenthash points at a CID served here.</li>
           <li>Snapshots of public Gully docs.</li>

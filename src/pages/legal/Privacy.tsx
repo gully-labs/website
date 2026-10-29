@@ -195,7 +195,7 @@ export function PrivacyPage() {
               <b>API keys and usage.</b> We keep a hash of each key (never the key itself), its prefix and name, and count requests per key: per hour by result and endpoint, per day, and the last 50 requests (time, method, path, status and response time). Anonymous requests are limited per IP address in memory only; we don’t store those IPs.
             </P>
             <P>
-              <b>Contact and waitlists.</b> When you write to us through the contact form: your name, email, message, the kind of project and budget you pick. When you join the Gully Chains waitlist: the contact you give (an email or a Telegram @username), your project’s name, the answers you choose (use case, scale, gas token, data availability, account abstraction, DeepCore) and any notes. The Chain Kit and devnet waitlists in the app keep your email, your wallet and workspace, and for Chain Kit the chain you name. A project or launchpad submitted for the ecosystem page keeps its website, contact, chains, factory address and note.
+              <b>Contact and waitlists.</b> When you write to us through the contact form: your name, email, message, the kind of project and budget you pick. When you join the Gully Chains waitlist: the contact you give (an email or a Telegram @username), your project’s name, the answers you choose (use case, scale, gas token, data availability, account abstraction, Gully Core) and any notes. The Chain Kit and devnet waitlists in the app keep your email, your wallet and workspace, and for Chain Kit the chain you name. A project or launchpad submitted for the ecosystem page keeps its website, contact, chains, factory address and note.
             </P>
             <P>
               Each of these also goes to our operators’ Telegram chat as a short message with the details, and once a day the chat gets a count of what is new. Operators can export the lists as CSV files. If the contact you give is a Telegram @username and that account has started @GullyLabsBot, the bot sends you one short thank-you; we don’t send emails.
@@ -269,7 +269,7 @@ export function PrivacyPage() {
 
           <S n={7} title="Holder Map and Gully Score">
             <P>
-              <b>Holder Map.</b> Looking up a map needs no account. To show the maps opened most today we count one view per visitor per token per day, using a hash of the IP address made with a random key that is held in memory only and replaced every day; the counts are reset each UTC day. New maps are limited per IP address for a minute, in memory only. To build a map we send the token’s address (never anything about you) to DeepCore, Blockscout, Moralis, Solana nodes and public blockchain nodes. Holder alerts are kept like other alerts, until you delete them.
+              <b>Holder Map.</b> Looking up a map needs no account. To show the maps opened most today we count one view per visitor per token per day, using a hash of the IP address made with a random key that is held in memory only and replaced every day; the counts are reset each UTC day. New maps are limited per IP address for a minute, in memory only. To build a map we send the token’s address (never anything about you) to Blockscout, Moralis, Solana nodes and public blockchain nodes. Holder alerts are kept like other alerts, until you delete them.
             </P>
             <P>
               <b>Deep checks.</b> For a Deep check we keep the chain and token, its price, its status, the Gully Pay invoice that paid for it and the report, under an id that is hard to guess; anyone with the report’s link can read it. To count free checks, re-run credits and duplicates, a check is tied to your workspace when you are signed in, and otherwise to a shortened SHA-256 hash of your IP address. That hash is not salted, so it is pseudonymous: anyone who knows the address can compute it. Your browser remembers the ids of the last 20 checks you started. A check reads the same public sources as the map, plus block explorers.
@@ -325,7 +325,7 @@ export function PrivacyPage() {
                 <b>Etherscan, Blockscout, Sourcify, GitHub and the npm registry</b>: the contract, repository or dependency list a Gully Security scan or a Gully Score reads, as above.
               </li>
               <li>
-                <b>DeepCore, Blockscout and Moralis</b>: token addresses for the Holder Map, as above.
+                <b>Blockscout and Moralis</b>: token addresses for the Holder Map, as above.
               </li>
               <li>
                 <b>Telegram</b>: everything you send to or receive from the bot.

@@ -33,7 +33,6 @@ Object.assign(process.env, {
   DIST_DIR: path.join(tmp, 'no-dist'),
   ADMIN_TOKEN: ADMIN,
   TRACKER_LOOP: 'off',
-  DEEPCORE_LOOP: 'off',
   TRACKER_SKIP_APIS: '1',
   ASK_REMOTE: 'off',
   GULLY_TREASURY_ADDRESS: TREASURY,
@@ -427,8 +426,8 @@ try {
     // Admin Health: Holder Map sources from holders.mjs holdersSourceHealth(): env var names only, never values.
     const h = await adminCall('/api/admin/health')
     const hm = h.data?.holders ?? []
-    check('admin health: Holder Map sources per chain (source, env name, stocks, launches)', h.status === 200 && hm.length >= 5 && hm.every((c) => typeof c.available === 'boolean' && typeof c.launches === 'boolean' && 'env' in c && 'source' in c) && hm.find((c) => c.chain === 'robinhood')?.reason === 'not configured: GULLY_RPC_4663 (archive RPC) or BLOCKSCOUT_API_KEY', JSON.stringify(hm).slice(0, 300))
-    check('admin health: DeepCore launches map on Base without a key', hm.find((c) => c.chain === 'base')?.launches === true)
+    check('admin health: Holder Map sources per chain (source, env name, stocks, any token)', h.status === 200 && hm.length >= 5 && hm.every((c) => typeof c.available === 'boolean' && typeof c.tokens === 'boolean' && 'env' in c && 'source' in c) && hm.find((c) => c.chain === 'robinhood')?.reason === 'not configured: GULLY_RPC_4663 (archive RPC) or BLOCKSCOUT_API_KEY', JSON.stringify(hm).slice(0, 300))
+    check('admin health: no DeepCore poller part (the integration ended 2026-10-29)', !('deepcore' in (h.data ?? {})) && hm.every((c) => !('launches' in c)))
 
     // (c) The 180-day prune runs daily from the engine's start (startLoops), not only at boot.
     check('housekeeping: started with the engine, prune daily and the upload sweep hourly', JSON.stringify(engineAdapter.housekeepingForTest()) === JSON.stringify([86_400_000, 3_600_000]), JSON.stringify(engineAdapter.housekeepingForTest()))

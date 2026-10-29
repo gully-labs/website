@@ -8,7 +8,7 @@
 // (getMe, setWebhook, setMyCommands, setChatMenuButton, sendMessage, sendAnimation, editMessageText,
 // answerCallbackQuery), keeps the messages it was sent so edits behave like Telegram's ("message is not
 // modified", "message to edit not found"), parses the banner's multipart upload and can answer 429.
-// Tracker rows, history, movers, DeepCore launches and (for the Gully AI buttons) Ask are synthetic,
+// Tracker rows, history, movers and (for the Gully AI buttons) Ask are synthetic,
 // through the bot's test hooks; nothing upstream is read. The token is a made-up one.
 
 import crypto from 'node:crypto'
@@ -207,15 +207,6 @@ const ROWS = [
   row({ ticker: 'GOOGL', name: 'Alphabet', status: 'unverified', gapPct: null, rawGapPct: -29.45, fair: 706.52, onchain: 498.46, pool: { liquidityUsd: 269_113 }, untrustedReason: 'A 29.4% gap is implausible for a tokenised stock, and its price could not be confirmed on chain.' }),
 ]
 
-// DeepCore launches as deepcore.mjs's readLaunches returns them (shapes from api.deepcore.fun/v1/launches).
-const dcLaunch = (o) => ({ chainId: 4663, chainKey: 'robinhood', chainName: 'Robinhood Chain', token: '0x8d901a1b3f3a57f9c36a71382fa183476c41545b', symbol: 'DTC', createdAt: '2026-10-11T08:20:21.000Z', legs: [{ poolId: '0xb506', kind: 'CL', quote: 'WETH', locked: true, lockId: '1' }], links: { token: 'https://deepcore.fun/tokens/0x8d901a1b3f3a57f9c36a71382fa183476c41545b?net=robinhood', swap: 'https://deepcore.fun/app/swap?net=robinhood&in=0x0000000000000000000000000000000000000000&out=0x8d901a1b3f3a57f9c36a71382fa183476c41545b' }, ...o })
-const LAUNCHES = [dcLaunch({ chainId: 8453, chainKey: 'base', chainName: 'Base', token: '0x1111111111111111111111111111111111111111', symbol: '<b>X&', createdAt: '2026-10-17T18:00:00.000Z', legs: [{ kind: 'Bin', quote: 'USDC', locked: false }], links: { token: 'https://deepcore.fun/tokens/0x1111111111111111111111111111111111111111?net=base', swap: 'https://deepcore.fun/app/swap?net=base&in=0x0&out=0x1111' } }), dcLaunch({})]
-const launchesOk = (asked) => async (o) => {
-  asked?.push(o)
-  const l = LAUNCHES.filter((x) => !o.chainId || x.chainId === o.chainId)
-  return { state: 'ok', launches: l, asOf: '2026-10-17T19:00:00.000Z', chains: [{ chainId: 999, name: 'HyperEVM', status: 'unreadable', total: null }] }
-}
-
 const wallet = privateKeyToAccount(generatePrivateKey())
 const me = wallet.address.toLowerCase()
 const other = privateKeyToAccount(generatePrivateKey())
@@ -259,8 +250,8 @@ try {
   const scoped = (type) => cmdCalls.find((c) => (c.body.scope?.type ?? 'default') === type)?.body.commands ?? []
   const cmdList = scoped('all_private_chats')
   const cmds = cmdList.map((c) => c.command)
-  check('startup: private chats see start, app, gap, top, movers, launches, holders, alerts, security, score, ask, contact, help, stop (in that order, no scan)', JSON.stringify(cmds) === JSON.stringify(['start', 'app', 'gap', 'top', 'movers', 'launches', 'holders', 'alerts', 'security', 'score', 'ask', 'contact', 'help', 'stop']), cmds.join())
-  check('startup: groups see gap, top, launches, help only', JSON.stringify(scoped('all_group_chats').map((c) => c.command)) === JSON.stringify(['gap', 'top', 'launches', 'help']), scoped('all_group_chats').map((c) => c.command).join())
+  check('startup: private chats see start, app, gap, top, movers, holders, alerts, security, score, ask, contact, help, stop (in that order, no scan)', JSON.stringify(cmds) === JSON.stringify(['start', 'app', 'gap', 'top', 'movers', 'holders', 'alerts', 'security', 'score', 'ask', 'contact', 'help', 'stop']), cmds.join())
+  check('startup: groups see gap, top, help only', JSON.stringify(scoped('all_group_chats').map((c) => c.command)) === JSON.stringify(['gap', 'top', 'help']), scoped('all_group_chats').map((c) => c.command).join())
   check('startup: the default scope gets the private list', JSON.stringify(scoped('default').map((c) => c.command)) === JSON.stringify(cmds))
   check('startup: command descriptions are short, plain and start with an emoji (3 to 60 characters)', cmdCalls.flatMap((c) => c.body.commands).every((c) => c.description.length >= 3 && c.description.length <= 60 && /^\p{Extended_Pictographic}/u.test(c.description)), cmdList.map((c) => c.description).join(' | '))
   const menuButton = calls.find((c) => c.method === 'setChatMenuButton')?.body.menu_button
@@ -306,9 +297,9 @@ try {
   const cap1 = an1?.body.caption ?? ''
   check('the caption: Gully Labs, the live count of stock tokens, alerts, Gully AI, not advice', cap1.startsWith('<b>Gully Labs</b> · see if stock tokens trade above or below the real share price.') && cap1.includes(`📈 ${ROWS.length} stock tokens on Robinhood Chain, BNB Chain and Solana`) && cap1.includes('🔔 alerts right here') && cap1.includes('🤖 Gully AI answers') && cap1.includes('Information only, not investment advice.') && cap1.length < 1024 && an1.body.parse_mode === 'HTML', cap1)
   const menuKb = an1?.body.reply_markup?.inline_keyboard ?? []
-  check('the banner carries the main menu: 📱 Open app, then 11 buttons in 5 rows', menuKb.length === 6 && flat(menuKb).length === 12 && JSON.stringify(flat(menuKb).map((b) => b.text)) === JSON.stringify(['📱 Open app', '📈 Stocks', '🔥 Top gaps', '🚀 Movers', '🛰 DeepCore launches', '🔔 My alerts', '🤖 Gully AI', '👥 Holder Map', '🛡 Security', '💼 App dashboard ↗', '🧭 More', '⚙️ Settings']))
+  check('the banner carries the main menu: 📱 Open app, then 10 buttons in 5 rows', menuKb.length === 6 && flat(menuKb).length === 11 && JSON.stringify(flat(menuKb).map((b) => b.text)) === JSON.stringify(['📱 Open app', '📈 Stocks', '🔥 Top gaps', '🚀 Movers', '🔔 My alerts', '🤖 Gully AI', '👥 Holder Map', '🛡 Security', '🧭 More', '💼 App dashboard ↗', '⚙️ Settings']))
   check('📱 Open app is an inline web_app button to the Mini App (private chat)', menuKb[0]?.[0]?.web_app?.url === 'https://gullylabs.xyz/tg' && menuKb[0][0].callback_data === undefined && menuKb[0][0].url === undefined)
-  check('the menu: App dashboard is a url button, the others are routes', button(menuKb, /App dashboard/)?.url === 'https://app.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'dc:0', 'ma', 'ai', 'hm', 'sec', 'more', 'set']))
+  check('the menu: App dashboard is a url button, the others are routes', button(menuKb, /App dashboard/)?.url === 'https://app.gullylabs.xyz' && JSON.stringify(data(menuKb)) === JSON.stringify(['stk', 'top', 'mv:24h', 'ma', 'ai', 'hm', 'sec', 'more', 'set']))
   const storedBanner = JSON.parse(fs.readFileSync(path.join(tmp, 'telegram.json'), 'utf8')).banner
   check('the banner file_id is stored after the first upload, keyed on the hash of the MP4', storedBanner?.fileId === BANNER_FILE_ID && storedBanner.sha === crypto.createHash('sha256').update(BANNER_MP4).digest('hex').slice(0, 16), JSON.stringify(storedBanner))
   await say(privateChat(801), '/start')
@@ -379,46 +370,15 @@ try {
   const unv = view(339).text
   check('card: an unverified price says "not enough trading", shows the prices and no gap figure', unv.includes('⚪ Not enough trading to compare right now.') && !/% (above|below)/.test(unv) && !/29\.4|implausible|Unverified/i.test(unv) && unv.includes('Token $498.46 · Real share $706.52') && /^⚪/.test(unv), unv)
 
-  /* ------------------------------------------------------------- /launches --- */
-  const asked = []
-  tg.setLaunchesReaderForTest(launchesOk(asked))
+  /* ------------------------------------------------- /launches (retired) --- */
+  // The launches list and the new-launch alert were retired on 2026-10-29: /launches and the old buttons say so.
   await say(privateChat(340), '/launches')
   const ln = view(340)
-  check('/launches answers in an unlinked chat (public, read-only)', /DeepCore launches/.test(ln.text), ln.text)
-  const lnData = data(ln.kb)
-  check('/launches lists launches newest first as buttons to their cards', lnData[0] === 'dl:8453:1111111111111111111111111111111111111111:0' && lnData[1] === 'dl:4663:8d901a1b3f3a57f9c36a71382fa183476c41545b:0', lnData.join())
-  check('/launches: chain filters, launch alert, Refresh, Back, Menu', ['dc:0', 'dc:56', 'dc:999', 'dc:4663', 'dc:8453', 'dla:0'].every((d) => lnData.includes(d)) && hasNav(ln.kb))
-  check('/launches names a chain that could not be checked, plainly', /HyperEVM couldn’t be checked; launches there may be missing/.test(ln.text) && !/read/.test(ln.text), ln.text)
-  check('/launches: an information-only line, no source name, no timestamp', /Information only, not advice\./.test(ln.text) && !/api\.|UTC|Read from|deepcore\.fun/.test(ln.text), ln.text)
-  check('/launches buttons: name, chain and how long ago (no raw time)', /^<b>X& · Base · \d+(h|d| min) ago$/.test(flat(ln.kb)[0].text), flat(ln.kb)[0].text)
-  await press(privateChat(340), lnData[0])
-  const lc = view(340)
-  check('launch card: name (escaped), chain, how long ago, liquidity not locked; no pool details, no address, no raw time', lc.text.includes('&lt;b&gt;X&amp;') && !lc.text.includes('<b><b>X') && /Base · \d+(h|d| min) ago/.test(lc.text) && lc.text.includes('🔓 Liquidity not locked') && !/pool|0x|UTC|Bin|USDC/i.test(lc.text) && /Information only, not advice/.test(lc.text), lc.text)
-  check('launch card: View on DeepCore (url), launch alert, Back to the list, Menu', button(lc.kb, /View on DeepCore/)?.url === LAUNCHES[0].links.token && data(lc.kb).includes('dla:0') && data(lc.kb).includes('dc:0') && hasNav(lc.kb))
-  check('launch card: 👥 Holders opens the Mini App on that launch (DeepCore chain key + token)', button(lc.kb, /Holders/)?.web_app?.url === `https://gullylabs.xyz/tg?holders=${encodeURIComponent(`${LAUNCHES[0].chainKey}:${LAUNCHES[0].token.toLowerCase()}`)}`, JSON.stringify(button(lc.kb, /Holders/)))
-  tg.setLaunchesReaderForTest(launchesOk(asked), async (l) => (l.token === LAUNCHES[1].token ? { priceUsd: 0.00123, marketCapUsd: 123456.7 } : null))
-  await press(privateChat(340), lnData[1])
-  const lc2 = view(340)
-  check('launch card: price and market cap when DeepCore states them, liquidity locked', lc2.text.includes('<b>DTC</b> · Robinhood Chain') && lc2.text.includes('💵 Price $0.00123 · Market cap $123,457') && lc2.text.includes('🔒 Liquidity locked'), lc2.text)
-  tg.setLaunchesReaderForTest(launchesOk(asked))
-  await press(privateChat(340), 'dc:8453')
-  check('launch filter: one chain', asked.at(-1).chainId === 8453 && /on Base<\/b>/.test(view(340).text) && !data(view(340).kb).some((d) => d.startsWith('dl:4663')))
-  await say(privateChat(340), '/launches base')
-  check('/launches base filters to one chain', asked.at(-1).chainId === 8453)
-  await say(privateChat(340), '/launches solana')
-  check('/launches with an unknown chain lists DeepCore’s chains by name', /DeepCore runs on BNB Chain, HyperEVM, Robinhood Chain, Base/.test(view(340).text), view(340).text)
-  await press(privateChat(340), 'dla:0')
-  check('launch alert in an unlinked chat: explains, with Link wallet to the portal Alerts tab', /need a linked account/.test(view(340).text) && button(view(340).kb, /Link wallet/)?.url === 'https://app.gullylabs.xyz/#alerts' && data(view(340).kb).includes('dc:0'))
-  tg.setLaunchesReaderForTest(async () => ({ state: 'unreadable', launches: [], asOf: null, chains: [] }))
-  await say(privateChat(341), '/launches')
-  check('/launches: DeepCore not answering is said honestly, never "no launches"', /DeepCore isn’t answering right now/.test(view(341).text) && !/No launches|API|read/.test(view(341).text), view(341).text)
-  tg.setLaunchesReaderForTest(async () => ({ state: 'stale', launches: [LAUNCHES[1]], asOf: '2026-10-17T18:00:00.000Z', chains: [] }))
-  await say(privateChat(342), '/launches')
-  check('/launches: a stale list says how old it is, without a raw timestamp', /DeepCore isn’t answering right now; this list is from \d+(h|d| min) ago\./.test(view(342).text) && !/UTC/.test(view(342).text), view(342).text)
-  tg.setLaunchesReaderForTest(async () => ({ state: 'ok', launches: [], asOf: '2026-10-17T18:00:00.000Z', chains: [] }))
-  await say(privateChat(343), '/launches base')
-  check('/launches with none says so', /No launches on DeepCore on Base yet/.test(view(343).text))
-  tg.setLaunchesReaderForTest(launchesOk(asked))
+  check('/launches says the list was retired, with the Gully Core docs and the menu', /retired on 2026-10-29/.test(ln.text) && !/deepcore/i.test(ln.text) && button(ln.kb, /Gully Core docs/)?.url === 'https://docs.gullychain.xyz/gully-core/' && data(ln.kb).includes('m'), ln.text)
+  for (const old of ['dc:0', 'dl:8453:1111111111111111111111111111111111111111:0', 'dla:0', 'dlk:4663']) {
+    await press(privateChat(340), old)
+    check(`an old launches button (${old}) opens the same retired screen`, /retired on 2026-10-29/.test(view(340).text), view(340).text)
+  }
 
   /* ---------------------------------------------------------------- /ask --- */
   await say(privateChat(600), '/ask how do alerts work?')
@@ -503,14 +463,6 @@ try {
   await press(ada, 'c:rh:NVDA:x', { msgId: msg.resultId })
   check('📈 Card opens the stock card in place of the delivery', view(111).method === 'editMessageText' && view(111).id === msg.resultId && /🔴 <b>NVDA<\/b> · Robinhood Chain/.test(view(111).text))
 
-  /* --------------------------------------------- DeepCore launch alert --- */
-  const ev = { kind: 'deepcore.launch', chainId: 4663, chainKey: 'robinhood', chainName: 'Robinhood Chain', token: LAUNCHES[1].token, symbol: 'DTC', createdAt: LAUNCHES[1].createdAt, pools: LAUNCHES[1].legs, links: LAUNCHES[1].links }
-  const lr = await tg.sendAlertTelegram({ owner: me, alertId: 'dcalert1', name: 'Launches', conditionText: 'new DeepCore launch on any chain', events: [ev], test: false })
-  const lmsg = sent(111).at(-1)
-  check('a DeepCore launch alert reaches the linked chat', lr.ok && /Gully Labs alert<\/b> “Launches”/.test(lmsg.body.text) && /new DeepCore launch on any chain/.test(lmsg.body.text) && lmsg.body.text.includes('<b>DTC</b> · Robinhood Chain'), lmsg?.body.text)
-  const lkb = flat(lmsg.body.reply_markup?.inline_keyboard)
-  check('launch alert: liquidity locked, no address or pool details', lmsg.body.text.includes('🔒 Liquidity locked') && !/0x|pool|lock #/i.test(lmsg.body.text), lmsg.body.text)
-  check('launch alert buttons: "View DTC on DeepCore" and "Mute 24h"', lkb.some((b) => b.text === '🌐 View DTC on DeepCore ↗' && b.url === LAUNCHES[1].links.token) && lkb.some((b) => b.callback_data === 'mute:dcalert1'))
   // Holder Map alerts (alerts.mjs condition type 'holders'): plain words, Open map and Mute 24h.
   const hcond = { type: 'holders', chain: 'robinhood', token: '0x8d901a1b3f3a57f9c36a71382fa183476c41545b', symbol: 'DTC', metric: 'cluster', above: 20, dropPts: null }
   const hv = ui.deliveryView({ alertId: 'hold1', name: 'DTC whales', conditionText: 'x', condition: hcond, events: [{ kind: 'holders.alert', chain: 'robinhood', chainName: 'Robinhood Chain', token: hcond.token, symbol: 'DTC', metric: 'cluster', pct: 21.4, previousPct: 18.2, reason: 'above', pageUrl: 'https://gullylabs.xyz/holders/robinhood/0x8d901a1b3f3a57f9c36a71382fa183476c41545b', snapshotAt: new Date().toISOString() }], test: false })
@@ -519,7 +471,7 @@ try {
   const hd = ui.deliveryView({ alertId: 'hold2', name: null, conditionText: 'x', condition: { ...hcond, above: null, dropPts: 5, metric: 'top10' }, events: [{ kind: 'holders.alert', chain: 'bsc', token: '0xabc', symbol: null, metric: 'top10', pct: 30, previousPct: 37.5, reason: 'drop', pageUrl: 'javascript:alert(1)' }], test: false })
   check('holder alert (sold): the drop in points; a non-https page falls back to the site’s map', hd.text.includes('the top 10 wallets now hold 30% (was 38%): they sold 7.5 points of their share.') && flat(hd.keyboard)[0].url === 'https://gullylabs.xyz/holders/bsc/0xabc', hd.text)
   check('holder alert: the condition reads plainly in My alerts', ui.conditionWords(hcond, {}) === 'the largest connected cluster of wallets of DTC · Robinhood Chain hold 20% or more' && ui.alertState({ coveredByPlan: true, enabled: true, armed: false, condition: hcond, kind: 'holders' }).emoji === '🟠', ui.conditionWords(hcond, {}))
-  check('every callback_data in the card and launch views stays within 64 bytes', [...ui.callbackDataOf(card.kb), ...ui.callbackDataOf(lc.kb), ...ui.callbackDataOf(hv.keyboard)].every((d) => Buffer.byteLength(d) <= 64))
+  check('every callback_data in the card and holder views stays within 64 bytes', [...ui.callbackDataOf(card.kb), ...ui.callbackDataOf(hv.keyboard)].every((d) => Buffer.byteLength(d) <= 64))
 
   /* -------------------------------------------------------------- Mute --- */
   await press(privateChat(444), `mute:${alertId}`, { msgId: null })
@@ -724,14 +676,12 @@ try {
   await evaluateAlerts([row({ gapPct: -1.8, status: 'discount' })], Date.now() + 41 * 60_000)
   check('a ▼ discount alert fires on a discount, and its message says ▼ Discount', sent(111).length === nBelow + 1 && sent(111).at(-1).body.text.includes('Alert: ▼ 1.5% or more below the real share price'), sent(111).at(-1)?.body.text)
   await press(ada, `adx:${below.id}`)
-  // DeepCore launch alert.
-  await press(ada, 'dla:0')
-  check('launch alert 1/2: chain choice (any or one)', JSON.stringify(data(view(111).kb).slice(0, 5)) === JSON.stringify(['dla:0:0', 'dla:0:56', 'dla:0:999', 'dla:0:4663', 'dla:0:8453']))
-  await press(ada, 'dla:0:4663')
-  check('launch alert 2/2: summary with Create', /every new token launched on DeepCore on Robinhood Chain/.test(view(111).text) && data(view(111).kb).includes('dlk:4663'))
+  // The retired new-launch alert: its old Create button makes nothing (retired 2026-10-29).
   await press(ada, 'dlk:4663')
-  const dca = (await myAlerts())[0]
-  check('the DeepCore launch alert is created (kind deepcore-launch, chain 4663)', /Alert created/.test(view(111).text) && dca?.kind === 'deepcore-launch' && dca.condition.chainId === 4663 && dca.telegram?.linked === true, JSON.stringify(dca))
+  check('the old new-launch Create button creates no alert', /retired on 2026-10-29/.test(view(111).text) && (await myAlerts()).length === 0)
+  // One gap alert again, for Settings → Mute all below.
+  await press(ada, 'alk:rh:NVDA:g1:1.5:d')
+  check('a gap alert is created again', /Alert created/.test(view(111).text) && (await myAlerts()).length === 1)
 
   /* -------------------------------------------------------------- Gully AI --- */
   const askedQ = []
@@ -882,7 +832,7 @@ try {
   await say(fa, '/movers')
   const faGate = lastShown(9920)
   check('free action: the second one gets the join screen', /Follow Gully Labs News/.test(faGate?.text ?? faGate?.caption ?? ''), faGate?.text ?? faGate?.caption)
-  check('join screen: sells the channel (gaps, launches, product drops) and keeps one Join button', /widest stock-token gaps/.test(faGate?.caption ?? faGate?.text ?? '') && /new DeepCore launches/.test(faGate?.caption ?? faGate?.text ?? '') && flat(faGate?.reply_markup?.inline_keyboard ?? []).filter((b) => b.url === 'https://t.me/GullyLabsNews').length === 1)
+  check('join screen: sells the channel (gaps, Gully Chain news, product drops) and keeps one Join button', /widest stock-token gaps/.test(faGate?.caption ?? faGate?.text ?? '') && /Gully Chain news/.test(faGate?.caption ?? faGate?.text ?? '') && !/deepcore/i.test(faGate?.caption ?? faGate?.text ?? '') && flat(faGate?.reply_markup?.inline_keyboard ?? []).filter((b) => b.url === 'https://t.me/GullyLabsNews').length === 1)
   check('join screen: private chats get it on the kit banner (an animation with the caption)', calls.some((c) => c.method === 'sendAnimation' && String(c.body.chat_id) === '9920' && /Follow Gully Labs News/.test(c.body.caption ?? '')))
   await press(fa, 'jchk', { msgId: null })
   check('retry wording: tells them Telegram can take a few seconds', /few seconds/.test(lastAnswer().text ?? ''), lastAnswer().text)
@@ -1021,7 +971,7 @@ try {
       build: async (chain, token, o) => (counts.build++, builds.push({ chain, token, ...o }), buildBody),
     })
     const ADDR = '0x2222222222222222222222222222222222222222'
-    const mapOf = (address, over = {}) => ({ state: 'ok', kind: 'deepcore-launch', chain: { key: 'base', id: 8453, name: 'Base' }, token: { address, symbol: 'ZED', name: 'Zed' }, asOf: new Date().toISOString(), holders: { count: 1204 }, nodes: [], clusters: [{ id: 1 }], summary: { top10Pct: 41.2, largestCluster: { pct: 28, wallets: 3 } }, health: { score: 72, level: 'mixed' }, ...over })
+    const mapOf = (address, over = {}) => ({ state: 'ok', kind: 'launch', chain: { key: 'base', id: 8453, name: 'Base' }, token: { address, symbol: 'ZED', name: 'Zed' }, asOf: new Date().toISOString(), holders: { count: 1204 }, nodes: [], clusters: [{ id: 1 }], summary: { top10Pct: 41.2, largestCluster: { pct: 28, wallets: 3 } }, health: { score: 72, level: 'mixed' }, ...over })
     holders.seedHolderMapForTest('base', ADDR, mapOf(ADDR))
     const askInline = (userId, query, extra = {}) => postUpdate({ inline_query: { id: `iq${updateId}`, from: { id: userId, is_bot: false, first_name: 'U' }, query, offset: '', ...extra } })
     const inlineAnswers = () => calls.filter((c) => c.method === 'answerInlineQuery')
@@ -1058,7 +1008,7 @@ try {
     check('inline: a miss answers an Open Holder Map article that links to the site, with a short cache_time', miss?.type === 'article' && miss.title === 'Open Holder Map' && flat(miss.reply_markup.inline_keyboard).some((b) => b.text === 'Open Holder Map' && b.url.startsWith('https://gullylabs.xyz/holders')) && flat(miss.reply_markup.inline_keyboard).some((b) => b.text === 'Join @GullyLabsNews') && lastInline().cache_time === 20 && counts.resolve === 1, JSON.stringify(lastInline()).slice(0, 300))
     // Uncached but resolvable: a fast-path build under the user's own budget key; a busy build falls back to the article.
     const LAUNCH = '0x4444444444444444444444444444444444444444'
-    resolveMatches = [{ chain: 'base', token: LAUNCH, symbol: 'QQQ', kind: 'deepcore-launch' }]
+    resolveMatches = [{ chain: 'base', token: LAUNCH, symbol: 'QQQ', kind: 'launch' }]
     buildBody = { state: 'busy' }
     await askInline(7003, LAUNCH)
     check('inline: an uncached map starts one build keyed on the Telegram user (tg:<id>, free tier) and falls back to the article when it is not ready', builds.filter((b) => b.ip === 'tg:7003').length === 1 && builds.at(-1).ip === 'tg:7003' && builds.at(-1).tier === 'free' && lastInline().results[0].type === 'article' && lastInline().cache_time === 20, JSON.stringify(builds))

@@ -42,7 +42,7 @@
 //   /api/admin/security*                      Gully Security: scan queue, failures, review requests (security-routes.mjs)
 //   /api/admin/broadcasts*                    DMs to everyone who started the bot, by segment (telegram-broadcast.mjs)
 //   GET  /api/admin/health                    live health of every background part (Holder Map data sources per chain,
-//                                             security monitors, the DeepCore poller, the bot webhook, the scan engine,
+//                                             security monitors, the home ledger's feeds, the bot webhook, the scan engine,
 //                                             Gully AI retrieval), with a per-minute history for sparklines
 //   GET  /api/admin/alerts                    every alert and monitor across accounts, and the alert webhook log
 //   GET  /api/admin/workspaces                workspaces with members or open invites
@@ -89,7 +89,6 @@ import * as holdersMod from './holders.mjs'
 import * as secMon from './sec-monitor.mjs'
 import * as tgMod from './telegram.mjs'
 import * as storeMod from './store.mjs'
-import { deepcoreHealth, pollMs as deepcorePollMs } from './deepcore.mjs'
 import { status as scanEngineStatus } from './security-engine.mjs'
 import { askStatus } from './ask.mjs'
 import { embedStatus } from './ask-embed.mjs'
@@ -181,7 +180,7 @@ const safe = (fn, fallback = null) => {
 }
 
 /** Holder Map data per chain, from holders.mjs holdersSourceHealth(): the source, its env var NAME (operators only,
-    never a value), and whether stock tokens and DeepCore launches can be mapped there now. */
+    never a value), and whether stock tokens and any other token can be mapped there now. */
 function holderSources() {
   const rows = safe(() => holdersMod.holdersSourceHealth(), [])
   return (Array.isArray(rows) ? rows : []).map((r) => ({
@@ -191,7 +190,7 @@ function holderSources() {
     env: r.env ?? null,
     fallbackEnv: r.fallbackEnv ?? null,
     available: !!r.stocks,
-    launches: !!r.launches,
+    tokens: !!r.tokens,
     reason: r.stocks ? null : r.env ? `not configured: ${r.env}${r.fallbackEnv ? ` (archive RPC) or ${r.fallbackEnv}` : ''}` : 'no stock holder source',
   }))
 }
@@ -209,11 +208,6 @@ function monitorPart(now) {
   const errs = chains.filter((c) => c?.lastError)
   const last = errs.map((c) => c.lastErrorAt).filter(Boolean).sort().at(-1) ?? null
   return { ...base, lastTickAt: null, lastTickMs: null, lagMs: null, ticks: null, errors: errs.length, lastError: errs.find((c) => c.lastErrorAt === last)?.lastError ?? null, lastErrorAt: last, detail: 'chains' }
-}
-
-function deepcorePart(now) {
-  const h = safe(() => deepcoreHealth(), {}) ?? {}
-  return { lastOkAt: iso(h.lastOkAt), lagMs: ageMs(h.lastOkAt, now), pollMs: safe(() => deepcorePollMs(), 90_000), lastError: h.lastError ? String(h.lastError?.message ?? h.lastError).slice(0, 200) : null, baselineAt: iso(h.baselineAt), seen: h.seen ?? null, cached: h.cached ?? null }
 }
 
 function botPart(now) {
@@ -249,7 +243,7 @@ function embeddingsPart() {
 async function healthNow() {
   const now = Date.now()
   const engine = await enginePart()
-  return { at: new Date(now).toISOString(), holders: holderSources(), monitors: monitorPart(now), deepcore: deepcorePart(now), bot: botPart(now), engine, embeddings: embeddingsPart(), stats: safe(() => statsWatchdogHealth(), null) }
+  return { at: new Date(now).toISOString(), holders: holderSources(), monitors: monitorPart(now), bot: botPart(now), engine, embeddings: embeddingsPart(), stats: safe(() => statsWatchdogHealth(), null) }
 }
 
 /** One history point per minute: what each sparkline draws (null = not known, never 0). */
@@ -261,8 +255,6 @@ function sample(h) {
     holdersAvailable: h.holders.filter((c) => c.available).length,
     monitorsLagS: h.monitors.lagMs == null ? null : Math.round(h.monitors.lagMs / 1000),
     monitorsErrors: h.monitors.errors,
-    deepcoreLagS: h.deepcore.lagMs == null ? null : Math.round(h.deepcore.lagMs / 1000),
-    deepcoreCached: h.deepcore.cached,
     botUpdates: h.bot.updates,
     botUpdatesPerMin: delta(h.bot.updates, prev?.botUpdates),
     botErrors: h.bot.errors,
@@ -299,7 +291,7 @@ const hostOf = (u) => safe(() => new URL(u).host, null)
 const conditionLabel = (x) => {
   const c = x.condition ?? {}
   if (c.type === 'gap') return `gap ${c.direction === 'above' ? '≥ +' : c.direction === 'below' ? '≤ −' : '± '}${c.pct}%`
-  if (c.type === 'deepcore-launch') return `DeepCore launch${c.chainId ? ` · chain ${c.chainId}` : ''}`
+  if (c.type === 'deepcore-launch') return 'new launch (retired 2026-10-29)' // alerts.mjs: kept only so it can be deleted
   if (c.type === 'holders') return `holders · ${c.symbol ?? c.token ?? ''}`
   if (c.type === 'status') return `status ${c.status}`
   return c.type ?? null

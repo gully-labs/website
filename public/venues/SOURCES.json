@@ -1,11 +1,4 @@
 {
-  "deepcore": {
-    "file": "/venues/deepcore.png",
-    "from": "https://deepcore.fun/identity/emblem-512.png",
-    "page": "https://deepcore.fun/identity",
-    "note": "the trident emblem from the identity page (not the outdated Latch kit in the deepcore repo), resized to 256 px; the card banner /assets/deepcore.png is https://deepcore.fun/identity/logo/lockup-on-dark-2x.png",
-    "fetchedAt": "2026-10-17T12:00:00Z"
-  },
   "peddleswap": {
     "file": "/venues/peddleswap.png",
     "from": "https://peddleswap.xyz/pwa/icon-512.png",

@@ -137,7 +137,7 @@ export function signalsOf(map, { deployerPct = THRESHOLDS.deployerPct } = {}) {
   if (map?.state !== 'ok' || !map.forensics) return []
   const f = map.forensics
   const page = holderPage(map.chain.key, map.token.address)
-  const source = { name: 'Gully Labs Holder Map', url: page, data: 'DeepCore launch history and token transfers' }
+  const source = { name: 'Gully Labs Holder Map', url: page, data: 'The token’s transfers and holder balances' }
   const out = []
   const pct = (n) => (n === null || n === undefined ? '?' : `${Number(n).toFixed(n >= 10 ? 0 : 1)}%`)
   if (f.bundled?.wallets >= THRESHOLDS.bundledWallets && f.bundled.pct >= THRESHOLDS.bundledPct) {

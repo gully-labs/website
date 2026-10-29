@@ -5,13 +5,12 @@
 //   0. gullychain   Gully Chain (485590) only: the hosted Uniswap-standard token list
 //                   (gullychain.xyz/tokenlist-extended.json, logoURI), cached 10 min; the bundled copy
 //                   server/data/gully-tokenlist.json answers when the hosted list cannot be read
-//   1. deepcore     DeepCore's launch token list (GET /v1/chains/:id/tokenlists/launches.json, logoURI)
-//   2. dexscreener  DexScreener pairs where the token is the BASE token (info.imageUrl belongs to the base)
-//   3. jupiter      Solana: Jupiter's token API (lite-api.jup.ag tokens v2, `icon`)
+//   1. dexscreener  DexScreener pairs where the token is the BASE token (info.imageUrl belongs to the base)
+//   2. jupiter      Solana: Jupiter's token API (lite-api.jup.ag tokens v2, `icon`)
 //      xstocks      tokenised stocks the tracker follows (server/data/*-stocks.json): Backed's official
 //                   xStocks logo, the same file api.xstocks.fi lists as an asset's `logo`
-//   4. coingecko    CoinGecko's keyless /coins/{platform}/contract/{address} (`image.large`)
-//   5. trustwallet  Trust Wallet's assets repo (MIT), blockchains/{chain}/assets/{checksum}/logo.png
+//   3. coingecko    CoinGecko's keyless /coins/{platform}/contract/{address} (`image.large`)
+//   4. trustwallet  Trust Wallet's assets repo (MIT), blockchains/{chain}/assets/{checksum}/logo.png
 // A chain a source does not cover is skipped for that source.
 //
 // Safety: every upstream read is server-side, https only, at most 3 redirects, 8 s in all, and every hop's
@@ -65,17 +64,17 @@ const ACCEPT_IMAGE = 'image/png,image/jpeg;q=0.9,image/gif;q=0.8,image/webp;q=0.
 
 /** Our chain keys and each source's id for them (null = that source does not cover the chain). */
 export const LOGO_CHAINS = {
-  robinhood: { evm: true, deepcore: 4663, dexscreener: 'robinhood', coingecko: 'robinhood', trustwallet: null },
-  bsc: { evm: true, deepcore: 56, dexscreener: 'bsc', coingecko: 'binance-smart-chain', trustwallet: 'smartchain' },
-  base: { evm: true, deepcore: 8453, dexscreener: 'base', coingecko: 'base', trustwallet: 'base' },
-  hyperevm: { evm: true, deepcore: 999, dexscreener: 'hyperevm', coingecko: 'hyperevm', trustwallet: 'hyperevm' },
-  solana: { evm: false, deepcore: null, dexscreener: 'solana', coingecko: 'solana', trustwallet: 'solana' },
-  gully: { evm: true, deepcore: null, dexscreener: null, coingecko: null, trustwallet: null },
-  ethereum: { evm: true, deepcore: null, dexscreener: 'ethereum', coingecko: 'ethereum', trustwallet: 'ethereum' },
-  arbitrum: { evm: true, deepcore: null, dexscreener: 'arbitrum', coingecko: 'arbitrum-one', trustwallet: 'arbitrum' },
-  optimism: { evm: true, deepcore: null, dexscreener: 'optimism', coingecko: 'optimistic-ethereum', trustwallet: 'optimism' },
-  polygon: { evm: true, deepcore: null, dexscreener: 'polygon', coingecko: 'polygon-pos', trustwallet: 'polygon' },
-  avalanche: { evm: true, deepcore: null, dexscreener: 'avalanche', coingecko: 'avalanche', trustwallet: 'avalanchec' },
+  robinhood: { evm: true, dexscreener: 'robinhood', coingecko: 'robinhood', trustwallet: null },
+  bsc: { evm: true, dexscreener: 'bsc', coingecko: 'binance-smart-chain', trustwallet: 'smartchain' },
+  base: { evm: true, dexscreener: 'base', coingecko: 'base', trustwallet: 'base' },
+  hyperevm: { evm: true, dexscreener: 'hyperevm', coingecko: 'hyperevm', trustwallet: 'hyperevm' },
+  solana: { evm: false, dexscreener: 'solana', coingecko: 'solana', trustwallet: 'solana' },
+  gully: { evm: true, dexscreener: null, coingecko: null, trustwallet: null },
+  ethereum: { evm: true, dexscreener: 'ethereum', coingecko: 'ethereum', trustwallet: 'ethereum' },
+  arbitrum: { evm: true, dexscreener: 'arbitrum', coingecko: 'arbitrum-one', trustwallet: 'arbitrum' },
+  optimism: { evm: true, dexscreener: 'optimism', coingecko: 'optimistic-ethereum', trustwallet: 'optimism' },
+  polygon: { evm: true, dexscreener: 'polygon', coingecko: 'polygon-pos', trustwallet: 'polygon' },
+  avalanche: { evm: true, dexscreener: 'avalanche', coingecko: 'avalanche', trustwallet: 'avalanchec' },
 }
 const CHAIN_ALIAS = { bnb: 'bsc', eth: 'ethereum', mainnet: 'ethereum', 'arbitrum-one': 'arbitrum', op: 'optimism', matic: 'polygon', avax: 'avalanche', hyperliquid: 'hyperevm', sol: 'solana' }
 
@@ -342,14 +341,13 @@ export function createTokenLogos(opts = {}) {
   const log = opts.log ?? ((m) => console.warn(`token-logos: ${m}`))
   const ep = {
     gullychain: opts.endpoints?.gullychain ?? process.env.GULLY_TOKENLIST_URL ?? 'https://gullychain.xyz/tokenlist-extended.json',
-    deepcore: String(opts.endpoints?.deepcore ?? process.env.DEEPCORE_API ?? 'https://api.deepcore.fun').replace(/\/+$/, ''),
     dexscreener: opts.endpoints?.dexscreener ?? 'https://api.dexscreener.com',
     jupiter: opts.endpoints?.jupiter ?? 'https://lite-api.jup.ag',
     xstocks: opts.endpoints?.xstocks ?? 'https://xstocks-metadata.backed.fi',
     coingecko: opts.endpoints?.coingecko ?? 'https://api.coingecko.com',
     trustwallet: opts.endpoints?.trustwallet ?? 'https://raw.githubusercontent.com',
   }
-  const perMin = { gullychain: 30, deepcore: 30, dexscreener: 50, jupiter: 50, xstocks: 30, coingecko: 8, trustwallet: 60, images: 120, ...opts.perMin }
+  const perMin = { gullychain: 30, dexscreener: 50, jupiter: 50, xstocks: 30, coingecko: 8, trustwallet: 60, images: 120, ...opts.perMin }
   const buckets = Object.fromEntries(Object.entries(perMin).map(([k, v]) => [k, new Bucket(v, now)]))
   const stocks = opts.stocks ?? loadStocks()
 
@@ -454,7 +452,6 @@ export function createTokenLogos(opts = {}) {
 
   /* ---- sources: each returns candidate image URLs (never shown to anyone) ---- */
 
-  const deepcoreLists = new Map() // chainId -> { at, map }
   let gullyList = null // { at, map }
   const gullyBundled = () => gullyListLogos(opts.gullyTokenList ?? readJsonFile(path.join(HERE, 'data', 'gully-tokenlist.json'), {}), httpsUrl)
   const sources = [
@@ -472,28 +469,6 @@ export function createTokenLogos(opts = {}) {
           gullyList = { at: now(), map: map?.size ? map : gullyBundled() }
         }
         const u = gullyList.map.get(a.toLowerCase())
-        return u ? [u] : []
-      },
-    },
-    {
-      id: 'deepcore',
-      supports: (c) => !!LOGO_CHAINS[c].deepcore,
-      async candidates(c, a) {
-        const id = LOGO_CHAINS[c].deepcore
-        let hit = deepcoreLists.get(id)
-        if (!hit || now() - hit.at > 10 * 60_000) {
-          if (!buckets.deepcore.take()) throw new LogoError('rate-limited')
-          const j = await getJson(`${ep.deepcore}/v1/chains/${id}/tokenlists/launches.json`, buckets.deepcore)
-          const map = new Map()
-          for (const t of Array.isArray(j?.tokens) ? j.tokens : []) {
-            const x = t?.extensions?.deepcore ?? {}
-            const img = httpsUrl(t?.logoURI) ?? httpsUrl(x.logoURI) ?? httpsUrl(x.image) ?? httpsUrl(x.imageUrl) ?? httpsUrl(x.logo)
-            if (img && typeof t?.address === 'string') map.set(t.address.toLowerCase(), img)
-          }
-          hit = { at: now(), map }
-          deepcoreLists.set(id, hit)
-        }
-        const u = hit.map.get(a.toLowerCase())
         return u ? [u] : []
       },
     },
@@ -876,7 +851,6 @@ export function createTokenLogos(opts = {}) {
     totalBytes = 0
     inflight.clear()
     ipWindows.clear()
-    deepcoreLists.clear()
   }
 
   return { resolveTokenLogo, getLogo, logoCoverage, handleLogo, flush, reset, guardedGet, buckets, sources: sources.map((s) => s.id) }

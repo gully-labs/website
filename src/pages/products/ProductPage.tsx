@@ -633,12 +633,11 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
       }
     }
     case 'gully-core': {
-      // Gully Core (our fork of the DeepCore contracts, partnership ended 2026-10-29): Gully Chain's own launchpad and
-      // DEX core. Only Gully Chain figures, from the indexer; DeepCore's own cross-chain API is not shown here.
+      // Gully Core: Gully Chain's own launchpad and DEX core. Only Gully Chain figures, from the indexer.
       return {
         kpis: [
           { label: 'Launches · 24 h', value: hp?.activity ? sum(a.map((x) => x.launches)) : null, spark: a.map((x) => x.launches), sub: 'Gully Core, from the indexer' },
-          { label: 'Curve trades · 24 h', value: hp?.activity ? sum(a.map((x) => x.trades)) : null, spark: a.map((x) => x.trades), color: S[1], sub: 'bonding-curve buys and sells' },
+          { label: 'Launch trades · 24 h', value: hp?.activity ? sum(a.map((x) => x.trades)) : null, spark: a.map((x) => x.trades), color: S[1], sub: 'buys and sells of launched tokens' },
           { label: 'Swaps · 24 h', value: hp?.activity ? sum(a.map((x) => x.swaps)) : null, spark: a.map((x) => x.swaps), color: S[2], sub: 'Gully Swap router' },
           { label: 'Latest block', value: chainHead(live), fmt: (v) => `#${fmtInt(v)}`, sub: 'chain 485590 · testnet', spark: h.map((x) => x.txs) },
         ],

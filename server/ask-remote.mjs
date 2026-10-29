@@ -1,7 +1,6 @@
 // Gully Ask: the remote part of the corpus, refreshed at runtime every 6 hours into DATA_DIR/ask-remote.json.
 //
 //   - README of each public gully-labs repo (raw.githubusercontent.com), HTML and badges stripped;
-//   - DeepCore's public docs corpus (https://deepcore.fun/brain/docs.json), labelled "DeepCore docs";
 //   - the Ghost blog, only when GHOST_CONTENT_KEY is set (Content API, published posts).
 //
 // Each source is fetched on its own. A source that fails keeps its last good copy; the file is only
@@ -43,30 +42,6 @@ export function remoteSources() {
       return secs.flatMap((s) => chunkSection({ source: 'GitHub', title, url: s.heading ? `${page}#${githubAnchor(s.heading)}` : page, section: s.heading, paragraphs: s.paras }))
     },
   }))
-  list.push({
-    key: 'deepcore-docs',
-    label: 'DeepCore docs',
-    async load(f) {
-      const doc = JSON.parse(await getText(f, 'https://deepcore.fun/brain/docs.json'))
-      const pages = Array.isArray(doc?.pages) ? doc.pages : null
-      if (!pages?.length) throw new Error('no pages in docs.json')
-      const out = []
-      for (const p of pages) {
-        if (typeof p?.slug !== 'string' || !/^[\w-]{1,64}$/.test(p.slug)) continue
-        const url = `https://deepcore.fun/docs/${p.slug}`
-        const title = `DeepCore: ${clean(p.title).slice(0, 120)}`
-        if (p.blurb) out.push(...chunkSection({ source: 'DeepCore docs', title, url, section: null, paragraphs: [String(p.blurb)] }))
-        for (const s of Array.isArray(p.sections) ? p.sections : []) {
-          const id = typeof s?.id === 'string' && /^[\w-]{1,64}$/.test(s.id) ? s.id : null
-          const paras = String(s?.text ?? '').split(/\n+/)
-          // The section text repeats its own title as the first line.
-          if (paras[0]?.trim() === String(s?.title ?? '').trim()) paras.shift()
-          out.push(...chunkSection({ source: 'DeepCore docs', title, url: id ? `${url}#${id}` : url, section: clean(s?.title).slice(0, 120) || null, paragraphs: paras }))
-        }
-      }
-      return out
-    },
-  })
   const key = String(process.env.GHOST_CONTENT_KEY ?? '').trim()
   if (/^[a-f0-9]{16,64}$/i.test(key)) {
     list.push({
@@ -106,8 +81,12 @@ export function readRemote() {
   return { updatedAt: null, sources: {} }
 }
 
-/** All chunks of the stored remote corpus. */
-export const remoteChunks = (doc = readRemote()) => Object.values(doc.sources).flatMap((s) => (Array.isArray(s.chunks) ? s.chunks : []))
+/** All chunks of the stored remote corpus, from the sources still configured: a stored copy of a source that was
+    removed (a third-party docs corpus dropped on 2026-10-29) is never served, even before the next refresh drops it. */
+export function remoteChunks(doc = readRemote()) {
+  const keys = new Set(remoteSources().map((s) => s.key))
+  return Object.entries(doc.sources).flatMap(([k, s]) => (keys.has(k) && Array.isArray(s.chunks) ? s.chunks : []))
+}
 
 /**
  * Fetches every remote source once. A source that fails keeps its last good chunks and records the

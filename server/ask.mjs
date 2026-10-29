@@ -1,6 +1,6 @@
 // Gully AI (Gully Ask): retrieval-augmented answers about Gully Labs, from the docs, the site, the changelog,
 // the legal pages, the roadmap, the Gully Pay contract notes, the Telegram bot and Mini App, the public READMEs
-// and the blog, with live facts read through in-process tools first (a stock's gap, DeepCore launches and pools,
+// and the blog, with live facts read through in-process tools first (a stock's gap, a token's
 // holders, plans, payment chains, the ledger, the Gully Security offer, a contract's Gully Score, published scan
 // reports) and, for a signed-in user, their own workspace (store, usage, alerts).
 //
@@ -56,7 +56,6 @@ import { APP_URL, currentPageUrl, holderPageUrl, securityReportUrl, securityUrl 
 import { CHAIN_LIST, CHAINS as PAY_CHAINS, confirmationsFor, FEE_PROXIES, publicAssets, publicChains } from './payments.mjs'
 import { planOf, publicPlans, SECURITY } from './plans.mjs'
 import { readStats } from './stats.mjs'
-import { readDeepcoreMarkets, readDeepcorePool } from './deepcore.mjs'
 import * as tracker from './tracker.mjs'
 import { chainKeyOf, findStock, readHolderMap } from './holders.mjs'
 import { holdersFacts } from './holders-intel.mjs'
@@ -201,15 +200,11 @@ let readRows = async () => {
   return { at: body?.generatedAt ?? null, rows: (body?.rows ?? []).map((r) => ({ ...r, sessionOpen: open[r.chain] ?? null })) }
 }
 let readLedger = () => withTimeout(readStats(), 20_000, 'ledger read')
-const readDcMarkets = (o) => withTimeout(readDeepcoreMarkets(o), 25_000, 'DeepCore read')
-const readDcPool = (o) => withTimeout(readDeepcorePool(o), 25_000, 'DeepCore read')
 /** Test hooks: replace the tracker read ({ at, rows }) and the ledger read. */
 export function setAskReadersForTest({ rows, ledger } = {}) {
   if (rows) readRows = rows
   if (ledger) readLedger = ledger
 }
-const DEEPCORE_FRAMING = 'Information only, not investment advice. Anyone can launch a token on DeepCore and nobody has reviewed these launches.'
-const DC_CHAINS = ['base', 'bsc', 'robinhood', 'hyperevm']
 
 const round = (n, d = 2) => (typeof n === 'number' && Number.isFinite(n) ? Number(n.toFixed(d)) : null)
 const stockRow = (r) => ({
@@ -254,35 +249,12 @@ export const TOOLS = [
   },
   {
     name: 'get_ledger',
-    description: 'The live cross-venue figures of the Gully Labs projects (DeepCore, PeddleSwap, Peddles, PeddleQuest): value locked, volume and fees as each publishes them, with the venues that could not be read.',
+    description: 'The live cross-venue figures of the Gully Labs projects (PeddleSwap, Peddles, PeddleQuest): value locked, volume and fees as each publishes them, with the venues that could not be read.',
     input_schema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
-    name: 'deepcore_launches',
-    description: 'Live DeepCore (deepcore.fun) launches: the newest, or the most traded of the recent ones (sort "trending"), each with its price in its quote token and in US dollars where known, market cap, total supply, its pools (kind, fee, active liquidity, whether the launch liquidity is locked), swap count, last swap, and when the figures were read. Use it for any question about current or recent DeepCore launches, their prices or market caps, or what is trading on DeepCore.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        sort: { type: 'string', enum: ['newest', 'trending'], description: 'newest (default) or trending (most swaps among the newest launches)' },
-        chain: { type: 'string', enum: DC_CHAINS, description: 'Optional: one DeepCore chain; every chain when left out' },
-        limit: { type: 'integer', minimum: 1, maximum: 5 },
-      },
-      additionalProperties: false,
-    },
-  },
-  {
-    name: 'deepcore_pool',
-    description: "The live state of one token's DeepCore pools: price in the quote token and in US dollars where known, market cap for a recent launch, fee, creator tax, active liquidity, lock, swap count, last swap and the block and time DeepCore read the pool. Give a launch symbol or a token address (with its chain when it is not a recent launch).",
-    input_schema: {
-      type: 'object',
-      properties: { token: { type: 'string', description: 'A launch symbol (e.g. PEPE) or a token address 0x…' }, chain: { type: 'string', enum: DC_CHAINS, description: 'Optional: the DeepCore chain' } },
-      required: ['token'],
-      additionalProperties: false,
-    },
-  },
-  {
     name: 'get_holders',
-    description: 'The Holder Map of one DeepCore launch or tracked stock token: who holds it in summary (top-10 share, connected clusters, hidden links), the launch checks (Launch Health score with its parts, bundled first-block buyers, snipers, the deployer and the wallets it funded, the liquidity lock, the deployer\'s earlier launches), the fair-price view for stocks, the data sources and when it was read. Computed facts only, no raw holder lists.',
+    description: 'The Holder Map of one token or tracked stock token: who holds it in summary (top-10 share, connected clusters, hidden links), the launch checks (Launch Health score with its parts, bundled first-block buyers, snipers, the deployer and the wallets it funded, the liquidity lock, the deployer\'s earlier launches), the fair-price view for stocks, the data sources and when it was read. Computed facts only, no raw holder lists.',
     input_schema: {
       type: 'object',
       properties: { chain: { type: 'string', enum: ['robinhood', 'bsc', 'base', 'hyperevm', 'solana'] }, token: { type: 'string', description: 'The token address, or a tracked stock ticker' } },
@@ -322,7 +294,7 @@ export const TOOLS = [
   },
   {
     name: 'get_status',
-    description: 'The live status of every part of Gully Labs right now, from the public status checks (run every minute): the overall state, and each part (API, tracker per chain, DeepCore poller, Telegram bot and its News gate, Gully Pay RPCs and fee proxies, Gully AI, the security engine, monitors, Holder Map sources) with its state, a short detail and its 24-hour uptime, plus open incidents. Use it for "is X down", "is the tracker up to date" or any outage question.',
+    description: 'The live status of every part of Gully Labs right now, from the public status checks (run every minute): the overall state, and each part (API, tracker per chain, Telegram bot and its News gate, Gully Pay RPCs and fee proxies, Gully AI, the security engine, monitors, Holder Map sources) with its state, a short detail and its 24-hour uptime, plus open incidents. Use it for "is X down", "is the tracker up to date" or any outage question.',
     input_schema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
@@ -347,7 +319,7 @@ export const TOOLS = [
   },
   {
     name: 'get_my_alerts',
-    description: "The signed-in user's own alerts, in their active workspace only: each alert's stock or DeepCore chain, condition, delivery (webhook host or Telegram), whether it is on, muted or waiting to re-arm, and when it last fired, plus the plan's alert allowance. Refuses when nobody is signed in.",
+    description: "The signed-in user's own alerts, in their active workspace only: each alert's stock or token, condition, delivery (webhook host or Telegram), whether it is on, muted or waiting to re-arm, and when it last fired, plus the plan's alert allowance. Refuses when nobody is signed in.",
     input_schema: { type: 'object', properties: {}, additionalProperties: false },
   },
 ]
@@ -615,14 +587,6 @@ export async function runTool(name, input = {}, ctx = null) {
         page: `${SITE}/#ledger`,
       }
     }
-    if (name === 'deepcore_launches') {
-      const out = await readDcMarkets({ chain: input?.chain, limit: Number.isInteger(input?.limit) ? input.limit : 5, sort: input?.sort === 'trending' ? 'trending' : 'newest' })
-      return { ...out, framing: DEEPCORE_FRAMING }
-    }
-    if (name === 'deepcore_pool') {
-      const out = await readDcPool({ token: input?.token, chain: input?.chain })
-      return { ...out, framing: DEEPCORE_FRAMING }
-    }
     if (name === 'get_alert_channels') {
       const { alertChannels } = await import('./telegram.mjs')
       const c = await alertChannels()
@@ -636,18 +600,17 @@ export async function runTool(name, input = {}, ctx = null) {
 
 /* ----------------------------------------------------------------- prompt --- */
 
-const RULES = `You are Gully AI, the assistant on gullylabs.xyz, docs.gullylabs.xyz, the Gully Labs app and the Telegram bot. You answer questions about Gully Labs: its projects, the stock token tracker and its API, the widget, API keys, plans and alerts, Gully Analytics, Gully Pay and merchant stores, the Holder Map, Gully Security (scans, the Gully Score, monitors and reviews), Chain Kit, the Gully L3 roadmap, its open-source repositories, DeepCore, the bot, privacy, and its services.
+const RULES = `You are Gully AI, the assistant on gullylabs.xyz, docs.gullylabs.xyz, the Gully Labs app and the Telegram bot. You answer questions about Gully Labs: its projects, the stock token tracker and its API, the widget, API keys, plans and alerts, Gully Analytics, Gully Pay and merchant stores, the Holder Map, Gully Security (scans, the Gully Score, monitors and reviews), Chain Kit, the Gully L3 roadmap, its open-source repositories, the bot, privacy, and its services.
 
 Voice: short, direct, plain English, like the site's copy. Say what is true now and where it comes from. Never hype, never sell, never advise.
 
 How to answer:
 - Use ONLY the numbered sources in the user turn and the results of your tools. Do not use outside knowledge about Gully Labs, its products, prices or people.
-- Live data first. For a stock token, a DeepCore launch or token, a token's holders, a chain or what can be paid with, prices, plans, limits, the ledger, alert channels, Gully Security (the offer, a contract's Gully Score, published reports), or the user's own store, usage or alerts, call the matching tool BEFORE answering, even when a source seems to cover it; sources may be out of date.
+- Live data first. For a stock token, a token's holders, a chain or what can be paid with, prices, plans, limits, the ledger, alert channels, Gully Security (the offer, a contract's Gully Score, published reports), or the user's own store, usage or alerts, call the matching tool BEFORE answering, even when a source seems to cover it; sources may be out of date.
 - Cite every sentence that states a fact. A fact from a source gets its number in square brackets, like [1] or [2][3]. A fact from a tool gets the tool result's "cite" label, like [L1], and the time it was read when the tool gives one ("as of 10:01 UTC"). Cite only labels that exist.
 - The get_my_* tools read only the signed-in user's own workspace. If one answers "signed-out", say in one sentence that they need to sign in to the Gully Labs app (https://app.gullylabs.xyz) and that you can only see their own workspace then. Never guess about anyone's store, usage or alerts.
 - If the sources do not cover the question, call search_docs once with different words before saying you don't know.
 - Do not write links for actions such as setting an alert or creating a pay link: the interface adds those buttons itself.
-- For current DeepCore launches, a launch's price, market cap, liquidity or pool, call deepcore_launches or deepcore_pool. Say when the figures were read (the tool's freshness times), give the quote token when there is no dollar figure, and say what "trending" means as the tool defines it. Never call a launch safe, promising or a good buy, and never rank launches as opportunities; add that this is information only, not investment advice.
 - For who holds a token, its clusters, a launch's bundled buyers, deployer or Launch Health score, call get_holders. Explain the parts in plain words, say when the map was read (asOf) and where the data comes from, and never call a token safe, a scam or a good buy.
 - Gully Security, as it is today: the AI Security Scan, the Gully Score and contract monitors are LIVE. Scans are an AI review only until the static-tools worker runs: never say Slither, Aderyn, static analysis or fuzzing ran on a scan unless get_security_offer says static tools are running or the report itself lists them as run. A human Security Review is quoted on request. A full Audit is not offered yet: never say Gully Labs audits anything today or has published audit reports. For any question about scans, reviews, audits, monitoring or prices for them, call get_security_offer; for a contract's score, call get_gully_score; for published scan reports, call get_published_reports.
 - The Gully L3 is planned work (roadmap only). Say so.
@@ -866,8 +829,6 @@ const LIVE_SOURCES = {
   get_top_gaps: () => ({ label: 'Tracker · widest gaps', url: `${SITE}/api/tracker` }),
   get_plans: () => ({ label: 'Plans', url: `${SITE}/api/plans` }),
   get_ledger: () => ({ label: 'Live ledger', url: `${SITE}/api/stats` }),
-  deepcore_launches: () => ({ label: 'DeepCore launches', url: 'https://api.deepcore.fun/v1/launches' }),
-  deepcore_pool: () => ({ label: 'DeepCore pool', url: 'https://api.deepcore.fun/v1/launches' }),
   get_alert_channels: () => ({ label: 'Alert channels', url: `${DOCS}/plans-alerts#telegram` }),
   get_pay_chains: () => ({ label: 'Gully Pay config', url: `${SITE}/api/plans` }),
   get_holders: (r) => ({ label: `Holder Map · ${r.out.symbol ?? 'token'}`, url: r.out.page ?? holderPageUrl(r.out.chain, r.out.token) }),
@@ -951,17 +912,6 @@ function cardOf(r) {
       return { ...base, kind: 'plans', title: 'API plans', subtitle: `${o.periodDays} days, paid in crypto`, stats: [{ label: 'Checkout', value: o.checkoutOpen ? 'open' : 'closed', tone: o.checkoutOpen ? 'ok' : 'warn' }, { label: 'Chains', value: (o.paymentChains ?? []).join(', ') || 'not read' }], chart: o.apiPlans?.length >= 2 ? { type: 'bars', bars: o.apiPlans.map((p) => ({ label: p.name, value: p.priceUsd })), unit: '$', label: 'Price per period' } : null, link: { label: 'Pricing', url: o.page } }
     case 'get_ledger':
       return { ...base, kind: 'ledger', title: 'Gully Labs ledger', stats: [{ label: 'Value locked', value: usd(o.totals?.tvlUsd, 0) }, { label: 'Volume 24h', value: usd(o.totals?.volume24hUsd, 0) }], chart: { type: 'bars', bars: (o.venues ?? []).filter((v) => typeof v.tvlUsd === 'number').map((v) => ({ label: v.name ?? v.key, value: v.tvlUsd })), unit: '$', label: 'Value locked by venue' }, link: { label: 'Ledger', url: o.page } }
-    case 'deepcore_launches': {
-      const ls = o.launches ?? []
-      if (!ls.length) return null
-      return { ...base, kind: 'launches', title: o.trendingMeans ? 'DeepCore · trending' : 'DeepCore · newest launches', stats: ls.slice(0, 3).map((l) => ({ label: `${l.symbol} · ${l.chain}`, value: l.priceUsd != null ? usd(l.priceUsd) : l.price ? `${l.price.amount} ${l.price.in}` : 'not indexed' })), chart: ls.length >= 2 ? { type: 'bars', bars: ls.map((l) => ({ label: l.symbol, value: l.swaps ?? 0 })), unit: '', label: 'Swaps' } : null, link: { label: 'deepcore.fun', url: 'https://deepcore.fun' }, note: DEEPCORE_FRAMING }
-    }
-    case 'deepcore_pool': {
-      const m = o.matches?.[0]
-      const p = m?.pools?.[0] ?? o.pools?.[0]
-      if (!p) return null
-      return { ...base, kind: 'pool', title: `${m?.symbol ?? p.base?.symbol ?? 'Token'} · DeepCore pool`, stats: [{ label: 'Price', value: p.priceUsd != null ? usd(p.priceUsd) : p.priceInQuote != null ? `${p.priceInQuote} ${p.quote?.symbol ?? ''}`.trim() : 'not read' }, { label: 'Market cap', value: m?.marketCapUsd != null ? usd(m.marketCapUsd, 0) : 'not read' }, { label: 'Liquidity lock', value: p.locked === true ? 'locked' : p.locked === false ? 'not locked' : 'unknown', tone: p.locked === true ? 'ok' : 'warn' }, { label: 'Swaps', value: intS(p.swaps ?? m?.swaps) }], chart: null, link: { label: 'deepcore.fun', url: 'https://deepcore.fun' }, note: DEEPCORE_FRAMING }
-    }
     case 'get_holders':
       if (!o.available || o.found === false) return null
       return { ...base, kind: 'holders', title: `${o.symbol ?? 'Token'} holders`, stats: [{ label: 'Holders', value: intS(o.holderCount) }, { label: 'Top 10 hold', value: o.top10Pct != null ? `${o.top10Pct}%` : 'not read' }], chart: o.top?.filter((h) => h.pct != null).length >= 2 ? { type: 'bars', bars: o.top.filter((h) => h.pct != null).slice(0, 8).map((h) => ({ label: h.label ?? `${String(h.address).slice(0, 6)}…`, value: h.pct })), unit: '%', label: 'Share of supply' } : null, link: { label: 'Holder Map', url: o.page }, note: o.framing }

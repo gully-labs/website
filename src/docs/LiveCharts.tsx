@@ -787,7 +787,7 @@ interface LaunchRow {
 const LEVEL_COLOR: Record<string, string> = { good: C.green, mixed: C.gold, poor: C.error }
 
 /**
- * The newest DeepCore launches and their launch health score, from GET /api/holders/launches. A launch whose map
+ * The newest Gully Chain launches (the Gully Launchpad) and their launch health score, from GET /api/holders/launches. A launch whose map
  * is still being built, or cannot be built, is listed with that state, never scored 0.
  */
 export function LaunchHealthChart() {
@@ -816,8 +816,8 @@ export function LaunchHealthChart() {
   )
   return (
     <Frame
-      caption="NEWEST DEEPCORE LAUNCHES, HEALTH SCORE · LIVE FROM /api/holders/launches"
-      note={readNote(data, failed, data && <LiveDot on={!data.state || data.state === 'ok'}>{!data.state || data.state === 'ok' ? 'DeepCore read' : `DeepCore ${data.state}`}{data.asOf ? ` ${hhmmss(Date.parse(data.asOf))}` : ''}</LiveDot>)}
+      caption="NEWEST GULLY CHAIN LAUNCHES, HEALTH SCORE · LIVE FROM /api/holders/launches"
+      note={readNote(data, failed, data && <LiveDot on={!data.state || data.state === 'ok'}>{!data.state || data.state === 'ok' ? 'Gully Chain indexer read' : `Gully Chain indexer ${data.state}`}{data.asOf ? ` ${hhmmss(Date.parse(data.asOf))}` : ''}</LiveDot>)}
       foot={rest.length ? `Not scored yet: ${rest.map((l) => `${l.symbol ?? l.token.slice(0, 8)} (${l.state === 'checking' ? 'map being built' : l.state === 'unavailable' ? 'holder data unavailable' : 'no score'})`).join(', ')}.` : undefined}
     >
       {!data ? (
@@ -825,7 +825,7 @@ export function LaunchHealthChart() {
       ) : !scored.length ? (
         <Scanning text={data.launches.length ? 'The maps are still being built: no score yet.' : 'No launch read yet: not tracked yet.'} />
       ) : (
-        <EChart option={option} height={Math.max(160, scored.length * 30 + 20)} label="Launch health score, 0 to 100, for the newest DeepCore launches" skeleton="bars" steps={{ count: scored.length }} />
+        <EChart option={option} height={Math.max(160, scored.length * 30 + 20)} label="Launch health score, 0 to 100, for the newest Gully Chain launches" skeleton="bars" steps={{ count: scored.length }} />
       )}
     </Frame>
   )

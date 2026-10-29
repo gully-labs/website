@@ -24,18 +24,18 @@ export function HolderMapDocs() {
       eyebrow="PRODUCTS · HOLDER MAP"
       title="Holder Map"
       description="How the Holder Map works: data sources per chain, clusters and hidden links, the launch health score part by part, live mode, alerts, the API and the honesty rules."
-      lead="Who really holds a token: the biggest wallets as bubbles, the ones that trade with each other in gold, and a plain check of every DeepCore launch. Any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain Testnet and Solana can be mapped."
+      lead="Who really holds a token: the biggest wallets as bubbles, the ones that trade with each other in gold, and a plain check of every launch we recognise. Any token on Robinhood Chain, BNB Chain, Base, HyperEVM, Gully Chain Testnet and Solana can be mapped."
       sections={sections}
     >
       <Section id="what" title="What it shows">
         <P>
-          The Holder Map covers any ERC-20 token on Robinhood Chain, BNB Chain, Base, HyperEVM and Gully Chain Testnet and any SPL token on Solana, plus DeepCore launches, Gully Launchpad launches and the stock tokens the tracker follows. Paste an address at <Ext href="https://gullylabs.xyz/holders">gullylabs.xyz/holders</Ext>: it is first checked to be a token
-          (an ERC-20 that answers decimals and total supply, or a Solana mint), and with no chain given every supported chain is checked at once (a token on several chains gives a picker). Launch checks and the health score are for DeepCore launches and launchpads we know; a plain token gets holders, clusters and concentration.
+          The Holder Map covers any ERC-20 token on Robinhood Chain, BNB Chain, Base, HyperEVM and Gully Chain Testnet and any SPL token on Solana, plus Gully Launchpad launches, other supported launchpads’ tokens and the stock tokens the tracker follows. Paste an address at <Ext href="https://gullylabs.xyz/holders">gullylabs.xyz/holders</Ext>: it is first checked to be a token
+          (an ERC-20 that answers decimals and total supply, or a Solana mint), and with no chain given every supported chain is checked at once (a token on several chains gives a picker). Launch checks and the health score are for Gully Launchpad launches on Gully Chain and the other launchpads we know; a plain token gets holders, clusters and concentration.
         </P>
         <List>
           <li>Every bubble is a wallet, sized by its share of the total supply (or of the listed holders when the supply could not be read; the map says which).</li>
           <li>
-            Grey bubbles are not people: trading pools, liquidity and token locks, burn addresses, the token’s own contract, DeepCore and Gully Labs contracts, and exchanges. They are never put in a cluster and never counted in the “top 10 wallets”
+            Grey bubbles are not people: trading pools, liquidity and token locks, burn addresses, the token’s own contract, Gully Labs contracts, and exchanges. They are never put in a cluster and never counted in the “top 10 wallets”
             figure.
           </li>
           <li>The summary line says how much the top 10 wallets hold and how much the largest connected cluster holds, across how many wallets. A few plain sentences follow it.</li>
@@ -53,13 +53,12 @@ export function HolderMapDocs() {
         <Fields
           head={['Tokens', 'Holders', 'Links']}
           rows={[
-            ['DeepCore launches (BNB Chain, HyperEVM, Robinhood Chain, Base)', 'DeepCore’s own log index: every transfer since the launch, so balances are exact', 'Every transfer between mapped wallets since the launch'],
             ['Any ERC-20 and stock tokens (Robinhood Chain, BNB Chain, Base, HyperEVM)', 'Our own Transfer-log index on an archive node (exact balances); past its caps or without one: Blockscout, then Moralis (top holders, labelled)', 'Every transfer since the token was deployed; for top-holders maps, the latest transfers'],
             ['Any ERC-20 on Gully Chain Testnet (Gully Launchpad launches included)', 'Our own Transfer-log index on the chain’s archive node (exact balances); past its caps, our Gully Chain indexer (top holders). The launchpad curve, LP locker, routers and Gully Swap pools are labelled; wallets with a .gully name are shown by it', 'Every transfer since the token was deployed'],
             ['Any SPL token and stock tokens on Solana', 'Every token account of the mint where the RPC allows it, else the 20 largest token accounts, merged by owner (labelled)', 'Not read on Solana yet'],
           ]}
         />
-        <P>Labels come from DeepCore’s list of its own contracts, the launch’s lock, the Gully Pay fee proxies, the tracker’s pool and public name tags (exchanges among them) from Blockscout’s metadata service.</P>
+        <P>Labels come from Gully Chain’s own launchpads, lockers and routers, a launchpad’s pools, Uniswap v4 pool managers, the Gully Pay fee proxies, the tracker’s pool and public name tags (exchanges among them) from Blockscout’s metadata service.</P>
       </Section>
 
       <Section id="clusters" title="Clusters and hidden links">
@@ -68,26 +67,25 @@ export function HolderMapDocs() {
           reason to look closer, not as proof.
         </P>
         <P>
-          A hidden link joins two mapped wallets through an address that is not on the map (it passed tokens between them). It is drawn as a small hollow node with dashed lines; its tooltip names the address. For DeepCore launches the deployer’s
+          A hidden link joins two mapped wallets through an address that is not on the map (it passed tokens between them). It is drawn as a small hollow node with dashed lines; its tooltip names the address. For launches the deployer’s
           funding of other wallets is a link too.
         </P>
       </Section>
 
       <Section id="health" title="The launch health score">
         <P>
-          Every DeepCore launch gets a score from 0 to 100, made of parts you can read one by one: whether the launch liquidity is locked, bundled buying in the first block of trading, snipers in the first blocks, the deployer’s share now, how much
-          the top 10 wallets hold, and the deployer’s record of earlier launches. Each part shows its weight, the points it earned, the figure behind it and a plain reason. Tap a part on the map to light up the wallets behind it.
+          Every launch we recognise (Gully Launchpad launches on Gully Chain and the other supported launchpads), mapped from its full transfer history, gets a score from 0 to 100 made of four parts you can read one by one: bundled buying in
+          the first block of trading (30 points), the share held by the deployer and the wallets it funded (30), how much the top 10 wallets hold (25) and snipers in the first blocks (15). Every part is read from the launch’s own transfers. Each
+          part shows its weight, the points it earned, the figure behind it and a plain reason. Tap a part on the map to light up the wallets behind it.
         </P>
-        <P>Live: the newest DeepCore launches and their score right now, from <C>GET /api/holders/launches</C>. A launch whose map is still being built says so instead of showing a score.</P>
+        <P>Live: the newest Gully Chain launches and their score right now, from <C>GET /api/holders/launches</C>. A launch whose map is still being built says so instead of showing a score.</P>
         <LaunchHealthChart />
-        <Callout label="ALWAYS FREE">The score, its parts, the bundled and deployer warnings and the liquidity check are never behind a plan.</Callout>
+        <Callout label="ALWAYS FREE">The score, its parts and the bundled and deployer warnings are never behind a plan.</Callout>
         <List>
           <li>A part that could not be read is left out of the score and marked “not known”; it is never counted as good or bad. The card says how many parts were counted.</li>
           <li>
             The weights are the server’s: the API returns each part’s <C>weight</C> and <C>points</C>, so what the page shows is what was scored.
           </li>
-          <li>The deployer’s record lists their other DeepCore launches with what happened to each (still trading, liquidity pulled, deployer sold, unknown). A deployer with many launches is marked “Serial launcher”.</li>
-          <li>Wallets of the largest cluster that also hold other launches are listed under “Same wallets elsewhere”, with links to those maps.</li>
         </List>
       </Section>
 

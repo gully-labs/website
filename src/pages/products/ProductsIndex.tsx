@@ -14,7 +14,7 @@ export function ProductsIndex() {
   const ok = live.hub?.services.filter((s) => s.state === 'up').length
   return (
     <div className="lcp gt" ref={ref}>
-      <Seo title="Products" description="Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests and the DeepCore launchpad. Each supports Gully Chain." />
+      <Seo title="Products" description="Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests and Gully Core. Each supports Gully Chain." />
       <section className="gt-hero gt-phero" aria-labelledby="pi-h">
         <div className="gt-wrap gt-one">
           <div className="gt-hero-copy rise">

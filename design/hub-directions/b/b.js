@@ -125,7 +125,7 @@
   G.stepper(st)
   function renderTrack() {
     var su = G.suite(ALL)
-    set('track', su.tvl != null ? 'Venues we built hold <b>' + K.fmt.usd(su.tvl) + '</b> TVL, with <b>' + K.fmt.usd(su.volumeAll) + '</b> all-time volume and <b>' + K.fmt.usd(su.feesAll) + '</b> in fees (DeepCore, Peddles, PeddleSwap, PeddleQuest · gullylabs.xyz/api/stats).' : ALL.stats.state === 'wait' ? 'Loading track record…' : 'Track record figures are offline right now.')
+    set('track', su.tvl != null ? 'Venues we built hold <b>' + K.fmt.usd(su.tvl) + '</b> TVL, with <b>' + K.fmt.usd(su.volumeAll) + '</b> all-time volume and <b>' + K.fmt.usd(su.feesAll) + '</b> in fees (Peddles, PeddleSwap, PeddleQuest · gullylabs.xyz/api/stats).' : ALL.stats.state === 'wait' ? 'Loading track record…' : 'Track record figures are offline right now.')
   }
   G.contactForm(document.getElementById('contact'))
   set('flinks', G.PRODUCTS.map(function (p) { return G.ext(p.url, '', '', '<img src="' + p.logo + '" alt="" width="16" height="16">' + esc(p.name)) }).join(''))

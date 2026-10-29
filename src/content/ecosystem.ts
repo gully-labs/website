@@ -70,7 +70,7 @@ export const benefits: Benefit[] = [
   { id: 'map', title: 'Holder Map embed', text: 'The bubble map of a token’s holders with clusters and the launch health score, as one script tag on your page.', status: 'Live', docs: { label: 'Holder Map docs', href: `${DOCS}/holder-map` }, for: ['launchpads', 'wallets', 'explorers', 'chains'] },
   { id: 'badge', title: 'Health badge', text: 'The Gully Score badge: an SVG with the score and the date it was read, linking to its evidence. Nobody can pay to change a score.', status: 'Live', docs: { label: 'Gully Score docs', href: `${DOCS}/gully-score` }, for: ['launchpads', 'explorers', 'wallets'] },
   { id: 'sdk', title: 'SDK', text: 'Typed TypeScript clients: @gullylabs/tracker for the API and @gullylabs/widget (with a React component) for the embeds.', status: 'Live', docs: { label: 'SDK docs', href: `${DOCS}/sdk` }, for: ['wallets', 'explorers', 'launchpads'] },
-  { id: 'webhooks', title: 'Launch webhooks', text: 'A signed webhook (and optional Telegram message) for every new DeepCore launch on a chain you choose.', status: 'Live', docs: { label: 'Plans and alerts docs', href: `${DOCS}/plans-alerts` }, for: ['launchpads', 'wallets'] },
+  { id: 'webhooks', title: 'Holder webhooks', text: 'A signed webhook (and optional Telegram message) when a token’s largest cluster, top 10 wallets or deployer grow or sell.', status: 'Live', docs: { label: 'Plans and alerts docs', href: `${DOCS}/plans-alerts` }, for: ['launchpads', 'wallets'] },
   { id: 'whitelabel', title: 'White-label', text: 'The embedded map without the “Powered by Gully Labs” credit, on the Business plan. Add your embed key to the widget; the server checks your plan on every load.', status: 'Live', docs: { label: 'API keys docs', href: `${DOCS}/api-keys` }, for: ['launchpads', 'wallets', 'explorers'] },
   { id: 'pay', title: 'Gully Pay', text: 'Non-custodial crypto checkout: invoices, pay links and signed webhooks, paid to your own wallets. A transaction fee only.', status: 'Live', docs: { label: 'Gully Pay docs', href: `${DOCS}/gully-pay-merchants` }, for: ['chains', 'wallets', 'launchpads'] },
   { id: 'chainkit', title: 'Gully Chain', text: 'The Gully L3 with Gully Core built in, your own chain run by us, and Chain Kit block explorers. Open to everyone.', status: 'Live', docs: { label: 'Gully Chain docs', href: 'https://docs.gullychain.xyz/' }, for: ['chains', 'explorers'] },
@@ -109,10 +109,10 @@ export const snippets: Snippet[] = [
   },
   {
     id: 'webhook',
-    label: 'Launch webhook',
+    label: 'Holder webhook',
     lang: 'json',
     caption: 'JSON · POST /api/developer/alerts (signed in with your wallet)',
-    code: '{\n  "name": "Base launches",\n  "condition": { "type": "deepcore-launch", "chainId": 8453 },\n  "webhookUrl": "https://…",\n  "telegram": true\n}',
+    code: '{\n  "name": "Deployer sells",\n  "condition": { "type": "holders", "chain": "base", "token": "0x…", "metric": "deployer", "sellPct": 25 },\n  "webhookUrl": "https://…",\n  "telegram": true\n}',
   },
   {
     id: 'pay',

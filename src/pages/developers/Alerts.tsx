@@ -109,16 +109,13 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
   // Holder Map alerts, offered when the server lists that kind; the map's "Alert me" pre-fills the token.
   const holdersKind = view.kinds?.find((k) => k.id === 'holders')
   const holdersPrefill = initialTarget?.startsWith('holders:') ? initialTarget.split(':') : null
-  const [kind, setKind] = useState<'gap' | 'premium' | 'discount' | 'either' | 'deepcore' | 'holders'>(holdersPrefill && holdersKind ? 'holders' : 'gap')
+  const [kind, setKind] = useState<'gap' | 'premium' | 'discount' | 'either' | 'holders'>(holdersPrefill && holdersKind ? 'holders' : 'gap')
   const [hChain, setHChain] = useState(holdersPrefill?.[1] ?? 'robinhood')
   const [hToken, setHToken] = useState(holdersPrefill?.[2] ?? '')
   const [hMetric, setHMetric] = useState<'cluster' | 'top10' | 'deployer'>('cluster')
   const [hAbove, setHAbove] = useState('20')
   const [hDrop, setHDrop] = useState('')
   const [hSell, setHSell] = useState('25')
-  // DeepCore launch alerts, offered when the server lists that kind (with its chains).
-  const launchKind = view.kinds?.find((k) => k.id === 'deepcore-launch')
-  const [dcChain, setDcChain] = useState('')
   // Gully AI's "Set an alert at 2% above" (&pct=&dir= with ?alert=) opens with that gap filled in.
   const [pct, setPct] = useState(initialGap?.pct ?? String(view.limits.flagPct))
   const [direction, setDirection] = useState<GapDirection>(initialGap?.dir ?? 'both')
@@ -135,22 +132,22 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setErr(null)
-    const [chain, ticker] = target === 'any' || kind === 'deepcore' || kind === 'holders' ? [undefined, undefined] : target.split(':')
-    const condition = kind === 'holders' ? { type: 'holders', chain: hChain, token: hToken.trim(), metric: hMetric, above: hAbove.trim() && hMetric !== 'deployer' ? Number(hAbove) : null, dropPts: hDrop.trim() ? Number(hDrop) : null, sellPct: hSell.trim() ? Number(hSell) : null } : kind === 'deepcore' ? { type: 'deepcore-launch', chainId: dcChain ? Number(dcChain) : null } : kind === 'gap' ? { type: 'gap', pct: Number(pct), direction } : { type: 'status', status: kind }
+    const [chain, ticker] = target === 'any' || kind === 'holders' ? [undefined, undefined] : target.split(':')
+    const condition = kind === 'holders' ? { type: 'holders', chain: hChain, token: hToken.trim(), metric: hMetric, above: hAbove.trim() && hMetric !== 'deployer' ? Number(hAbove) : null, dropPts: hDrop.trim() ? Number(hDrop) : null, sellPct: hSell.trim() ? Number(hSell) : null } : kind === 'gap' ? { type: 'gap', pct: Number(pct), direction } : { type: 'status', status: kind }
     setBusy(true)
     const r = await api<{ secret: string | null }>('/api/developer/alerts', { method: 'POST', body: { name: name.trim(), chain, ticker, condition, webhookUrl: webhook.trim() || undefined, telegram: toTelegram || undefined } })
     setBusy(false)
     if (!r.ok) return setErr(r.error)
-    track('alert-created', { kind: kind === 'deepcore' ? 'deepcore-launch' : kind === 'holders' ? 'holders' : kind === 'gap' ? 'gap' : 'status', channel: toTelegram && webhook.trim() ? 'telegram+webhook' : toTelegram ? 'telegram' : webhook.trim() ? 'webhook' : 'app' })
+    track('alert-created', { kind: kind === 'holders' ? 'holders' : kind === 'gap' ? 'gap' : 'status', channel: toTelegram && webhook.trim() ? 'telegram+webhook' : toTelegram ? 'telegram' : webhook.trim() ? 'webhook' : 'app' })
     setName('')
     setWebhook('')
     setToTelegram(false)
-    toastSuccess('Alert created', { detail: name.trim() || (kind === 'holders' ? 'Holder alert' : kind === 'deepcore' ? 'DeepCore launch alert' : ticker ? `${ticker} alert` : 'Any-stock alert') })
+    toastSuccess('Alert created', { detail: name.trim() || (kind === 'holders' ? 'Holder alert' : ticker ? `${ticker} alert` : 'Any-stock alert') })
     onCreated(r.data.secret)
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title={kind === 'holders' ? 'New holder alert' : kind === 'deepcore' ? 'New DeepCore launch alert' : 'New gap alert'}>
+    <Dialog open={open} onClose={onClose} title={kind === 'holders' ? 'New holder alert' : 'New gap alert'}>
       <form className="flex flex-col gap-4" onSubmit={submit}>
         <label className={fieldLabel}>
           <span>
@@ -175,18 +172,6 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
               <input className={`${input} font-mono text-[13px]`} value={hToken} onChange={(e) => setHToken(e.target.value)} placeholder="0x… address or a stock ticker" spellCheck={false} required />
             </label>
           </div>
-        ) : kind === 'deepcore' && launchKind ? (
-          <label className={fieldLabel}>
-            Chain
-            <select className={select} value={dcChain} onChange={(e) => setDcChain(e.target.value)}>
-              <option value="">Every chain DeepCore runs on</option>
-              {(launchKind.chains ?? []).map((c) => (
-                <option key={c.chainId} value={String(c.chainId)}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
         ) : (
         <label className={fieldLabel}>
           Stock
@@ -212,7 +197,6 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
               <option value="premium">It turns premium</option>
               <option value="discount">It turns discount</option>
               <option value="either">It turns premium or discount</option>
-              {launchKind && <option value="deepcore">A new token launches on DeepCore</option>}
               {holdersKind && <option value="holders">Holders: a cluster grows or sells</option>}
             </select>
           </label>
@@ -261,8 +245,6 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
             ? holdersKind?.available === false
               ? 'Holder alerts come with the Pro plan.'
               : `Holder alert: the token's Holder Map is re-read every ${holdersKind?.everyMinutes ?? 10} minutes. "Sells" and "falls from its high" fire when the cluster or the deployer moves tokens out. Counts as one of your plan's alerts.`
-            : kind === 'deepcore'
-            ? `Once per new launch read from DeepCore's public API (checked every minute or two); launches within ${launchKind?.cooldownMinutes ?? 5} minutes of the last delivery go out together. Counts as one of your plan's alerts.`
             : kind === 'gap' ? <>Only pools deep enough to flag count; the gap is the on-chain price against fair.</> : <>Premium and discount are the tracker&apos;s own flags (a gap of {view.limits.flagPct}% or more in a pool deep enough to count).</>}
         </span>
         <label className={fieldLabel}>
@@ -532,7 +514,7 @@ function AlertsSetup({ view, reload, onCreate, act, busy, full }: { view: Alerts
           <TelegramCard info={view.telegram} reload={reload} compact />
         ) : id === 'create' ? (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="min-w-0 flex-[1_1_260px] text-[13px] text-muted">A webhook{view.telegram.enabled ? ' or Telegram message' : ''} when a stock&apos;s gap crosses your line, or a DeepCore token launches.</span>
+            <span className="min-w-0 flex-[1_1_260px] text-[13px] text-muted">A webhook{view.telegram.enabled ? ' or Telegram message' : ''} when a stock&apos;s gap crosses your line, or a token&apos;s holders move.</span>
             <Can cat="alerts" what="create alerts">
               <button type="button" disabled={full} onClick={onCreate} className={pillGold}>
                 <Plus size={16} aria-hidden /> Create your first alert
@@ -619,7 +601,7 @@ export function Alerts({ goBilling, creating, onCreateDone, prefill = null, pref
   const deliveries = view.alerts.reduce((t, a) => t + a.deliveries.length, 0)
   return (
     <div className="flex flex-col gap-2">
-      <ServiceHeader icon={BellRing} title="Alerts" desc="A webhook or a Telegram message when a stock token's gap crosses your line, or when DeepCore launches a token." status={{ tone: view.alerts.length ? 'live' : 'idle', text: `${view.limits.used} of ${view.limits.max} in use` }} docs={`${DOCS_URL}/plans-alerts`} />
+      <ServiceHeader icon={BellRing} title="Alerts" desc="A webhook or a Telegram message when a stock token's gap crosses your line, or when a token's holders move." status={{ tone: view.alerts.length ? 'live' : 'idle', text: `${view.limits.used} of ${view.limits.max} in use` }} docs={`${DOCS_URL}/plans-alerts`} />
       <div className="flex flex-wrap items-center gap-2">
         <InfoTip className="flex-1" summary={`${view.limits.used} of ${view.limits.max} alerts on ${view.limits.planName} · checked every five minutes`}>
           An alert fires when its condition becomes true and re-arms once it is false again, at most one delivery per alert every {view.limits.cooldownMinutes} minutes. Alerts look only at stocks the tracker would flag: a readable feed and pool, a pool deep enough to count, and an open feed session. Webhook payloads and how to check the signature are in the{' '}

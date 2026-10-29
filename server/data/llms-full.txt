@@ -108,7 +108,7 @@ URL: https://gullylabs.xyz/widget
 
 Shows who really holds a token: the biggest wallets as bubbles, wallets that trade with each other linked as clusters, and a plain-words summary.
 
-- Chains: Robinhood Chain, BNB Chain, Base, HyperEVM and Solana (HOLDER_CHAINS in server/holders.mjs); any token can be mapped, with launch checks for DeepCore launches and registered launchpads.
+- Chains: Robinhood Chain, BNB Chain, Base, HyperEVM and Solana (HOLDER_CHAINS in server/holders.mjs); any token can be mapped, with launch checks for Gully Launchpad launches on Gully Chain and the launchpads in the registry.
 - Pools, locks, burn addresses, exchanges and the token contract are labelled grey and never counted as wallets or put in a cluster.
 - A chain without a data source says holder data is not available; it never draws an empty or invented map.
 - Per-tier limits come from HOLDER_MAP in server/plans.mjs: Free lists 50 holders, Pro and Business 500; the map draws at most 120.
@@ -118,9 +118,9 @@ URL: https://gullylabs.xyz/holders
 
 ### Launch Health score (Holder Map, live)
 
-Scores a DeepCore launch from 0 to 100 on liquidity, bundled buyers, the deployer's share and record, top-10 concentration and snipers. It is never behind a paywall.
+Scores a launch (Gully Launchpad on Gully Chain, or a launchpad in the registry) from 0 to 100 on bundled buyers, the deployer's share, top-10 concentration and snipers. It is never behind a paywall.
 
-- Weights (server/holders-intel.mjs): liquidity 20, bundle 20, deployer 20, top10 15, snipers 10, record 15.
+- Weights (server/holders-intel.mjs): bundle 30, deployer 30, top10 25, snipers 15.
 - A part that cannot be read is left out and the score is computed over the rest.
 
 URL: https://docs.gullylabs.xyz/holder-map
@@ -307,7 +307,7 @@ URL: https://docs.gullylabs.xyz/gully-score
 Answers questions about Gully Labs from its own docs and live data, cites its sources and says it does not know when it does not.
 
 - Retrieval is hybrid: BM25, a synonym-expanded BM25 and, when VOYAGE_API_KEY is set, embeddings, fused by reciprocal-rank fusion.
-- Live tools include get_plans, get_stock, get_top_gaps, deepcore_launches, deepcore_pool, get_holders, get_gully_score, get_published_reports, get_pay_chains, get_status and get_pay_gas; signed-in users also get get_my_store, get_my_usage and get_my_alerts.
+- Live tools include get_plans, get_stock, get_top_gaps, get_holders, get_gully_score, get_published_reports, get_pay_chains, get_status and get_pay_gas; signed-in users also get get_my_store, get_my_usage and get_my_alerts.
 - Default answer model is claude-haiku-5-5 (ASK_MODEL); the log keeps a salted IP hash only, for 90 days.
 - Per-visitor limits default to 6 a minute and 60 a day; ASK_DAILY_LIMIT caps all surfaces at 2000 a day.
 - It runs on the site (/ask), the docs, the app, ⌘K and Telegram (/ask).
@@ -316,7 +316,7 @@ URL: https://gullylabs.xyz/ask
 
 ### @GullyLabsBot commands and alerts (Telegram bot, live)
 
-A Telegram bot with a menu for gaps, movers, new DeepCore launches, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.
+A Telegram bot with a menu for gaps, movers, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.
 
 - Private-chat commands: start, app, gap, top, movers, launches, holders, alerts, security, score, ask, help, stop. Groups get gap, top, launches and help.
 - Alerts can be paused, muted for 24 hours, tested or deleted from the chat.
@@ -335,20 +335,12 @@ URL: https://docs.gullylabs.xyz/news-gate
 
 ### Telegram Mini App (Mini App, live)
 
-The Gully app inside Telegram, with stock gaps, DeepCore launches and alerts for the account linked to your chat.
+The Gully app inside Telegram, with stock gaps and alerts for the account linked to your chat.
 
 - Served at gullylabs.xyz/tg; each request carries Telegram initData, validated with HMAC-SHA256 and refused after 24 hours.
 - Routes: /api/tg/me, /sparks, /launches, /alerts and /announcements.
 
 URL: https://gullylabs.xyz/tg
-
-### New DeepCore launch alerts (Telegram bot, live)
-
-Alerts when a new token launches on DeepCore, on any chain or one you pick.
-
-- DeepCore chains: BNB Chain (56), HyperEVM (999), Robinhood Chain (4663) and Base (8453).
-
-URL: https://docs.gullylabs.xyz/telegram
 
 ### Gully Analytics (Gully Analytics, live)
 
@@ -382,7 +374,7 @@ URL: https://docs.gullylabs.xyz/teams
 
 ### Public status page (Docs, live)
 
-A public page and JSON endpoint showing the health of the API, tracker data, DeepCore poller, Telegram bot, payment RPCs, Gully AI, the scan engine, monitors and Holder Map sources.
+A public page and JSON endpoint showing the health of the API, tracker data, Telegram bot, payment RPCs, Gully AI, the scan engine, monitors and Holder Map sources.
 
 - Checks run every 60 seconds with 24 hours of samples kept; incidents open and close on state changes.
 - Endpoint: GET /api/status.
@@ -401,7 +393,7 @@ URL: https://docs.gullylabs.xyz/
 
 The home page shows live figures read from each Gully Labs project's own public API, each with its source.
 
-- Venues read: DeepCore, PeddleSwap, Peddles and PeddleQuest (server/stats.mjs).
+- Venues read: PeddleSwap, Peddles and PeddleQuest (server/stats.mjs).
 - A venue that cannot be read is reported as an error, never as zeros; a token-denominated figure is never added to a dollar total.
 
 URL: https://gullylabs.xyz/
@@ -429,7 +421,7 @@ URL: https://blog.gullylabs.xyz/
 Serves token logos by chain and address for the whole stack, from the first source that returns a valid image.
 
 - GET /api/logo/:chain/:address at 64, 128 or 256 px.
-- Sources in order: DeepCore, DexScreener, Jupiter or the xStocks logo, CoinGecko, Trust Wallet.
+- Sources in order: DexScreener, Jupiter or the xStocks logo, CoinGecko, Trust Wallet.
 
 URL: https://gullylabs.xyz/
 
@@ -444,12 +436,12 @@ URL: https://gullylabs.xyz/
 
 ### Map any token (Holder Map, live)
 
-The Holder Map accepts any ERC-20 on four EVM chains and any SPL token on Solana, not only DeepCore launches and stock tokens. A pasted address is checked to be a token first.
+The Holder Map accepts any ERC-20 on four EVM chains and any SPL token on Solana, not only launchpad tokens and stock tokens. A pasted address is checked to be a token first.
 
 - Chains in HOLDER_CHAINS (server/holders.mjs): Robinhood Chain (4663), BNB Chain (56), Base (8453), HyperEVM (999) and Solana.
 - An address is probed before anything is built: an ERC-20 must answer decimals() and totalSupply(); on Solana it must be a mint. With no chain given, every supported chain is checked at once.
 - Limits for non-listed tokens (ANY in server/holders-any.mjs): 5 new maps per IP per minute, 30 a minute across all IPs, 2 built at once; address probes 8 per IP per minute and 60 a minute overall. Maps already built are free.
-- Launch checks and the Launch Health score stay limited to DeepCore launches and launchpads in the registry; a plain token gets holders, clusters and concentration.
+- Launch checks and the Launch Health score stay limited to Gully Launchpad launches and the launchpads in the registry; a plain token gets holders, clusters and concentration.
 - GET /api/holders/sources reports per chain whether tokens map with full history, as top holders only, or not yet.
 
 URL: https://gullylabs.xyz/holders
@@ -639,81 +631,18 @@ A Docker Compose file runs the app with PostgreSQL. The fork is MIT licensed, li
 
 URL: https://analytics.gullylabs.xyz
 
-### Launchpad (DeepCore, live)
+### Gully Core launchpad and DEX core (Gully Core, testnet)
 
-A token, its pool and locked liquidity are created in one transaction, with a decaying anti-snipe fee at the open.
+Gully Chain's own launchpad and DEX core: a token launch, its pool and liquidity locked forever in one transaction, with no bonding curve and no migration. Launchpads and DEXes open as clones, and routing charges nothing on Gully Core pools. Built by Gully Labs, live on Gully Chain testnet.
 
-- LaunchpadKitV2 opens a launch on a concentrated-liquidity range or a shaped Bin distribution
-- Liquidity is locked forever via DeepCoreLPLocker / DeepCoreBinLPLocker
-- Anti-snipe fee: LaunchGuardHook caps the initial fee at 50% (MAX_INITIAL_FEE) and the final fee at 10%; README states 50% at the open, 10% on Bin, decaying over at least 60 seconds
-- Optional creator tax is capped at 10% (MAX_TAX_BPS = 1000) and expires by itself, at most 180 days
-- LaunchpadKitV2 is recorded in the SDK address book on Base, BNB Chain, HyperEVM and Robinhood Chain at the same address 0x78781DC6...
-- Wizard is market-cap-first with a $3.5K-equivalent default per the README
+- Our fork of the DeepCore contracts (GPL-2.0-or-later, PancakeSwap Infinity lineage), kept in gully-ops/l3/gully-core
+- LaunchpadKitV2 opens a launch on a CL range or a Bin distribution, tradable from the first block, with liquidity locked forever by GullyCoreLPLocker / GullyCoreBinLPLocker
+- Our launchpad's defaults: an anti-snipe fee that opens at 50% and falls to 0.3% over 60 seconds, a 0.0001 ETH launch fee, and trading fees split 75% to the creator and 25% to Gully
+- GullyCorePadFactory creates a Launchpad or DEX as a clone in one transaction
+- Trades on Gully Core pools pay no router fee; GullyCoreFillRouter fills other venues for a fee under an immutable cap
+- Live on Gully Chain testnet (chain 485590) since 2026-10-29
 
-URL: https://deepcore.fun
-
-### Hosted Launchpads and DEXes (DeepCore, live)
-
-Anyone can open their own Launchpad or DEX on the core in one transaction, with a share of fees going to the site.
-
-- DeepCorePadFactory clones a pad at the same address on every chain (0x7878647B... in the address book)
-- Owner, name, brand and terms are stored on chain
-- Hosted site can use a deepcore.fun subdomain or the owner's own domain, with a theme pack and its own fee share (README)
-- Contracts: DeepCorePad, DeepCorePadFactory in packages/launchpad/src/pad
-
-URL: https://deepcore.fun
-
-### Best-price router (DeepCore, live)
-
-Swaps route across DeepCore pools and other venues. DeepCore pools carry no router fee; fills on other venues pay a small capped fee.
-
-- DeepCoreFillRouter charges feeBps() on fills elsewhere; README states 0.15%
-- The fee is bounded in the contract by ABSOLUTE_MAX_FEE_BPS = 100 (1%)
-- Fee changes use a notice period of up to MAX_FEE_NOTICE_SECONDS = 30 days
-- fillRouter is 0x78786244... on all four chains in the SDK address book
-
-URL: https://deepcore.fun
-
-### Locks, vesting, airdrops, splits and multisend (DeepCore, live)
-
-Utility contracts for locking liquidity or tokens, distributing tokens and splitting revenue.
-
-- Contracts: DeepCorePositionLock, DeepCoreTokenLock, DeepCoreMerkleDrop with DeepCoreDropFactory, DeepCoreSplit with DeepCoreSplitFactory, DeepCoreMultisend
-- positionLock, tokenLock, splitFactory and multisend are recorded at the same address on HyperEVM, BNB Chain, Robinhood Chain and Base
-- Airdrops are Merkle-based
-
-URL: https://deepcore.fun
-
-### Limit orders and DCA (DeepCore, live)
-
-On-chain range (limit) orders and dollar-cost averaging contracts, deployed on three of the four chains.
-
-- Contracts: DeepCoreRangeOrders and DeepCoreDCA
-- In the SDK address book rangeOrders and dca have addresses on HyperEVM, Robinhood Chain and Base, and are null on BNB Chain
-- Also in the repo but not in the README feature list: DeepCoreManagedVault and DeepCoreVaultFactory (vaultFactory set on HyperEVM, Robinhood Chain and Base) and a liquidity-rewards hook
-
-URL: https://deepcore.fun
-
-### Same addresses on four chains (DeepCore, live)
-
-The core is deployed at the same contract addresses on HyperEVM, BNB Chain, Robinhood Chain and Base.
-
-- Chain IDs in the SDK address book: 999, 56, 4663, 8453
-- Address book is packages/sdk/src/deployments/index.ts; null means not deployed, never zero
-- Contracts are owned by a 2-of-3 Safe multisig and renounceOwnership is disabled on DeepCore's own contracts (README)
-- Built on the PancakeSwap Infinity architecture (GPL-2.0-or-later forks); SDK, widgets and tooling are MIT
-
-URL: https://deepcore.fun
-
-### SDK, widgets and scaffolders (DeepCore, beta)
-
-An MIT SDK, swap widgets and project scaffolders for builders. The README says npm publication is pending.
-
-- Packages in the repo: sdk, widgets, connect, cli, create-deepcore-app, create-deepcore-hook, router-core, tokenlists
-- npm scope @deepcoreprotocol; the README says publication is pending
-- Dynamic-fee hooks exist for CL and Bin pools (DeepCoreDynamicFeeHook, DeepCoreBinDynamicFeeHook)
-
-URL: https://deepcore.fun
+URL: https://docs.gullychain.xyz/gully-core/
 
 ### Swap (PeddleSwap, live)
 
@@ -912,7 +841,6 @@ URL: https://gullylabs.xyz/products
 - Pay gas in USDC (planned): Letting users pay fees in USDC instead of the chain token is planned as a monthly add-on. It is not built.
 - Gully Core built into client chains (planned): Putting the Gully Core launchpad on a client chain from the start, with a revenue share on launch fees, is planned. It is not built.
 - Peddles and PeddleQuest read on chain (building): Peddles and PeddleQuest figures would be read straight from their contracts instead of only from the venues' APIs, with a live ledger series and an on-chain panel on their project pages.
-- Holder Map tab in the home console (building): The home page product console gains a Holder Map tab showing the live mini map of the newest DeepCore launch with the latest launches under it.
 - Token logos on tracker, swap, score and widget (building): Stock rows, stock pages, the swap and the widget would show token logos from the logo service instead of a generic building icon, and the stock page keeps the self-gating Holder Map.
 - Gully Explorer for your chain (building): Gully Explorer, our own MIT-licensed block explorer, branded for your EVM chain and run by Gully Labs. It runs Gully Chain's testnet explorer today; per-chain deployments for Chain Kit are being built.
 - Verified contracts (building): Verified contracts show their source, ABI and compiler settings, with Read and Write tabs, from a self-hosted Sourcify server. A public explorer API is coming soon.
@@ -923,7 +851,6 @@ URL: https://gullylabs.xyz/products
 
 ## Projects
 
-- [DeepCore](https://deepcore.fun/): Launch on one core. A launchpad, hosted Launchpads and DEXes, and a best-price router on one shared liquidity core, at the same addresses on four chains. (Live; Base, BNB Chain, HyperEVM, Robinhood)
 - [PeddleSwap](https://peddleswap.xyz/): Swap. Lock. Launch.. Swap tokens, earn fees from liquidity, lock tokens or LP and bridge networks. (Live; Robinhood, Base, Arc)
 - [Peddles](https://peddles.xyz/): Launch, trade and play. Memecoins paired to tokenised stocks. Holders are paid in that stock. (Live; Base, Robinhood, BNB Chain, Arc)
 - [PeddleQuest](https://peddlequest.xyz/): Quest on-chain, earn the proof. Verified quests on four chains. XP, soulbound badges, reward pools escrowed first. (Live; Base, Robinhood, BNB Chain, Arc)
@@ -959,7 +886,7 @@ URL: https://gullylabs.xyz/products
 - [Roadmap](https://docs.gullylabs.xyz/roadmap): More
 - [Changelog](https://docs.gullylabs.xyz/changelog): More
 
-## Contracts (375, verified against Sourcify on 2026-10-18)
+## Contracts (226, verified against Sourcify on 2026-10-18)
 
 Each line: chain, name, address, owner, Sourcify-verified source (or "no verified source"), file the address is quoted from. JSON: https://gullylabs.xyz/.well-known/contracts.json
 
@@ -974,155 +901,6 @@ Each line: chain, name, address, owner, Sourcify-verified source (or "no verifie
 - Base | Request Network ERC20FeeProxy | 0x1892196E80C4c17ea5100Da765Ab48c1fE2Fb814 | third-party | https://repo.sourcify.dev/8453/0x1892196E80C4c17ea5100Da765Ab48c1fE2Fb814 | website:contracts/CHOICE.md
 - Arbitrum One | Gully Labs: Treasury | 0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6 | gully-labs | https://repo.sourcify.dev/42161/0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6 | website:contracts/CHOICE.md
 - Arbitrum One | Request Network ERC20FeeProxy | 0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9 | third-party | https://repo.sourcify.dev/42161/0x0DfbEe143b42B41eFC5A6F87bFD1fFC78c2f0aC9 | website:contracts/CHOICE.md
-- BNB Chain | DeepCore Bin Dynamic Fee Hook | 0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | gully-labs | https://repo.sourcify.dev/56/0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Bin Launch Guard Hook | 0x787802F88BB73FcF49B3e879A47bDB1C42852178 | gully-labs | https://repo.sourcify.dev/56/0x787802F88BB73FcF49B3e879A47bDB1C42852178 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Bin LP Locker | 0x7878B240E282026e2318f69966A5e1c44293dc78 | gully-labs | https://repo.sourcify.dev/56/0x7878B240E282026e2318f69966A5e1c44293dc78 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Bin Pool Manager | 0x004a786C4cB79358e2f86467B0eBFD87028648F4 | gully-labs | https://repo.sourcify.dev/56/0x004a786C4cB79358e2f86467B0eBFD87028648F4 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Bin Position Manager | 0xEC7523d7FC95e335d2629150356C986946538d96 | gully-labs | https://repo.sourcify.dev/56/0xEC7523d7FC95e335d2629150356C986946538d96 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Bin Quoter | 0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | gully-labs | https://repo.sourcify.dev/56/0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore CL Launch Guard Hook | 0x787888386b536536176aC6E0b0F3f398A929db78 | gully-labs | https://repo.sourcify.dev/56/0x787888386b536536176aC6E0b0F3f398A929db78 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore CL LP Locker | 0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | gully-labs | https://repo.sourcify.dev/56/0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore CL Pool Manager | 0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | gully-labs | https://repo.sourcify.dev/56/0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore CL Position Descriptor | 0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | gully-labs | https://repo.sourcify.dev/56/0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore CL Position Manager | 0x2D608934De0684B151261cbdd71A9134bE349F9d | gully-labs | https://repo.sourcify.dev/56/0x2D608934De0684B151261cbdd71A9134bE349F9d | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore CL Quoter | 0x366FbA57a555B351834EC6e5b18301974E1504Ed | gully-labs | https://repo.sourcify.dev/56/0x366FbA57a555B351834EC6e5b18301974E1504Ed | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Drop Factory | 0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | gully-labs | https://repo.sourcify.dev/56/0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Dynamic Fee Hook | 0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | gully-labs | https://repo.sourcify.dev/56/0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Fee Controller | 0x7878BAB23799d3e015998906Ea33327C183e3d78 | gully-labs | https://repo.sourcify.dev/56/0x7878BAB23799d3e015998906Ea33327C183e3d78 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Fill Router | 0x7878624417E9d69219EAdD14bA1B01459C87b578 | gully-labs | https://repo.sourcify.dev/56/0x7878624417E9d69219EAdD14bA1B01459C87b578 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Governance Safe | 0xeEd90A15348bCAf234733aeB695cA95c0c068c8B | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Launch And Buy | 0x78785C407A481FA5a68Ae04dd3196d3051214f78 | gully-labs | https://repo.sourcify.dev/56/0x78785C407A481FA5a68Ae04dd3196d3051214f78 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Launch Legs | 0x78783F3AAaB10a84D7FC0a00d243e19467531878 | gully-labs | https://repo.sourcify.dev/56/0x78783F3AAaB10a84D7FC0a00d243e19467531878 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Launch Registry | 0x787871D20335808aD72DCAF96FE7b5b7eF616078 | gully-labs | https://repo.sourcify.dev/56/0x787871D20335808aD72DCAF96FE7b5b7eF616078 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Launch Token Factory | 0x787826056c9A23f2B658f29956C63eCAdA8C0178 | gully-labs | https://repo.sourcify.dev/56/0x787826056c9A23f2B658f29956C63eCAdA8C0178 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Launchpad Kit V2 | 0x78781DC6a34F0dcA85929Db22e04815096aAD378 | gully-labs | https://repo.sourcify.dev/56/0x78781DC6a34F0dcA85929Db22e04815096aAD378 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Multisend | 0x7878D62c54e6C7a073E6114F478774277F595878 | gully-labs | https://repo.sourcify.dev/56/0x7878D62c54e6C7a073E6114F478774277F595878 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Pad Factory | 0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | gully-labs | https://repo.sourcify.dev/56/0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Position Lock | 0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | gully-labs | https://repo.sourcify.dev/56/0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Registry | 0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | gully-labs | https://repo.sourcify.dev/56/0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Rev Share Hook | 0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | gully-labs | https://repo.sourcify.dev/56/0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Split Factory | 0x7878E295dF781eB25A941e788695CC58aA715F78 | gully-labs | https://repo.sourcify.dev/56/0x7878E295dF781eB25A941e788695CC58aA715F78 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Timelock Custody | 0xF7e0DE74b01e82A308BEb5B1376673117e12225C | gully-labs | https://repo.sourcify.dev/56/0xF7e0DE74b01e82A308BEb5B1376673117e12225C | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Token Lock | 0x78787661C6B2D4bdd447456e47304F9E092D8678 | gully-labs | https://repo.sourcify.dev/56/0x78787661C6B2D4bdd447456e47304F9E092D8678 | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Universal Router | 0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | gully-labs | https://repo.sourcify.dev/56/0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | deepcore:packages/sdk/src/deployments/index.ts
-- BNB Chain | DeepCore Vault | 0x405515DB94aDBF3A827349f2C096809639581D09 | gully-labs | https://repo.sourcify.dev/56/0x405515DB94aDBF3A827349f2C096809639581D09 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Bin Dynamic Fee Hook | 0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | gully-labs | https://repo.sourcify.dev/999/0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Bin Launch Guard Hook | 0x787802F88BB73FcF49B3e879A47bDB1C42852178 | gully-labs | https://repo.sourcify.dev/999/0x787802F88BB73FcF49B3e879A47bDB1C42852178 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Bin LP Locker | 0x7878B240E282026e2318f69966A5e1c44293dc78 | gully-labs | https://repo.sourcify.dev/999/0x7878B240E282026e2318f69966A5e1c44293dc78 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Bin Pool Manager | 0x004a786C4cB79358e2f86467B0eBFD87028648F4 | gully-labs | https://repo.sourcify.dev/999/0x004a786C4cB79358e2f86467B0eBFD87028648F4 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Bin Position Manager | 0xEC7523d7FC95e335d2629150356C986946538d96 | gully-labs | https://repo.sourcify.dev/999/0xEC7523d7FC95e335d2629150356C986946538d96 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Bin Quoter | 0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | gully-labs | https://repo.sourcify.dev/999/0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore CL Launch Guard Hook | 0x787888386b536536176aC6E0b0F3f398A929db78 | gully-labs | https://repo.sourcify.dev/999/0x787888386b536536176aC6E0b0F3f398A929db78 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore CL LP Locker | 0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | gully-labs | https://repo.sourcify.dev/999/0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore CL Pool Manager | 0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | gully-labs | https://repo.sourcify.dev/999/0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore CL Position Descriptor | 0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | gully-labs | https://repo.sourcify.dev/999/0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore CL Position Manager | 0x2D608934De0684B151261cbdd71A9134bE349F9d | gully-labs | https://repo.sourcify.dev/999/0x2D608934De0684B151261cbdd71A9134bE349F9d | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore CL Quoter | 0x366FbA57a555B351834EC6e5b18301974E1504Ed | gully-labs | https://repo.sourcify.dev/999/0x366FbA57a555B351834EC6e5b18301974E1504Ed | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore DCA | 0x7878947dC3a69d03C3d9431d9bDC536d1e0A0878 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore DEX Hook | 0x7878D43C5065F82608cdE151B46946A0a6B7E778 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Drop Factory | 0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | gully-labs | https://repo.sourcify.dev/999/0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Dynamic Fee Hook | 0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | gully-labs | https://repo.sourcify.dev/999/0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Fee Controller | 0x7878BAB23799d3e015998906Ea33327C183e3d78 | gully-labs | https://repo.sourcify.dev/999/0x7878BAB23799d3e015998906Ea33327C183e3d78 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Fill Router | 0x7878624417E9d69219EAdD14bA1B01459C87b578 | gully-labs | https://repo.sourcify.dev/999/0x7878624417E9d69219EAdD14bA1B01459C87b578 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Governance Safe | 0xeEd90A15348bCAf234733aeB695cA95c0c068c8B | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Launch And Buy | 0x78785C407A481FA5a68Ae04dd3196d3051214f78 | gully-labs | https://repo.sourcify.dev/999/0x78785C407A481FA5a68Ae04dd3196d3051214f78 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Launch Legs | 0x78783F3AAaB10a84D7FC0a00d243e19467531878 | gully-labs | https://repo.sourcify.dev/999/0x78783F3AAaB10a84D7FC0a00d243e19467531878 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Launch Registry | 0x787871D20335808aD72DCAF96FE7b5b7eF616078 | gully-labs | https://repo.sourcify.dev/999/0x787871D20335808aD72DCAF96FE7b5b7eF616078 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Launch Token Factory | 0x787826056c9A23f2B658f29956C63eCAdA8C0178 | gully-labs | https://repo.sourcify.dev/999/0x787826056c9A23f2B658f29956C63eCAdA8C0178 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Launchpad Kit V2 | 0x78781DC6a34F0dcA85929Db22e04815096aAD378 | gully-labs | https://repo.sourcify.dev/999/0x78781DC6a34F0dcA85929Db22e04815096aAD378 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore LP Rewards Hook | 0x7878081C835d9069FacDb861563cf3cA8A7c2678 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Multisend | 0x7878D62c54e6C7a073E6114F478774277F595878 | gully-labs | https://repo.sourcify.dev/999/0x7878D62c54e6C7a073E6114F478774277F595878 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Oracle Hook | 0x7878cB78E32d815e515E3d7b98463E8aFc996178 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Pad Factory | 0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | gully-labs | https://repo.sourcify.dev/999/0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Position Lock | 0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | gully-labs | https://repo.sourcify.dev/999/0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Range Orders | 0x787888B35e67DC155E612c862c6A2f60f512D378 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Registry | 0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | gully-labs | https://repo.sourcify.dev/999/0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Rev Share Hook | 0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | gully-labs | https://repo.sourcify.dev/999/0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Split Factory | 0x7878E295dF781eB25A941e788695CC58aA715F78 | gully-labs | https://repo.sourcify.dev/999/0x7878E295dF781eB25A941e788695CC58aA715F78 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Timelock Custody | 0x26A09095965d0fF05f7cd600bCfCBb01A66680Bd | gully-labs | https://repo.sourcify.dev/999/0x26A09095965d0fF05f7cd600bCfCBb01A66680Bd | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Token Lock | 0x78787661C6B2D4bdd447456e47304F9E092D8678 | gully-labs | https://repo.sourcify.dev/999/0x78787661C6B2D4bdd447456e47304F9E092D8678 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Tuner Gate | 0x7878e7c192967621aaece271A41F050a337C6578 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Universal Router | 0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | gully-labs | https://repo.sourcify.dev/999/0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Vault | 0x405515DB94aDBF3A827349f2C096809639581D09 | gully-labs | https://repo.sourcify.dev/999/0x405515DB94aDBF3A827349f2C096809639581D09 | deepcore:packages/sdk/src/deployments/index.ts
-- HyperEVM | DeepCore Vault Factory | 0x787889b36FEc39564Dda016572D68d641e455778 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Bin Dynamic Fee Hook | 0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | gully-labs | https://repo.sourcify.dev/4663/0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Bin Launch Guard Hook | 0x787802F88BB73FcF49B3e879A47bDB1C42852178 | gully-labs | https://repo.sourcify.dev/4663/0x787802F88BB73FcF49B3e879A47bDB1C42852178 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Bin LP Locker | 0x7878B240E282026e2318f69966A5e1c44293dc78 | gully-labs | https://repo.sourcify.dev/4663/0x7878B240E282026e2318f69966A5e1c44293dc78 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Bin Pool Manager | 0x004a786C4cB79358e2f86467B0eBFD87028648F4 | gully-labs | https://repo.sourcify.dev/4663/0x004a786C4cB79358e2f86467B0eBFD87028648F4 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Bin Position Manager | 0xEC7523d7FC95e335d2629150356C986946538d96 | gully-labs | https://repo.sourcify.dev/4663/0xEC7523d7FC95e335d2629150356C986946538d96 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Bin Quoter | 0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | gully-labs | https://repo.sourcify.dev/4663/0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore CL Launch Guard Hook | 0x787888386b536536176aC6E0b0F3f398A929db78 | gully-labs | https://repo.sourcify.dev/4663/0x787888386b536536176aC6E0b0F3f398A929db78 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore CL LP Locker | 0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | gully-labs | https://repo.sourcify.dev/4663/0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore CL Pool Manager | 0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | gully-labs | https://repo.sourcify.dev/4663/0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore CL Position Descriptor | 0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | gully-labs | https://repo.sourcify.dev/4663/0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore CL Position Manager | 0x2D608934De0684B151261cbdd71A9134bE349F9d | gully-labs | https://repo.sourcify.dev/4663/0x2D608934De0684B151261cbdd71A9134bE349F9d | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore CL Quoter | 0x366FbA57a555B351834EC6e5b18301974E1504Ed | gully-labs | https://repo.sourcify.dev/4663/0x366FbA57a555B351834EC6e5b18301974E1504Ed | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore DCA | 0x7878947dC3a69d03C3d9431d9bDC536d1e0A0878 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore DEX Hook | 0x7878D43C5065F82608cdE151B46946A0a6B7E778 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Drop Factory | 0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | gully-labs | https://repo.sourcify.dev/4663/0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Dynamic Fee Hook | 0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | gully-labs | https://repo.sourcify.dev/4663/0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Fee Controller | 0x7878BAB23799d3e015998906Ea33327C183e3d78 | gully-labs | https://repo.sourcify.dev/4663/0x7878BAB23799d3e015998906Ea33327C183e3d78 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Fill Router | 0x7878624417E9d69219EAdD14bA1B01459C87b578 | gully-labs | https://repo.sourcify.dev/4663/0x7878624417E9d69219EAdD14bA1B01459C87b578 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Governance Safe | 0xeEd90A15348bCAf234733aeB695cA95c0c068c8B | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Launch And Buy | 0x78785C407A481FA5a68Ae04dd3196d3051214f78 | gully-labs | https://repo.sourcify.dev/4663/0x78785C407A481FA5a68Ae04dd3196d3051214f78 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Launch Legs | 0x78783F3AAaB10a84D7FC0a00d243e19467531878 | gully-labs | https://repo.sourcify.dev/4663/0x78783F3AAaB10a84D7FC0a00d243e19467531878 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Launch Registry | 0x787871D20335808aD72DCAF96FE7b5b7eF616078 | gully-labs | https://repo.sourcify.dev/4663/0x787871D20335808aD72DCAF96FE7b5b7eF616078 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Launch Token Factory | 0x787826056c9A23f2B658f29956C63eCAdA8C0178 | gully-labs | https://repo.sourcify.dev/4663/0x787826056c9A23f2B658f29956C63eCAdA8C0178 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Launchpad Kit V2 | 0x78781DC6a34F0dcA85929Db22e04815096aAD378 | gully-labs | https://repo.sourcify.dev/4663/0x78781DC6a34F0dcA85929Db22e04815096aAD378 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore LP Rewards Hook | 0x7878081C835d9069FacDb861563cf3cA8A7c2678 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Multisend | 0x7878D62c54e6C7a073E6114F478774277F595878 | gully-labs | https://repo.sourcify.dev/4663/0x7878D62c54e6C7a073E6114F478774277F595878 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Oracle Hook | 0x7878cB78E32d815e515E3d7b98463E8aFc996178 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Pad Factory | 0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | gully-labs | https://repo.sourcify.dev/4663/0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Position Lock | 0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | gully-labs | https://repo.sourcify.dev/4663/0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Range Orders | 0x787888B35e67DC155E612c862c6A2f60f512D378 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Registry | 0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | gully-labs | https://repo.sourcify.dev/4663/0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Rev Share Hook | 0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | gully-labs | https://repo.sourcify.dev/4663/0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Split Factory | 0x7878E295dF781eB25A941e788695CC58aA715F78 | gully-labs | https://repo.sourcify.dev/4663/0x7878E295dF781eB25A941e788695CC58aA715F78 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Timelock Custody | 0xF7e0DE74b01e82A308BEb5B1376673117e12225C | gully-labs | https://repo.sourcify.dev/4663/0xF7e0DE74b01e82A308BEb5B1376673117e12225C | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Token Lock | 0x78787661C6B2D4bdd447456e47304F9E092D8678 | gully-labs | https://repo.sourcify.dev/4663/0x78787661C6B2D4bdd447456e47304F9E092D8678 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Tuner Gate | 0x7878e7c192967621aaece271A41F050a337C6578 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Universal Router | 0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | gully-labs | https://repo.sourcify.dev/4663/0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Vault | 0x405515DB94aDBF3A827349f2C096809639581D09 | gully-labs | https://repo.sourcify.dev/4663/0x405515DB94aDBF3A827349f2C096809639581D09 | deepcore:packages/sdk/src/deployments/index.ts
-- Robinhood Chain | DeepCore Vault Factory | 0x787889b36FEc39564Dda016572D68d641e455778 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Bin Dynamic Fee Hook | 0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | gully-labs | https://repo.sourcify.dev/8453/0x7878Ea1e49E6F9D1d498DCBB99a4C93ddaA95d78 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Bin Launch Guard Hook | 0x787802F88BB73FcF49B3e879A47bDB1C42852178 | gully-labs | https://repo.sourcify.dev/8453/0x787802F88BB73FcF49B3e879A47bDB1C42852178 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Bin LP Locker | 0x7878B240E282026e2318f69966A5e1c44293dc78 | gully-labs | https://repo.sourcify.dev/8453/0x7878B240E282026e2318f69966A5e1c44293dc78 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Bin Pool Manager | 0x004a786C4cB79358e2f86467B0eBFD87028648F4 | gully-labs | https://repo.sourcify.dev/8453/0x004a786C4cB79358e2f86467B0eBFD87028648F4 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Bin Position Manager | 0xEC7523d7FC95e335d2629150356C986946538d96 | gully-labs | https://repo.sourcify.dev/8453/0xEC7523d7FC95e335d2629150356C986946538d96 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Bin Quoter | 0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | gully-labs | https://repo.sourcify.dev/8453/0x0AE000FecFCDfAf6b9f227548f77776E091b93cc | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore CL Launch Guard Hook | 0x787888386b536536176aC6E0b0F3f398A929db78 | gully-labs | https://repo.sourcify.dev/8453/0x787888386b536536176aC6E0b0F3f398A929db78 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore CL LP Locker | 0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | gully-labs | https://repo.sourcify.dev/8453/0x7878cB60Ba330c34ffA027Cdd062696eD9D08878 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore CL Pool Manager | 0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | gully-labs | https://repo.sourcify.dev/8453/0xE23978EBBf83Eab3f0226674d1183b5D3ED32FeC | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore CL Position Descriptor | 0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | gully-labs | https://repo.sourcify.dev/8453/0x9675f3Ffe38743D4EfD71BfcF31932645d16B54b | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore CL Position Manager | 0x2D608934De0684B151261cbdd71A9134bE349F9d | gully-labs | https://repo.sourcify.dev/8453/0x2D608934De0684B151261cbdd71A9134bE349F9d | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore CL Quoter | 0x366FbA57a555B351834EC6e5b18301974E1504Ed | gully-labs | https://repo.sourcify.dev/8453/0x366FbA57a555B351834EC6e5b18301974E1504Ed | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore DCA | 0x7878947dC3a69d03C3d9431d9bDC536d1e0A0878 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore DEX Hook | 0x7878D43C5065F82608cdE151B46946A0a6B7E778 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Drop Factory | 0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | gully-labs | https://repo.sourcify.dev/8453/0x7878D474C2797c4C07ef06F848487fEE6aDbCA78 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Dynamic Fee Hook | 0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | gully-labs | https://repo.sourcify.dev/8453/0x787824e3C3e0b8FCbDBFd106340cCE27c02Ed678 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Fee Controller | 0x7878BAB23799d3e015998906Ea33327C183e3d78 | gully-labs | https://repo.sourcify.dev/8453/0x7878BAB23799d3e015998906Ea33327C183e3d78 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Fill Router | 0x7878624417E9d69219EAdD14bA1B01459C87b578 | gully-labs | https://repo.sourcify.dev/8453/0x7878624417E9d69219EAdD14bA1B01459C87b578 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Governance Safe | 0xeEd90A15348bCAf234733aeB695cA95c0c068c8B | gully-labs | https://repo.sourcify.dev/8453/0xeEd90A15348bCAf234733aeB695cA95c0c068c8B | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Launch And Buy | 0x78785C407A481FA5a68Ae04dd3196d3051214f78 | gully-labs | https://repo.sourcify.dev/8453/0x78785C407A481FA5a68Ae04dd3196d3051214f78 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Launch Legs | 0x78783F3AAaB10a84D7FC0a00d243e19467531878 | gully-labs | https://repo.sourcify.dev/8453/0x78783F3AAaB10a84D7FC0a00d243e19467531878 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Launch Registry | 0x787871D20335808aD72DCAF96FE7b5b7eF616078 | gully-labs | https://repo.sourcify.dev/8453/0x787871D20335808aD72DCAF96FE7b5b7eF616078 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Launch Token Factory | 0x787826056c9A23f2B658f29956C63eCAdA8C0178 | gully-labs | https://repo.sourcify.dev/8453/0x787826056c9A23f2B658f29956C63eCAdA8C0178 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Launchpad Kit V2 | 0x78781DC6a34F0dcA85929Db22e04815096aAD378 | gully-labs | https://repo.sourcify.dev/8453/0x78781DC6a34F0dcA85929Db22e04815096aAD378 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore LP Rewards Hook | 0x7878081C835d9069FacDb861563cf3cA8A7c2678 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Multisend | 0x7878D62c54e6C7a073E6114F478774277F595878 | gully-labs | https://repo.sourcify.dev/8453/0x7878D62c54e6C7a073E6114F478774277F595878 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Oracle Hook | 0x7878cB78E32d815e515E3d7b98463E8aFc996178 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Pad Factory | 0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | gully-labs | https://repo.sourcify.dev/8453/0x7878647BCeBc138d3Af70a49399C06C5fbFBce78 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Position Lock | 0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | gully-labs | https://repo.sourcify.dev/8453/0x7878186b7B906Af641BfB0D9e7aEEB40Ec737778 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Range Orders | 0x787888B35e67DC155E612c862c6A2f60f512D378 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Registry | 0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | gully-labs | https://repo.sourcify.dev/8453/0x78789A53D65dfdaa5Bc110d970Dbbd12Edd39378 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Rev Share Hook | 0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | gully-labs | https://repo.sourcify.dev/8453/0x7878133cE09e979aa333ecAbB19d8c10F8BC7078 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Split Factory | 0x7878E295dF781eB25A941e788695CC58aA715F78 | gully-labs | https://repo.sourcify.dev/8453/0x7878E295dF781eB25A941e788695CC58aA715F78 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Timelock Custody | 0x1AdC141Cfe8E0a0e074c7c45898babb3f1DE5256 | gully-labs | https://repo.sourcify.dev/8453/0x1AdC141Cfe8E0a0e074c7c45898babb3f1DE5256 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Token Lock | 0x78787661C6B2D4bdd447456e47304F9E092D8678 | gully-labs | https://repo.sourcify.dev/8453/0x78787661C6B2D4bdd447456e47304F9E092D8678 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Tuner Gate | 0x7878e7c192967621aaece271A41F050a337C6578 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Universal Router | 0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | gully-labs | https://repo.sourcify.dev/8453/0xF480dE4ff93257c18caD36F93E0EeB85A5d5819a | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Vault | 0x405515DB94aDBF3A827349f2C096809639581D09 | gully-labs | https://repo.sourcify.dev/8453/0x405515DB94aDBF3A827349f2C096809639581D09 | deepcore:packages/sdk/src/deployments/index.ts
-- Base | DeepCore Vault Factory | 0x787889b36FEc39564Dda016572D68d641e455778 | gully-labs | no verified source | deepcore:packages/sdk/src/deployments/index.ts
 - BNB Chain | PeddlesClogVaultFactory | 0x019d6A0e4c8a0E585946eF12dCFA1e8E2f0BCd0b | gully-labs | https://repo.sourcify.dev/56/0x019d6A0e4c8a0E585946eF12dCFA1e8E2f0BCd0b | peddles-launchpad:contracts/deployments/56.json
 - BNB Chain | PeddlesFactoryV20 | 0x220F5e98C3085E34EE68298847Fb63a3132D1978 | gully-labs | https://repo.sourcify.dev/56/0x220F5e98C3085E34EE68298847Fb63a3132D1978 | peddles-launchpad:contracts/deployments/56.json
 - BNB Chain | PeddlesFeeForwarder | 0x97b0d349FFE2eD262654C60dCC04d9622970Ae4F | gully-labs | https://repo.sourcify.dev/56/0x97b0d349FFE2eD262654C60dCC04d9622970Ae4F | peddles-launchpad:contracts/deployments/56.json

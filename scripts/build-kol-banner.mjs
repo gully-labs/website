@@ -80,7 +80,7 @@ const TELEGRAM = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fi
 const TILES = [
   { icon: lucide(Activity), label: 'Stock tracker', sub: 'Robinhood · BNB · Solana' },
   { icon: lucide(ArrowLeftRight), label: 'Swap', sub: 'From every stock page' },
-  { icon: lucide(Rocket), label: 'DeepCore launches', sub: 'Newest tokens, live' },
+  { icon: lucide(Rocket), label: 'Gully Core', sub: 'Gully Chain launchpad' },
   { icon: lucide(BellRing), label: 'Alerts', sub: 'Telegram or webhook' },
   { icon: lucide(Sparkles), label: 'Gully AI', sub: 'Answers, with sources' },
   { icon: lucide(ChartNoAxesCombined), label: 'Gully Analytics', sub: 'Wallet-aware analytics' },

@@ -240,7 +240,6 @@ Object.assign(process.env, {
   DIST_DIR: path.join(tmp, 'no-dist'),
   ADMIN_TOKEN: ADMIN,
   TRACKER_LOOP: 'off',
-  DEEPCORE_LOOP: 'off',
   GULLY_TREASURY_ADDRESS: EVM_TREASURY,
   GULLY_SOLANA_TREASURY: TREASURY,
   GULLY_RPC_SOLANA: `${url(badRpc)},${url(goodRpc)}`,

@@ -8,8 +8,9 @@ import type { ProductKey } from '../../../console/ui'
    Products on their own domains (2026-10-26): Gully Chain, Gully Pay, Gully RPC, HolderMaps, Gully Security and Gully
    Studio are no longer full features of this app. Each has a page here that hands off to its domain (console/Handoff.tsx):
    #chain, #pay, #rpc, #holders, #security (once SECURITY_PRIMARY says gullysecurity.xyz is its home), #studio. The
-   old hashes of the features that moved (#chains, #chains/launch, #chain-kit, #deepcore) open the Gully Chain hand-off
-   (Dashboard.tsx LEGACY). The sidebar groups every page id the dashboard knows; an id that is not listed here (a page
+   old hashes of the features that moved (#chains, #chains/launch, #chain-kit) open the Gully Chain hand-off
+   (Dashboard.tsx LEGACY), and so does #deepcore, the launches view retired on 2026-10-29 (Gully Core, Gully Chain's
+   own launchpad, is found there). The sidebar groups every page id the dashboard knows; an id that is not listed here (a page
    added later) goes in the last group, so nothing ever disappears. */
 
 export type ServiceTab = 'tracker' | 'ai' | 'score' | 'widgets' | 'telegram'

@@ -155,7 +155,7 @@ export function HolderMapIntegrateDocs() {
           head={['Field', 'Type', 'Meaning']}
           rows={[
             ['state', '"ok" | "unavailable" | "not-found" | "busy" | "error"', <>Only <C>ok</C> carries the fields below. The others carry <C>reason</C> (plain words), <C>chain</C>, <C>token.address</C> and <C>asOf</C>; <C>unavailable</C> adds <C>comingSoon</C>.</>],
-            ['kind', 'string', <>What was mapped, for example <C>stock</C> or <C>deepcore-launch</C>.</>],
+            ['kind', 'string', <>What was mapped: <C>token</C>, <C>launch</C> (a launchpad’s token; <C>venue</C> names the launchpad) or <C>stock</C>.</>],
             ['chain', '{ key, id, name }', 'The chain.'],
             ['token', '{ address, symbol, name, decimals, supply, url }', <><C>supply</C> is empty when the total supply is not known; <C>url</C> is the explorer page.</>],
             ['asOf', 'ISO time', 'When the map was built.'],
@@ -164,7 +164,7 @@ export function HolderMapIntegrateDocs() {
             ['links[]', 'edge', <><C>source</C>, <C>target</C>, <C>transfers</C>, <C>pct</C> and <C>kind</C> (<C>transfer</C>, <C>funding</C> or <C>via</C>).</>],
             ['clusters[]', 'group', <><C>id</C>, <C>wallets[]</C>, <C>count</C>, <C>pct</C>, <C>hasDeployer</C>.</>],
             ['summary', '{ top10Pct, largestCluster, line, plain[] }', <>The concentration in numbers and in plain sentences.</>],
-            ['forensics', 'object, or empty', 'Launch checks (deployer share, bundled and sniped buying, funding, liquidity lock). Empty for tokens without a complete history.'],
+            ['forensics', 'object, or empty', 'Launch checks (deployer share, bundled and sniped buying, funding). Empty for tokens that are not launches or have no complete history.'],
             ['fair', 'object, or empty', 'Stock tokens: the fair-price overlay.'],
             ['timeline', 'frames, or empty', 'Replay frames; empty on the free view.'],
             ['recentFlows[]', 'transfers', 'The latest large movements.'],
@@ -178,7 +178,7 @@ export function HolderMapIntegrateDocs() {
         <H3>Related routes</H3>
         <List>
           <li>
-            <C>GET /api/holders/launches</C>: the newest DeepCore launches on holder chains. <C>GET /api/holders/top?limit=</C>: the most scanned maps today. <C>GET /api/holders/resolve?q=</C>: find a token by name, ticker or address. <C>GET /api/holders/sources</C>: which chains have maps today.
+            <C>GET /api/holders/launches</C>: the newest Gully Launchpad launches on Gully Chain, with their checks. <C>GET /api/holders/top?limit=</C>: the most scanned maps today. <C>GET /api/holders/resolve?q=</C>: find a token by name, ticker or address. <C>GET /api/holders/sources</C>: which chains have maps today.
           </li>
         </List>
       </Section>

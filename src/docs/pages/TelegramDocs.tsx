@@ -20,10 +20,10 @@ export function TelegramDocs() {
       slug="telegram"
       eyebrow="PRODUCTS · TELEGRAM"
       title="Telegram bot"
-      description="The @GullyLabsBot Telegram bot and its Mini App: commands, menus, gap and launch alerts with Mute, connecting a chat from the app, the @GullyLabsNews channel requirement, groups and announcements."
+      description="The @GullyLabsBot Telegram bot and its Mini App: commands, menus, gap and Holder Map alerts with Mute, connecting a chat from the app, the @GullyLabsNews channel requirement, groups and announcements."
       lead={
         <>
-          <Ext href="https://t.me/GullyLabsBot">@GullyLabsBot</Ext> puts the tracker, DeepCore launches, your alerts and Gully AI in Telegram, with a Mini App for the full screens.
+          <Ext href="https://t.me/GullyLabsBot">@GullyLabsBot</Ext> puts the tracker, Holder Maps, your alerts and Gully AI in Telegram, with a Mini App for the full screens.
         </>
       }
       sections={sections}
@@ -32,8 +32,7 @@ export function TelegramDocs() {
         <List>
           <li>Looks up any stock token the tracker follows, on Robinhood Chain, BNB Chain and Solana, with its gap to the fair price and a 24-hour sparkline.</li>
           <li>Lists the widest gaps now and the biggest gap moves over 24 hours and one hour.</li>
-          <li>Shows the newest DeepCore launches, per chain, and can alert you to new ones.</li>
-          <li>Delivers your gap, launch and Holder Map alerts, and lets you pause, mute, test or delete them.</li>
+          <li>Delivers your gap and Holder Map alerts, and lets you pause, mute, test or delete them.</li>
           <li>Answers questions through <DocLink to="gully-ai">Gully AI</DocLink>.</li>
         </List>
         <P>A figure the bot could not read is called unreadable, never shown as zero.</P>
@@ -69,7 +68,6 @@ export function TelegramDocs() {
             ['/gap NVDA', 'private, groups', 'One stock token’s card'],
             ['/top', 'private, groups', 'The tokens furthest from their real share price'],
             ['/movers', 'private', 'Biggest gap moves in 24 hours'],
-            ['/launches', 'private, groups', 'Newest tokens launched on DeepCore'],
             ['/alerts', 'private', 'Your alerts: pause, mute, test or delete'],
             ['/ask', 'private', 'Ask Gully AI a question'],
             ['/help', 'private, groups', 'What the bot does'],
@@ -89,9 +87,6 @@ export function TelegramDocs() {
           </li>
           <li>
             <strong className="text-ink">Top gaps</strong> and <strong className="text-ink">Movers</strong> (24 h or 1 h).
-          </li>
-          <li>
-            <strong className="text-ink">DeepCore launches</strong>: filter by chain, open a launch, set a new-launch alert, or open its Holder Map.
           </li>
           <li>
             <strong className="text-ink">My alerts</strong>: pause, resume, mute for 24 hours, send a test, or delete.
@@ -121,7 +116,7 @@ export function TelegramDocs() {
 
       <Section id="alerts" title="Alerts and Mute">
         <P>
-          Gap alerts, DeepCore new-launch alerts and Holder Map alerts are created in the app, the bot or the Mini App, all through the same rules. Each delivery carries a <strong className="text-ink">Mute 24h</strong> button that silences that
+          Gap alerts and Holder Map alerts are created in the app, the bot or the Mini App, all through the same rules. Each delivery carries a <strong className="text-ink">Mute 24h</strong> button that silences that
           alert for a day; Settings can mute every alert at once.
         </P>
         <P>Sending respects Telegram’s own limits (about one message a second per chat), so a burst of alerts arrives spread out rather than dropped.</P>
@@ -139,9 +134,6 @@ export function TelegramDocs() {
             <strong className="text-ink">Stock</strong>: a 24-hour chart and an alert composer; Telegram’s main button creates the alert.
           </li>
           <li>
-            <strong className="text-ink">Launches</strong>: DeepCore launches per chain, each with its Holder Map.
-          </li>
-          <li>
             <strong className="text-ink">My alerts</strong>: your linked account’s alerts, to pause, resume, test or delete.
           </li>
           <li>
@@ -156,7 +148,7 @@ export function TelegramDocs() {
 
       <Section id="groups" title="Groups">
         <P>
-          Add the bot to a group to use <C>/gap</C>, <C>/top</C>, <C>/launches</C> and <C>/help</C> there. Telegram does not allow the Mini App button in groups. A group can receive alerts: link it with a code from the app the same way. Only the
+          Add the bot to a group to use <C>/gap</C>, <C>/top</C> and <C>/help</C> there. Telegram does not allow the Mini App button in groups. A group can receive alerts: link it with a code from the app the same way. Only the
           person who linked a group can unlink it, or create, pause, mute, test or delete alerts there. Gully AI never reads a workspace from a group.
         </P>
       </Section>

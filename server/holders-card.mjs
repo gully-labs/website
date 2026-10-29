@@ -21,7 +21,7 @@ const H = 630
 const K = { night: '#0A0A0A', midnight: '#161616', slate: '#333333', bone: '#FFFFFF', gold: '#FFD52E', pale: '#FFE03A', muted: '#B3B3B3', dim: '#9A9A9A', moss: '#3c553b' }
 /** The kit lockup (brand-kit logo/holdermaps-logo-on-dark-sm.png, transparent, 744 x 154), drawn at its own ratio. */
 const LOGO = { file: 'holdermaps-logo-on-dark-sm.png', w: 744, h: 154 }
-const INFRA = new Set(['pool', 'lock', 'burn', 'token', 'deepcore', 'router', 'gully', 'exchange'])
+const INFRA = new Set(['pool', 'lock', 'burn', 'token', 'router', 'gully', 'exchange'])
 
 const firstFile = (...c) => c.find((p) => p && fs.existsSync(p)) ?? null
 let logo
@@ -210,7 +210,7 @@ export function renderHolderCardSvg(map) {
   ctx.fillText(title, X, 188)
   ctx.font = '500 18px "IBM Plex Mono"'
   ctx.fillStyle = K.muted
-  ctx.fillText(`${map.kind === 'deepcore-launch' ? 'DeepCore launch' : map.kind === 'launch' ? `${map.venue ?? 'Launchpad'} launch` : map.kind === 'token' ? 'Token' : 'Stock token'} · ${map.chain?.name ?? ''}`, X, 226)
+  ctx.fillText(`${map.kind === 'launch' ? `${map.venue ?? 'Launchpad'} launch` : map.kind === 'token' ? 'Token' : 'Stock token'} · ${map.chain?.name ?? ''}`, X, 226)
   ctx.font = '800 27px "Poppins"'
   ctx.fillStyle = K.pale
   let y = 278
@@ -292,7 +292,7 @@ export function renderHolderStatusCardSvg(body = {}) {
   ctx.fillText(head, X, 300)
   ctx.font = '500 18px "IBM Plex Mono"'
   ctx.fillStyle = K.bone
-  const line = body.state === 'not-found' ? 'The Holder Map covers DeepCore launches and the tokenised stocks the tracker follows.' : body.comingSoon ? `Holder data for ${body.chain?.name ?? 'this chain'} is coming soon. DeepCore launches already have live maps.` : 'The holders could not be read just now. Open the page to try again.'
+  const line = body.state === 'not-found' ? 'The Holder Map covers tokens on the chains it supports and the tokenised stocks the tracker follows.' : body.comingSoon ? `Holder data for ${body.chain?.name ?? 'this chain'} is coming soon. Tokens on Gully Chain already have live maps.` : 'The holders could not be read just now. Open the page to try again.'
   let y = 346
   for (const l of wrap(ctx, line, TW, 4)) {
     ctx.fillText(l, X, y)

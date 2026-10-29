@@ -22,7 +22,7 @@ interface StatusBucket {
 
 interface StatusComponent {
   id: string
-  group: 'platform' | 'tracker' | 'deepcore' | 'telegram' | 'payments' | 'ai' | 'security' | 'holders'
+  group: 'platform' | 'tracker' | 'telegram' | 'payments' | 'ai' | 'security' | 'holders'
   name: string
   state: StatusState
   detail: string       // one plain sentence
@@ -85,7 +85,6 @@ export function StatusDocs() {
           rows={[
             ['Public API', 'platform', 'This server is answering. The detail says how long it has been up'],
             [<>Tracker: <ChainName name="Robinhood Chain, BNB Chain, Solana" /></>, 'tracker', 'The chain’s token prices were read on chain in the last 10 minutes (the newest price reading, not the hourly pool discovery). 10 to 30 minutes old is degraded; older, or no price read at all, is down'],
-            ['DeepCore launch poller', 'deepcore', 'The last good poll is within three poll intervals; within ten is degraded'],
             ['Telegram bot webhook', 'telegram', 'Telegram’s getWebhookInfo shows a webhook registered. A delivery error in the last 10 minutes, or more than 100 updates waiting, is degraded. See the Telegram bot page'],
             ['Telegram bot: News channel gate', 'telegram', 'Telegram’s getChatMember shows the bot is an admin of the News channel. If it is not, the gate cannot check membership and lets everyone through: degraded'],
             ['Gully Pay RPC, per payment chain', 'payments', 'A node answers eth_blockNumber (Solana: getSlot). Slower than 4 s is degraded'],

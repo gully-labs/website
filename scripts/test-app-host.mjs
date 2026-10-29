@@ -35,7 +35,6 @@ Object.assign(process.env, {
   ADMIN_TOKEN: crypto.randomBytes(24).toString('hex'),
   TRACKER_LOOP: 'off',
   TRACKER_SKIP_APIS: '1',
-  DEEPCORE_LOOP: 'off',
   GULLY_RPC_1: 'http://127.0.0.1:9',
   GULLY_RPC_56: 'http://127.0.0.1:9',
   GULLY_RPC_8453: 'http://127.0.0.1:9',

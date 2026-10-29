@@ -59,7 +59,6 @@ Object.assign(process.env, {
   DIST_DIR: dist,
   TRACKER_LOOP: 'off',
   TRACKER_SKIP_APIS: '1',
-  DEEPCORE_LOOP: 'off',
   ASK_REMOTE: 'off',
   GHOST_CONTENT_KEY: KEY,
   OG_GHOST_URL: `http://127.0.0.1:${ghost.address().port}`,

@@ -225,7 +225,7 @@
   G.stepper(st)
   function renderTrack() {
     var su = G.suite(ALL), t = document.getElementById('track')
-    t.innerHTML = su.tvl != null ? icon('chart-spline') + ' Venues we built hold <b>' + K.fmt.usd(su.tvl) + '</b> in TVL with <b>' + K.fmt.usd(su.volumeAll) + '</b> all-time volume and <b>' + K.fmt.usd(su.feesAll) + '</b> in fees (DeepCore, Peddles, PeddleSwap, PeddleQuest; source gullylabs.xyz/api/stats).' : ALL.stats.state === 'wait' ? 'Loading track record…' : 'Track record figures are offline right now.'
+    t.innerHTML = su.tvl != null ? icon('chart-spline') + ' Venues we built hold <b>' + K.fmt.usd(su.tvl) + '</b> in TVL with <b>' + K.fmt.usd(su.volumeAll) + '</b> all-time volume and <b>' + K.fmt.usd(su.feesAll) + '</b> in fees (Peddles, PeddleSwap, PeddleQuest; source gullylabs.xyz/api/stats).' : ALL.stats.state === 'wait' ? 'Loading track record…' : 'Track record figures are offline right now.'
   }
 
   G.contactForm(document.getElementById('contact'))

@@ -219,7 +219,7 @@ function Trading({ r, ex }: { r: DeepReport; ex: ReturnType<typeof explorer> }) 
   if (!t || t.state === 'unavailable' || t.state === 'skipped') return <Card id="deep-trading" title={PART_NAMES.trading} state={t?.state ?? 'unavailable'}><Unavailable reason={t?.reason ?? r.unavailable.find((u) => u.section === 'trading')?.reason} /></Card>
   return (
     <Card id="deep-trading" title={PART_NAMES.trading} state={t.state} source={t.source} confidence={t.confidence}>
-      {t.method && <span className="font-mono text-[11px] text-dim">Method: {t.method === 'deepcore-launch-forensics' ? 'DeepCore launch forensics' : 'inferred from the token’s transfers'}{t.window ? ` · first ${t.window.blocks} blocks` : ''}</span>}
+      {t.method && <span className="font-mono text-[11px] text-dim">Method: {t.method === 'launch-forensics' ? 'launch forensics from the full transfer history' : 'inferred from the token’s transfers'}{t.window ? ` · first ${t.window.blocks} blocks` : ''}</span>}
       {t.reason && <p className="m-0 text-[12px] text-muted">{t.reason}</p>}
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[8px] border border-line bg-line">
         <Tile k="SNIPERS" v={t.snipers ? `${t.snipers.count}` : '—'} sub={t.snipers ? `${pct(t.snipers.pctOfSupply)} of supply` : undefined} tone="warn" />

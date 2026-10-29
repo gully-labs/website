@@ -13,7 +13,6 @@ const font = (pkg, file) => pathToFileURL(path.join(root, 'node_modules/@fontsou
 const out = path.join(root, 'public/social')
 
 const PROJECTS = [
-  { slug: 'deepcore', name: 'DeepCore', tagline: 'Launch on one core', tag: 'DeFi infrastructure', logo: '/assets/deepcore.webp', bg: '#061729', accent: '#2ee6c5', fit: 'contain' },
   { slug: 'peddleswap', name: 'PeddleSwap', tagline: 'Swap. Lock. Launch.', tag: 'DEX', logo: '/assets/peddleswap.webp', bg: '#15181b', accent: '#b8f03c', fit: 'contain' },
   { slug: 'peddles', name: 'Peddles', tagline: 'Launch, trade and play', tag: 'Launchpad', logo: '/assets/peddles.webp', bg: '#1c1f22', accent: '#27b6ff', fit: 'cover' },
   { slug: 'peddlequest', name: 'PeddleQuest', tagline: 'Quest on-chain, earn the proof', tag: 'Quest to earn', logo: '/assets/peddlequest.webp', bg: '#0a101c', accent: '#ffd60a', fit: 'contain' },
@@ -111,7 +110,7 @@ const CARDS = [
   },
   {
     file: 'og-holders.png',
-    html: page({ eyebrow: 'Holder Map', title: 'Who really <em>holds it?</em>', body: 'The biggest wallets, the ones that trade with each other, and a plain check of every DeepCore launch.', url: 'gullylabs.xyz/holders', right: mascot, titleSize: 96 }),
+    html: page({ eyebrow: 'Holder Map', title: 'Who really <em>holds it?</em>', body: 'The biggest wallets, the ones that trade with each other, and a plain check of every launch.', url: 'gullylabs.xyz/holders', right: mascot, titleSize: 96 }),
   },
   {
     file: 'og-score.png',

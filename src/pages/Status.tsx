@@ -21,7 +21,7 @@ export function StatusPage() {
   }, [])
   return (
     <>
-      <Seo title="Status" description="Live status of Gully Labs: the API, tracker freshness per chain, the DeepCore poller, the Telegram bot, Gully Pay RPCs, Gully AI, the security scan engine, monitors and Holder Map sources, with 24 h uptime and incidents." />
+      <Seo title="Status" description="Live status of Gully Labs: the API, tracker freshness per chain, the Telegram bot, Gully Pay RPCs, Gully AI, the security scan engine, monitors and Holder Map sources, with 24 h uptime and incidents." />
       {/* A compact hero (D4-14): the live board starts within the first screen, as on /chains. */}
       <section className="relative overflow-hidden px-page pt-10 pb-8 max-[599px]:pt-8">
         <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.12),transparent_62%)]" />
@@ -33,7 +33,7 @@ export function StatusPage() {
             System <span className="text-gold">status</span>
           </h1>
           <p className="m-0 max-w-[680px] text-[16px] leading-[1.6] text-muted" style={rise(2)}>
-            Every part of the stack we can check from our own server, checked once a minute: the API, how fresh the tracker is on each chain, the DeepCore launch poller, the Telegram bot, the payment RPCs, Gully AI, the security scan engine, contract monitors and the Holder Map sources. Not configured means the
+            Every part of the stack we can check from our own server, checked once a minute: the API, how fresh the tracker is on each chain, the Telegram bot, the payment RPCs, Gully AI, the security scan engine, contract monitors and the Holder Map sources. Not configured means the
             feature is switched off on this server, not broken.
           </p>
           <div className="flex flex-wrap gap-2" style={rise(3)} aria-label="Chains the Holder Map covers">

@@ -602,7 +602,7 @@ function miniAppChunks() {
     for (const r of findAll(sf, (n) => (ts.isJsxElement(n) || ts.isJsxFragment(n)) && !insideJsx(n))) paras.push(...blocks(r).filter((p) => !p.startsWith(HEADING) && siteProse(p)))
   }
   const uniq = [...new Set(paras)].filter((p) => !CODE_RE.test(p))
-  return chunkSection({ source: 'Telegram Mini App', title: 'Gully Labs Mini App in Telegram', url: `${SITE}/tg`, section: null, paragraphs: [`The Gully Labs Mini App opens inside Telegram from @GullyLabsBot's "Open app" button. It shows the stock token gaps, DeepCore launches and your alerts.`, ...uniq] })
+  return chunkSection({ source: 'Telegram Mini App', title: 'Gully Labs Mini App in Telegram', url: `${SITE}/tg`, section: null, paragraphs: [`The Gully Labs Mini App opens inside Telegram from @GullyLabsBot's "Open app" button. It shows the stock token gaps, Holder Maps and your alerts.`, ...uniq] })
 }
 
 /* ------------------------------------------------------------------ main --- */

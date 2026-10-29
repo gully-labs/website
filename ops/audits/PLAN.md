@@ -52,7 +52,7 @@ Fully transparent, by design (RESEARCH.md §4):
   marked. Identity checks (if ever) are shown as identity only.
 - Inputs we already compute or are building:
   - Tracker (live): pools, liquidity, price against fair value, staleness.
-  - DeepCore launch and lock data (live via api.deepcore.fun): launch age, liquidity locks and their unlock dates.
+  - Gully Chain launch and lock data (Gully Launchpad and GullyLPLocker, read on chain): launch age, liquidity locks.
   - Holder Map Launch Health (in development on `feat/holder-map`, not on main yet): holder concentration,
     clusters, launch forensics.
   - Admin-key and ownership monitors (product (e) below): owner/admin type (EOA, Safe with threshold, timelock),
@@ -74,7 +74,7 @@ Fully transparent, by design (RESEARCH.md §4):
 1. Public contests every month under the Gully Labs name: Code4rena, Sherlock, Cantina, CodeHawks.
 2. Immunefi bounty hunting; paid criticals are the strongest proof.
 3. One public repo, `gully-labs/audits`, every publishable report with its commit hash.
-4. A few free or discounted reviews for small real projects (e.g. DeepCore launches) in exchange for publication.
+4. A few free or discounted reviews for small real projects (e.g. Gully Chain launches) in exchange for publication.
 5. Listings: DefiLlama audit links for client protocols, Solodit, ecosystem auditor lists (Arbitrum, Base, BNB,
    Solana programmes).
 6. SEAL membership and Safe Harbor; honest post-mortems of public hacks, including any client we reviewed.
@@ -106,7 +106,7 @@ Fully transparent, by design (RESEARCH.md §4):
 - **Wording risk**: regulators have warned against reports marketed as "audits" (RESEARCH.md §3.2). We use "audit"
   only for the premium tier, only once earned, and always with scope and commit.
 - **Reputation risk** when a reviewed project is hacked: publish an honest analysis, keep the old score marked.
-- **Conflict of interest**: Gully Labs runs its own venues and DeepCore; their scores show the relationship, and
+- **Conflict of interest**: Gully Labs runs its own venues and Gully Core; their scores show the relationship, and
   reviews of our own code are labelled internal.
 - **Data handling**: private repos under NDA, deleted after engagement; scan sandboxes have no secrets.
 - **Capacity**: no engagement accepted without two available reviewers.

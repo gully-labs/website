@@ -49,7 +49,6 @@ Object.assign(process.env, {
   DIST_DIR: path.join(tmp, 'no-dist'),
   ADMIN_TOKEN: ADMIN,
   TRACKER_LOOP: 'off',
-  DEEPCORE_LOOP: 'off',
   ASK_REMOTE: 'off',
   GULLY_ALLOW_LOOPBACK_WEBHOOKS: '1',
   ...Object.fromEntries([1, 8453, 56, 42161, 10, 137, 43114].map((id) => [`GULLY_RPC_${id}`, 'http://127.0.0.1:9'])),

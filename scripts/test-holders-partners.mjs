@@ -48,7 +48,6 @@ Object.assign(process.env, {
   DIST_DIR: dist,
   ADMIN_TOKEN: crypto.randomBytes(24).toString('hex'),
   TRACKER_LOOP: 'off',
-  DEEPCORE_LOOP: 'off',
   ASK_REMOTE: 'off',
   HOLDER_ALERTS_LOOP: 'off',
   GULLY_ALLOW_LOOPBACK_WEBHOOKS: '1',
@@ -67,14 +66,14 @@ const KNOWN = new Set([addr(0xa1), addr(0xa2), addr(0xa3), addr(0xa4)])
 let builds = 0
 // A risky map: 4 bundled wallets (12%), 5 snipers, deployer 15%, and a deployer sell to the pool.
 const riskyMap = (a) => ({
-  state: 'ok', kind: 'deepcore-launch', chain: { key: 'base', id: 8453, name: 'Base' }, token: { address: a, symbol: 'RISK', name: 'Risky' }, asOf: '2026-10-18T10:00:00.000Z',
-  forensics: { deployer: addr(0xdd), bundled: { wallets: 4, pct: 12.4 }, snipers: { wallets: 5, pct: 20, blocks: 5 }, deployerPct: 15, funded: { wallets: 0, pct: 0 }, liquidity: { locked: false } },
+  state: 'ok', kind: 'launch', venue: 'ExamplePad', chain: { key: 'base', id: 8453, name: 'Base' }, token: { address: a, symbol: 'RISK', name: 'Risky' }, asOf: '2026-10-18T10:00:00.000Z',
+  forensics: { deployer: addr(0xdd), bundled: { wallets: 4, pct: 12.4 }, snipers: { wallets: 5, pct: 20, blocks: 5 }, deployerPct: 15, funded: { wallets: 0, pct: 0 } },
   recentFlows: [{ from: addr(0xdd), to: addr(0x99), side: 'sell', pct: 1.5, tx: tx(7) }, { from: addr(0x55), to: addr(0x56), side: 'buy', pct: 1, tx: tx(8) }],
   health: { score: 38, level: 'poor', verdict: 'Strong warning signs: read the parts below.' }, summary: { plain: [] }, nodes: [],
 })
 const cleanMap = (a) => ({
-  state: 'ok', kind: 'deepcore-launch', chain: { key: 'base', id: 8453, name: 'Base' }, token: { address: a, symbol: 'CLEAN', name: 'Clean' }, asOf: '2026-10-18T10:00:00.000Z',
-  forensics: { deployer: addr(0xdd), bundled: { wallets: 0, pct: 0 }, snipers: { wallets: 1, pct: 0.4, blocks: 5 }, deployerPct: 2, funded: { wallets: 0, pct: 0 }, liquidity: { locked: true } },
+  state: 'ok', kind: 'launch', venue: 'ExamplePad', chain: { key: 'base', id: 8453, name: 'Base' }, token: { address: a, symbol: 'CLEAN', name: 'Clean' }, asOf: '2026-10-18T10:00:00.000Z',
+  forensics: { deployer: addr(0xdd), bundled: { wallets: 0, pct: 0 }, snipers: { wallets: 1, pct: 0.4, blocks: 5 }, deployerPct: 2, funded: { wallets: 0, pct: 0 } },
   recentFlows: [], health: { score: 82, level: 'good', verdict: 'Few warning signs on the checks we can run.' }, summary: { plain: [] }, nodes: [],
 })
 const maps = new Map([[addr(0xa1), riskyMap(addr(0xa1))], [addr(0xa2), cleanMap(addr(0xa2))]])

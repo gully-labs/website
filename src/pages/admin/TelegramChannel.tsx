@@ -51,7 +51,6 @@ interface Auto {
   timezone: string
   quietHours: { enabled: boolean; start: string; end: string }
   minGapMinutes: number
-  launches: AutoType
   dailyGaps: AutoType
   weeklyMovers: AutoType
   blog: AutoType
@@ -99,8 +98,7 @@ const STATUS_STYLE: Record<Status, string> = {
   failed: 'border-error text-error',
   deleted: 'border-line text-faint line-through',
 }
-const AUTO_META: { id: 'launches' | 'dailyGaps' | 'weeklyMovers' | 'blog' | 'releases'; label: string; about: string; vars: string }[] = [
-  { id: 'launches', label: 'DeepCore new launches', about: 'Each new launch from the DeepCore poller.', vars: '{symbol} {chain} {pools} {link}' },
+const AUTO_META: { id: 'dailyGaps' | 'weeklyMovers' | 'blog' | 'releases'; label: string; about: string; vars: string }[] = [
   { id: 'dailyGaps', label: 'Daily widest gaps', about: 'Top 5 trusted gaps from the tracker, at a set time.', vars: '{list} {date} {link}' },
   { id: 'weeklyMovers', label: 'Weekly movers recap', about: 'Biggest 7-day on-chain price changes, once a week.', vars: '{list} {date} {link}' },
   { id: 'blog', label: 'New blog post', about: 'blog.gullylabs.xyz is checked every 10 minutes.', vars: '{title} {excerpt} {link}' },

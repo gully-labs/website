@@ -27,7 +27,7 @@ export function HoldersPage() {
   const isStock = m?.kind === 'stock'
   const title = `Holder Map: ${symbol ?? 'token'} on ${chainName}`
   const comingSoon = m?.state === 'unavailable' && !!m.comingSoon
-  const description = m?.state === 'ok' ? `${m.summary.line} ${m.forensics?.riskLine ?? ''}`.trim() : comingSoon ? `Token maps for ${chainName} are coming soon. DeepCore launches already have live Holder Maps on Gully Labs.` : `Who holds ${symbol ?? 'this token'} on ${chainName}: the biggest wallets, the ones that trade with each other, and what that means, read live.`
+  const description = m?.state === 'ok' ? `${m.summary.line} ${m.forensics?.riskLine ?? ''}`.trim() : comingSoon ? `Token maps for ${chainName} are coming soon. Tokens on Gully Chain already have live Holder Maps on Gully Labs.` : `Who holds ${symbol ?? 'this token'} on ${chainName}: the biggest wallets, the ones that trade with each other, and what that means, read live.`
 
   return (
     <div className="flex flex-col gap-3 px-[clamp(8px,2cqw,32px)] pt-3 pb-24">
@@ -47,7 +47,7 @@ export function HoldersPage() {
             {`${symbol} ON THE TRACKER`}
           </Link>
         ) : (
-          // While the map loads, or when it cannot be read, name the chain (it used to say DEEPCORE for any token, D4-1).
+          // While the map loads, or when it cannot be read, name the chain (D4-1).
           <span data-testid="hm-crumb-chain" className="inline-flex min-h-11 items-center text-muted">
             {chainName.toUpperCase()}
           </span>
@@ -72,7 +72,7 @@ export function HoldersPage() {
           ['Bubbles', 'One wallet each. The bigger the bubble, the bigger its share. Grey bubbles are pools, locks, burn addresses, exchanges and other contracts, not people.'],
           ['Gold clusters', 'Wallets that sent the token to each other are joined into a cluster. A big cluster can be one holder spread across many wallets.'],
           ['Top holders only', 'A token with a very long history, or on a chain where we cannot read all of it, shows its biggest holders only. The map says so, and why, under its title.'],
-          ['Launch check', 'For DeepCore launches and tokens of launchpads we know: wallets that bought together in the first block of trading are marked bundled, and the deployer and the wallets it funded are named. These warnings are always free.'],
+          ['Launch check', 'For Gully Chain launches and tokens of other launchpads we know: wallets that bought together in the first block of trading are marked bundled, and the deployer and the wallets it funded are named. These warnings are always free.'],
           ['Replay', 'Drag the slider or press play to watch holdings concentrate or spread since launch, rebuilt from the token’s own transfers.'],
         ].map(([t, d]) => (
           <div key={t} className="card card-pad flex flex-col gap-2">

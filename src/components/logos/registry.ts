@@ -92,7 +92,6 @@ export function tokenMark(symbol: string | null | undefined): Mark | null {
 
 const VENUES: Record<string, Mark> = {
   gully: { src: '/brand/icon/gully-labs-icon-512.png', name: 'Gully Labs', disc: null, inset: 0 }, // the Gully Labs kit's icon (icon/gully-labs-icon-512.png)
-  deepcore: { src: '/venues/deepcore.png', name: 'DeepCore', disc: '#04060c', inset: 0.1 },
   peddleswap: { src: '/venues/peddleswap.png', name: 'PeddleSwap', disc: '#10131a', inset: 0 },
   peddles: { src: '/venues/peddles.svg', name: 'Peddles', disc: '#0f1318', inset: 0 },
   peddlequest: { src: '/venues/peddlequest.png', name: 'PeddleQuest', disc: '#05080f', inset: 0 },

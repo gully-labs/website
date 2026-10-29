@@ -3,7 +3,6 @@ import { feeText, jupiterFeeText } from '../../components/swap/swapConfig'
 import type { ReactNode } from 'react'
 import { ChainLogo } from '../../components/logos/ChainLogo'
 import { IntegrationLogo } from '../../components/logos/IntegrationLogo'
-import { VenueLogo } from '../../components/logos/VenueLogo'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 import { PoolDepth } from '../ProductCharts'
@@ -29,9 +28,6 @@ const LIFI = (
 )
 const JUPITER = (
   <Chip logo={<IntegrationLogo id="jupiter" name="Jupiter" size={14} decorative />}>Jupiter</Chip>
-)
-const DEEPCORE = (
-  <Chip logo={<VenueLogo venue="deepcore" name="DeepCore" size={14} decorative />}>DeepCore</Chip>
 )
 const DEXSCREENER = (
   <Chip logo={<IntegrationLogo id="dexscreener" name="DexScreener" size={14} decorative />}>DexScreener</Chip>
@@ -94,8 +90,7 @@ export function SwapsDocs() {
 
       <Section id="evm" title="EVM chains: LI.FI">
         <P>
-          On {ROBINHOOD} and {BNB} the card is the {LIFI} widget, locked to the token’s chain and connected to the site’s own wallet connection. For comparison it also shows what {DEEPCORE}’s router would give for the same payment (read
-          through our cached <C>GET /api/deepcore/quote</C>); “Swap on DeepCore” opens {DEEPCORE}’s site (deepcore.fun), nothing is executed from here.
+          On {ROBINHOOD} and {BNB} the card is the {LIFI} widget, locked to the token’s chain and connected to the site’s own wallet connection.
         </P>
       </Section>
 

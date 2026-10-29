@@ -34,7 +34,7 @@ export function GullyAiDocs() {
       <Section id="what" title="What it answers">
         <GullyAiBanner>Answers from our own docs and live data, with every source linked.</GullyAiBanner>
         <P>
-          Gully AI answers questions about Gully Labs and its products: the stock token tracker and its API, the widget, API keys, plans and alerts, the Holder Map, Gully Analytics, Gully Pay and merchant stores, Chain Kit, the roadmap, DeepCore,
+          Gully AI answers questions about Gully Labs and its products: the stock token tracker and its API, the widget, API keys, plans and alerts, the Holder Map, Gully Analytics, Gully Pay and merchant stores, Chain Kit, the roadmap,
           the Telegram bot, privacy and the services we offer.
         </P>
         <Details summary="What it answers: the details">
@@ -75,8 +75,6 @@ export function GullyAiDocs() {
             ['get_stock', 'everyone', 'One stock token’s latest tracker reading: onchain and fair price, gap, status, pool liquidity, feed session'],
             ['get_top_gaps', 'everyone', 'The widest trusted gaps right now'],
             ['get_ledger', 'everyone', 'The live figures of the Gully Labs projects, as each venue publishes them'],
-            ['deepcore_launches', 'everyone', 'The newest or most traded DeepCore launches, with when they were read'],
-            ['deepcore_pool', 'everyone', 'One token’s DeepCore pools: price, liquidity, lock, swaps'],
             ['get_holders', 'everyone', 'A token’s Holder Map in summary: top-10 share, clusters, the launch checks'],
             ['get_plans', 'everyone', 'Current plans, limits, payment chains and whether checkout is open'],
             ['get_pay_chains', 'everyone', 'What Gully Pay accepts on which chain, and the confirmations needed'],

@@ -4,7 +4,7 @@
 //   revenue        billing ledger payments (billing.json): USD per day, split by asset symbol and by chain
 //   accounts       wallet accounts (developers.json createdAt) and Gully Analytics accounts per day
 //   api            origin API requests per day (access.mjs api-usage.json: anonymous, keyed, limited)
-//   alerts         alert deliveries per day from alerts.json (gap vs DeepCore launch; test sends left out)
+//   alerts         alert deliveries per day from alerts.json (test sends and the retired new-launch alert left out)
 //   ask            Gully AI questions per day from DATA_DIR/ask-log.jsonl, by channel
 //   payLinks       invoices made by pay links that were paid, per day (count and USD)
 //   webhooks       delivery outcomes per day: Gully Pay merchant webhooks (pay-webhooks.mjs) and alert
@@ -117,23 +117,23 @@ function alertDeliveries() {
 }
 
 function alerts(keys, list) {
-  if (!list) return { gap: keys.map(() => 0), launch: keys.map(() => 0), telegram: keys.map(() => 0), webhook: keys.map(() => 0), note: 'No alert has been created on this server yet.' }
+  if (!list) return { gap: keys.map(() => 0), telegram: keys.map(() => 0), webhook: keys.map(() => 0), note: 'No alert has been created on this server yet.' }
   const [gap, addGap] = counter(keys)
-  const [launch, addLaunch] = counter(keys)
   const [telegram, addTg] = counter(keys)
   const [webhook, addWh] = counter(keys)
   const seen = new Set()
   for (const d of list) {
+    // Deliveries of the new-launch alert retired on 2026-10-29 (events logged as 'deepcore:…') are left out.
+    if ((d.events ?? []).some((e) => String(e).startsWith('deepcore:'))) continue
     if (d.channel === 'telegram') addTg(d.at)
     else addWh(d.at)
     // One alert firing can go out on two channels under the same payload id: count it once.
     const id = `${d.id}`
     if (seen.has(id)) continue
     seen.add(id)
-    if ((d.events ?? []).some((e) => String(e).startsWith('deepcore:'))) addLaunch(d.at)
-    else addGap(d.at)
+    addGap(d.at)
   }
-  return { gap, launch, telegram, webhook, note: 'Each alert keeps its last 50 deliveries, so older days of a busy alert may be undercounted.' }
+  return { gap, telegram, webhook, note: 'Each alert keeps its last 50 deliveries, so older days of a busy alert may be undercounted.' }
 }
 
 function ask(keys) {
@@ -206,7 +206,7 @@ function webhooks(keys, alertList) {
     alerts: { delivered: alertOk, failed: alertFail },
     rate,
     rateOverall: allAll ? Math.round((okAll / allAll) * 1000) / 10 : null,
-    note: 'Gully Pay merchant webhooks (final state of each delivery, retries included) and gap/launch alert webhooks (each attempt). Test sends are left out.',
+    note: 'Gully Pay merchant webhooks (final state of each delivery, retries included) and alert webhooks (each attempt). Test sends are left out.',
   }
 }
 

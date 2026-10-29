@@ -44,20 +44,6 @@ const listOr = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} or ${xs[x
 
 const browser = await chromium.launch({ headless: !process.env.E2E_HEADED })
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) })
-const QUOTE = { chain: 'robinhood', ticker: 'NVDA', pay: { symbol: 'ETH', amount: '0.1' }, out: { symbol: 'NVDA', amount: '1.84', minimum: '1.82' }, priceImpactPct: 0.21, slippagePct: 0.5, fee: { pct: 0.3, amount: '0.0003', symbol: 'ETH', exempt: false }, onDeepcorePool: true, route: { venues: ['DeepCore'], hops: [{ venue: 'DeepCore', from: 'ETH', to: 'NVDA' }] }, alternatives: [], quotedAt: new Date().toISOString(), links: { swap: 'https://deepcore.fun/swap', token: 'https://deepcore.fun/token' } }
-
-// The DeepCore launch list as GET /api/deepcore/launches answers it (the poller is off in e2e).
-const LAUNCHES = (() => {
-  // One list for the app's DeepCore page and band and the site's launch list with Holder Maps: the newest
-  // launch is the harness's DTC on Robinhood Chain (its Holder Map fixture), then eleven more.
-  const chains = [[4663, 'Robinhood Chain', 'robinhood'], [56, 'BNB Chain', 'bsc'], [8453, 'Base', 'base']]
-  const launches = Array.from({ length: 12 }, (_, i) => {
-    const [chainId, chainName, chainKey] = chains[i % 3]
-    const token = i === 0 ? E2E_LAUNCH_TOKEN : '0x' + (i + 1).toString(16).padStart(40, 'a')
-    return { key: `${chainId}:${token}`, chainId, chainKey, chainName, token, symbol: i === 0 ? 'DTC' : `E2E${i}`, locked: i % 2 === 0, createdAt: new Date(Date.now() - i * 5 * 3600_000).toISOString(), txHash: null, creator: null, startsAt: null, totalSupply: null, legs: [{ poolId: null, kind: 'CL', quote: 'WETH', locked: i % 2 === 0, lockId: null, feePct: 1, quoteAddress: null }], links: { token: `https://deepcore.fun/tokens/${token}`, launch: `https://deepcore.fun/app/launch/v2/${token}`, swap: 'https://deepcore.fun/app/swap' } }
-  })
-  return { state: 'ok', launches, asOf: new Date().toISOString(), chains: chains.map(([chainId, name]) => ({ chainId, name, status: 'ok', total: 4 })), error: null, pollSeconds: 90 }
-})()
 // E2E_SHOTS=<dir> saves screenshots of the app pages and the Gully AI launcher there.
 const SHOTS = process.env.E2E_SHOTS || null
 if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true })
@@ -89,7 +75,7 @@ async function launcherWorks(page, label) {
 
 
 /** The bubble map's look and motion (v3): lit fills, a legend, a labelled biggest bubble, the supply strip, drift and a quiet main thread. */
-async function bubbleLook(page, map, label, { kindRe = /^(pool|wallet|contract|lock|burn|exchange|deployer|token|DeepCore|Gully|router|known)/, quiet = false } = {}) {
+async function bubbleLook(page, map, label, { kindRe = /^(pool|wallet|contract|lock|burn|exchange|deployer|token|Gully|router|known)/, quiet = false } = {}) {
   const chart = map.locator('[data-bubble-canvas]')
   await chart.scrollIntoViewIfNeeded()
   await page.waitForFunction(() => document.querySelector('[data-bubble-canvas]')?.getAttribute('data-big'), null, { timeout: 15_000 })
@@ -154,11 +140,9 @@ async function newContext({ width = 1440, height = 900, mobile = false, geo = { 
   await ctx.route(`${BASE}/api/tracker`, (route) => json(route, TRACKER))
   await ctx.route(`${BASE}/api/stats`, (route) => json(route, STATS))
   await ctx.route(`${BASE}/api/geo`, (route) => json(route, geo))
-  await ctx.route(new RegExp(`^${BASE}/api/deepcore/quote`), (route) => json(route, { quote: QUOTE, cached: false }))
-  await ctx.route(new RegExp(`^${BASE}/api/deepcore/launches`), (route) => json(route, LAUNCHES))
   await ctx.route(new RegExp(`^${BASE}/api/pay/price`), (route) => json(route, { asset: 'base-eth', price: (2500 + Math.random()).toFixed(2), updatedAt: new Date().toISOString() }))
-  // Holder Maps (server/holders.mjs reads DeepCore, Blockscout and RPCs): a launch for addresses, a stock for tickers.
-  await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/.]+$`), (route) => json(route, holdersFixture(/\/0x[0-9a-f]{40}$/i.test(new URL(route.request().url()).pathname) ? 'deepcore-launch' : 'stock')))
+  // Holder Maps (server/holders.mjs reads our own Transfer-log index, Blockscout and RPCs): a launch for addresses, a stock for tickers.
+  await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/.]+$`), (route) => json(route, holdersFixture(/\/0x[0-9a-f]{40}$/i.test(new URL(route.request().url()).pathname) ? 'launch' : 'stock')))
   await ctx.route(`${BASE}/api/holders/base/${E2E_ANY_TOKEN}`, (route) => json(route, holdersFixture('token')))
   const HX = holdersExtraFixtures()
   await ctx.route(new RegExp(`^${BASE}/api/holders/resolve`), (route) => json(route, HX.resolve(new URL(route.request().url()).searchParams.get('q') ?? '')))
@@ -257,11 +241,11 @@ await step('landing', async () => {
   await page.goto(BASE + '/')
   await page.locator('#ledger').scrollIntoViewIfNeeded()
   const venues = page.getByRole('group', { name: 'Venues in the chart' })
-  const dc = venues.getByRole('button', { name: 'DeepCore', exact: true })
-  await dc.waitFor()
-  const before = await dc.getAttribute('aria-pressed')
-  await dc.click()
-  check('ledger: a venue toggle flips', (await dc.getAttribute('aria-pressed')) !== before)
+  const ps = venues.getByRole('button', { name: 'PeddleSwap', exact: true })
+  await ps.waitFor()
+  const before = await ps.getAttribute('aria-pressed')
+  await ps.click()
+  check('ledger: a venue toggle flips', (await ps.getAttribute('aria-pressed')) !== before)
   const seven = page.locator('#ledger').getByRole('group', { name: 'Range' }).getByRole('button', { name: '7D' })
   if (await seven.count()) {
     await seven.click()
@@ -370,11 +354,11 @@ await step('tracker', async () => {
   const range = page.getByRole('group', { name: 'Range' }).getByRole('button', { name: '7d' })
   await range.click()
   check('stock page: the 7d range applies', (await range.getAttribute('aria-pressed')) === 'true')
-  // The swap card in an allowed region, with DeepCore's quote stubbed and LI.FI's API stubbed.
+  // The swap card in an allowed region, with LI.FI's API stubbed (the swap is LI.FI only).
   await page.getByRole('heading', { name: 'Swap NVDA' }).scrollIntoViewIfNeeded()
   await page.getByRole('checkbox', { name: 'I understand' }).check()
-  await page.getByText(/≈ 1\.84 NVDA/).first().waitFor({ timeout: 15_000 })
-  check('swap: the DeepCore comparison quote shows', (await page.getByRole('link', { name: 'Swap on DeepCore' }).count()) > 0)
+  await page.getByText(/^Tick the box to load the swap\./).waitFor({ state: 'detached', timeout: 15_000 })
+  check('swap: ticking the box loads the swap (no venue comparison quote above it)', (await page.getByRole('checkbox', { name: 'I understand' }).isChecked()) && (await page.getByText(/^Tick the box to load the swap\./).count()) === 0)
   // LI.FI's widget logs its own errors when its (stubbed) API has no routes; those are not our page's.
   await w.verify([/li\.quest|lifi|LI\.FI|wagmi|walletconnect|coinbase|SwapWidget-|Failed to load resource: net::ERR_BLOCKED_BY_CLIENT/i])
   await ctx.close()
@@ -726,7 +710,7 @@ await step('portal', async () => {
 
 /* ------------------------------------------------------------- app services --- */
 
-/** The Overview's market band draws live, non-zero network series: widest gaps, the 24h gap index, DeepCore launches per chain, the API round trip. */
+/** The Overview's market band draws live, non-zero network series in three tiles: widest gaps, the 24h gap index, the API round trip. */
 async function overviewIsLive(page, label) {
   const band = page.getByTestId('market-band')
   await band.waitFor({ timeout: 15_000 })
@@ -739,12 +723,11 @@ async function overviewIsLive(page, label) {
   check(`${label}: the 24h gap index draws from the seeded history`, await drawn('mk-index'))
   const idx = await figure('mk-index')
   check(`${label}: the gap index figure is non-zero`, /^\d+\.\d{2}%$/.test(idx) && parseFloat(idx) > 0, idx)
-  check(`${label}: DeepCore launches per chain draw`, await drawn('mk-deepcore'))
-  const dc = await figure('mk-deepcore')
-  check(`${label}: five launches in the last 24 h, the newest named`, dc === '5' && /DTC on Robinhood Chain/.test(await band.getByTestId('mk-newest').textContent()), dc)
   check(`${label}: the API round-trip sparkline draws from /healthz`, await drawn('mk-status'))
   const ms = await figure('mk-status')
   check(`${label}: the round trip is a live millisecond figure`, /^\d+ ms$/.test(ms), ms)
+  const tiles = await band.getByTestId('mk-grid').locator(':scope > [data-testid^="mk-"]').evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')))
+  check(`${label}: the band has exactly three tiles (gaps, index, status)`, tiles.join() === 'mk-gaps,mk-index,mk-status', tiles.join())
 }
 
 await step('chains launch wizard', async () => {
@@ -845,7 +828,6 @@ const SERVICES = [
   ['chains', 'Chains'],
   ['ai', 'Gully AI'],
   ['score', 'Gully Score'],
-  ['deepcore', 'DeepCore launches'],
   ['holders', 'Holder Map'],
   ['widgets', 'Widgets'],
   ['telegram', 'Telegram'],
@@ -888,17 +870,11 @@ await step('app services', async () => {
     check(`app ${label}: Docs and Public page open in a new tab`, ext.length >= 2 && ext.every(([, t, r]) => t === '_blank' && /noopener/.test(r)), JSON.stringify(ext))
     await view.locator('[data-tile], [data-testid$="zero-line"]').first().waitFor()
     if (id === 'tracker') await view.locator('tr[data-row]').first().waitFor({ timeout: 15_000 })
-    if (id === 'deepcore') await view.getByTestId('deepcore-launches').waitFor({ timeout: 15_000 })
     if (id === 'widgets') await page.waitForFunction(() => [...document.querySelectorAll('[data-gully-widget]')].some((el) => /%/.test(el.shadowRoot?.textContent ?? '')), null, { timeout: 10_000 })
     if (id === 'ai') check('app Gully AI: the full chat is on the page', (await view.getByPlaceholder('How do gap alerts work?').count()) === 1)
     // DA2 group 5: no developer noise, ghosts for empty charts, logos on launch rows, no cut-off symbols.
     const noise = await view.evaluate((el) => /\[object Object\]|\bundefined\b|\bnull\b/.test(el.innerText))
     check(`app ${label}: no developer noise in the page text`, !noise)
-    if (id === 'deepcore') {
-      await view.getByTestId('deepcore-launches').locator('[data-logo="token"], img').first().waitFor({ timeout: 10_000 })
-      check('app DeepCore: launch rows carry a token logo and chain logo', (await view.getByTestId('deepcore-launches').locator('li').first().locator('img').count()) >= 2)
-      check('app DeepCore: LAUNCHES 24H is a number, not "not tracked yet"', !/not tracked yet/.test((await view.locator('[data-tile="LAUNCHES 24H"]').textContent()) ?? ''))
-    }
     if (id === 'holders') {
       const hrow = view.locator('[data-launch-holders] a').first()
       await hrow.waitFor({ timeout: 10_000 })
@@ -929,10 +905,10 @@ await step('app services', async () => {
   // Gully AI in the app: floating button and Ctrl+K.
   await appNav.getByRole('link', { name: 'Overview', exact: true }).click()
   await launcherWorks(page, 'app')
-  // A deep link opens its service page directly.
+  // The retired launches view's old hash (#deepcore, retired 2026-10-29) lands on the Gully Chain hand-off.
   await page.goto(BASE + '/app#deepcore')
-  await page.locator('[data-service="deepcore"]').getByTestId('service-header').waitFor()
-  check('app: #deepcore deep-links to its page', (await page.locator('main[data-page]').getAttribute('data-page')) === 'deepcore')
+  await page.locator('main[data-page="chain"]').waitFor({ timeout: 15_000 })
+  check('app: the old #deepcore hash opens the Gully Chain hand-off', (await page.locator('main[data-page]').getAttribute('data-page')) === 'chain' && (await page.locator('[data-service="deepcore"]').count()) === 0)
   await w.verify()
   await ctx.close()
 
@@ -960,7 +936,7 @@ await step('app services', async () => {
   const st = sp.getByRole('dialog', { name: 'Status' })
   await st.getByTestId('status-view').waitFor()
   await st.locator('[data-chart].opacity-100 svg').first().waitFor({ timeout: 20_000 }).catch(() => {})
-  check('status: the Status button opens a Status view (API uptime and latency, tracker and DeepCore health), not another tab', (await st.getByText('Tracker data').count()) === 1 && (await st.getByText('DeepCore launch poller').count()) === 1 && /checks this session/.test((await st.textContent()) ?? '') && new URL(sp.url()).hash === '')
+  check('status: the Status button opens a Status view (API uptime and latency, tracker health, everything else), not another tab', (await st.getByText('Tracker data').count()) === 1 && (await st.getByText('Everything else').count()) >= 1 && /checks this session/.test((await st.textContent()) ?? '') && new URL(sp.url()).hash === '')
   await shot(sp, 'app-1440x840-status')
   await sp.keyboard.press('Escape')
   await st.waitFor({ state: 'hidden' })
@@ -999,7 +975,7 @@ await step('app services', async () => {
       return Object.values(counts)
     })
   // The pixel-pass design audit on every app page (signed in): 11 px minimum, token colours only, other hosts in a new tab.
-  for (const id of ['overview', 'products', 'tracker', 'pay', 'merchant', 'security', 'chain-kit', 'chains', 'ai', 'deepcore', 'holders', 'widgets', 'telegram', 'keys', 'alerts', 'analytics', 'billing', 'team', 'activity', 'settings']) {
+  for (const id of ['overview', 'products', 'tracker', 'pay', 'merchant', 'security', 'chain-kit', 'chains', 'ai', 'holders', 'widgets', 'telegram', 'keys', 'alerts', 'analytics', 'billing', 'team', 'activity', 'settings']) {
     await sp.goto(`${BASE}/app#${id}`)
     await sp.locator(`main[data-page="${id}"]`).waitFor({ timeout: 15_000 })
     await sp.waitForLoadState('networkidle').catch(() => {})
@@ -1057,7 +1033,7 @@ await step('app services', async () => {
   // Design audit 3 (D1, D4, D9, D10, D28): narrow screens read in full, nothing clipped, no empty-count badges.
   for (const w of [390, 320]) {
     await mp.setViewportSize({ width: w, height: 760 })
-    for (const id of ['deepcore', 'overview', 'keys', 'tracker', 'pay', 'chain-kit']) {
+    for (const id of ['overview', 'keys', 'tracker', 'pay', 'chain-kit']) {
       await mp.goto(`${BASE}/app#${id}`)
       await mp.locator(id === 'overview' ? 'main[data-page="overview"]' : id === 'keys' ? 'main[data-page="keys"]' : `[data-service="${id}"] [data-testid="service-header"]`).first().waitFor({ timeout: 15_000 })
       await mp.waitForTimeout(700)
@@ -2169,7 +2145,7 @@ await step('gully score', async () => {
       comp('timelock', { available: true, score: 0, value: 'No delay', reason: 'Changes take effect as soon as they are made.' }),
       comp('upgradeability', { available: true, score: 30, value: 'Upgradeable', reason: 'Its code can be swapped.' }),
       comp('changes', { available: true, score: 75, value: '1 in 30 days', reason: '1 privileged change was seen in the last 30 days.' }),
-      comp('liquidity', { available: false, score: null, value: 'Not available', reason: 'Liquidity locks are read for DeepCore launches only.' }),
+      comp('liquidity', { available: false, score: null, value: 'Not available', reason: 'Liquidity locks are read for Gully Launchpad tokens on Gully Chain, and this token was not launched there.' }),
       comp('holders', { available: false, score: null, value: 'Not available', reason: 'The Holder Map is not running on this server yet.' }),
       comp('review', { available: true, score: 70, value: 'Published 2026-10-01', reason: 'Gully Security published a report: 0 critical, 1 high, 2 medium, 0 low, 3 info.', evidence: [{ label: 'Read the report', url: 'https://gullylabs.xyz/security' }] }),
       comp('age', { available: false, score: null, value: 'Not available', reason: 'The deployment date is not known here.' }),
@@ -2206,7 +2182,7 @@ await step('gully score', async () => {
     await page.getByRole('img', { name: /Gully Score 74 out of 100/ }).waitFor({ timeout: 10_000 })
     check(`score page at ${width}: the ring and the number`, true)
     check(`score page at ${width}: the missing parts collapse into ONE "not counted" line, no repeated rows`, (await page.getByText('Not counted, no data to read:').count()) === 1 && (await page.getByText(/NOT AVAILABLE/).count()) === 0)
-    check(`score page at ${width}: no code or api host in the visible text`, !/owner\(\)|getThreshold|api\.deepcore\.fun/.test(await page.locator('main').innerText()))
+    check(`score page at ${width}: no code or api host in the visible text`, !/owner\(\)|getThreshold|https?:\/\/api\./.test(await page.locator('main').innerText()))
     check(`score page at ${width}: methodology and badge links are 44 px tall`, await page.evaluate(() => [...document.querySelectorAll('main a[href*="gully-score"], main a[aria-label*="badge"]')].every((a) => a.getBoundingClientRect().height >= 43.5)))
     check(`score page at ${width}: evidence links open in a new tab`, (await page.locator('a[href^="https://repo.sourcify.dev"]').getAttribute('target')) === '_blank')
     check(`score page at ${width}: the change log`, (await page.getByText('Recent privileged changes').count()) > 0)
@@ -2247,6 +2223,12 @@ await step('404s', async () => {
     const r = await fetch(BASE + p)
     const body = await r.json().catch(() => null)
     check(`${p}: 404 as JSON`, r.status === 404 && /application\/json/.test(r.headers.get('content-type') ?? '') && body?.error === 'not found', `${r.status} ${r.headers.get('content-type')}`)
+  }
+  // The DeepCore integration ended on 2026-10-29: its old routes answer 410 Gone as JSON with a reason, never the app shell.
+  for (const p of ['/api/deepcore/launches', '/api/deepcore/quote']) {
+    const r = await fetch(BASE + p)
+    const body = await r.json().catch(() => null)
+    check(`${p}: 410 Gone as JSON with a reason`, r.status === 410 && /application\/json/.test(r.headers.get('content-type') ?? '') && typeof body?.error === 'string' && body.error.length > 0, `${r.status} ${JSON.stringify(body)}`)
   }
   const old = await fetch(BASE + '/gully-pay/merchant-terms', { redirect: 'manual' })
   check('/gully-pay/merchant-terms: a permanent redirect to /legal/merchant-terms (P2-17)', old.status === 301 && old.headers.get('location') === '/legal/merchant-terms', `${old.status} ${old.headers.get('location')}`)
@@ -2318,12 +2300,10 @@ await step('holder map', async () => {
     check(`holder map ${width}: buy/sell sits under the risk summary`, (await map.locator('[data-holder-trade]').getByText(/Before you trade:.*3 wallets bought/).count()) === 1)
     // The explainable health score: tapping a part lights its wallets on the map (free, never gated).
     const health = map.locator('[data-health]')
-    check(`holder map ${width}: the health score card shows the score and its parts`, (await health.getByRole('img', { name: 'Score 58 out of 100' }).count()) === 1 && (await health.locator('[data-health-part]').count()) === 6)
+    check(`holder map ${width}: the health score card shows the score and its parts`, (await health.getByRole('img', { name: 'Score 58 out of 100' }).count()) === 1 && (await health.locator('[data-health-part]').count()) === 4)
     await health.locator('[data-health-part="bundle"]').click()
     check(`holder map ${width}: tapping a score part highlights its wallets`, (await health.locator('[data-health-part="bundle"]').getAttribute('aria-pressed')) === 'true' && (await map.getByText(/Showing the 3 wallets behind “Bundled buys”/).count()) === 1)
     await map.getByRole('button', { name: 'Show all' }).click()
-    check(`holder map ${width}: the deployer's record shows outcomes and the serial launcher flag`, (await map.locator('[data-deployer-history]').getByText('Liquidity pulled').count()) === 1 && (await map.locator('[data-deployer-history]').getByText('Serial launcher').count()) === 1)
-    check(`holder map ${width}: same wallets elsewhere links to other maps`, (await map.locator('[data-cross-token] a', { hasText: 'OLD1' }).count()) === 1)
     check(`holder map ${width}: snipers are named under the launch check`, (await map.locator('[data-risk-line]').getByText(/2 wallets bought in the first 3 blocks/).count()) === 1)
     // Live mode: the stubbed /live answers, the pill shows.
     await map.locator('[data-live="on"]').waitFor({ timeout: 10_000 })
@@ -2436,11 +2416,11 @@ await step('holder map', async () => {
   // Deep check: the offer card on a map, a free-quota check started from a quote, the report page and the JPEG card.
   {
     const DEEP_CHECK = 'dc_e2e0000000000001'
-    const cov = (k) => ({ chain: k, funding: { state: 'available', reason: null }, clusters: { state: 'available', reason: null }, deployer: { state: 'limited', reason: 'Only DeepCore launches are read' }, trading: { state: 'unavailable', reason: 'No archive RPC answers for this chain' } })
+    const cov = (k) => ({ chain: k, funding: { state: 'available', reason: null }, clusters: { state: 'available', reason: null }, deployer: { state: 'limited', reason: 'Explorer contract creations only.' }, trading: { state: 'unavailable', reason: 'No archive RPC answers for this chain' } })
     const quota = { plan: { id: 'pro', name: 'Pro' }, freePerMonth: 3, used: 0, left: 3, resetsAt: new Date(Date.now() + 864e5 * 10).toISOString(), active: 0, maxActive: 2, credits: 0 }
     const chainInfo = { key: 'robinhood', id: 46630, name: 'Robinhood Chain' }
     const report = {
-      version: 1, chain: chainInfo, token: { address: E2E_LAUNCH_TOKEN, symbol: 'DTC', name: 'DeepCore Test', url: 'https://explorer.example/token/x' }, generatedAt: new Date().toISOString(), status: 'partial',
+      version: 1, chain: chainInfo, token: { address: E2E_LAUNCH_TOKEN, symbol: 'DTC', name: 'Demo Test Coin', url: 'https://explorer.example/token/x' }, generatedAt: new Date().toISOString(), status: 'partial',
       partial: { reasons: [{ code: 'archive', text: 'No archive RPC answers for this chain, so sniper history was skipped.' }] },
       sections: {
         trading: { state: 'unavailable', reason: 'No archive RPC answers for this chain' },
@@ -2574,15 +2554,19 @@ await step('holder map', async () => {
   await designAudit(page, 'holder map embed')
   await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
   await ctx.close()
-  // The DeepCore page lists the latest launches with their maps.
+  // The old DeepCore portfolio page is gone (partnership ended 2026-10-29): it opens Gully Core. The newest launches
+  // with their maps are Gully Launchpad launches on Gully Chain, listed on the /holders landing.
   const ctx2 = await newContext()
   const p2 = await ctx2.newPage()
-  const w2 = watch(p2, 'deepcore launches')
+  const w2 = watch(p2, 'old portfolio page and launch feed')
   await p2.goto(BASE + '/projects/deepcore')
-  const row = p2.locator('[data-launch-holders] a', { hasText: 'DTC' })
+  await p2.waitForURL(/\/products\/gully-core$/, { timeout: 15_000 })
+  check('/projects/deepcore: opens the Gully Core product page', new URL(p2.url()).pathname === '/products/gully-core', p2.url())
+  await p2.goto(BASE + '/holders')
+  const row = p2.locator('[data-launch-feed] a', { hasText: 'DTC' })
   await row.waitFor()
-  check('DeepCore page: launches link to their Holder Maps', (await row.getAttribute('href')) === `/holders/robinhood/${E2E_LAUNCH_TOKEN}`)
-  check('DeepCore page: each launch row has a token logo and a chain logo', (await row.locator('img').count()) >= 2)
+  check('launch feed: a Gully Chain launch links to its Holder Map', (await row.getAttribute('href')) === `/holders/gully/${E2E_LAUNCH_TOKEN}` && /Gully Chain/.test(await row.innerText()), await row.getAttribute('href'))
+  check('launch feed: every row is a Gully Chain launch', (await p2.locator('[data-launch-feed] a[href^="/holders/gully/"]').count()) === (await p2.locator('[data-launch-feed] li').count()))
   await w2.verify([/ERR_BLOCKED_BY_CLIENT/i])
   await ctx2.close()
 })
@@ -2648,7 +2632,7 @@ await step('chains page', async () => {
     const logos = await page.locator('main img').evaluateAll((els) => els.map((e) => [e.getAttribute('src'), e.naturalWidth]))
     const srcs = logos.map((l) => l[0]).join(' ')
     check(`/chains at ${width}: every logo loaded (${logos.length} images, all naturalWidth > 0)`, logos.length >= 8 && logos.every((l) => l[1] > 0), JSON.stringify(logos.filter((l) => !l[1])))
-    check(`/chains at ${width}: Arbitrum, Hyperlane, Blockscout, Safe, WalletConnect and DeepCore marks are on the page`, ['/chains/arbitrum.svg', '/integrations/hyperlane.png', '/integrations/blockscout.jpg', '/integrations/safe.jpg', '/integrations/walletconnect.svg', '/venues/deepcore.png', '/integrations/offchain-labs.jpg'].every((s) => srcs.includes(s)), srcs)
+    check(`/chains at ${width}: Arbitrum, Hyperlane, Blockscout, Safe and WalletConnect marks are on the page`, ['/chains/arbitrum.svg', '/integrations/hyperlane.png', '/integrations/blockscout.jpg', '/integrations/safe.jpg', '/integrations/walletconnect.svg', '/integrations/offchain-labs.jpg'].every((s) => srcs.includes(s)), srcs)
     check(`/chains at ${width}: the estimator, the diagram and the fee chart are live (data-live)`, (await page.locator('[data-testid="chains-estimator"] [data-live]').count()) >= 1 && (await page.locator('[data-testid="chains-diagram"][data-live]').count()) === 1 && (await page.locator('[data-testid="chains-fee"]').count()) === 1)
     check(`/chains at ${width}: waitlist momentum is a ghost under 3 days of data`, (await page.locator('[data-testid="chains-momentum"] [data-ghost]').count()) === 1)
     const lit = async () => page.locator('[data-testid="chains-flow"] button[aria-pressed="true"]').innerText()
@@ -2684,7 +2668,7 @@ await step('chains page', async () => {
     await page.getByTestId('chains-more-details').locator('summary').click()
     for (const label of ['Undecided', 'Rollup']) await page.getByRole('radiogroup', { name: label === 'Rollup' ? 'DATA AVAILABILITY' : 'GAS TOKEN' }).getByText(label, { exact: true }).click()
     await page.getByRole('radiogroup', { name: 'ACCOUNT ABSTRACTION AND PAYMASTER?' }).getByText('Yes', { exact: true }).click()
-    await page.getByRole('radiogroup', { name: 'DEEPCORE LAUNCHPAD?' }).getByText('No', { exact: true }).click()
+    await page.getByRole('radiogroup', { name: 'GULLY CORE LAUNCHPAD?' }).getByText('No', { exact: true }).click()
     await designAudit(page, `/chains at ${width}`, 'main')
     if (shotDir) await page.screenshot({ path: path.join(shotDir, `chains-${width}-form.png`), fullPage: false })
     await page.getByRole('button', { name: 'Join the waitlist' }).last().click()
@@ -2722,7 +2706,7 @@ await step('chains page', async () => {
 await step('pages at 390', async () => {
   const ctx = await newContext({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/chains', '/security', '/security/reports', '/score', '/services', '/about', '/projects/deepcore', '/app', '/legal/privacy', '/links', '/status']) {
+  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/chains', '/security', '/security/reports', '/score', '/services', '/about', '/products/gully-core', '/app', '/legal/privacy', '/links', '/status']) {
     const w = watch(page, `${p} at 390`)
     if (p === '/app') w.expect(/\/api\/developer\//)
     await page.goto(BASE + p)
@@ -2946,7 +2930,7 @@ await step('status page and API', async () => {
   const ids = (s.components ?? []).map((c) => c.id)
   check('/api/status: 200 JSON, public cache and CORS', r.status === 200 && /application\/json/.test(r.headers.get('content-type') ?? '') && /max-age=30/.test(r.headers.get('cache-control') ?? '') && r.headers.get('access-control-allow-origin') === '*')
   check('/api/status: overall, interval and incidents', ['operational', 'degraded', 'major'].includes(s.overall) && s.intervalSeconds === 60 && Array.isArray(s.incidents), JSON.stringify({ overall: s.overall, i: s.intervalSeconds }))
-  check('/api/status: every part of the stack is checked', ['api', 'tracker-robinhood', 'tracker-bsc', 'tracker-solana', 'deepcore', 'telegram', 'telegram-gate', 'pay-feeproxy', 'ai', 'security', 'monitors', 'holders-deepcore'].every((id) => ids.includes(id)) && ids.some((id) => id.startsWith('pay-')), ids.join())
+  check('/api/status: every part of the stack is checked', ['api', 'tracker-robinhood', 'tracker-bsc', 'tracker-solana', 'telegram', 'telegram-gate', 'pay-feeproxy', 'ai', 'security', 'monitors', 'holders-gully'].every((id) => ids.includes(id)) && ids.some((id) => id.startsWith('pay-')) && !ids.some((id) => /deepcore/.test(id)), ids.join())
   const byId = Object.fromEntries(s.components.map((c) => [c.id, c]))
   check('/api/status: the API is up and the Telegram webhook reads as registered', byId.api?.state === 'up' && byId.telegram?.state === 'up' && /waiting/.test(byId.telegram?.detail ?? ''), JSON.stringify([byId.api, byId.telegram].map((c) => c && { s: c.state, d: c.detail })))
   check('/api/status: Gully Pay RPCs answer per offered chain (stub RPCs)', OFFERED.filter((n) => n !== 'Solana').every((n) => s.components.some((c) => c.group === 'payments' && c.name.endsWith(n) && c.state === 'up')), JSON.stringify(s.components.filter((c) => c.group === 'payments').map((c) => `${c.name}:${c.state}`)))
@@ -3122,7 +3106,7 @@ await step('analytics events', async () => {
     check('analytics: ask-rated carries the rating', JSON.stringify(by('ask-rated')) === '[{"rating":"up"}]', JSON.stringify(by('ask-rated')))
     check('analytics: review-requested on the public /security form, with the tier', JSON.stringify(by('review-requested')) === '[{"tier":"review"}]', JSON.stringify(by('review-requested')))
     check('analytics: score-viewed with the chain only', JSON.stringify(by('score-viewed')) === '[{"chain":"base"}]', JSON.stringify(by('score-viewed')))
-    check('analytics: holder-map-opened with chain, kind and surface', JSON.stringify(by('holder-map-opened')) === '[{"chain":"robinhood","kind":"deepcore-launch","from":"holders-page"}]', JSON.stringify(by('holder-map-opened')))
+    check('analytics: holder-map-opened with chain, kind and surface', JSON.stringify(by('holder-map-opened')) === '[{"chain":"robinhood","kind":"token","from":"holders-page"}]', JSON.stringify(by('holder-map-opened')))
     check('analytics: swap-quoted once for the Jupiter quote', JSON.stringify(by('swap-quoted')) === '[{"venue":"jupiter","chain":"solana","ticker":"TSLA"}]', JSON.stringify(by('swap-quoted')))
     check('analytics: no wallet, token address, email or URL in the product events', !/0x[0-9a-fA-F]{20,}|So1ana|@|https?:\/\//i.test(JSON.stringify(pev)), JSON.stringify(pev))
     await w.verify([/ERR_BLOCKED_BY_CLIENT|Failed to load resource/i])
@@ -3231,8 +3215,6 @@ await step('telegram mini app at 390', async () => {
     sdkUrl = route.request().url()
     return route.fulfill({ status: 200, contentType: 'text/javascript', body: sdk })
   })
-  const TG_LAUNCHES = { state: 'ok', asOf: new Date().toISOString(), error: null, chainNames: { 56: 'BNB Chain', 8453: 'Base' }, launches: [['BNB Chain', 56, 'bsc', 'AAA'], ['Base', 8453, 'base', 'BBB'], ['BNB Chain', 56, 'bsc', 'CCC']].map(([chainName, chainId, chainKey, symbol], i) => ({ key: `${chainKey}:${i}`, chainId, chainKey, chainName, token: `0x${String(i + 1).repeat(40)}`, symbol, createdAt: new Date(Date.now() - i * 600_000).toISOString(), legs: [{ kind: 'v2', quote: 'WETH', locked: true }], links: { token: 'https://deepcore.fun/token' } })) }
-  await ctx.route(/\/api\/tg\/launches/, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(TG_LAUNCHES) }))
   const page = await ctx.newPage()
   const w = watch(page, '/tg at 390')
   await page.goto(BASE + '/tg')
@@ -3266,12 +3248,8 @@ await step('telegram mini app at 390', async () => {
   await page.evaluate(() => window.__tgBack())
   await page.getByRole('radiogroup', { name: 'Section' }).waitFor()
   check('mini app: BackButton returns to the list and hides', (await page.evaluate(() => window.__tg.back)) === false)
-  await page.getByRole('radio', { name: 'Launches' }).click()
-  await page.getByRole('button', { name: /^AAA on BNB Chain/ }).waitFor()
-  await page.waitForTimeout(500)
-  const launchImgs = await page.evaluate(() => [...document.querySelectorAll('main li img[alt$=" logo"]')].map((i) => i.getAttribute('src')))
-  check('mini app: launch rows carry token logo images from the logo service', launchImgs.length === 3 && launchImgs.every((u) => /^\/api\/logo\//.test(u)), JSON.stringify(launchImgs))
-  await noHorizontalScroll(page, '/tg launches')
+  const sections = await page.getByRole('radiogroup', { name: 'Section' }).getByRole('radio').allInnerTexts()
+  check('mini app: two sections, Gaps and My alerts (no Launches tab)', sections.map((t) => t.trim()).join('|') === 'Gaps|My alerts', sections.join('|'))
   await page.getByRole('radio', { name: 'My alerts' }).click()
   check('mini app: alerts ask an unlinked user to link a wallet', await page.getByText('Link your wallet for alerts').isVisible())
   await noHorizontalScroll(page, '/tg')
@@ -3338,8 +3316,8 @@ await step('ledger chart', async () => {
     check('ledger chart: three tabs (Value locked, Volume, Fees)', (await page.locator('#ledger').getByRole('tablist', { name: 'Metric' }).getByRole('tab').allInnerTexts()).join('|') === 'Value locked|Volume|Fees')
     check('ledger chart: live mode is set on the chart box', (await page.locator('#ledger [data-live]').count()) > 0, await page.locator('#ledger [data-live]').count())
     check('ledger chart: no ghost while there is data', (await page.getByTestId('ledger-ghost').count()) === 0)
-    check('ledger chart: venue toggles carry their logos', (await page.locator('#ledger').getByRole('group', { name: 'Venues in the chart' }).getByRole('button', { name: /DeepCore/ }).locator('img, [role=img]').count()) > 0)
-    check('ledger chart: the source is named under the chart', /DefiLlama|deepcore/i.test(await page.getByTestId('ledger-sources').innerText()), await page.getByTestId('ledger-sources').innerText())
+    check('ledger chart: venue toggles carry their logos', (await page.locator('#ledger').getByRole('group', { name: 'Venues in the chart' }).getByRole('button', { name: /PeddleSwap/ }).locator('img, [role=img]').count()) > 0)
+    check('ledger chart: the source is named under the chart', /DefiLlama|peddleswap/i.test(await page.getByTestId('ledger-sources').innerText()), await page.getByTestId('ledger-sources').innerText())
     await page.getByRole('tab', { name: 'Value locked' }).click()
     check('ledger chart: the Value locked tab switches', (await root.getAttribute('data-metric')) === 'tvl' && (await page.getByRole('tab', { name: 'Value locked' }).getAttribute('aria-selected')) === 'true')
     await page.getByRole('tab', { name: 'Fees' }).click()
@@ -3550,6 +3528,12 @@ await step('service hosts', async () => {
     const again = await page.goto(at(followed.host, followed.pathname + followed.search))
     await page.getByTestId('order-total').waitFor({ timeout: 30_000 })
     check('hosts: following the redirect lands on the same invoice page', again.status() === 200 && (await page.getByTestId('order-total').count()) === 1)
+
+    // The old DeepCore pages (partnership ended 2026-10-29) are a 301 to Gully Core on the main site.
+    for (const p of ['/projects/deepcore', '/products/deepcore']) {
+      const r = await hreq('gullylabs.xyz', p)
+      check(`hosts: ${p} is a 301 to /products/gully-core`, r.status === 301 && r.headers.location === 'https://gullylabs.xyz/products/gully-core', `${r.status} ${r.headers.location}`)
+    }
 
     // A non-pay route on pay. leaves for the main site.
     const away = await hreq('pay.gullylabs.xyz', '/tracker?x=1')
@@ -3924,11 +3908,11 @@ await step('holder map discovery', async () => {
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx.close()
   }
-  // 4. Holders chips: tracker rows, the stock page, DeepCore launch rows, the score page, the Ecosystem launchpads.
+  // 4. Holders chips: tracker rows, the stock page, the score page, the Ecosystem launchpads.
   for (const width of [1440, 390]) {
     const mobile = width < 600
     const ctx = await newContext({ width, mobile })
-    await ctx.route(`${BASE}/api/ecosystem`, (route) => json(route, { chains: [], launchpads: [{ id: 'deepcore', name: 'DeepCore', url: 'https://deepcore.fun', chains: ['Robinhood Chain'] }] }))
+    await ctx.route(`${BASE}/api/ecosystem`, (route) => json(route, { chains: [], launchpads: [{ id: 'gully-launchpad', name: 'Gully Launchpad', url: 'https://gullychain.xyz', chains: ['Gully Chain Testnet'] }] }))
     const page = await ctx.newPage()
     const w = watch(page, `holders chips ${width}`)
     const tall = (loc) => loc.evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).every((e) => e.getBoundingClientRect().height >= 43.5))
@@ -3947,10 +3931,6 @@ await step('holder map discovery', async () => {
     await page.waitForTimeout(1200)
     await hdShot(page, `stock-${width}.png`, { fullPage: false })
     await noHorizontalScroll(page, `stock page chips ${width}`)
-    await page.goto(BASE + '/projects/deepcore')
-    const lc = page.locator('[data-launch-holders] [data-holders-chip]').first()
-    await lc.waitFor({ timeout: 15_000 })
-    check(`DeepCore launch rows ${width}: each row ends in a Holders chip and links to its map`, (await page.locator('[data-launch-holders] li a[href^="/holders/"]').count()) >= 1 && (await page.locator('[data-launch-holders] [data-holders-chip]').count()) === (await page.locator('[data-launch-holders] li').count()))
     await page.goto(`${BASE}/score/base/${SCORE_ADDR}`)
     await page.getByRole('heading', { level: 1, name: 'E2E Vault' }).waitFor()
     const sh = page.locator('main [data-holders-chip]').first()
@@ -3970,8 +3950,8 @@ await step('holder map discovery', async () => {
     const holders = await import(new URL('../server/holders.mjs', import.meta.url).href)
     const intel = await import(new URL('../server/holders-intel.mjs', import.meta.url).href)
     const { sitemapFor } = await import(new URL('../server/seo.mjs', import.meta.url).href)
-    holders.seedHolderMapForTest('robinhood', E2E_LAUNCH_TOKEN, holdersFixture('deepcore-launch'))
-    const sym = holdersFixture('deepcore-launch').token?.symbol
+    holders.seedHolderMapForTest('robinhood', E2E_LAUNCH_TOKEN, holdersFixture('launch'))
+    const sym = holdersFixture('launch').token?.symbol
     const meta = (h, n) => h.match(new RegExp(`<meta (?:property|name)="${n}" content="([^"]*)"`))?.[1] ?? ''
     const a = await (await fetch(`${BASE}/holders/robinhood/${E2E_LAUNCH_TOKEN}`)).text()
     const title = a.match(/<title>([^<]*)<\/title>/)?.[1] ?? ''
@@ -4033,12 +4013,12 @@ await step('design audit 4', async () => {
     await eco.waitFor()
     const cards = await eco.evaluate((g) => [...g.children].map((c) => c.getBoundingClientRect().toJSON()))
     check(`da4 /ecosystem 1440: the ${cards.length} project cards share one row`, cards.length === 4 && sameTop(cards), JSON.stringify(cards.map((c) => Math.round(c.top))))
-    // D4-1, D4-2: a token map that cannot be read names its chain in the breadcrumb (not DEEPCORE); the five guide cards share one row.
+    // D4-1, D4-2: a token map that cannot be read names its chain in the breadcrumb (never a launchpad name); the five guide cards share one row.
     w.expect(/\/api\/holders\//)
     await page.goto(BASE + '/holders/base/0x00000000000000000000000000000000000dead1')
     await page.getByTestId('hm-guide').waitFor()
     const crumb = await page.locator('nav[aria-label="Breadcrumb"]').innerText()
-    check('da4 holder page: the breadcrumb never says DEEPCORE for a token that is not a DeepCore launch', !/DEEPCORE/.test(crumb), crumb)
+    check('da4 holder page: the breadcrumb never says DEEPCORE (that launchpad is gone)', !/DEEPCORE/i.test(crumb), crumb)
     const guide = await page.getByTestId('hm-guide').evaluate((g) => [...g.children].filter((c) => c.tagName !== 'H2').map((c) => c.getBoundingClientRect().toJSON()))
     check('da4 holder page 1440: the five guide cards share one row', guide.length === 5 && sameTop(guide), JSON.stringify(guide.map((c) => Math.round(c.top))))
     // D4-14: /status has a compact hero.
@@ -4095,7 +4075,7 @@ await step('design audit 4', async () => {
   }
 })
 
-const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|arbitrum\.io|mainnet\.base\.org|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag/i.test(u))
+const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|arbitrum\.io|mainnet\.base\.org|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag/i.test(u))
 check('the server made no unexpected outbound calls', unexpectedOutbound.length === 0, (unexpectedOutbound.length ? unexpectedOutbound : blockedOutbound).slice(0, 5).join(' | '))
 await browser.close()
 const secs = Math.round((Date.now() - started) / 1000)

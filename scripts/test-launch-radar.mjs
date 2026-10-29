@@ -71,7 +71,6 @@ Object.assign(process.env, {
   ADMIN_TOKEN: ADMIN,
   TRACKER_LOOP: 'off',
   TRACKER_SKIP_APIS: '1',
-  DEEPCORE_LOOP: 'off',
   TELEGRAM_API: `http://127.0.0.1:${stub.address().port}`,
   TELEGRAM_BOT_TOKEN: TOKEN,
   TELEGRAM_NEWS_CHANNEL: CHANNEL,

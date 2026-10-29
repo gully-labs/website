@@ -1,7 +1,7 @@
 // Screenshots and a motion sequence of the Holder Map for review (not part of the test run):
 //   npm run build && TEST_PORT=9321 node scripts/bubble-shots.mjs <out-dir>
 // It boots the real server against dist/ with the e2e harness (scripts/e2e-harness.mjs) and drives Playwright
-// over the harness's holder fixtures: a DeepCore launch, a Solana token (top holders, no links), a stock token,
+// over the harness's holder fixtures: a launch, a Solana token (top holders, no links), a stock token,
 // a busy 320-wallet map and the embed, at 1440 and 390.
 import fs from 'node:fs'
 import path from 'node:path'
@@ -23,7 +23,7 @@ async function ctxFor(width) {
   const ctx = await browser.newContext({ viewport: { width, height: width < 600 ? 844 : 900 }, ...(width < 600 ? { isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : {}), serviceWorkers: 'block' })
   await ctx.route(/^https?:\/\/(?!localhost[:/]|127\.0\.0\.1[:/])/, (r) => r.abort('blockedbyclient'))
   await ctx.route(`${BASE}/api/geo`, (r) => json(r, { country: 'GB', allowed: true, reason: 'ok' }))
-  await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/.]+$`), (r) => json(r, holdersFixture(/\/0x[0-9a-f]{40}$/i.test(new URL(r.request().url()).pathname) ? 'deepcore-launch' : 'stock')))
+  await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/.]+$`), (r) => json(r, holdersFixture(/\/0x[0-9a-f]{40}$/i.test(new URL(r.request().url()).pathname) ? 'launch' : 'stock')))
   await ctx.route(`${BASE}/api/holders/solana/${SOLANA_TOKEN}`, (r) => json(r, solanaFixture()))
   await ctx.route(`${BASE}/api/holders/base/0x000000000000000000000000000000000b0b0b05`, (r) => json(r, busyFixture()))
   await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/]+/live`), (r) => json(r, HX.live))

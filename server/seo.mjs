@@ -10,7 +10,7 @@ import { headBrand, PRODUCT_BRANDS } from './product-brand.mjs'
 import { scorePageMeta, scoreSitemapPaths } from './gully-score.mjs'
 import { publicChains } from './payments.mjs'
 // Guarded: holders.mjs exports holdersAvailable(chain, kind), read at call time (env keys), so stock pages come back
-// on their own once a chain's key is set. Without it every stock chain counts as unavailable (DeepCore launches only).
+// on their own once a chain's key is set. Without it every stock chain counts as unavailable.
 import * as holdersModule from './holders.mjs'
 import { topScans } from './holders-intel.mjs'
 
@@ -20,7 +20,6 @@ const APP = APP_URL
 
 // Project copy, restated from src/content/projects.ts (the server cannot import TypeScript).
 const PROJECTS = {
-  deepcore: ['DeepCore', 'Launch on one core. Tokens, Launchpads, DEXes and stock markets on one shared, hardened core, on four chains.'],
   peddleswap: ['PeddleSwap', 'Swap. Lock. Launch. Swap tokens, earn fees from liquidity, lock tokens or LP and bridge networks.'],
   peddles: ['Peddles', 'Launch, trade and play. Memecoins paired to tokenised stocks; holders are paid in that stock.'],
   peddlequest: ['PeddleQuest', 'Quest on-chain, earn the proof.'],
@@ -39,18 +38,18 @@ const HUB_LD = {
 }
 const MAIN = {
   '/': ['Gully Labs · Eight connected products: identity, payments, chain, data, games', 'Gully Labs builds a connected product suite: sign in with Gully ID, pay with Gully Pay, build on Gully Chain, see it with HolderMaps and Gully Security, play with Gully Studio. Live status and metrics from every product.'],
-  '/products': ['Products · Gully Labs', 'Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Sentry, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests, Gully Offerwall, Gully Social, Copy Trading and the DeepCore launchpad. Each supports Gully Chain.'],
+  '/products': ['Products · Gully Labs', 'Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Sentry, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests, Gully Offerwall, Gully Social, Copy Trading and Gully Core. Each supports Gully Chain.'],
   '/tracker': ['Stock token tracker: tokenised stocks vs fair price · Gully Labs', 'Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price (Chainlink, or for some Solana xStocks the issuer’s quote), with the gap, pool depth and feed time.'],
   // The chain list is filled in per request from what checkout offers now (pricingDescription below).
   '/pricing': ['Pricing: tracker API and Gully Analytics plans · Gully Labs', 'Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain\'s own coin from your own wallet, with no custody.'],
-  '/status': ['Status · Gully Labs', 'Live status of Gully Labs: the API, tracker freshness per chain, the DeepCore poller, the Telegram bot, Gully Pay RPCs, Gully AI, the security scan engine, monitors and Holder Map sources, with 24 h uptime and incidents.'],
+  '/status': ['Status · Gully Labs', 'Live status of Gully Labs: the API, tracker freshness per chain, the Telegram bot, Gully Pay RPCs, Gully AI, the security scan engine, monitors and Holder Map sources, with 24 h uptime and incidents.'],
   '/widget': ['Tracker widget · Gully Labs', 'Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps.'],
   '/services': ['Services: web3 development · Gully Labs', 'Gully Labs builds for other teams: L2/L3 chain launch, smart contracts, security reviews and monitoring, dApp/web/mobile apps, payments, RPC and infrastructure, token launch and quests, AI integration and Unity game development.'],
   '/analytics': ['Gully Analytics: web analytics that see the wallet · Gully Labs', 'Privacy-friendly analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel. Start a free trial with your wallet.'],
   '/security': ['Gully Security: AI Security Scan and Security Review · Gully Labs', 'Scan a deployed contract or a repository with the automated AI Security Scan, or ask people to review your code. What each tier checks, what it cannot, and the price.'],
   '/security/reports': ['Published security scan reports · Gully Labs', 'AI Security Scan reports their owners chose to publish: the findings, the tools that ran and the limits of an automated scan.'],
   '/security/sample': ['Sample AI Security Scan report · Gully Labs', 'What an AI Security Scan report looks like, on a fictional contract: findings by severity with file and line, a draft proof of concept, the tools that ran and the limits. A sample, not a scan of real code.'],
-  '/holders': ['Holder Map: who really holds a token · Gully Labs', 'See who holds any DeepCore launch: the biggest wallets, the ones that trade with each other, bundled launch buys, the deployer’s record and a health score you can check part by part. Tokenised stocks follow chain by chain.'],
+  '/holders': ['Holder Map: who really holds a token · Gully Labs', 'See who holds any token: the biggest wallets, the ones that trade with each other and, for Gully Chain launches and other supported launchpads, bundled launch buys, snipers and a health score you can check part by part. Tokenised stocks follow chain by chain.'],
   '/ask': ['Gully AI: ask about Gully Labs · Gully Labs', 'Ask Gully AI about Gully Labs: its products, the tracker and API, plans and docs. Every answer cites its sources and quotes live figures where they matter.'],
   '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
   '/legal/scan-terms': ['AI Security Scan terms · Gully Labs', 'The terms for the AI Security Scan: what an automated scan is and is not, free scans and prices, re-run credits instead of refunds, how long your code is kept, and the limits of our liability.'],
@@ -83,7 +82,7 @@ export const PRODUCT_PAGES = {
   offerwall: ['Gully Offerwall', 'Advertisers fund quests through Gully Pay; players complete them on Gully Chain and earn USDC or points; publishers embed the wall and earn a share.', 'gully-chain', 'GameApplication'],
   'gully-social': ['Gully Social', 'The social layer of Gully Chain: posts, follows, replies and profiles tied to your wallet and .gully name, in the Gully Street app.', 'gully-chain', 'SocialNetworkingApplication'],
   'copy-trading': ['Copy Trading', 'Follow a Gully Chain trader and mirror their trades from your own passkey wallet, with your own limits and an on-chain fee capped at 1%.', 'gully-chain', 'FinanceApplication'],
-  'gully-core': ['Gully Core', 'Gully Chain’s own launchpad and DEX core: a token and its pool in one step, graduating to Gully Swap.', 'gully-chain', 'FinanceApplication'],
+  'gully-core': ['Gully Core', 'Gully Chain’s own launchpad and DEX core: a token and its pool in one transaction, liquidity locked forever, no bonding curve.', 'gully-chain', 'FinanceApplication'],
 }
 for (const [key, [name, text]] of Object.entries(PRODUCT_PAGES)) MAIN[`/products/${key}`] = [`${name} · Gully Labs`, `${text} Live charts on this page.`]
 
@@ -378,10 +377,10 @@ export function pageMeta(host, pathname) {
   // Gully Pay merchant checkouts and receipts (merchants.mjs): real pages for whoever holds the link, never indexed.
   if (/^\/pay\/m\/(mi_[\w-]{22}(\/receipt)?|l\/ml_[\w-]{16})$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Pay' : 'Pay · Gully Pay', description: 'Pay with crypto, wallet to wallet, through Gully Pay.', canonical: payCanonical(host, p), found: true, noindex: true }
   // The Telegram Mini App: a real page, but only inside Telegram; never indexed.
-  if (p === '/tg') return { title: 'Gully Labs · Telegram app', description: 'The Gully Labs tracker, DeepCore launches and your gap alerts, inside Telegram.', canonical: null, found: true, noindex: true }
+  if (p === '/tg') return { title: 'Gully Labs · Telegram app', description: 'The Gully Labs tracker, Holder Maps and your alerts, inside Telegram.', canonical: null, found: true, noindex: true }
   // A Holder Map Deep check's report (holders-deep-routes.mjs): a real page for whoever holds the unguessable link, never indexed.
   if (/^\/holders\/deep\/hd_[\w-]{16}$/.test(p)) return { title: 'Deep check · Holder Map · Gully Labs', description: 'A Holder Map Deep check report: funding trace, shared-funder clusters, deployer record, snipers and bundles.', canonical: null, found: true, noindex: true, image: `${SITE}/social/og-holders.png` }
-  // Holder Maps (holders.mjs): a page per DeepCore launch or tracked stock token; the share image is the map's own card.
+  // Holder Maps (holders.mjs): a page per token (any token, a launch or a tracked stock token); the share image is the map's own card.
   const hm = p.match(/^\/(embed\/)?holders\/(robinhood|bsc|base|hyperevm|solana|gully)\/([A-Za-z0-9]{1,64})$/)
   if (hm) {
     const chainName = CHAIN_NAMES_ALL[hm[2]]

@@ -15,7 +15,6 @@ import { publicPlans } from './server/plans.mjs'
 import { alertChannels } from './server/telegram.mjs'
 import { geoFor } from './server/geo.mjs'
 import { handleAsk } from './server/ask.mjs'
-import { handleDeepcoreLaunches } from './server/deepcore.mjs'
 import { handleSolana } from './server/solana-routes.mjs'
 import { handleHolders } from './server/holders.mjs'
 import { handleEcosystem } from './server/ecosystem.mjs'
@@ -163,7 +162,13 @@ function serverModules(): Plugin {
           handleSolana(req, res, url, geoFor(req, true)).then((done: boolean) => done || next(), next)
           return
         }
-        const handler = url.pathname === '/api/ask' || url.pathname === '/api/ask/status' ? handleAsk : url.pathname === '/api/deepcore/launches' ? handleDeepcoreLaunches : url.pathname === '/api/ecosystem' || url.pathname.startsWith('/api/ecosystem/') ? handleEcosystem : url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : url.pathname.startsWith('/api/security/') ? handleSecurityPublic : url.pathname.startsWith('/api/chains/') ? handleChains : null
+        // The DeepCore integration ended on 2026-10-29: its old URLs answer 410 Gone, as in server.mjs.
+        if (url.pathname === '/api/deepcore/quote' || url.pathname === '/api/deepcore/launches') {
+          res.statusCode = 410
+          res.setHeader('Content-Type', 'application/json')
+          return res.end(JSON.stringify({ error: 'DeepCore integration ended on 2026-10-29.', docs: 'https://docs.gullychain.xyz/gully-core/' }))
+        }
+        const handler = url.pathname === '/api/ask' || url.pathname === '/api/ask/status' ? handleAsk : url.pathname === '/api/ecosystem' || url.pathname.startsWith('/api/ecosystem/') ? handleEcosystem : url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : url.pathname.startsWith('/api/security/') ? handleSecurityPublic : url.pathname.startsWith('/api/chains/') ? handleChains : null
         if (!handler) return next()
         handler(req, res, url).then((done) => {
           if (done) return

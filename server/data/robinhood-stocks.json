@@ -1,6 +1,6 @@
 {
   "chainId": 4663,
-  "source": "DeepCore SDK deployments/stockFeeds.ts + stocks.ts, every feed read on chain 2026-10-15",
+  "source": "Chainlink stock feeds and the token list beside them, every feed read on chain 2026-10-15",
   "stocks": [
     {
       "ticker": "NVDA",

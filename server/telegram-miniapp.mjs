@@ -23,18 +23,17 @@
 //   GET  /api/tg/me[?fresh=1]          -> { user, gate, linked, portal, announcements, holderChains }
 //   POST /api/tg/announcements         { on: boolean } -> { announcements }   Gully Labs news in the private chat (never gated)
 //   GET  /api/tg/sparks                -> { sparks: { "<chain>:<TICKER>": number[] } }   24h of gap, ~24 points
-//   GET  /api/tg/launches[?chain=<id>] -> DeepCore launches (deepcore.mjs readLaunches)
+//   GET  /api/tg/launches              -> 410 Gone: the launches feed was retired on 2026-10-29
 //   GET  /api/tg/alerts                -> the linked account's alerts and limits
 //   POST /api/tg/alerts                { chain, ticker, pct, direction } -> 201 { alert }   (Telegram delivery)
 //                                      { kind: 'holders', chain, token, metric?, above?, dropPts? } -> a Holder Map alert
-//                                      { kind: 'deepcore-launch', chainId?: number | null } -> a new-launch alert (null: any chain)
+//                                      { kind: 'deepcore-launch' } -> 400 from alerts.mjs: new-launch alerts were retired 2026-10-29
 //   POST /api/tg/alerts/:id/pause|resume|test|delete
 
 import crypto from 'node:crypto'
 import { json, readJson } from './http.mjs'
 import { getAccount } from './store.mjs'
 import { alertsOf } from './alerts.mjs'
-import { readLaunches, DEEPCORE_CHAINS } from './deepcore.mjs'
 import { readHistory, trackedStocks } from './tracker.mjs'
 import { alertsRouteFor, channelUrl, followsChannel, holderStockChains, linkForTelegramUser, requiredChannel, telegramToken } from './telegram.mjs'
 import { botUser, setOptOut } from './telegram-users.mjs'
@@ -144,6 +143,8 @@ const viewAlerts = (data) => ({
 /** /api/tg/*: the Mini App's API. Returns true when it answered. */
 export async function handleMiniApp(req, res, url) {
   const p = url.pathname
+  // The launches feed (DeepCore) was retired on 2026-10-29: answered before sign-in, so old app builds get the reason.
+  if (p === '/api/tg/launches') return json(res, 410, { error: 'DeepCore integration ended on 2026-10-29.' }), true
   const token = telegramToken()
   if (!token) return json(res, 404, { error: 'The Telegram Mini App is not configured on this server.' }), true
   const auth = validateInitData(tmaOf(req), token)
@@ -161,7 +162,7 @@ export async function handleMiniApp(req, res, url) {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
     const linked = link ? { chatType: link.chatType, chatTitle: link.chatTitle, account: `${link.address.slice(0, 6)}…${link.address.slice(-4)}`, blocked } : null
     // announcements: whether Gully Labs news reaches the user's private chat with the bot (bot-users.json).
-    // holderChains: the stock chains whose Holder Map has data (DeepCore launches always have one).
+    // holderChains: the stock chains whose Holder Map has data.
     return json(res, 200, { user, gate, linked, portal: `${PORTAL}/#alerts`, announcements: !botUser(user.id)?.optedOut, holderChains: holderStockChains() }), true
   }
   // Announcements on or off: account management, never gated (like the bot's Settings switch).
@@ -181,19 +182,6 @@ export async function handleMiniApp(req, res, url) {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
     return json(res, 200, { sparks: sparks() }, { 'Cache-Control': 'private, max-age=60' }), true
   }
-  if (p === '/api/tg/launches') {
-    if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
-    const raw = url.searchParams.get('chain')
-    const chainId = raw && raw !== '0' ? Number(raw) : null
-    if (chainId !== null && !DEEPCORE_CHAINS[chainId]) return json(res, 400, { error: 'Unknown DeepCore chain.' }), true
-    let r
-    try {
-      r = await readLaunches({ chainId, limit: 20 })
-    } catch {
-      r = { state: 'unreadable', launches: [], asOf: null, chains: [], error: 'DeepCore could not be read just now.' }
-    }
-    return json(res, 200, { ...r, chainNames: Object.fromEntries(Object.entries(DEEPCORE_CHAINS).map(([id, c]) => [id, c.name])) }), true
-  }
   if (p === '/api/tg/alerts' || p.startsWith('/api/tg/alerts/')) {
     if (!link) return json(res, 409, { error: 'Link this Telegram account to a wallet first: in the app dashboard (app.gullylabs.xyz), Alerts tab, press Connect Telegram.', linkNeeded: true, portal: `${PORTAL}/#alerts` }), true
     if (p === '/api/tg/alerts' && req.method === 'GET') return json(res, 200, viewAlerts(await alertsOf(link.address))), true
@@ -204,8 +192,9 @@ export async function handleMiniApp(req, res, url) {
       const body = await readJson(req, 2_000)
       // A holder alert (Holder Map): the token's top cluster (or top 10) passing a share; alerts.mjs validates it.
       const r =
+        // The retired new-launch kind goes to alerts.mjs, which refuses it with the reason (one place says it).
         body?.kind === 'deepcore-launch'
-          ? await alertsRouteFor(link.address, 'POST', '/api/developer/alerts', { condition: { type: 'deepcore-launch', chainId: body?.chainId ? Number(body.chainId) : null }, telegram: true })
+          ? await alertsRouteFor(link.address, 'POST', '/api/developer/alerts', { condition: { type: 'deepcore-launch' }, telegram: true })
           : body?.kind === 'holders'
           ? await alertsRouteFor(link.address, 'POST', '/api/developer/alerts', {
               condition: { type: 'holders', chain: body?.chain, token: body?.token, metric: body?.metric ?? 'cluster', above: body?.above ?? null, dropPts: body?.dropPts ?? null },

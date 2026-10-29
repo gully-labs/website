@@ -80,7 +80,6 @@ Object.assign(process.env, {
   DIST_DIR: path.join(tmp, 'no-dist'),
   ADMIN_TOKEN: crypto.randomBytes(24).toString('hex'),
   TRACKER_LOOP: 'off',
-  DEEPCORE_LOOP: 'off',
   TRACKER_SKIP_APIS: '1',
   ASK_REMOTE: 'off',
   TELEGRAM_BOT_TOKEN: TOKEN,
@@ -169,8 +168,7 @@ try {
   const sp = await call('/api/tg/sparks')
   check('sparks: answers an object of series', sp.status === 200 && typeof sp.data.sparks === 'object')
   const ln = await call('/api/tg/launches')
-  check('launches: answers with a state (unreadable here: DeepCore is not reachable in tests)', ln.status === 200 && ['ok', 'stale', 'unreadable'].includes(ln.data.state) && Array.isArray(ln.data.launches) && ln.data.chainNames?.['56'] === 'BNB Chain')
-  check('launches: an unknown chain is 400', (await call('/api/tg/launches?chain=12345')).status === 400)
+  check('launches: retired on 2026-10-29, the route answers 410 Gone', ln.status === 410 && /ended on 2026-10-29/.test(ln.data?.error ?? ''), JSON.stringify(ln.data))
 
   /* --------------------------------------------------- alerts, directions --- */
   const strangerAlerts = await call('/api/tg/alerts', { data: initData({ user: { id: STRANGER, first_name: 'Sam' } }) })
@@ -190,9 +188,9 @@ try {
   const list = await call('/api/tg/alerts')
   check('alerts: the list is the wallet’s own', list.status === 200 && list.data.alerts.length === 1 && list.data.alerts[0].id === id && list.data.limits.max === 1)
 
-  /* ------------------------------------------- launch alerts, announcements, holder chains (N-24, P1-19, N-1) --- */
+  /* ------------------------------------ the retired launch alert, announcements, holder chains (N-24, N-1) --- */
   const launchAlert = await call('/api/tg/alerts', { method: 'POST', body: { kind: 'deepcore-launch', chainId: 8453 } })
-  check('create: a DeepCore launch alert goes through the alerts module (Free plan full: 403, not a 400)', launchAlert.status === 403, JSON.stringify(launchAlert.data))
+  check('create: the retired new-launch kind is refused by the alerts module (400, before the plan limit)', launchAlert.status === 400 && /retired/.test(launchAlert.data?.error ?? ''), JSON.stringify(launchAlert.data))
   const me1 = await call('/api/tg/me')
   check('me: says whether announcements are on, and which stock chains have holder data', me1.data.announcements === true && Array.isArray(me1.data.holderChains), JSON.stringify(me1.data))
   const off = await call('/api/tg/announcements', { method: 'POST', body: { on: false } })
@@ -261,7 +259,7 @@ try {
   /* ------------------------------------------------------- plain words --- */
   // The app's own screens (src/pages/tg) are written for everyone: no source names, feeds, pools, "fair price",
   // "on chain" or UTC times in any string literal or JSX text. Code (imports, API paths, field names) is not text.
-  const JARGON = /api\.deepcore|\bAPI\b|\bRPC\b|\bUTC\b|Chainlink|\bfeeds?\b|endpoint|indexer|\bpools?\b|fair price|\b[Ff]air\b|[Oo]n[- ]chain|unreadable|could not be read|re-arm/
+  const JARGON = /\bAPI\b|\bRPC\b|\bUTC\b|Chainlink|\bfeeds?\b|endpoint|indexer|\bpools?\b|fair price|\b[Ff]air\b|[Oo]n[- ]chain|unreadable|could not be read|re-arm/
   const tgSrc = ['screens.tsx', 'TgApp.tsx'].map((f) => fs.readFileSync(new URL(`../src/pages/tg/${f}`, import.meta.url), 'utf8')).join('\n')
   const literals = [...tgSrc.matchAll(/'((?:[^'\\\n]|\\.){2,})'|"((?:[^"\\\n]|\\.){2,})"|`((?:[^`\\\n]|\\.){2,})`/g)].map((m) => m[1] ?? m[2] ?? m[3])
   const jsxText = [...tgSrc.matchAll(/>([^<>{}\n]*[A-Za-z][^<>{}\n]*)</g)].map((m) => m[1].trim()).filter((x) => /\s/.test(x))

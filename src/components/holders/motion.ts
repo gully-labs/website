@@ -37,7 +37,7 @@ export interface FlowEvent {
 }
 
 const POOLISH = new Set<HolderLabelKind>(['pool', 'router'])
-const INFRA = new Set<HolderLabelKind>(['pool', 'lock', 'burn', 'token', 'deepcore', 'router', 'gully', 'exchange'])
+const INFRA = new Set<HolderLabelKind>(['pool', 'lock', 'burn', 'token', 'router', 'gully', 'exchange'])
 
 /** The side of a transfer, from the server when it says, else from the map's own labels (older servers). */
 export function sideOf(f: { from: string; to: string; side?: FlowSide }, byId: Map<string, HolderNode>): FlowSide {
@@ -133,7 +133,7 @@ export function glyphOf(n: HolderNode): Glyph | null {
   if (k === 'deployer') return 'deployer'
   if (k === 'token') return 'token'
   if (k === 'exchange') return 'exchange'
-  if (k === 'deepcore' || k === 'gully') return 'contract'
+  if (k === 'gully') return 'contract'
   return null
 }
 /** The short caption under an infrastructure bubble. */
@@ -150,7 +150,6 @@ export function captionOf(n: HolderNode): string | null {
         deployer: 'DEPLOYER',
         token: 'TOKEN',
         exchange: 'EXCHANGE',
-        deepcore: 'DEEPCORE',
         gully: 'GULLY',
       } as Partial<Record<HolderLabelKind, string>>
     )[k] ?? null

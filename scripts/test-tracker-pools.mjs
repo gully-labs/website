@@ -1,10 +1,11 @@
-// DeepCore in the stats aggregator (server/stats.mjs) and the tracker's on-chain re-pricing
-// (server/tracker.mjs). Offline by default; DEEPCORE_LIVE=1 also reads a real DeepCore pool on
-// Robinhood Chain through the same call the tracker makes and checks it against DeepCore's API.
-// Run: npm run test:deepcore   (live: DEEPCORE_LIVE=1 npm run test:deepcore)
+// The tracker's on-chain re-pricing of stock-token pools (server/tracker.mjs): which call reads which pool.
+// DeepCore CL pools are one of the price sources for stock tokens, read on chain (CLPoolManager), so they stay
+// here although the DeepCore integration itself ended on 2026-10-29. Offline by default; DEEPCORE_LIVE=1 also
+// reads a real DeepCore pool on Robinhood Chain through the same call the tracker makes and checks it against
+// DeepCore's public API.
+// Run: npm run test:tracker-pools   (live: DEEPCORE_LIVE=1 npm run test:tracker-pools)
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { DEEPCORE_HOSTS, deepcoreExtras } from '../server/stats.mjs'
 import { DEEPCORE_CL_POOL_MANAGER, isDeepcorePool, onchainPriceCall } from '../server/tracker.mjs'
 
 const STATE_VIEW = '0xf3334192d15450cdd385c8b70e03f9a6bd9e673b'
@@ -13,32 +14,6 @@ const bsc = { stateView: null, deepcoreCl: DEEPCORE_CL_POOL_MANAGER }
 // A real DeepCore CL pool on Robinhood Chain (WETH / DTC), from api.deepcore.fun/v1/chains/4663/pools.
 const DC_POOL = '0xb506bfaaa4c59b41de3de2167e797e29ee76ac13fc746504a69f8a9f45d11411'
 const V3_PAIR = '0x62AB521f71431f78ac374CdbadC6cda3c8916b6C'
-
-test('stats reads the documented API host first, the old host only as a fallback', () => {
-  assert.deepEqual(DEEPCORE_HOSTS, ['https://api.deepcore.fun', 'https://deepcore.fun'])
-})
-
-test('deepcoreExtras sums sites, 24h launches, locks and locked dollars across chains', () => {
-  const items = [
-    { chainId: 56, sites: { total: 0, last24h: 0 }, launches: { total: 0, last24h: 0 }, locks: { count: 0, usd: '0.00', unpricedLocks: 0 } },
-    { chainId: 4663, sites: { total: 2, last24h: 1 }, launches: { total: 1, last24h: 1 }, locks: { count: 1, usd: '3376.10', unpricedLocks: 1 } },
-  ]
-  assert.deepEqual(deepcoreExtras(items), { sites: 2, sites24h: 1, launches24h: 1, locks: 1, lockedUsd: 3376.1, unpricedLocks: 1 })
-})
-
-test('a chain that leaves a figure out makes the total unknown, never a smaller number', () => {
-  const items = [
-    { sites: { total: 3, last24h: 0 }, launches: { last24h: 2 }, locks: { count: 1, usd: '10.00' } },
-    { launches: { last24h: 0 }, locks: { count: 0 } },
-  ]
-  const x = deepcoreExtras(items)
-  assert.equal(x.sites, null)
-  assert.equal(x.sites24h, null)
-  assert.equal(x.lockedUsd, null)
-  assert.equal(x.launches24h, 2)
-  assert.equal(x.locks, 1)
-  assert.deepEqual(deepcoreExtras([]), { sites: null, sites24h: null, launches24h: null, locks: null, lockedUsd: null, unpricedLocks: 0 })
-})
 
 test('DeepCore pools are recognised by venue name or pool manager', () => {
   assert.equal(isDeepcorePool({ dex: 'deepcore' }), true)

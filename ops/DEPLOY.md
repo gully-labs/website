@@ -183,7 +183,7 @@ crashes between deploys. HAProxy then has no healthy server and Cloudflare repor
     as a key created or a session started in those seconds, can be lost when the new one next saves that
     file.
   - **Background loops do not run twice:** the new container starts with `GULLY_STANDBY=1`, so it answers
-    requests (health checks) but runs no tracker poll, DeepCore poll, alert evaluation or Telegram webhook
+    requests (health checks) but runs no tracker poll, alert evaluation or Telegram webhook
     registration. Right after the switch the script sends it `SIGUSR2` (`promote_next`), which starts them;
     `server/server.mjs` records the promotion in `/data/.promoted-<container id>`, so a later restart of
     that container starts its loops at once. The old container keeps its loops only for the drain (10 s).

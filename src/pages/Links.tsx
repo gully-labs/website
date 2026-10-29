@@ -51,13 +51,13 @@ function groups(pay: PayCfg | null): Group[] {
         { label: 'Gully Labs', desc: 'The site: every project and product', href: utm('https://gullylabs.xyz/'), icon: Globe },
         { label: 'Gully Labs App', desc: 'Keys, alerts, analytics and payments', href: utm('https://app.gullylabs.xyz/'), icon: LayoutDashboard },
         { label: 'Stock tracker', desc: 'Stock tokens against their fair price', href: utm('https://gullylabs.xyz/tracker'), icon: Activity },
-        { label: 'Telegram bot + Mini App', desc: 'The tracker, DeepCore launches and gap alerts in Telegram', href: 'https://t.me/GullyLabsBot', icon: Bot },
+        { label: 'Telegram bot + Mini App', desc: 'The tracker, Holder Map and gap alerts in Telegram', href: 'https://t.me/GullyLabsBot', icon: Bot },
       ],
     },
     {
       title: 'Products',
       items: [
-        { label: 'Holder Map', desc: 'Who really holds a DeepCore launch: clusters, bundled buys, a health score', href: utm('https://holdermaps.xyz/'), icon: Orbit },
+        { label: 'Holder Map', desc: 'Who really holds a token: clusters, bundled buys, a health score', href: utm('https://holdermaps.xyz/'), icon: Orbit },
         { label: 'Gully Security', desc: 'AI Security Scan of a contract or codebase; reviews quoted on request', href: utm('https://gullysecurity.xyz/'), icon: ShieldCheck },
         { label: 'Gully Score', desc: 'A 0 to 100 contract score from public evidence, every weight shown', href: utm('https://gullylabs.xyz/score'), icon: Gauge },
         { label: 'Gully AI', desc: 'Ask anything about Gully Labs, with sources', href: utm('https://gullylabs.xyz/ask'), icon: Sparkles },

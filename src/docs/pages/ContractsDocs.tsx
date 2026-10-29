@@ -15,9 +15,9 @@ const sections = [
   { id: 'rules', title: 'What is listed, and what is not' },
 ]
 
-const PROJECTS = ['Gully Labs', 'DeepCore', 'Peddles', 'PeddleSwap', 'PeddleQuest']
-const VENUE_KEY: Record<string, string> = { 'Gully Labs': 'gully', DeepCore: 'deepcore', Peddles: 'peddles', PeddleSwap: 'peddleswap', PeddleQuest: 'peddlequest' }
-const REPO_NAME: Record<string, string> = { deepcore: 'DeepCore SDK', 'peddles-launchpad': 'Peddles', peddleswap: 'PeddleSwap', 'peddles-quest': 'PeddleQuest', website: 'Gully Labs' }
+const PROJECTS = ['Gully Labs', 'Peddles', 'PeddleSwap', 'PeddleQuest']
+const VENUE_KEY: Record<string, string> = { 'Gully Labs': 'gully', Peddles: 'peddles', PeddleSwap: 'peddleswap', PeddleQuest: 'peddlequest' }
+const REPO_NAME: Record<string, string> = { 'peddles-launchpad': 'Peddles', peddleswap: 'PeddleSwap', 'peddles-quest': 'PeddleQuest', website: 'Gully Labs' }
 /** "repo:path" as plain words: the repository's product and what kind of file, never a file path. */
 function sourceWords(source: string) {
   const [repo, path = ''] = source.split(':')

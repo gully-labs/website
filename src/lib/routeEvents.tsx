@@ -6,8 +6,8 @@ import { track } from './track'
    map opened, sent from the route, never from inside the page. Labels only: the chain, launch or stock, and
    where it was opened. Never the token address or a wallet. */
 
-/** A stock map is keyed by its ticker (NVDA, TSLAx); a launch by its contract address. */
-const holderKind = (token: string) => (/^[A-Za-z0-9.]{1,12}$/.test(token) ? 'stock' : 'deepcore-launch')
+/** A stock map is keyed by its ticker (NVDA, TSLAx); any other token (a launch included) by its contract address. */
+const holderKind = (token: string) => (/^[A-Za-z0-9.]{1,12}$/.test(token) ? 'stock' : 'token')
 
 export function HolderMapOpened({ from, children }: { from: 'holders-page' | 'embed'; children: ReactNode }) {
   const { chain = '', token = '' } = useParams()

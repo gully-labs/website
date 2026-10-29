@@ -1,9 +1,9 @@
-import { BellRing, ChartNoAxesColumn, Check, Megaphone, Rocket } from 'lucide-react'
+import { BellRing, ChartNoAxesColumn, Check, Megaphone } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Mascot, Wordmark } from '../../components/brand'
 import { useTracker, type TrackerRow } from '../../lib/tracker'
 import { useTgApi } from './hooks'
-import { AlertsTab, AnnouncementsSwitch, Button, Chips, GapsTab, HoldersScreen, LaunchesTab, Notice, StockScreen, type Me } from './screens'
+import { AlertsTab, AnnouncementsSwitch, Button, Chips, GapsTab, HoldersScreen, Notice, StockScreen, type Me } from './screens'
 import { haptic, isLight, loadTelegram, themeVars, type ThemeParams, type WebApp } from './sdk'
 
 /* The Gully Labs Telegram Mini App (gullylabs.xyz/tg, its own lazy chunk). Opened from @GullyLabsBot's
@@ -12,7 +12,7 @@ import { haptic, isLight, loadTelegram, themeVars, type ThemeParams, type WebApp
    small screen stack: Telegram's BackButton pops it, the MainButton creates alerts on a stock, and taps
    give haptic feedback. Following @GullyLabsNews is required here as in the bot (the join screen). */
 
-type Tab = 'gaps' | 'launches' | 'alerts'
+type Tab = 'gaps' | 'alerts'
 type Screen = { k: 'home' } | { k: 'stock'; chain: string; ticker: string } | { k: 'holders'; chain: string; token: string }
 
 /**
@@ -36,7 +36,6 @@ function holdersStart(wa: WebApp): Screen | null {
 }
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'gaps', label: 'Gaps', icon: <ChartNoAxesColumn size={14} aria-hidden /> },
-  { id: 'launches', label: 'Launches', icon: <Rocket size={14} aria-hidden /> },
   { id: 'alerts', label: 'My alerts', icon: <BellRing size={14} aria-hidden /> },
 ]
 const BOT_URL = 'https://t.me/GullyLabsBot'
@@ -203,7 +202,7 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
             </div>
           }
         >
-          The widest stock-token gaps, new DeepCore launches as they happen and product drops. Join the channel, then tap <b>I&apos;ve joined</b>.
+          The widest stock-token gaps, Gully Chain news and product drops. Join the channel, then tap <b>I&apos;ve joined</b>.
         </Notice>
         {fresh > 0 && <p className="m-0 px-1 text-[13px] text-error">Not joined yet. Telegram can take a few seconds: join the channel, wait a moment, then tap again.</p>}
         {m.linked && (
@@ -218,7 +217,7 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
   const rowOf = (chain: string, ticker: string): TrackerRow | null => (tracker.k === 'ok' ? (tracker.data.rows.find((r) => r.chain === chain && r.ticker === ticker) ?? null) : null)
   const openStock = (chain: string, ticker: string) => setStack((s) => [...s, { k: 'stock', chain, ticker }])
   const openHolders = (chain: string, token: string) => setStack((s) => [...s, { k: 'holders', chain, token }])
-  // Stock tokens get "Who holds?" only on chains where the Holder Map has data (DeepCore launches always do).
+  // Stock tokens get "Who holds?" only on chains where the Holder Map has data.
   const stockHolders = (chain: string) => (m.holderChains ?? []).includes(chain)
 
   return (
@@ -245,7 +244,6 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
             <Chips value={tab} options={TABS} onChange={setTab} label="Section" />
           </div>
           {tab === 'gaps' && <GapsTab initData={initData} tracker={tracker} ink={ink} onOpen={(r) => openStock(r.chain, r.ticker)} />}
-          {tab === 'launches' && <LaunchesTab wa={wa} initData={initData} ink={ink} me={m} onHolders={openHolders} onAlertsChanged={() => setAlertsVersion((v) => v + 1)} />}
           {tab === 'alerts' && (
             <>
               <AlertsTab wa={wa} initData={initData} me={m} version={alertsVersion} onOpenStock={openStock} />

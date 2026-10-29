@@ -101,9 +101,9 @@ export function holderMapFeatures(planId) {
 //   maxActive            checks one workspace may have running or queued at once
 //   maxRunning           checks running at once on the server (they share the RPCs)
 //   budgets              the hard limits of one check; one that reaches a limit finishes "partial"
-//                        with the reason. rpcCalls: JSON-RPC calls; logSpans: log reads (a DeepCore log
-//                        page or an eth_getLogs session); explorerCalls: explorer/API reads (Blockscout,
-//                        DeepCore account activity); ms: wall time; holders: unlabelled holders whose
+//                        with the reason. rpcCalls: JSON-RPC calls; logSpans: log reads (an eth_getLogs
+//                        session); explorerCalls: explorer/API reads (Blockscout, the Gully Chain
+//                        indexer); ms: wall time; holders: unlabelled holders whose
 //                        funding is traced; hops: funder hops followed per holder
 export const HOLDER_DEEP = {
   id: 'holder-deep',

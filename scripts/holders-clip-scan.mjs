@@ -13,7 +13,7 @@ for (const width of [390, 320]) {
   const ctx = await browser.newContext({ viewport: { width, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, serviceWorkers: 'block' })
   await ctx.route(/^https?:\/\/(?!localhost[:/]|127\.0\.0\.1[:/])/, (r) => r.abort())
   await ctx.route(`${BASE}/api/geo`, (r) => json(r, { country: 'GB', allowed: true, reason: 'ok' }))
-  await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/.]+$`), (r) => json(r, holdersFixture('deepcore-launch')))
+  await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/.]+$`), (r) => json(r, holdersFixture('launch')))
   await ctx.route(new RegExp(`^${BASE}/api/holders/[^/]+/[^/]+/live`), (r) => json(r, HX.live))
   const page = await ctx.newPage()
   await page.goto(`${BASE}/holders/robinhood/${E2E_LAUNCH_TOKEN}`)

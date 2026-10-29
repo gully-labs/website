@@ -14,12 +14,10 @@
 //                                                  `above`% or falls `dropPts` points from its high since
 //                                                  the alert was armed (the cluster sells). Read every
 //                                                  HOLDER_ALERTS_MS by startHolderAlerts; no stock target.
-//              { type: 'deepcore-launch', chainId }  a new token launches on DeepCore (deepcore.mjs),
-//                                                  on one chain or (chainId null) any; no stock target.
-//                                                  Fires once per new launch; launches that arrive
-//                                                  within LAUNCH_COOLDOWN_MS of the last delivery wait
-//                                                  and go out together. Counts against the plan's
-//                                                  alerts like any other alert.
+//              { type: 'deepcore-launch', chainId }  RETIRED on 2026-10-29 with the DeepCore integration.
+//                                                  New ones are refused; stored ones are never evaluated
+//                                                  or test-delivered again, list as a retired new-launch
+//                                                  alert, and can still be paused or deleted.
 //   delivery   webhook: POST JSON to an https URL, signed with a per-alert secret (shown once):
 //                X-Gully-Timestamp: <unix seconds>
 //                X-Gully-Signature: sha256=<hex HMAC-SHA256(secret, "<timestamp>.<raw body>")>
@@ -53,7 +51,6 @@ import { planOf } from './plans.mjs'
 import { getAccount, randomToken } from './store.mjs'
 import { FLAG_PCT, trackedStocks } from './tracker.mjs'
 import { linkedChat, sendAlertTelegram, telegramEnabled, telegramInfo } from './telegram.mjs'
-import { DEEPCORE_CHAINS, deepcoreAlertChains } from './deepcore.mjs'
 import { chainKeyOf, findStock, HOLDER_CHAINS, readHolderMap } from './holders.mjs'
 import { holderMapFeatures } from './plans.mjs'
 import { isSolanaAddress } from './solana.mjs'
@@ -61,9 +58,10 @@ import { holderPageUrl } from './hosts.mjs'
 
 const FILE = path.join(DATA_DIR, 'alerts.json')
 export const COOLDOWN_MS = 30 * 60_000
-export const LAUNCH_COOLDOWN_MS = 5 * 60_000
-const MAX_PENDING_LAUNCHES = 20
-const isLaunchAlert = (a) => a?.condition?.type === 'deepcore-launch'
+// The retired new-launch alert (see the header): kept only so stored alerts of that type list and delete cleanly.
+const RETIRED_LAUNCH_TYPE = 'deepcore-launch'
+const RETIRED_LAUNCH_TEXT = 'New-launch alert (retired 2026-10-29)'
+const isRetiredAlert = (a) => a?.condition?.type === RETIRED_LAUNCH_TYPE
 const isHoldersAlert = (a) => a?.condition?.type === 'holders'
 export const HOLDER_ALERTS_MS = 10 * 60_000
 const MAX_HOLDER_TOKENS = 50
@@ -290,16 +288,16 @@ export const holdersWords = (c) => {
   const parts = [c.above != null ? `reaches ${c.above}%` : null, c.dropPts != null ? `falls ${c.dropPts} points from its high` : null, c.sellPct != null ? `sells ${c.sellPct}% or more of its holding` : null].filter(Boolean)
   return `${metricWords(c.metric)} of ${c.symbol ?? c.token} on ${HOLDER_CHAINS[c.chain]?.name ?? c.chain} ${parts.join(' or ')}`
 }
-export const conditionText = (c) => (c.type === 'holders' ? holdersWords(c) : c.type === 'deepcore-launch' ? `new DeepCore launch on ${c.chainId ? (DEEPCORE_CHAINS[c.chainId]?.name ?? `chain ${c.chainId}`) : 'any chain'}` : c.type === 'gap' ? gapWords(c) : c.status === 'either' ? 'status premium or discount' : `status ${c.status}`)
+export const conditionText = (c) => (c.type === 'holders' ? holdersWords(c) : c.type === RETIRED_LAUNCH_TYPE ? RETIRED_LAUNCH_TEXT : c.type === 'gap' ? gapWords(c) : c.status === 'either' ? 'status premium or discount' : `status ${c.status}`)
 
-const kindOf = (a) => (isLaunchAlert(a) ? 'deepcore-launch' : isHoldersAlert(a) ? 'holders' : 'gap')
+const kindOf = (a) => (isRetiredAlert(a) ? 'retired' : isHoldersAlert(a) ? 'holders' : 'gap')
 
 function payloadOf(alert, events, test, at) {
   return {
     id: `dlv_${randomToken(12)}`,
     type: test ? 'alert.test' : 'alert.triggered',
     createdAt: new Date(at).toISOString(),
-    alert: { id: alert.id, name: alert.name || null, kind: kindOf(alert), target: isLaunchAlert(alert) ? { deepcoreChainId: alert.condition.chainId ?? null } : isHoldersAlert(alert) ? { chain: alert.condition.chain, token: alert.condition.token } : alert.chain ? { chain: alert.chain, ticker: alert.ticker } : 'any', condition: alert.condition },
+    alert: { id: alert.id, name: alert.name || null, kind: kindOf(alert), target: isHoldersAlert(alert) ? { chain: alert.condition.chain, token: alert.condition.token } : alert.chain ? { chain: alert.chain, ticker: alert.ticker } : 'any', condition: alert.condition },
     events,
   }
 }
@@ -321,7 +319,7 @@ async function deliver(alert, events, test, at = Date.now()) {
   }
   const live = db.alerts.find((a) => a.id === alert.id)
   if (live) {
-    for (const r of results) live.deliveries.push({ id: payload.id, at: payload.createdAt, test, channel: r.channel, status: r.status, ok: r.ok, error: r.error, ms: r.ms, events: events.map((e) => (e.kind === 'deepcore.launch' ? `deepcore:${e.chainKey}:${e.symbol ?? e.token}` : e.kind === 'holders.alert' ? `holders:${e.chain}:${e.symbol ?? e.token}` : `${e.chain}:${e.ticker}`)) })
+    for (const r of results) live.deliveries.push({ id: payload.id, at: payload.createdAt, test, channel: r.channel, status: r.status, ok: r.ok, error: r.error, ms: r.ms, events: events.map((e) => (e.kind === 'holders.alert' ? `holders:${e.chain}:${e.symbol ?? e.token}` : `${e.chain}:${e.ticker}`)) })
     if (live.deliveries.length > KEEP_DELIVERIES) live.deliveries.splice(0, live.deliveries.length - KEEP_DELIVERIES)
   }
   return { payload, results }
@@ -340,7 +338,7 @@ export async function evaluateAlerts(rows, at = Date.now()) {
   }
   const sends = []
   for (const alert of db.alerts) {
-    if (isLaunchAlert(alert) || isHoldersAlert(alert)) continue // evaluated on DeepCore polls / the holders loop
+    if (isRetiredAlert(alert) || isHoldersAlert(alert)) continue // retired (never evaluated) / the holders loop
     if (!alert.enabled || !covered.has(alert.id)) continue
     if (alert.mutedUntil && Date.parse(alert.mutedUntil) > at) continue // muted from Telegram: neither fires nor re-arms
     const triggered = []
@@ -361,65 +359,6 @@ export async function evaluateAlerts(rows, at = Date.now()) {
     sends.push(deliver(alert, triggered.map((r) => eventOf(r, at)), false, at))
   }
   save()
-  const out = await Promise.all(sends)
-  if (out.length) save()
-  return out
-}
-
-/** The event a DeepCore launch alert delivers (webhook JSON and Telegram). */
-const launchEventOf = (l, at) => ({
-  kind: 'deepcore.launch',
-  chainId: l.chainId,
-  chainKey: l.chainKey,
-  chainName: l.chainName,
-  token: l.token,
-  symbol: l.symbol,
-  createdAt: l.createdAt,
-  txHash: l.txHash,
-  pools: l.legs.map((g) => ({ poolId: g.poolId, kind: g.kind, quote: g.quote, locked: g.locked, lockId: g.lockId })),
-  links: l.links,
-  snapshotAt: new Date(at).toISOString(),
-})
-
-/**
- * Delivers DeepCore launch alerts. Called after every DeepCore poll (deepcore.mjs onLaunches) with the
- * launches first seen in it (possibly none: launches held back by the cooldown are flushed then).
- * Paused, muted or uncovered alerts neither queue nor send: a launch they missed is not sent later.
- */
-export async function evaluateLaunchAlerts(fresh, at = Date.now()) {
-  const owners = new Set(db.alerts.filter(isLaunchAlert).map((a) => a.owner))
-  const covered = new Set()
-  for (const o of owners) {
-    if (getAccount(o)?.blocked) continue
-    for (const id of coveredIds(o)) covered.add(id)
-  }
-  const sends = []
-  let changed = false
-  for (const alert of db.alerts) {
-    if (!isLaunchAlert(alert)) continue
-    const live = alert.enabled && covered.has(alert.id) && !(alert.mutedUntil && Date.parse(alert.mutedUntil) > at)
-    if (!live) {
-      if (alert.pendingLaunches?.length) {
-        alert.pendingLaunches = []
-        changed = true
-      }
-      continue
-    }
-    // Only launches made after the alert was created (an hour of slack for indexer lag).
-    const mine = fresh.filter((l) => (!alert.condition.chainId || l.chainId === alert.condition.chainId) && Date.parse(l.createdAt) >= Date.parse(alert.createdAt) - 3_600_000)
-    const queue = [...(alert.pendingLaunches ?? []), ...mine.map((l) => launchEventOf(l, at))].slice(-MAX_PENDING_LAUNCHES)
-    if (mine.length) changed = true
-    if (!queue.length) continue
-    if (alert.lastFiredAt && at - Date.parse(alert.lastFiredAt) < LAUNCH_COOLDOWN_MS) {
-      alert.pendingLaunches = queue
-      continue
-    }
-    alert.pendingLaunches = []
-    alert.lastFiredAt = new Date(at).toISOString()
-    changed = true
-    sends.push(deliver(alert, queue, false, at))
-  }
-  if (changed) save()
   const out = await Promise.all(sends)
   if (out.length) save()
   return out
@@ -538,7 +477,6 @@ function view(a, covered) {
     ticker: a.ticker,
     condition: a.condition,
     kind: kindOf(a),
-    pendingLaunches: isLaunchAlert(a) ? (a.pendingLaunches?.length ?? 0) : undefined,
     webhook: a.webhook ? { url: a.webhook.url } : null,
     telegram: a.telegram ? { chatTitle: (a.telegram.chatId ? null : linkedChat(a.owner)?.chatTitle) ?? null, linked: !!(a.telegram.chatId || linkedChat(a.owner)) } : null,
     enabled: a.enabled,
@@ -569,7 +507,6 @@ export async function alertsOf(address) {
     // The alert kinds this server offers, for the create dialog.
     kinds: [
       { id: 'gap', label: 'Gap alert', target: 'stock' },
-      { id: 'deepcore-launch', label: 'DeepCore new launch', target: 'deepcore-chain', chains: deepcoreAlertChains(), cooldownMinutes: LAUNCH_COOLDOWN_MS / 60_000 },
       { id: 'holders', label: 'Holder Map: cluster or top-10 share', target: 'token', chains: Object.entries(HOLDER_CHAINS).map(([key, c]) => ({ key, name: c.name })), everyMinutes: HOLDER_ALERTS_MS / 60_000, available: holderMapFeatures(plan.id).alerts },
     ],
   }
@@ -605,20 +542,21 @@ export async function handleAlerts(req, res, url, address) {
 
   if (p === '/api/developer/alerts') {
     if (!allow(`create:${address}`, 30, 3_600_000)) return json(res, 429, { error: 'Too many alerts created in the last hour. Try again later.' }), true
+    const body = await readJson(req, 4_000)
+    // The new-launch alert was retired with the DeepCore integration on 2026-10-29 (refused before the plan check,
+    // so a full plan does not answer "upgrade" for a kind that no plan offers).
+    if (body?.condition?.type === RETIRED_LAUNCH_TYPE) return json(res, 400, { error: 'New-launch alerts were retired on 2026-10-29, when the DeepCore integration ended. Choose a gap, status or holder alert.' }), true
     const plan = planOf(address)
     const mine = db.alerts.filter((a) => a.owner === address)
     if (mine.length >= plan.alerts) return json(res, 403, { error: plan.alerts ? `The ${plan.name} plan includes ${plan.alerts} alert${plan.alerts === 1 ? '' : 's'}; you have ${mine.length}. Delete one or upgrade.` : `The ${plan.name} plan includes no alerts.` }), true
-    const body = await readJson(req, 4_000)
     const name = typeof body?.name === 'string' ? body.name.trim() : ''
     if (!NAME_RE.test(name)) return json(res, 400, { error: 'The name may hold up to 60 letters, digits, spaces, dots, dashes or underscores.' }), true
 
     let chain = null
     let ticker = null
-    const launchKind = body?.condition?.type === 'deepcore-launch'
     const holdersKind = body?.condition?.type === 'holders'
     if (holdersKind && (body?.chain || body?.ticker)) return json(res, 400, { error: 'A holder alert names its token in condition.chain and condition.token, not as a stock target.' }), true
-    if (launchKind && (body?.chain || body?.ticker)) return json(res, 400, { error: 'A DeepCore launch alert has no stock; limit it to a chain with condition.chainId, or leave that empty for every chain.' }), true
-    if (!launchKind && (body?.chain || body?.ticker)) {
+    if (body?.chain || body?.ticker) {
       chain = String(body.chain ?? '').toLowerCase()
       ticker = String(body.ticker ?? '').toUpperCase()
       if (!trackedStocks().some((s) => s.chain === chain && s.ticker === ticker)) return json(res, 400, { error: 'Pick a stock the tracker follows (chain and ticker), or leave both empty for any stock.' }), true
@@ -651,11 +589,7 @@ export async function handleAlerts(req, res, url, address) {
       if ((above !== null && !(above >= 1 && above <= 100)) || (dropPts !== null && !(dropPts >= 0.1 && dropPts <= 100)) || (sellPct !== null && !(sellPct >= 1 && sellPct <= 100))) return json(res, 400, { error: 'above and sellPct must be from 1 to 100, dropPts from 0.1 to 100.' }), true
       const symbol = typeof c.symbol === 'string' && /^[\p{L}\p{N} ._$-]{1,24}$/u.test(c.symbol) ? c.symbol : (stock?.ticker ?? null)
       condition = { type: 'holders', chain: hc, token: stock ? stock.ticker : hc === 'solana' ? tok : tok.toLowerCase(), symbol, metric, above: above === null ? null : Math.round(above * 100) / 100, dropPts: dropPts === null ? null : Math.round(dropPts * 100) / 100, sellPct: sellPct === null ? null : Math.round(sellPct * 100) / 100 }
-    } else if (launchKind) {
-      const id = c.chainId === undefined || c.chainId === null || c.chainId === '' ? null : Number(c.chainId)
-      if (id !== null && !DEEPCORE_CHAINS[id]) return json(res, 400, { error: `DeepCore runs on ${deepcoreAlertChains().map((x) => `${x.name} (${x.chainId})`).join(', ')}; pick one of those, or none for every chain.` }), true
-      condition = { type: 'deepcore-launch', chainId: id }
-    } else return json(res, 400, { error: 'Choose a condition: a gap of at least X%, a status (premium, discount or either), a new DeepCore launch, or a holder share (holders).' }), true
+    } else return json(res, 400, { error: 'Choose a condition: a gap of at least X%, a status (premium, discount or either), or a holder share (holders).' }), true
 
     let webhook = null
     let secret = null
@@ -693,6 +627,8 @@ export async function handleAlerts(req, res, url, address) {
     save()
     return json(res, 200, { ok: true }), true
   }
+  // A retired new-launch alert can only be paused or deleted: it has nothing left to deliver.
+  if (isRetiredAlert(alert) && m[2] !== 'delete' && m[2] !== 'pause') return json(res, 409, { error: 'New-launch alerts were retired on 2026-10-29. Delete this alert.' }), true
   if (m[2] === 'pause' || m[2] === 'resume') {
     alert.enabled = m[2] === 'resume'
     if (alert.enabled) delete alert.mutedUntil
@@ -746,9 +682,9 @@ export function alertsForChat(owner) {
   return db.alerts
     .filter((a) => a.owner === owner)
     .map((a) => ({
-      label: a.name || (isLaunchAlert(a) ? 'DeepCore launches' : isHoldersAlert(a) ? `Holders · ${a.condition.symbol ?? a.condition.token} on ${HOLDER_CHAINS[a.condition.chain]?.name ?? a.condition.chain}` : a.ticker ? `${a.ticker} on ${CHAIN_NAMES[a.chain] ?? a.chain}` : 'Any stock'),
+      label: a.name || (isRetiredAlert(a) ? RETIRED_LAUNCH_TEXT : isHoldersAlert(a) ? `Holders · ${a.condition.symbol ?? a.condition.token} on ${HOLDER_CHAINS[a.condition.chain]?.name ?? a.condition.chain}` : a.ticker ? `${a.ticker} on ${CHAIN_NAMES[a.chain] ?? a.chain}` : 'Any stock'),
       condition: conditionText(a.condition),
-      state: !covered.has(a.id) ? 'not in your plan' : !a.enabled ? 'paused' : a.mutedUntil && Date.parse(a.mutedUntil) > now ? `muted until ${new Date(a.mutedUntil).toISOString().replace('T', ' ').slice(0, 16)} UTC` : !isLaunchAlert(a) && Object.keys(a.disarmed).length ? 'fired, waits to re-arm' : 'watching',
+      state: !covered.has(a.id) ? 'not in your plan' : !a.enabled ? 'paused' : a.mutedUntil && Date.parse(a.mutedUntil) > now ? `muted until ${new Date(a.mutedUntil).toISOString().replace('T', ' ').slice(0, 16)} UTC` : isRetiredAlert(a) ? 'retired' : Object.keys(a.disarmed).length ? 'fired, waits to re-arm' : 'watching',
       telegram: !!a.telegram,
     }))
 }

@@ -24,7 +24,7 @@ export function StockHolders({ chain, ticker, chainName, tradeHref = '#swap' }: 
       </h2>
       {live === false ? (
         <p className="card card-pad m-0 text-[14px] leading-[1.6] text-muted">
-          Holder Maps for stocks on {chainName} are coming soon. DeepCore launches already have live maps:{' '}
+          Holder Maps for stocks on {chainName} are coming soon. Tokens on Gully Chain already have live maps:{' '}
           <Link to="/holders" className="text-gold underline-offset-4 hover:underline">
             see them on the Holder Map
           </Link>
