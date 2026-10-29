@@ -2,7 +2,6 @@
    studies, process and the contact intake form. */
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { ArrowRight, ArrowUpRight, Check, Send } from 'lucide-react'
-import { fmtUsd } from '../console/charts'
 import { chainHead, useLive } from '../console/live'
 import { BUDGETS, PRODUCTS, productBySlug, SERVICES, type ProductDef, type ServiceKey } from './catalog'
 import { A, Dot, fmtCompact, Logo, productHref, stateOf, useHubProducts } from './kit'
@@ -91,14 +90,13 @@ export function ServicesList({ compact = false }: { compact?: boolean }) {
 export function CaseStudies() {
   const live = useLive()
   const hp = useHubProducts().data
-  const { hub, stats } = live
-  const dc = stats?.venues.find((v) => v.key === 'deepcore' && v.state === 'ok') as { tvlUsd?: number | null } | undefined
+  const { hub } = live
   const cases: { slug: string; title: string; built: string; services: string; metric: ReactNode; metricLabel: string }[] = [
     { slug: 'chain', title: 'Launching an L3', built: 'Orbit chain, explorer, faucet, indexer, two bridges and RPC, run end to end.', services: 'Chain launch · Infra · Contracts', metric: fmtCompact(chainHead(live)), metricLabel: 'Gully Chain testnet block' },
     { slug: 'pay', title: 'A payment gateway', built: 'x402 facilitator, hosted checkout and merchant webhooks, used by every Gully product.', services: 'Payments · Contracts · Apps', metric: hub?.x402 ? String(hub.x402.networks.length) : '—', metricLabel: 'x402 networks live' },
     { slug: 'quests', title: 'On-chain growth', built: 'A quest registry with verifiers and ETH reward pools, wired into Gully Street.', services: 'Launch & growth · Contracts', metric: hub?.quests ? String(hub.quests.completions ?? '—') : '—', metricLabel: 'quest completions' },
     { slug: 'holders', title: 'Data products', built: 'Holder bubble maps, clustering and deep checks across six chains.', services: 'Apps · Infra · AI', metric: hp?.holders ? fmtCompact(hp.holders.today) : '—', metricLabel: 'maps opened today' },
-    { slug: 'deepcore', title: 'A launchpad economy', built: 'Bonding-curve launches graduating to DEX pools, read live across chains.', services: 'Launch & growth · Contracts', metric: dc?.tvlUsd != null ? fmtUsd(dc.tvlUsd) : '—', metricLabel: 'DeepCore value locked (USD)' },
+    { slug: 'gully-core', title: 'A launchpad and DEX core', built: 'Gully Core: bonding-curve launches graduating to Gully Swap pools, built into Gully Chain.', services: 'Launch & growth · Contracts', metric: hp?.activity ? fmtCompact(hp.activity.hourly.reduce((n, x) => n + (x.launches ?? 0), 0)) : '—', metricLabel: 'Gully Core launches, 24 h' },
     { slug: 'security', title: 'Security as a product', built: 'AI scans, monitors and a public score, offered to every team.', services: 'Security', metric: hub ? (stateOf(hub, ['security']) === 'up' ? 'live' : '—') : '—', metricLabel: 'scan engine status' },
   ]
   return (

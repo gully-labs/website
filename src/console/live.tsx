@@ -290,7 +290,7 @@ function seed(): TapeItem[] {
   }
   return [
     { icon: 'blocks', k: 'Gully Chain', text: `testnet · chain ${GULLY_CHAIN_ID} · reading the newest blocks` },
-    { icon: 'coins', k: 'Venues', text: 'DeepCore, PeddleSwap, Peddles, PeddleQuest, Gully Chain · reading value locked' },
+    { icon: 'coins', k: 'Venues', text: 'PeddleSwap, Peddles, PeddleQuest, Gully Chain · reading value locked' },
     { icon: 'activity', k: 'Gully Quests', text: 'reading quests on chain 485590' },
     { icon: 'server', k: 'Gully RPC', text: 'measuring testnet latency' },
     { icon: 'wallet', k: 'Gully Pay', text: 'reading payment chains' },
@@ -299,7 +299,7 @@ function seed(): TapeItem[] {
 export function tapeItems(l: Live): TapeItem[] {
   const items: TapeItem[] = []
   if (l.stats)
-    for (const v of l.stats.venues)
+    for (const v of l.stats.venues.filter((x) => x.key !== 'deepcore')) // DeepCore partnership ended 2026-10-29
       items.push(
         v.state !== 'ok'
           ? { icon: 'activity', k: NAMES[v.key] || v.key, text: 'could not be read' }

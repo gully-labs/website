@@ -83,7 +83,7 @@ export const PRODUCT_PAGES = {
   offerwall: ['Gully Offerwall', 'Advertisers fund quests through Gully Pay; players complete them on Gully Chain and earn USDC or points; publishers embed the wall and earn a share.', 'gully-chain', 'GameApplication'],
   'gully-social': ['Gully Social', 'The social layer of Gully Chain: posts, follows, replies and profiles tied to your wallet and .gully name, in the Gully Street app.', 'gully-chain', 'SocialNetworkingApplication'],
   'copy-trading': ['Copy Trading', 'Follow a Gully Chain trader and mirror their trades from your own passkey wallet, with your own limits and an on-chain fee capped at 1%.', 'gully-chain', 'FinanceApplication'],
-  deepcore: ['DeepCore launchpad', 'Gully Chain’s built-in launchpad: a token and its pool in one step, graduating to Gully Swap.', 'gully-chain', 'FinanceApplication'],
+  'gully-core': ['Gully Core', 'Gully Chain’s own launchpad and DEX core: a token and its pool in one step, graduating to Gully Swap.', 'gully-chain', 'FinanceApplication'],
 }
 for (const [key, [name, text]] of Object.entries(PRODUCT_PAGES)) MAIN[`/products/${key}`] = [`${name} · Gully Labs`, `${text} Live charts on this page.`]
 

@@ -3,7 +3,7 @@
    server/seo.mjs restates each product's title and description (PRODUCT_PAGES) for crawlers; keep the two in step. */
 
 export type Group = 'chain' | 'labs'
-export type Slug = 'gully-id' | 'chain' | 'street' | 'bridge' | 'safe' | 'pay' | 'rpc' | 'holders' | 'security' | 'ai' | 'studio' | 'ipfs' | 'quests' | 'offerwall' | 'gully-social' | 'copy-trading' | 'deepcore' | 'gully-sentry'
+export type Slug = 'gully-id' | 'chain' | 'street' | 'bridge' | 'safe' | 'pay' | 'rpc' | 'holders' | 'security' | 'ai' | 'studio' | 'ipfs' | 'quests' | 'offerwall' | 'gully-social' | 'copy-trading' | 'gully-core' | 'gully-sentry'
 
 /** A logo straight from a product's kit (web copies in public/brand/web/logos or the kit SVG), or, for a product with
     no kit of its own, the Gully Chain (or Gully Labs) kit mark with the product's name beside it. */
@@ -110,7 +110,7 @@ export const PRODUCTS: ProductDef[] = [
     how: [
       ['Add the network', 'Chain 485590 with the public RPC or your Gully RPC key, and the explorer.'],
       ['Get test ETH', 'The faucet, or bridge from Arbitrum Sepolia through Gully Bridge.'],
-      ['Launch or build', 'Launch a token on DeepCore, or deploy your contracts with the developer portal.'],
+      ['Launch or build', 'Launch a token on Gully Core, or deploy your contracts with the developer portal.'],
     ],
     faq: [
       ['Is Gully Chain on mainnet?', 'Not yet. The testnet (chain 485590) is live; mainnet follows the testnet programme.'],
@@ -136,7 +136,7 @@ export const PRODUCTS: ProductDef[] = [
       { t: 'Social feed', d: 'Launches, trades and swaps on Gully Chain as they happen, from the indexer.' },
       { t: 'Passkey wallets', d: 'Up to five wallets behind one passkey: no seed phrase to write down.' },
       { t: 'Copy trading', d: 'Follow a wallet and mirror its trades with your own limits.' },
-      { t: 'Launchpad and swap', d: 'DeepCore launches and Gully Swap in the same app.' },
+      { t: 'Launchpad and swap', d: 'Gully Core launches and Gully Swap in the same app.' },
       { t: 'Quests and Arcade', d: 'On-chain quests with ETH rewards, and games scored on chain.' },
       { t: '.gully names', d: 'A readable name for your wallet, shown across the feed.' },
     ],
@@ -442,7 +442,7 @@ export const PRODUCTS: ProductDef[] = [
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Quests' },
     url: `${STREET}/quests`,
     urlLabel: 'app.gullychain.xyz/quests',
-    docs: 'https://docs.gullychain.xyz',
+    docs: 'https://docs.gullychain.xyz/gully-core/',
     hub: ['street', 'indexer'],
     og: '/brand/web/og/gully-chain.jpg',
     category: 'GameApplication',
@@ -558,15 +558,15 @@ export const PRODUCTS: ProductDef[] = [
     pricing: 'free-testnet',
   },
   {
-    slug: 'deepcore',
-    name: 'DeepCore launchpad',
+    slug: 'gully-core',
+    name: 'Gully Core',
     group: 'chain',
-    line: 'Gully Chain’s built-in launchpad: a token and its pool in one step, graduating to Gully Swap.',
+    line: 'Gully Chain’s own launchpad and DEX core: a token and its pool in one step, graduating to Gully Swap.',
     short: 'Built-in launchpad on Gully Chain.',
-    logo: { kind: 'mark', mark: 'chain', label: 'DeepCore launchpad' },
+    logo: { kind: 'mark', mark: 'chain', label: 'Gully Core' },
     url: `${STREET}/launch`,
     urlLabel: 'app.gullychain.xyz/launch',
-    docs: 'https://docs.gullychain.xyz',
+    docs: 'https://docs.gullychain.xyz/gully-core/',
     hub: ['street', 'indexer'],
     og: '/brand/web/og/gully-chain.jpg',
     category: 'FinanceApplication',
@@ -580,7 +580,7 @@ export const PRODUCTS: ProductDef[] = [
       ['Trade the curve', 'Buys and sells on the bonding curve.'],
       ['Graduate', 'Liquidity moves to Gully Swap.'],
     ],
-    faq: [['Is this the same DeepCore as deepcore.fun?', 'DeepCore runs on several chains; on Gully Chain it is the built-in launchpad. Its cross-chain figures are below.']],
+    faq: [['Who builds Gully Core?', 'Gully Labs. It is our own launchpad and DEX core for Gully Chain, run as part of the chain.']],
     pricing: 'free-testnet',
   },
 ]
@@ -605,7 +605,7 @@ export const SERVICES: ServiceDef[] = [
   { key: 'apps', title: 'dApp, web and mobile development', desc: 'Front ends, wallets and apps like Gully Street: passkeys, feeds, trading.', deliverables: ['React / Next.js web app', 'iOS and Android apps', 'Passkey and wallet sign-in', 'Indexer and API'], timeline: '4–12 weeks', proof: 'street' },
   { key: 'payments', title: 'Payments integration', desc: 'Crypto checkout and x402 pay-per-request with Gully Pay.', deliverables: ['Hosted checkout or pay links', 'x402 for APIs and agents', 'Signed webhooks', 'Settlement to your wallets'], timeline: '1–3 weeks', proof: 'pay' },
   { key: 'infra', title: 'RPC and infrastructure', desc: 'Nodes, gateways and observability with Gully RPC.', deliverables: ['Dedicated or shared nodes', 'RPC gateway with keys', 'Usage metering', 'Status page and alerts'], timeline: '1–4 weeks', proof: 'rpc' },
-  { key: 'launch', title: 'Token launch, quests and growth', desc: 'Launch on DeepCore, map the holders, and grow with on-chain Quests.', deliverables: ['Launch plan and contracts', 'DeepCore launch', 'Quests campaign with reward pools', 'HolderMaps health checks'], timeline: '1–4 weeks', proof: 'deepcore' },
+  { key: 'launch', title: 'Token launch, quests and growth', desc: 'Launch on Gully Core, map the holders, and grow with on-chain Quests.', deliverables: ['Launch plan and contracts', 'Gully Core launch', 'Quests campaign with reward pools', 'HolderMaps health checks'], timeline: '1–4 weeks', proof: 'gully-core' },
   { key: 'ai', title: 'AI integration', desc: 'Assistants that cite their sources and read live on-chain data, like Gully AI.', deliverables: ['Retrieval over your docs', 'Live data tools', 'Chat on web and Telegram', 'Evaluation and logs'], timeline: '2–6 weeks', proof: 'ai' },
   { key: 'games', title: 'Game development', desc: 'Unity 3D games with on-chain items and scores, from Gully Studio.', deliverables: ['Unity 3D game', 'Gully Game SDK integration', 'On-chain scores and items', 'In-game payments'], timeline: '8–24 weeks', proof: 'studio' },
 ]

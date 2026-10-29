@@ -12,7 +12,7 @@ import { useLive } from '../../console/live'
 import { consoleToast } from '../../console/toast'
 import { Spark } from '../../console/ui'
 import '../../terminal/terminal.css'
-import { A, Dot, TChart, UptimeGrid, useHubProducts, type ChartTab } from '../../terminal/kit'
+import { A, TChart, UptimeGrid, useHubProducts, type ChartTab } from '../../terminal/kit'
 import { ContactForm, Process, ServicesList } from '../../terminal/sections'
 import './constellation.css'
 import { useHubLive } from './useHubLive'
@@ -464,8 +464,18 @@ function ProductTable({ R, open }: { R: Record<ProductKey, Reading>; open: (k: P
   )
 }
 
+// The venues line: Peddles, PeddleSwap and PeddleQuest only. /api/stats still reads a `deepcore` venue, but that is
+// DeepCore's own cross-chain API (deepcore.fun), not Gully Core, and the partnership ended 2026-10-29, so it is left
+// out of the sum and the names rather than relabelled.
+const BUILT = ['peddles', 'peddleswap', 'peddlequest'] as const
+function builtVenues(src: Sources) {
+  const vs = (src.stats?.venues ?? []).filter((v) => (BUILT as readonly string[]).includes(v.key) && v.state === 'ok') as { tvlUsd?: number | null; volumeAllUsd?: number | null; feesAllUsd?: number | null }[]
+  const add = (k: 'tvlUsd' | 'volumeAllUsd' | 'feesAllUsd') => (vs.some((v) => typeof v[k] === 'number') ? vs.reduce((n, v) => n + (typeof v[k] === 'number' ? (v[k] as number) : 0), 0) : null)
+  return vs.length ? { tvl: add('tvlUsd'), volumeAll: add('volumeAllUsd'), feesAll: add('feesAllUsd') } : null
+}
+
 function Work({ src }: { src: Sources }) {
-  const s = suite(src)
+  const s = builtVenues(src)
   return (
     <div className="cst-work">
       <div>
@@ -473,17 +483,18 @@ function Work({ src }: { src: Sources }) {
         <ServicesList compact />
         <p className="cst-track">
           <ChartSpline className="gt-ic" aria-hidden />{' '}
-          {s.tvl != null ? (
+          {s && s.tvl != null ? (
             <>
-              Venues we built hold <b className="num">{fmtUsd(s.tvl)}</b> in TVL, with <b className="num">{fmtUsd(s.volumeAll)}</b> all-time volume and <b className="num">{fmtUsd(s.feesAll)}</b> in fees (DeepCore, Peddles, PeddleSwap, PeddleQuest; source /api/stats).
+              Venues we built hold <b className="num">{fmtUsd(s.tvl)}</b> in TVL, with <b className="num">{fmtUsd(s.volumeAll)}</b> all-time volume and <b className="num">{fmtUsd(s.feesAll)}</b> in fees (Peddles, PeddleSwap, PeddleQuest; source /api/stats).
             </>
+          ) : src.stats ? (
+            'The venue figures could not be read right now.'
           ) : (
             'Reading the venues we built…'
           )}
         </p>
       </div>
       <div className="cst-work-r">
-        <img src="/brand/hub/art/services.svg" alt="" width={560} height={300} />
         <Process />
         <p className="gt-more">
           <Link className="gt-btn ter" to="/services">
@@ -629,14 +640,14 @@ export function Constellation() {
                 <small>/api/hub</small>
               </div>
               <div>
-                <span className="gt-k">Gully ID sign-ins · 24 h</span>
+                <span className="gt-k">ID sign-ins · 24 h</span>
                 <b className="num">{kpiText(R.id.kpi)}</b>
                 <small>gullyid.xyz</small>
               </div>
               <div>
                 <span className="gt-k">Gully Chain block</span>
                 <b className="num">{kpiText(R.chain.kpi)}</b>
-                <small>indexer.gullychain.xyz</small>
+                <small>gullychain.xyz</small>
               </div>
             </div>
             <div className="cst-ctas">
@@ -648,9 +659,6 @@ export function Constellation() {
                 <Orbit className="gt-ic" aria-hidden />
                 Explore the suite
               </button>
-              <span className="cst-pill">
-                <Dot s={s.up == null ? 'reading' : s.up === s.total ? 'up' : 'coming'} label={s.up == null ? 'checking' : s.up === s.total ? `all ${s.total} services up` : `${s.up}/${s.total} up`} />
-              </span>
             </div>
           </div>
           <ConstellationMap R={R} onOpen={openDrawer} hot={hot} setHot={setHot} />

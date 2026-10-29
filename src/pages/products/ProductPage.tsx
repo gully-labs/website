@@ -8,7 +8,7 @@ import { Link, useParams } from 'react-router'
 import { ArrowRight, ArrowUpRight, BookOpen, Check } from 'lucide-react'
 import { Seo } from '../../components/Seo'
 import { fmtInt, fmtPct, fmtUsd } from '../../console/charts'
-import { chainHead, useLive, venueSeries, type Live } from '../../console/live'
+import { chainHead, useLive, type Live } from '../../console/live'
 import '../../terminal/terminal.css'
 import { PRODUCTS, productBySlug, SERVICES, type ProductDef } from '../../terminal/catalog'
 import { A, ACCENT, BlockStrip, Dot, Empty, fmtCompact, fmtEth, fmtMs, HBars, hourLabel, Kpi, latencySeries, Logo, minLabel, Panel, S, SecHead, stateOf, sum, TChart, UptimeGrid, useHubProducts, usePlans, useReveal, type ChartTab, type HubProducts, type Plans } from '../../terminal/kit'
@@ -190,7 +190,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
           { label: 'Latest block', value: chainHead(live), fmt: (v) => `#${fmtInt(v)}`, sub: 'chain 485590 · testnet', spark: recent.map((b) => b.txs) },
           { label: 'Transactions · 24 h', value: hp?.chain ? sum(h.map((x) => x.txs)) : null, spark: h.map((x) => x.txs), sub: 'user transactions, by hour' },
           { label: 'Gas used · 24 h', value: hp?.chain ? sum(h.map((x) => x.gas)) : null, fmt: fmtCompact, spark: h.map((x) => x.gas), color: S[2], sub: 'gas units' },
-          { label: 'Launches · 24 h', value: hp?.activity ? sum(a.map((x) => x.launches)) : null, spark: a.map((x) => x.launches), color: S[1], sub: 'DeepCore, from the indexer' },
+          { label: 'Launches · 24 h', value: hp?.activity ? sum(a.map((x) => x.launches)) : null, spark: a.map((x) => x.launches), color: S[1], sub: 'Gully Core, from the indexer' },
         ],
         main: <TChart label="Gully Chain · by hour" tabs={ct} />,
         side: (
@@ -632,29 +632,18 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
         ),
       }
     }
-    case 'deepcore': {
-      const s = live.stats
-      const dc = s?.venues.find((v) => v.key === 'deepcore')
-      const ok = dc && dc.state === 'ok' ? dc : null
-      const st = s ? (ok ? 'ok' : 'offline') : live.statsState === 'error' ? 'offline' : 'loading'
-      const one = (m: 'tvl' | 'volume' | 'fees') => {
-        const vs = s ? venueSeries(s, m, 30) : null
-        return { values: vs?.series.find((x) => x.key === 'deepcore')?.values ?? [], labels: vs?.labels ?? [] }
-      }
-      const tab = (m: 'tvl' | 'volume' | 'fees', label: string, head: number | null | undefined): ChartTab => {
-        const o = one(m)
-        return { id: m, label, title: `DeepCore ${label.toLowerCase()}, 30 days (USD)`, series: [{ name: 'DeepCore', color: ACCENT, values: o.values }], labels: o.labels, fmt: (v) => fmtUsd(v), state: st, empty: 'DeepCore API could not be read · retrying', head: fmtUsd(head), sub: 'USD · deepcore.fun/v1/overview, all chains' }
-      }
-      const o = ok as unknown as { tvlUsd?: number | null; volume24hUsd?: number | null; volumeAllUsd?: number | null; feesAllUsd?: number | null; counts?: Record<string, number | null> } | null
+    case 'gully-core': {
+      // Gully Core (our fork of the DeepCore contracts, partnership ended 2026-10-29): Gully Chain's own launchpad and
+      // DEX core. Only Gully Chain figures, from the indexer; DeepCore's own cross-chain API is not shown here.
       return {
         kpis: [
-          { label: 'Value locked (USD)', value: o?.tvlUsd ?? null, fmt: (v) => fmtUsd(v), spark: one('tvl').values, sub: 'all chains' },
-          { label: 'Volume · all time (USD)', value: o?.volumeAllUsd ?? null, fmt: (v) => fmtUsd(v), spark: one('volume').values, color: S[1], sub: 'all chains' },
-          { label: 'Fees · all time (USD)', value: o?.feesAllUsd ?? null, fmt: (v) => fmtUsd(v), spark: one('fees').values, color: S[2], sub: 'all chains' },
-          { label: 'Launches · 24 h', value: hp?.activity ? sum(a.map((x) => x.launches)) : null, spark: a.map((x) => x.launches), sub: 'on Gully Chain, indexer' },
+          { label: 'Launches · 24 h', value: hp?.activity ? sum(a.map((x) => x.launches)) : null, spark: a.map((x) => x.launches), sub: 'Gully Core, from the indexer' },
+          { label: 'Curve trades · 24 h', value: hp?.activity ? sum(a.map((x) => x.trades)) : null, spark: a.map((x) => x.trades), color: S[1], sub: 'bonding-curve buys and sells' },
+          { label: 'Swaps · 24 h', value: hp?.activity ? sum(a.map((x) => x.swaps)) : null, spark: a.map((x) => x.swaps), color: S[2], sub: 'Gully Swap router' },
+          { label: 'Latest block', value: chainHead(live), fmt: (v) => `#${fmtInt(v)}`, sub: 'chain 485590 · testnet', spark: h.map((x) => x.txs) },
         ],
-        main: <TChart label="DeepCore · 30 days" tabs={[tab('tvl', 'Value locked', o?.tvlUsd), tab('volume', 'Volume', o?.volumeAllUsd), tab('fees', 'Fees', o?.feesAllUsd)]} />,
-        side: <TChart label="On Gully Chain · launches & trades" tabs={[ct[3]]} height={150} />,
+        main: <TChart label="On Gully Chain · launches & trades" tabs={[ct[3]]} />,
+        side: lat,
       }
     }
     default:
@@ -708,7 +697,7 @@ function Pricing({ p, plans }: { p: ProductDef; plans: Plans | null }) {
   return <p className="gt-p">{text}</p>
 }
 
-const SERVICE_FOR: Partial<Record<string, string>> = { 'gully-sentry': 'security', chain: 'chain', street: 'apps', bridge: 'chain', safe: 'contracts', pay: 'payments', rpc: 'infra', holders: 'apps', security: 'security', ai: 'ai', studio: 'games', ipfs: 'infra', quests: 'launch', offerwall: 'launch', 'gully-social': 'apps', 'copy-trading': 'apps', deepcore: 'launch' }
+const SERVICE_FOR: Partial<Record<string, string>> = { 'gully-sentry': 'security', chain: 'chain', street: 'apps', bridge: 'chain', safe: 'contracts', pay: 'payments', rpc: 'infra', holders: 'apps', security: 'security', ai: 'ai', studio: 'games', ipfs: 'infra', quests: 'launch', offerwall: 'launch', 'gully-social': 'apps', 'copy-trading': 'apps', 'gully-core': 'launch' }
 
 export function ProductView({ p }: { p: ProductDef }) {
   const live = useLive()
