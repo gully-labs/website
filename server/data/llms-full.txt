@@ -910,7 +910,7 @@ URL: https://gullylabs.xyz/products
 - Bug bounty hosting (planned): Hosting bug bounty programmes for reviewed projects is a later item on the security roadmap.
 - Account abstraction and sponsored gas (building): An ERC-4337 bundler and EntryPoint with EIP-7702-ready smart accounts, plus a usage-billed paymaster so users can transact without holding gas. Both are coming with the testnet.
 - Pay gas in USDC (planned): Letting users pay fees in USDC instead of the chain token is planned as a monthly add-on. It is not built.
-- DeepCore built into client chains (planned): Putting the DeepCore launchpad on a client chain from the start, with a revenue share on launch fees, is planned. It is not built.
+- Gully Core built into client chains (planned): Putting the Gully Core launchpad on a client chain from the start, with a revenue share on launch fees, is planned. It is not built.
 - Peddles and PeddleQuest read on chain (building): Peddles and PeddleQuest figures would be read straight from their contracts instead of only from the venues' APIs, with a live ledger series and an on-chain panel on their project pages.
 - Holder Map tab in the home console (building): The home page product console gains a Holder Map tab showing the live mini map of the newest DeepCore launch with the latest launches under it.
 - Token logos on tracker, swap, score and widget (building): Stock rows, stock pages, the swap and the widget would show token logos from the logo service instead of a generic building icon, and the stock page keeps the self-gating Holder Map.

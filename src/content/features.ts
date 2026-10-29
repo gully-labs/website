@@ -1087,13 +1087,13 @@ export const features: Feature[] = [
     ]
   },
   {
-    id: "chains-deepcore-day-one",
+    id: "chains-gully-core-day-one",
     product: "Gully Chains",
-    name: "DeepCore built into client chains",
+    name: "Gully Core built into client chains",
     status: "planned",
-    summary: "Putting the DeepCore launchpad on a client chain from the start, with a revenue share on launch fees, is planned. It is not built.",
+    summary: "Putting the Gully Core launchpad on a client chain from the start, with a revenue share on launch fees, is planned. It is not built.",
     facts: [
-      "deepcore has status planned and model \"revenue share on launch fees\" in server/chains-plans.mjs; price TBA."
+      "gully-core has status planned and model \"revenue share on launch fees\" in server/chains-plans.mjs; price TBA."
     ],
     url: "https://gullylabs.xyz/chains",
     source: [

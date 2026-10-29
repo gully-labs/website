@@ -46,7 +46,7 @@
       logo: '/shared/logos/chain.png',
       line: 'The social L3 where your profile is your wallet.',
       about: 'An Arbitrum Orbit L3 (testnet, chain 485590): one passkey, one .gully name, sponsored gas. Launch, swap, copy trades, run quests and bridge in a minute.',
-      live: ['Gully Street app + social feed', 'Quests with on-chain rewards', 'DeepCore launchpad + swap', 'Bridge, faucet (Gully ID), explorer', 'Gully Safe and token lists', 'Contract verification (verify.gullychain.xyz)', 'Sentry Node Keys: testnet contracts'],
+      live: ['Gully Street app + social feed', 'Quests with on-chain rewards', 'Gully launchpad + Gully Swap', 'Bridge, faucet (Gully ID), explorer', 'Gully Safe and token lists', 'Contract verification (verify.gullychain.xyz)', 'Sentry Node Keys: testnet contracts'],
       next: ['Mainnet', 'Sentry Node Keys site'],
       links: [['App', 'https://app.gullychain.xyz'], ['Docs', 'https://docs.gullychain.xyz'], ['Verify', 'https://verify.gullychain.xyz']],
     },

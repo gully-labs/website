@@ -67,7 +67,7 @@ for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${s
 // kit OG image under public/brand/web/og, schema.org applicationCategory]. Each product also lives on its own domain.
 export const PRODUCT_PAGES = {
   'gully-id': ['Gully ID', 'Passwordless sign-in for any app: passkeys, wallets and email over OpenID Connect, with per-app consent.', 'gully-labs', 'SecurityApplication'],
-  chain: ['Gully Chain', 'An Arbitrum Orbit L3 for launches and trading, with DeepCore built in as its launchpad.', 'gully-chain', 'BlockchainNetwork'],
+  chain: ['Gully Chain', 'An Arbitrum Orbit L3 for launches and trading, with Gully Core built in as its launchpad and DEX core.', 'gully-chain', 'BlockchainNetwork'],
   street: ['Gully Street', 'The Gully Chain app: a social feed, five wallets per passkey, copy trading, Quests and the launchpad.', 'gully-chain', 'FinanceApplication'],
   bridge: ['Gully Bridge', 'Move ETH between Arbitrum Sepolia and Gully Chain: a Hyperlane fast lane (gETH) and the canonical bridge.', 'gully-chain', 'FinanceApplication'],
   safe: ['Gully Safe', 'Multisig wallets on Gully Chain, for treasuries and teams.', 'gully-chain', 'FinanceApplication'],

@@ -68,7 +68,7 @@ function groups(pay: PayCfg | null): Group[] {
           href: utm('https://gullypay.xyz/'),
           icon: CircleDollarSign,
         },
-        { label: 'Gully Chain', desc: 'The L3 with DeepCore built in: launch, trade, run your own chain', href: utm('https://gullychain.xyz/'), icon: Boxes },
+        { label: 'Gully Chain', desc: 'The L3 with Gully Core built in: launch, trade, run your own chain', href: utm('https://gullychain.xyz/'), icon: Boxes },
         { label: 'Gully RPC', desc: 'One RPC key for every Gully chain', href: utm('https://gullyrpc.xyz/'), icon: Boxes },
         { label: 'Pricing', desc: 'API, alerts and analytics plans', href: utm('https://gullylabs.xyz/pricing'), icon: Tag },
       ],

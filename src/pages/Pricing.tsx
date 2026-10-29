@@ -92,7 +92,7 @@ const USD0 = { ...NF.usd, minimumFractionDigits: 0, maximumFractionDigits: 0 }
 function OnRequest() {
   const { openContact } = useContact()
   const items = [
-    { icon: Boxes, name: 'Gully Chain', body: 'The L3 for launches and trading, with DeepCore built in, your own chain and Chain Kit explorers. Open to everyone on gullychain.xyz, with its own pricing.', to: 'https://gullychain.xyz', type: 'Infrastructure' as const, waitlist: true },
+    { icon: Boxes, name: 'Gully Chain', body: 'The L3 for launches and trading, with Gully Core built in, your own chain and Chain Kit explorers. Open to everyone on gullychain.xyz, with its own pricing.', to: 'https://gullychain.xyz', type: 'Infrastructure' as const, waitlist: true },
     { icon: Layers, name: 'Services', body: 'Smart contracts, dApps, infrastructure and security testing. Quoted per project after a first call.', to: '/services', type: 'Other' as const, waitlist: false },
   ]
   return (

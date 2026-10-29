@@ -71,7 +71,7 @@ export function ChainsWaitlist({ token }: { token: string }) {
               </span>
               <span className="text-gold">{unescape(r.contact)}</span>
               <span className="text-muted">
-                {r.useCase} · {r.scale} · gas {r.gasToken} · DA {r.da} · AA {r.wantsAa} · DeepCore {r.wantsDeepcore}
+                {r.useCase} · {r.scale} · gas {r.gasToken} · DA {r.da} · AA {r.wantsAa} · Gully Core {r.wantsDeepcore}
               </span>
               {r.notes && <span className="text-muted">{unescape(r.notes)}</span>}
             </li>
