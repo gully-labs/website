@@ -1,13 +1,15 @@
 import { createElement, type ReactElement } from 'react'
 
-/* Sign in with Gully ID on the Gully Labs App, next to Connect wallet. The Gully ID SDK (https://gullyid.xyz/sdk.js,
-   1.2.0) loads only when the button is pressed; it runs the sign-in in a popup on gullyid.xyz (client gully-labs,
+/* Sign in with Gully ID on the Gully Labs App, next to Connect wallet. The Gully ID SDK (https://gullyid.xyz/sdk/v1.js,
+   latest 1.x; /sdk.js while gully-id #50 is not live) loads only when the button is pressed; it runs the sign-in in a popup on gullyid.xyz (client gully-labs,
    gully-ops gully/gully-id/clients.json) and we post ONLY its access token to /api/developer/gully, which signs the
    browser in as the Gully ID's main wallet (server/gully-id.mjs).
    Written without JSX so scripts/test-gully-id.mjs can render the button under plain Node. */
 
 export const GULLY_ID_URL = 'https://gullyid.xyz'
 export const GULLY_ID_CLIENT_ID = 'gully-labs'
+/** SDK channel (gully-id spec: /sdk/v1.js), then the legacy URL. */
+export const GULLY_ID_SDK_PATHS = ['/sdk/v1.js', '/sdk.js']
 /** The official button, byte-identical to the Gully ID brand kit v1 (buttons/sign-in-with-gullyid-dark-m.svg). */
 export const GULLY_ID_BUTTON_SRC = '/brand/gullyid/sign-in-with-gullyid-dark-m.svg'
 
@@ -25,12 +27,16 @@ function gullyClient(): Promise<GullyClient> {
     const w = window as unknown as { GullyID?: GullySdk }
     const ready = () => (w.GullyID ? resolve(w.GullyID.init({ clientId: GULLY_ID_CLIENT_ID, issuer: GULLY_ID_URL })) : reject(new Error('Gully ID did not load. Try again.')))
     if (w.GullyID) return ready()
-    const s = document.createElement('script')
-    s.src = `${GULLY_ID_URL}/sdk.js`
-    s.async = true
-    s.onload = ready
-    s.onerror = () => reject(new Error('Gully ID is unreachable right now. Try again, or connect a wallet.'))
-    document.head.appendChild(s)
+    // The stable 1.x channel first, then the legacy /sdk.js (1.2.0).
+    const load = (paths: string[]) => {
+      const s = document.createElement('script')
+      s.src = `${GULLY_ID_URL}${paths[0]}`
+      s.async = true
+      s.onload = ready
+      s.onerror = () => (paths.length > 1 ? load(paths.slice(1)) : reject(new Error('Gully ID is unreachable right now. Try again, or connect a wallet.')))
+      document.head.appendChild(s)
+    }
+    load(GULLY_ID_SDK_PATHS)
   }).catch((e) => {
     client = null
     throw e

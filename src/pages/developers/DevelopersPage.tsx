@@ -22,13 +22,14 @@ import { GullyIdButton, gullyIdAccessToken, gullyIdRedirectToken, isGullyIdRetur
 const loadWallet = () => import('./WalletSignIn')
 const WalletSignIn = lazy(loadWallet)
 
-type Session = { state: 'loading' } | { state: 'out' } | { state: 'blocked'; message: string } | { state: 'error'; message: string } | { state: 'in'; account: Account; me: Me | null }
+type Session = { state: 'loading' } | { state: 'out'; gullyId?: boolean } | { state: 'blocked'; message: string } | { state: 'error'; message: string } | { state: 'in'; account: Account; me: Me | null }
 
 /** The workspace's account (/account) and who is signed in (/me, portal v2) together. */
 async function readSession(): Promise<Session> {
   // Signed out: stop here, so /account and /me never answer 401 into the console.
-  const probe = await api<{ signedIn: boolean }>('/api/developer/session')
-  if (probe.ok && !probe.data.signedIn) return { state: 'out' }
+  const probe = await api<{ signedIn: boolean; gullyId?: { enabled: boolean } }>('/api/developer/session')
+  // GULLY_ID_SIGNIN=off on the server hides the Gully ID option (the flag is in the session probe).
+  if (probe.ok && !probe.data.signedIn) return { state: 'out', gullyId: probe.data.gullyId?.enabled !== false }
   return Promise.all([api<Account>('/api/developer/account'), api<Me>('/api/developer/me')]).then(([r, m]) => {
     if (r.ok) return { state: 'in', account: r.data, me: m.ok ? m.data : null }
     if (r.status === 401) return { state: 'out' }
@@ -56,7 +57,7 @@ function useTiers(): Tiers {
   return t
 }
 
-function SignedOut({ connect, busy, error, gully, gullyBusy }: { connect: () => void; busy: boolean; error: string | null; gully: () => void; gullyBusy: boolean }) {
+function SignedOut({ connect, busy, error, gully, gullyBusy, gullyOn = true }: { connect: () => void; busy: boolean; error: string | null; gully: () => void; gullyBusy: boolean; gullyOn?: boolean }) {
   const tiers = useTiers()
   return (
     <section className="relative mx-auto grid w-full max-w-[1240px] grid-cols-[minmax(0,1fr)] items-start gap-4 overflow-x-clip px-4 py-5 min-[1000px]:grid-cols-[380px_minmax(0,1fr)] min-[1000px]:px-6">
@@ -101,13 +102,17 @@ function SignedOut({ connect, busy, error, gully, gullyBusy }: { connect: () => 
           {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Wallet size={18} aria-hidden />}
           {busy ? 'Opening wallets…' : 'Connect wallet'}
         </button>
-        <div className="flex items-center gap-3 text-[11px] text-faint uppercase" aria-hidden>
-          <span className="h-px flex-1 bg-line" />
-          or
-          <span className="h-px flex-1 bg-line" />
-        </div>
-        <GullyIdButton onClick={gully} busy={gullyBusy} disabled={busy} />
-        {gullyBusy && (
+        {gullyOn && (
+          <>
+            <div className="flex items-center gap-3 text-[11px] text-faint uppercase" aria-hidden>
+              <span className="h-px flex-1 bg-line" />
+              or
+              <span className="h-px flex-1 bg-line" />
+            </div>
+            <GullyIdButton onClick={gully} busy={gullyBusy} disabled={busy} />
+          </>
+        )}
+        {gullyOn && gullyBusy && (
           <p className="m-0 -mt-2 text-center font-mono text-[12px] text-faint" role="status">
             Waiting for Gully ID…
           </p>
@@ -309,7 +314,7 @@ export function DevelopersPage() {
             <InviteLanding token={invite} signedIn={false} connect={connect} connecting={busy} onDone={() => setInvite(null)} />
           </section>
         ) : (
-          <SignedOut connect={connect} busy={busy} error={error} gully={gully} gullyBusy={gullyBusy} />
+          <SignedOut connect={connect} busy={busy} error={error} gully={gully} gullyBusy={gullyBusy} gullyOn={session.gullyId !== false} />
         ))}
       {(session.state === 'error' || session.state === 'blocked') && (
         <section className="mx-auto flex min-h-[50vh] w-full max-w-[640px] flex-col items-start justify-center gap-4 px-4 py-16">

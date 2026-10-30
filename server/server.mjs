@@ -173,7 +173,8 @@ function securityHeaders(host, pathname = '/') {
   const embed = !strict && !host.startsWith('docs.') && pathname.startsWith('/embed/')
   // pay. and embed. load nothing from third parties: no analytics beacon, no Cloudflare insights.
   const bare = pay || isEmbedHost(host)
-  // Sign in with Gully ID loads the Gully ID SDK (https://gullyid.xyz/sdk.js) on the app host only; the sign-in itself
+  // Sign in with Gully ID loads the Gully ID SDK (https://gullyid.xyz/sdk/v1.js) on the app host only (connect-src and
+  // img-src already allow https:); the sign-in itself
   // runs in a popup on that origin (COOP below keeps same-origin-allow-popups, so the popup can answer).
   const gullyId = (isAppHost(host) || local) && gullyIdConfig().enabled ? ` ${new URL(gullyIdConfig().url).origin}` : ''
   const csp = [

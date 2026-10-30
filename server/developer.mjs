@@ -4,6 +4,7 @@
 // lower-cased. Keys are issued instantly, up to MAX_KEYS_PER_ACCOUNT live keys per wallet.
 //   GET  /api/developer/nonce                 -> { nonce, expiresAt }            single use, 10 minutes
 //   POST /api/developer/siwe    { message, signature }  -> { address }  and sets the session cookie
+//   GET  /api/developer/session also answers gullyId: { enabled, issuer, clientId } (the GULLY_ID_SIGNIN flag)
 //   POST /api/developer/gully   { accessToken }         -> { address, via: 'gully-id' }  Sign in with Gully ID: the
 //                               account is the Gully ID's main wallet (gully-id.mjs); same session cookie as SIWE
 //   POST /api/developer/logout
@@ -265,7 +266,9 @@ export async function handleDeveloper(req, res, url) {
   // never logs 401s from /account and /me in the console.
   if (p === '/api/developer/session') {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
-    return json(res, 200, { signedIn: Boolean(currentSession(req)) }, { 'Cache-Control': 'no-store' }), true
+    // gullyId: the Sign in with Gully ID flag (GULLY_ID_SIGNIN), readable without signing in (gully-id spec 9).
+    const g = gullyIdConfig()
+    return json(res, 200, { signedIn: Boolean(currentSession(req)), gullyId: { enabled: g.enabled, issuer: g.url, clientId: g.clientId } }, { 'Cache-Control': 'no-store' }), true
   }
 
   if (p === '/api/developer/logout') {

@@ -6,14 +6,15 @@
 // Gully ID's main wallet: an account here is a wallet address (developer.mjs), and Gully ID has already proven that
 // wallet (a passkey smart account it deployed, or a SIWE-verified EOA). The Gully token is never stored.
 //
-//   GULLY_ID_URL        issuer, default https://gullyid.xyz (http only for localhost, for tests)
+//   GULLY_ID_ISSUER     issuer, default https://gullyid.xyz (http only for localhost, for tests); GULLY_ID_URL is an alias
 //   GULLY_ID_CLIENT_ID  default gully-labs
-//   GULLY_ID_SIGNIN     'off' turns the route off (404) without a rebuild; the button then shows the server's error
+//   GULLY_ID_SIGNIN     on (default) / off: off hides the button (GET /api/developer/session says so) and the route
+//                       answers 404, without a rebuild
 
 export const GULLY_ID_DEFAULT_URL = 'https://gullyid.xyz'
 
 export function gullyIdConfig(env = process.env) {
-  let url = String(env.GULLY_ID_URL ?? GULLY_ID_DEFAULT_URL).trim().replace(/\/+$/, '') || GULLY_ID_DEFAULT_URL
+  let url = String(env.GULLY_ID_ISSUER ?? env.GULLY_ID_URL ?? GULLY_ID_DEFAULT_URL).trim().replace(/\/+$/, '') || GULLY_ID_DEFAULT_URL
   try {
     const u = new URL(url)
     const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(u.hostname)
@@ -22,7 +23,7 @@ export function gullyIdConfig(env = process.env) {
     url = GULLY_ID_DEFAULT_URL
   }
   return {
-    enabled: String(env.GULLY_ID_SIGNIN ?? 'on').trim().toLowerCase() !== 'off',
+    enabled: !['off', 'false', '0', 'no'].includes(String(env.GULLY_ID_SIGNIN ?? 'on').trim().toLowerCase()),
     url,
     clientId: String(env.GULLY_ID_CLIENT_ID ?? 'gully-labs').trim() || 'gully-labs',
   }

@@ -35,7 +35,7 @@ registerHooks({
   },
 })
 const { renderToStaticMarkup } = await import('react-dom/server')
-const { GullyIdButton, GULLY_ID_BUTTON_SRC, GULLY_ID_URL, GULLY_ID_CLIENT_ID, isGullyIdReturn } = await import('../src/pages/developers/gullyId.ts')
+const { GullyIdButton, GULLY_ID_BUTTON_SRC, GULLY_ID_URL, GULLY_ID_CLIENT_ID, GULLY_ID_SDK_PATHS, isGullyIdReturn } = await import('../src/pages/developers/gullyId.ts')
 
 const html = renderToStaticMarkup(GullyIdButton({ onClick: () => {} }))
 // React 19 may hoist a <link rel="preload"> for the image ahead of the button.
@@ -45,10 +45,11 @@ check('the button shows the kit SVG', html.includes(`src="${GULLY_ID_BUTTON_SRC}
 const busy = renderToStaticMarkup(GullyIdButton({ onClick: () => {}, busy: true }))
 check('busy: disabled + aria-busy', busy.includes('disabled=""') && busy.includes('aria-busy="true"'))
 check('issuer is gullyid.xyz, client gully-labs', GULLY_ID_URL === 'https://gullyid.xyz' && GULLY_ID_CLIENT_ID === 'gully-labs')
+check('SDK from /sdk/v1.js, then the legacy /sdk.js', GULLY_ID_SDK_PATHS.join(' ') === '/sdk/v1.js /sdk.js')
 check('redirect return detected only with code + state', isGullyIdReturn('?code=a&state=b') && !isGullyIdReturn('?code=a') && !isGullyIdReturn(''))
 
 const page = fs.readFileSync(path.join(root, 'src/pages/developers/DevelopersPage.tsx'), 'utf8')
-check('the signed-out app page renders the Gully ID option next to Connect wallet', /<GullyIdButton onClick=\{gully\}/.test(page) && page.indexOf('<GullyIdButton') > page.indexOf("'Connect wallet'"))
+check('the signed-out app page renders the Gully ID option next to Connect wallet', /<GullyIdButton onClick=\{gully\}/.test(page) && page.includes('gullyOn={session.gullyId !== false}') && page.indexOf('<GullyIdButton') > page.indexOf("'Connect wallet'"))
 
 // Brand kit v1 (gully-id docs/brand-kit.md): never redraw or re-export, copy byte-identically.
 const KIT_SHA = 'cba6285cfcc08f3b782f4199fec8a02665a179b85ee5b6f1d02a299047540046'
@@ -75,7 +76,7 @@ const PORT = Number(process.env.TEST_PORT) || 8806
 await guardTestRun(PORT)
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-gid-'))
 Object.assign(process.env, { PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: crypto.randomBytes(24).toString('hex'), TRACKER_LOOP: 'off', DEEPCORE_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off', GULLY_ID_URL: MOCK })
-for (const k of ['TELEGRAM_BOT_TOKEN', 'ANTHROPIC_API_KEY', 'GULLY_TREASURY_ADDRESS', 'GULLY_ID_SIGNIN', 'GULLY_ID_CLIENT_ID']) delete process.env[k]
+for (const k of ['TELEGRAM_BOT_TOKEN', 'ANTHROPIC_API_KEY', 'GULLY_TREASURY_ADDRESS', 'GULLY_ID_SIGNIN', 'GULLY_ID_CLIENT_ID', 'GULLY_ID_ISSUER']) delete process.env[k]
 process.on('exit', () => fs.rmSync(tmp, { recursive: true, force: true }))
 await import('../server/server.mjs')
 await new Promise((r) => setTimeout(r, 300))
@@ -93,6 +94,7 @@ check('main site CSP does not load Gully ID scripts', !scriptSrc(String(main.hea
 const { gullyIdConfig } = await import('../server/gully-id.mjs')
 check('default issuer https://gullyid.xyz, client gully-labs, on', JSON.stringify(gullyIdConfig({})) === JSON.stringify({ enabled: true, url: 'https://gullyid.xyz', clientId: 'gully-labs' }))
 check('a non-https issuer falls back to https://gullyid.xyz', gullyIdConfig({ GULLY_ID_URL: 'http://evil.example' }).url === 'https://gullyid.xyz')
+check('GULLY_ID_ISSUER is read first; GULLY_ID_SIGNIN=false also turns it off', gullyIdConfig({ GULLY_ID_ISSUER: 'https://id.example', GULLY_ID_URL: 'https://x.example' }).url === 'https://id.example' && gullyIdConfig({ GULLY_ID_SIGNIN: 'false' }).enabled === false)
 
 const c = makeClient(BASE)
 const signIn = async (accessToken, extra) => {
@@ -117,12 +119,15 @@ check('the account is the Gully ID wallet, lower-cased', ok.data?.address === WA
 c.cookie = cookie
 const s = await c.call('/api/developer/session')
 check('the session is signed in', s.data?.signedIn === true)
+check('the session probe shows the Gully ID flag (on)', s.data?.gullyId?.enabled === true && s.data?.gullyId?.clientId === 'gully-labs')
 const acct = await c.call('/api/developer/account')
 check('/account answers for the Gully ID wallet', acct.status === 200 && String(acct.data?.address ?? '').toLowerCase() === WALLET, `${acct.status}`)
 
 process.env.GULLY_ID_SIGNIN = 'off'
 const off = await signIn('good')
 check('GULLY_ID_SIGNIN=off turns the route off (404)', off.status === 404, `${off.status}`)
+const offProbe = await makeClient(BASE).call('/api/developer/session')
+check('GULLY_ID_SIGNIN=off is visible signed out (session probe enabled: false)', offProbe.data?.signedIn === false && offProbe.data?.gullyId?.enabled === false)
 delete process.env.GULLY_ID_SIGNIN
 
 mock.close()
