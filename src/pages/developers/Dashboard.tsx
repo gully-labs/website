@@ -70,7 +70,7 @@ function handoffCopy(id: HandoffTab, go: (t: AppTab) => void): HandoffCopy {
   )
   switch (id) {
     case 'chain':
-      return { line: <>Testnet 485590 is open: <b>Gully Street</b> (launchpad, Gully Swap, .gully names, Quests, Arcade, copy trading, referrals), the explorer, faucet and bridge. Gully Core is its launchpad and DEX core, and your own chain launches from Gully Chain&apos;s app too.</>, href: 'https://app.gullychain.xyz', docs: 'https://docs.gullychain.xyz/' }
+      return { line: <>Testnet 485590 is open: <b>Gully Street</b> (launchpad, Gully Swap, .gully names, Quests, Arcade, copy trading, referrals), the explorer, faucet and bridge. Gully Core is its launchpad and DEX core, and your own chain launches from Gully Chain&apos;s app too.</>, href: 'https://kre8.fun', docs: 'https://docs.gullychain.xyz/' }
     case 'pay':
       return {
         line: <>x402 payments on Base, Ethereum, BNB Chain, Solana and <b>Gully Chain</b>, checkout, merchant stores and USDC run on Gully Pay&apos;s own platform. Your Gully Labs plan is still paid in Billing here, through Gully Pay checkout.</>,

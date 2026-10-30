@@ -13,7 +13,7 @@ import { hubState, useLive, type HubService } from './live'
 import { Btn, Count, ic, Spark } from './ui'
 
 type Icon = ComponentType<LucideProps>
-export const STREET = 'https://app.gullychain.xyz'
+export const STREET = 'https://kre8.fun'
 export const EXPLORER = 'https://testnet-explorer.gullychain.xyz'
 
 /** Gully Street's features (its own nav, read from app.gullychain.xyz on 2026-10-26). */
@@ -100,7 +100,7 @@ function StreetCard({ s }: { s?: HubService }) {
         <b>Gully Street</b>
         <State s={s} />
       </span>
-      <span className="svu">app.gullychain.xyz · your profile is your wallet</span>
+      <span className="svu">kre8.fun · your profile is your wallet</span>
       <ul className="feats">
         {STREET_FEATURES.map((f) => (
           <li key={f.path}>
@@ -127,7 +127,7 @@ const CHAIN_ORDER: { k: string; name: string; url: string }[] = [
   { k: 'docs', name: 'Docs', url: 'https://docs.gullychain.xyz' },
   { k: 'devportal', name: 'Developer portal', url: 'https://dev.gullychain.xyz' },
   { k: 'rpc-public', name: 'Public RPC', url: 'https://testnet-rpc.gullychain.xyz' },
-  { k: 'copy', name: 'Copy trading', url: 'https://copy.gullychain.xyz' },
+  { k: 'copy', name: 'Copy trading', url: 'https://copy.kre8.fun' },
   { k: 'safe', name: 'Gully Safe', url: 'https://safe.gullychain.xyz' },
 ]
 

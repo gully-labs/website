@@ -38,7 +38,7 @@ const STATUS_PAGE = () => env('GULLY_STATUS_PAGE_URL', 'https://status.gullylabs
     marks a surface still being set up: it reads "coming" (never "down") until it answers 200, and only 200 counts as up. */
 export const SURFACES = [
   { key: 'chain-site', group: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz' },
-  { key: 'street', group: 'chain', name: 'Gully Street app', url: 'https://app.gullychain.xyz' },
+  { key: 'street', group: 'chain', name: 'Gully Street app', url: 'https://kre8.fun' },
   { key: 'explorer', group: 'chain', name: 'Explorer', url: 'https://testnet-explorer.gullychain.xyz' },
   { key: 'faucet', group: 'chain', name: 'Faucet', url: 'https://faucet.gullychain.xyz' },
   { key: 'bridge', group: 'chain', name: 'Bridge', url: 'https://testnet-bridge.gullychain.xyz' },
@@ -47,15 +47,15 @@ export const SURFACES = [
   { key: 'rpc-public', group: 'chain', name: 'Public RPC', url: 'https://testnet-rpc.gullychain.xyz', rpc: true },
   { key: 'indexer', group: 'chain', name: 'Indexer', url: 'https://indexer.gullychain.xyz', probe: 'https://indexer.gullychain.xyz/head' },
   // Gully Street's social feed reads the indexer's /feed; copy trading has its own engine; Gully Safe is being deployed.
-  { key: 'social', group: 'chain', name: 'Gully Street feed', url: 'https://app.gullychain.xyz', probe: 'https://indexer.gullychain.xyz/feed?limit=1' },
-  { key: 'copy', group: 'chain', name: 'Copy trading engine', url: 'https://app.gullychain.xyz/copy', probe: 'https://copy.gullychain.xyz/health' },
+  { key: 'social', group: 'chain', name: 'Gully Street feed', url: 'https://kre8.fun', probe: 'https://indexer.gullychain.xyz/feed?limit=1' },
+  { key: 'copy', group: 'chain', name: 'Copy trading engine', url: 'https://kre8.fun/copy', probe: 'https://copy.kre8.fun/health' },
   // Gully Social (posts, follows, profiles; services/social in gully-street) answers /healthz.
-  { key: 'social-api', group: 'chain', name: 'Gully Social service', url: 'https://app.gullychain.xyz', probe: 'https://social.gullychain.xyz/healthz' },
+  { key: 'social-api', group: 'chain', name: 'Gully Social service', url: 'https://kre8.fun', probe: 'https://social.kre8.fun/healthz' },
   { key: 'safe', group: 'chain', name: 'Gully Safe', url: 'https://safe.gullychain.xyz', soon: true },
   // Gully Sentry: free testnet Sentry Keys and the watchers that check Gully Chain's assertions (2026-10-28).
   { key: 'sentry', group: 'chain', name: 'Gully Sentry', url: 'https://sentry.gullychain.xyz', probe: 'https://sentry.gullychain.xyz/api/healthz' },
   // Gully Offerwall (OfferwallManager on chain 485590, built on Gully Quests): its public stats answer JSON.
-  { key: 'offerwall', group: 'chain', name: 'Gully Offerwall', url: 'https://offers.gullychain.xyz', probe: 'https://offers.gullychain.xyz/v1/stats' },
+  { key: 'offerwall', group: 'chain', name: 'Gully Offerwall', url: 'https://offers.kre8.fun', probe: 'https://offers.kre8.fun/v1/stats' },
   { key: 'gully-id', group: 'labs', name: 'Gully ID', url: 'https://gullyid.xyz', probe: 'https://gullyid.xyz/health' },
   { key: 'pay', group: 'labs', name: 'Gully Pay', url: 'https://gullypay.xyz', probe: 'https://gullypay.xyz/api/status' },
   { key: 'x402', group: 'labs', name: 'Gully Pay x402', url: 'https://gullypay.xyz/x402/status' },

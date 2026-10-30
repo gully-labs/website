@@ -410,7 +410,7 @@ try {
     const moves = [
       ['/chains', 'https://gullychain.xyz/'],
       ['/chains/', 'https://gullychain.xyz/'],
-      ['/chains/launch', 'https://app.gullychain.xyz/'],
+      ['/chains/launch', 'https://kre8.fun/'],
       ['/chain-kit', 'https://gullychain.xyz/'],
       ['/gully-pay', 'https://gullypay.xyz/'],
       ['/gully-pay/docs', 'https://gullypay.xyz/docs'],

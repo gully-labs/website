@@ -110,7 +110,7 @@ function OnRequest() {
             <p className="m-0 text-[15px] leading-[1.55] text-muted">{it.body}</p>
             <div className="mt-auto flex flex-wrap gap-3">
               {it.waitlist ? (
-                <a href="https://app.gullychain.xyz" target="_blank" rel="noopener noreferrer" onClick={() => track('cta-click', { cta: 'gully-chain-open', page: '/pricing' })} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
+                <a href="https://kre8.fun" target="_blank" rel="noopener noreferrer" onClick={() => track('cta-click', { cta: 'gully-chain-open', page: '/pricing' })} className={`${btnOutline} inline-flex min-h-11 items-center gap-2 px-5 text-[15px]`}>
                   <Send aria-hidden size={16} /> Open Gully Chain
                   <span className="sr-only"> (opens in a new tab)</span>
                 </a>

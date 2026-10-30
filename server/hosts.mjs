@@ -240,7 +240,8 @@ export function currentPageUrl(url) {
 /* Products on their own domains (2026-10-26). Gully Labs (gullylabs.xyz, app.gullylabs.xyz) is the parent brand and
    the hub; these products moved out and are no longer full features here. Their old main-site and docs pages answer
    301 (GET/HEAD) to the equivalent page on the product's own domain, deep path kept where one exists there.
-     Gully Chain     gullychain.xyz (site), app.gullychain.xyz (launch flow, launchpad), docs.gullychain.xyz
+     Gully Chain     gullychain.xyz (site), docs.gullychain.xyz; the app (launch flow, launchpad) is kre8.fun since
+                     2026-10-29 (it was app.gullychain.xyz, which now 301s there)
      Gully Pay       gullypay.xyz (x402, checkout, merchants, USDC; /glusd stays a 301; developer docs at /docs)
      Gully RPC       gullyrpc.xyz, app.gullyrpc.xyz (keys, portal)
      Gully Studio    gullystudio.xyz
@@ -248,7 +249,8 @@ export function currentPageUrl(url) {
    HOLDERMAPS_PRIMARY). What never moves: pay.gullylabs.xyz (Gully Labs' own checkout: plans, paid scans, live
    invoices), /legal/*, every /api/* path, /embed/*, widget.js and the badges: other sites and the SDK call them. */
 export const CHAIN_URL = 'https://gullychain.xyz'
-export const CHAIN_APP_URL = 'https://app.gullychain.xyz'
+/** The Gully Chain app (kre8.fun since 2026-10-29, was app.gullychain.xyz). GULLY_APP_URL overrides it. */
+export const CHAIN_APP_URL = String(process.env.GULLY_APP_URL || 'https://kre8.fun').replace(/\/+$/, '')
 export const CHAIN_DOCS_URL = 'https://docs.gullychain.xyz'
 export const GULLYPAY_URL = 'https://gullypay.xyz'
 export const RPC_URL = 'https://gullyrpc.xyz'

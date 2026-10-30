@@ -209,7 +209,7 @@ export interface ProductDef {
 /* The products: six on their own domains since 2026-10-26 (Gully Labs is the hub that points to them), plus Gully IPFS,
    a Gully Labs service documented at docs.gullylabs.xyz/ipfs. */
 export const PRODUCTS: ProductDef[] = [
-  { key: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz', app: 'https://app.gullychain.xyz', docs: 'https://docs.gullychain.xyz', icon: Network, blurb: 'An L3 chain for launches and trading, with Gully Core built in.' },
+  { key: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz', app: 'https://kre8.fun', docs: 'https://docs.gullychain.xyz', icon: Network, blurb: 'An L3 chain for launches and trading, with Gully Core built in.' },
   { key: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz', docs: 'https://gullypay.xyz/docs', icon: CircleDollarSign, blurb: 'x402 payments, checkout and a merchant OS, settled on chain.' },
   { key: 'rpc', name: 'Gully RPC', url: 'https://gullyrpc.xyz', app: 'https://app.gullyrpc.xyz', docs: 'https://gullyrpc.xyz/docs/', icon: Server, blurb: 'Node control plane and RPC gateway for every Gully chain.' },
   // A Gully Labs service (no own domain or kit): grouped with Gully RPC as infrastructure.

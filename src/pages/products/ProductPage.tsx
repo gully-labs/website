@@ -235,7 +235,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
           { label: 'Launches · 24 h', value: hp?.activity ? sum(a.map((x) => x.launches)) : null, spark: a.map((x) => x.launches), sub: 'from the indexer feed' },
           { label: 'Curve trades · 24 h', value: hp?.activity ? sum(a.map((x) => x.trades)) : null, spark: a.map((x) => x.trades), color: S[1], sub: 'bonding-curve buys and sells' },
           { label: 'Swaps · 24 h', value: hp?.activity ? sum(a.map((x) => x.swaps)) : null, spark: a.map((x) => x.swaps), color: S[2], sub: 'Gully Swap router' },
-          { label: 'App state', text: <Dot s={stateOf(hub, ['street'])} />, sub: 'app.gullychain.xyz, checked each minute' },
+          { label: 'App state', text: <Dot s={stateOf(hub, ['street'])} />, sub: 'kre8.fun, checked each minute' },
         ],
         main: <TChart label="Gully Street · activity by hour" tabs={[ct[3], ct[0]]} />,
         side: lat,
@@ -518,13 +518,13 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
       }
     }
     case 'offerwall': {
-      // Gully Offerwall's public stats (offers.gullychain.xyz/v1/stats via /api/hub/live): payouts are a testnet stablecoin (USDC).
+      // Gully Offerwall's public stats (offers.kre8.fun/v1/stats via /api/hub/live): payouts are a testnet stablecoin (USDC).
       const o = hl?.offers ?? null
       const oSt = o ? 'ok' : hlState === 'loading' ? 'loading' : 'offline'
       const ser = o?.series ?? []
       const labels = ser.map((x) => `${new Date(x.t).toISOString().slice(11, 13)}:00`)
       const tabs: ChartTab[] = [
-        { id: 'done', label: 'Completions', title: 'Offer completions per hour, last 24 h (UTC)', series: [{ name: 'Completions', color: ACCENT, values: ser.map((x) => x.completions) }], labels, fmt: (v) => fmtInt(v), integer: true, state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? fmtInt(sum(ser.map((x) => x.completions))) : '—', sub: 'completions in the last 24 h · offers.gullychain.xyz/v1/stats' },
+        { id: 'done', label: 'Completions', title: 'Offer completions per hour, last 24 h (UTC)', series: [{ name: 'Completions', color: ACCENT, values: ser.map((x) => x.completions) }], labels, fmt: (v) => fmtInt(v), integer: true, state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? fmtInt(sum(ser.map((x) => x.completions))) : '—', sub: 'completions in the last 24 h · offers.kre8.fun/v1/stats' },
         { id: 'paid', label: 'USDC paid', title: 'USDC paid to players per hour, last 24 h (UTC)', series: [{ name: 'USDC', color: S[1], values: ser.map((x) => x.paid) }], labels, fmt: (v) => (v == null ? '—' : `${v.toFixed(2)} USDC`), state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? `${sum(ser.map((x) => x.paid)).toFixed(2)} USDC` : '—', sub: 'testnet USDC on Gully Chain · no USD value' },
         { id: 'pts', label: 'Points', title: 'Points awarded per hour, last 24 h (UTC)', series: [{ name: 'Points', color: S[2], values: ser.map((x) => x.points) }], labels, fmt: (v) => fmtInt(v), integer: true, state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? fmtInt(sum(ser.map((x) => x.points))) : '—', sub: 'points awarded, last 24 h' },
       ]
@@ -558,14 +558,14 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
               </tbody>
             </table>
             <p className="gt-note">
-              Sign-in with Gully ID (<A href="https://gullyid.xyz">gullyid.xyz</A>). Advertiser billing through Gully Pay checkout is rolling out. Embed the wall on any site with an iframe or <A href="https://offers.gullychain.xyz/integrate">offerwall.js</A>.
+              Sign-in with Gully ID (<A href="https://gullyid.xyz">gullyid.xyz</A>). Advertiser billing through Gully Pay checkout is rolling out. Embed the wall on any site with an iframe or <A href="https://offers.kre8.fun/integrate">offerwall.js</A>.
             </p>
           </Panel>
         ),
       }
     }
     case 'gully-social': {
-      // Gully Social's public reads (social.gullychain.xyz via /api/hub/live): the newest page of posts (30) and of new
+      // Gully Social's public reads (social.kre8.fun via /api/hub/live): the newest page of posts (30) and of new
       // accounts (50). Counts and times only; a full page is shown as "30+" / "50+", never as a total.
       const so = hl?.social ?? null
       const pe = hl?.people ?? null
@@ -583,14 +583,14 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
         return sec < 3600 ? `${Math.max(1, Math.round(sec / 60))} min ago` : sec < 86400 ? `${Math.round(sec / 3600)} h ago` : `${Math.round(sec / 86400)} d ago`
       }
       const tabs: ChartTab[] = [
-        { id: 'posts', label: 'Posts', title: 'Posts per day, 14 days (UTC) · from the newest 30 posts', series: [{ name: 'Posts', color: ACCENT, values: perDay(so?.times) }], labels, fmt: (v) => fmtInt(v), integer: true, state: so ? 'ok' : st, empty: 'Gully Social unreadable right now · retrying', head: count(so), sub: 'newest posts read · social.gullychain.xyz/v1/posts' },
-        { id: 'joins', label: 'New accounts', title: 'New accounts per day, 14 days (UTC) · from the newest 50', series: [{ name: 'New accounts', color: S[1], values: perDay(pe?.times) }], labels, fmt: (v) => fmtInt(v), integer: true, state: pe ? 'ok' : st, empty: 'Gully Social unreadable right now · retrying', head: count(pe), sub: 'newest accounts read · social.gullychain.xyz/v1/people' },
+        { id: 'posts', label: 'Posts', title: 'Posts per day, 14 days (UTC) · from the newest 30 posts', series: [{ name: 'Posts', color: ACCENT, values: perDay(so?.times) }], labels, fmt: (v) => fmtInt(v), integer: true, state: so ? 'ok' : st, empty: 'Gully Social unreadable right now · retrying', head: count(so), sub: 'newest posts read · social.kre8.fun/v1/posts' },
+        { id: 'joins', label: 'New accounts', title: 'New accounts per day, 14 days (UTC) · from the newest 50', series: [{ name: 'New accounts', color: S[1], values: perDay(pe?.times) }], labels, fmt: (v) => fmtInt(v), integer: true, state: pe ? 'ok' : st, empty: 'Gully Social unreadable right now · retrying', head: count(pe), sub: 'newest accounts read · social.kre8.fun/v1/people' },
       ]
       return {
         kpis: [
           { label: 'Latest post', text: ago(lastOf(so?.times)), sub: so ? `${count(so)} posts in the newest page` : 'reading Gully Social' },
           { label: 'Newest account', text: ago(lastOf(pe?.times)), sub: pe ? `${count(pe)} accounts in the newest page` : 'reading Gully Social' },
-          { label: 'Service', text: <Dot s={stateOf(hub, ['social-api'])} />, sub: 'social.gullychain.xyz, checked each minute' },
+          { label: 'Service', text: <Dot s={stateOf(hub, ['social-api'])} />, sub: 'social.kre8.fun, checked each minute' },
           { label: 'Chain feed', text: <Dot s={stateOf(hub, ['social'])} />, sub: 'launches, trades and swaps from the indexer' },
         ],
         main: <TChart label="Gully Social · by day" tabs={tabs} />,
@@ -599,7 +599,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
       }
     }
     case 'copy-trading': {
-      // The copy-trading engine's public health (copy.gullychain.xyz/health via /api/hub/live) and the indexer's trades.
+      // The copy-trading engine's public health (copy.kre8.fun/health via /api/hub/live) and the indexer's trades.
       const c = hl?.copy ?? null
       const EXP = 'https://testnet-explorer.gullychain.xyz/address/'
       const FEES = '0xA9d429eb1b137764B0d4964e437AF50989bdFea3'
@@ -608,7 +608,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
           { label: 'Leaders', value: c?.leaders ?? null, sub: c ? 'traders indexed from Gully Chain trades' : hlState === 'loading' ? 'reading the engine' : 'engine unreadable · retrying' },
           { label: 'Active copies', value: c?.activeCopies ?? null, sub: 'copies running now' },
           { label: 'Curve trades · 24 h', value: hp?.activity ? sum(a.map((x) => x.trades)) : null, spark: a.map((x) => x.trades), color: S[1], sub: 'what leaders trade, from the indexer' },
-          { label: 'Engine', text: <Dot s={stateOf(hub, ['copy'])} />, sub: c?.block != null ? `at block ${fmtInt(c.block)}${c.dryRun ? ' · dry run' : ''}` : 'copy.gullychain.xyz, checked each minute' },
+          { label: 'Engine', text: <Dot s={stateOf(hub, ['copy'])} />, sub: c?.block != null ? `at block ${fmtInt(c.block)}${c.dryRun ? ' · dry run' : ''}` : 'copy.kre8.fun, checked each minute' },
         ],
         main: <TChart label="Gully Chain trading · by hour" tabs={[ct[3], ct[0]]} />,
         side: lat,
@@ -626,7 +626,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
               </tbody>
             </table>
             <p className="gt-note">
-              Copy a leader in the Gully Street app: <A href="https://app.gullychain.xyz/copy">app.gullychain.xyz/copy</A>. Your copies: <A href="https://app.gullychain.xyz/me/copies">/me/copies</A>.
+              Copy a leader in the Gully Street app: <A href="https://kre8.fun/copy">kre8.fun/copy</A>. Your copies: <A href="https://kre8.fun/me/copies">/me/copies</A>.
             </p>
           </Panel>
         ),
