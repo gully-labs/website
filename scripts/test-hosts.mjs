@@ -550,6 +550,34 @@ try {
     check('main site: no 48 px Powered-by badge in the trust band', !read('src/console/ui.tsx').includes('powered-by-gully-labs-dark.png'))
     const kit = 'C:/Users/Admin/Desktop/GULLY LABS GRAPHICS/Gully Labs/brand-kit/badges'
     if (fs.existsSync(kit)) check('badge PNGs are byte-exact kit copies (site and blog theme)', ['', '-2x', '-3x'].every((s) => { const k = fs.readFileSync(path.join(kit, `powered-by-gully-labs-dark${s}.png`)); return k.equals(fs.readFileSync(path.join(ROOT, 'public', 'brand', 'badges', `powered-by-gully-labs-dark${s}.png`))) && k.equals(fs.readFileSync(path.join(ROOT, 'ghost', 'theme', 'gully', 'assets', 'brand', 'badges', `powered-by-gully-labs-dark${s}.png`))) }))
+
+    // 6b. The "Powered by Gully Core" badge (Gully Chain brand kit v4, owner approved 2026-10-30): the eight served
+    //     kit files are byte-exact (pinned SHA-256 from the kit README, so this holds without the Desktop kit), the
+    //     component links gullychain.xyz/gully-core/ in a new tab with the kit alt text, and it shows only on the
+    //     Gully Chain / Gully Core product pages and HolderMaps of Gully Core launches (venueId from the server).
+    const CORE_BADGES = {
+      'gully-core-powered-by-dark.svg': 'b93e952ac9d89c632ddeabd457bfdef2beb2a34751d9a676715ffc45b4a7b43c',
+      'gully-core-powered-by-dark.png': '9f0ba1967c13e7c06a8cc09b3cd01afa6ba061141d51c1a0039e8a60b755412e',
+      'gully-core-powered-by-dark-2x.png': 'dd79f7c75370be3768291d0fb9caf68a15a193efd5ad685d1a1d506640f24eb7',
+      'gully-core-powered-by-dark-3x.png': '40faa6f2d8f6b87c83224d07c7039c2948bc290fbec4f0118a5abcf8a1e0e8ca',
+      'gully-core-powered-by-light.svg': '4feb3c095b447391cf33e802af306326e099dab58212ddcf9a69c7825d4bea30',
+      'gully-core-powered-by-light.png': 'eabae88651e4a817b08de1aeca8582fa0cab4f8804f9cb4dfbbe039b63a3fa5e',
+      'gully-core-powered-by-light-2x.png': 'f4a47d2e92205f26d8ee4d0f54b0ab3f000957d8321934073eaa17f6a646cbd7',
+      'gully-core-powered-by-light-3x.png': '64faed21da9fce1d2f88d66949d6df5bf13c01305b720922b3724d2cef9fbad1',
+    }
+    for (const [f, sha] of Object.entries(CORE_BADGES)) {
+      const fp = path.join(ROOT, 'public', 'brand', 'badges', f)
+      const got = fs.existsSync(fp) ? crypto.createHash('sha256').update(fs.readFileSync(fp)).digest('hex') : 'missing'
+      check(`Gully Core badge ${f}: byte-exact kit copy`, got === sha, got)
+    }
+    const core = read('src/components/PoweredByGullyCoreBadge.tsx')
+    check('Gully Core badge component: kit SVG src + PNG 1x/2x/3x, 194 x 56 ratio, 32 px default, new tab to gullychain.xyz/gully-core/, kit alt text', core.includes("href=\"https://gullychain.xyz/gully-core/\"") && core.includes('aria-label="Powered by Gully Core (opens in a new tab)"') && core.includes('alt="Powered by Gully Core"') && core.includes('gully-core-powered-by-dark.svg') && core.includes('gully-core-powered-by-dark-2x.png 2x') && core.includes('gully-core-powered-by-dark-3x.png 3x') && core.includes('height = 32') && core.includes('(height * 194) / 56') && core.includes('loading="lazy"'))
+    check('Gully Core badge component: SmartLink gives external links target=_blank rel="noopener noreferrer"', core.includes("import { SmartLink } from './SmartLink'") && read('src/components/SmartLink.tsx').includes('target="_blank" rel="noopener noreferrer"'))
+    check('Gully Core badge on the Gully Chain and Gully Core product pages only', /\(p\.slug === 'chain' \|\| p\.slug === 'gully-core'\) && <PoweredByGullyCoreBadge/.test(read('src/pages/products/ProductPage.tsx')))
+    check('Gully Core badge on HolderMaps token pages, gated on chain gully + launch + venueId gully-launchpad', read('src/holdermaps/HmToken.tsx').includes('isGullyCoreLaunch(m) && <PoweredByGullyCoreBadge') && read('src/lib/holders.ts').includes("m.chain.key === 'gully' && m.kind === 'launch' && m.venueId === GULLY_LAUNCHPAD_ID") && read('src/lib/holders.ts').includes("GULLY_LAUNCHPAD_ID = 'gully-launchpad'"))
+    check('holders API: venueId (the launchpad id) next to venue', read('server/holders.mjs').includes("venueId: kind === 'launch' && launch?.venue ? lower(launch.venue) : null"))
+    check('Gully Core badge: no typed "Gully Core" wordmark next to it (the badge is the wordmark)', !/[>}]\s*Gully Core\s*[<{]/.test(read('src/holdermaps/HmToken.tsx')) && !/<PoweredByGullyCoreBadge[^<]*<[^<]*>\s*Gully Core/.test(read('src/pages/products/ProductPage.tsx')))
+
     const blogCss = read('ghost/theme/gully/assets/css/screen.css')
     const blogFoot = read('ghost/theme/gully/partials/footer.hbs')
     check('blog: the badge is 30 px (26 px on phones), right of the copyright', blogCss.includes('.gl-powered img { width: auto; height: 30px; }') && blogCss.includes('.gl-powered img { height: 26px; }') && blogFoot.indexOf('gl-footer-copy') < blogFoot.indexOf('brand/badge'))

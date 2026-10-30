@@ -136,6 +136,8 @@ export interface HolderMapOk {
   kind: HolderKind
   /** Other launchpads' launches: the launchpad's name. */
   venue?: string | null
+  /** Other launchpads' launches: the launchpad's id (e.g. 'gully-launchpad'); null otherwise. */
+  venueId?: string | null
   /** full: every holder's exact balance. top: the biggest holders only, and why (shown on the map). */
   coverage?: { level: 'full' | 'top'; reason: string | null; shown: number | null }
   chain: { key: string; id: number | string; name: string }
@@ -216,6 +218,11 @@ export type HolderMap = HolderMapOk | HolderMapUnavailable
 export const holdersPath = (chain: string, token: string) => `/api/holders/${encodeURIComponent(chain)}/${encodeURIComponent(token)}`
 export const holdersCardUrl = (chain: string, token: string) => `${holdersPath(chain, token)}/card.png`
 export const holdersCsvUrl = (chain: string, token: string) => `${holdersPath(chain, token)}.csv`
+
+/** The launchpad id the Gully Launchpad reports as (server/holders-launchpads.mjs). */
+export const GULLY_LAUNCHPAD_ID = 'gully-launchpad'
+/** A Gully Core launch: a Gully Launchpad launch on Gully Chain. The only maps that carry the "Powered by Gully Core" badge. */
+export const isGullyCoreLaunch = (m: Pick<HolderMapOk, 'chain' | 'kind' | 'venueId'>) => m.chain.key === 'gully' && m.kind === 'launch' && m.venueId === GULLY_LAUNCHPAD_ID
 /** The site's page for a map. */
 /** The chains a Holder Map page exists for (server/holders.mjs HOLDER_CHAINS). */
 export const HOLDER_CHAIN_KEYS = ['robinhood', 'bsc', 'base', 'hyperevm', 'solana', 'gully']
