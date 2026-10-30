@@ -51,8 +51,7 @@ export const GULLY_CHAIN = {
   v3Factory: '0x1787a3ba8c8d7a2439cfa2efafc683ecac623950',
   swapRouter: '0x1283a251e34296675cc5130a2b02871384c0436a',
   v3Router: '0xf49b65b9912fd017fdb91d21ee9bc9992f8cf05c',
-  /** glUSD is retired (redeem-only through its PSM); kept for holder labels until its supply is 0 */
-  glusd: '0xdbe84be6496fb3d07f601548555ec7acc4ceba8f',
+  /** Retired glUSD PSM (redeem only): it holds USDC.e reserves, so holder maps label it until its reserve is 0 */
   glusdPsm: '0xe1ae51036ede1b244c532a81fac196f19fa5e28e',
   /** USDC.e (Bridged USDC Standard, 6 decimals): the dollar on Gully Chain */
   usdc: '0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76',

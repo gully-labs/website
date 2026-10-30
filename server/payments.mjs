@@ -140,7 +140,7 @@ const TESTNETS = {
     ],
   },
   // Gully Chain Testnet (our own L3; gully-ops/l3/generated): bridged USDC.e (Circle FiatToken, 6 decimals; the dollar on
-  // Gully Chain since glUSD was retired, 2026-10-28, so glUSD is no longer offered) and test ETH priced by the chain's RedStone ETH / USD adapter (AggregatorV3 shape, 8 decimals). Offered only
+  // Gully Chain) and test ETH priced by the chain's RedStone ETH / USD adapter (AggregatorV3 shape, 8 decimals). Offered only
   // while GULLY_TESTNET_CHAINS names 485590 (never in production); otherwise the chain stays read-only (READ_CHAINS).
   485590: {
     chain: { id: 485590, key: 'gully', name: 'Gully Chain Testnet', testnet: true, explorer: 'https://testnet-explorer.gullychain.xyz', explorerName: 'Gully Chain Explorer', confirmations: 1, rpcs: ['https://testnet-rpc.gullychain.xyz'], feed: { address: '0x732b8a31e19827b6c81db7a433fd120e302862c8', decimals: 8, description: 'ETH / USD', maxAgeSec: FEED_MAX_AGE_SEC } },

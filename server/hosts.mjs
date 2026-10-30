@@ -242,7 +242,7 @@ export function currentPageUrl(url) {
    301 (GET/HEAD) to the equivalent page on the product's own domain, deep path kept where one exists there.
      Gully Chain     gullychain.xyz (site), docs.gullychain.xyz; the app (launch flow, launchpad) is kre8.fun since
                      2026-10-29 (it was app.gullychain.xyz, which now 301s there)
-     Gully Pay       gullypay.xyz (x402, checkout, merchants, USDC; /glusd stays a 301; developer docs at /docs)
+     Gully Pay       gullypay.xyz (x402, checkout, merchants, USDC; developer docs at /docs)
      Gully RPC       gullyrpc.xyz, app.gullyrpc.xyz (keys, portal)
      Gully Studio    gullystudio.xyz
    Gully Security (gullysecurity.xyz) and HolderMaps (holdermaps.xyz) keep their own switches above (SECURITY_PRIMARY,
@@ -257,7 +257,7 @@ export const RPC_URL = 'https://gullyrpc.xyz'
 export const STUDIO_URL = 'https://gullystudio.xyz'
 
 // Pages gullypay.xyz and gullyrpc.xyz serve under the same name (checked 2026-10-26).
-const GULLYPAY_PAGES = new Set(['docs', 'x402', 'glusd', 'overview', 'verticals', 'status', 'security', 'extension', 'about'])
+const GULLYPAY_PAGES = new Set(['docs', 'x402', 'overview', 'verticals', 'status', 'security', 'extension', 'about'])
 const RPC_PAGES = new Set(['docs', 'status'])
 
 /** The new home of a moved main-site page (gullylabs.xyz), or null when the path still belongs to Gully Labs. */
@@ -274,7 +274,7 @@ export function movedPageUrl(pathname) {
   if (p === '/gully-pay/merchant-terms') return null
   const pay = /^\/(?:gully-pay|gullypay)(?:\/([a-z0-9-]+))?(\/|$)/.exec(p)
   if (pay) return `${GULLYPAY_URL}/${pay[1] && GULLYPAY_PAGES.has(pay[1]) ? pay[1] : ''}`
-  if (p === '/x402' || p === '/glusd') return `${GULLYPAY_URL}${p}`
+  if (p === '/x402') return `${GULLYPAY_URL}${p}`
   // Gully RPC.
   const rpc = /^\/(?:rpc|gully-rpc)(?:\/([a-z0-9-]+))?(\/|$)/.exec(p)
   if (rpc) return `${RPC_URL}/${rpc[1] && RPC_PAGES.has(rpc[1]) ? `${rpc[1]}/` : ''}`
