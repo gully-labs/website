@@ -260,7 +260,7 @@ export const PRODUCTS: ProductDef[] = [
       { t: 'Hosted checkout', d: 'Pay links and invoices; payments go straight to the merchant wallet.' },
       { t: 'Merchant OS', d: 'Stores, webhooks per step (paid, confirmed, settled) and receipts.' },
       { t: 'Gateway for every Gully product', d: 'Every Gully product bills through Gully Pay.' },
-      { t: 'USDC.e on Gully Chain', d: 'Checkout and x402 on Gully Chain testnet settle in USDC.e (bridged USDC). glUSD is retired: redeem only, and its yield vault is withdraw only.' },
+      { t: 'USDC.e on Gully Chain', d: 'Checkout and x402 on Gully Chain testnet settle in USDC.e (bridged USDC).' },
     ],
     how: [
       ['Open a store', 'Sign up and name your store; payouts go to your own wallet.'],
@@ -270,7 +270,6 @@ export const PRODUCTS: ProductDef[] = [
     faq: [
       ['How many payments has Gully Pay processed?', 'None yet. Sign-up is open; this page shows the live networks and uptime instead of volume.'],
       ['Is it custodial?', 'No. Funds settle to the merchant wallet.'],
-      ['What happened to glUSD?', 'glUSD is retired. Gully Chain uses USDC.e (bridged USDC) everywhere; glUSD can still be redeemed, and the glUSD yield vault is withdraw only with no replacement.'],
     ],
     pricing: 'on-site',
   },

@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { _resetHub, handleHub, readGateway, readQuests, readStatusPage, readX402, SURFACES } from '../server/hub.mjs'
 
-const X402 = { facilitator: 'gullypay', x402Version: 1, supportedSchemes: ['exact'], supportedNetworks: ['base', 'base-sepolia', 'ethereum', 'bsc', 'solana', 'gully-chain-testnet'], supportedAssets: ['USDC', 'USDT', 'GLUSD', 'ETH', 'WETH'], networks: { 'gully-chain-testnet': { chainId: 485590, name: 'Gully Chain Testnet' } } }
+const X402 = { facilitator: 'gullypay', x402Version: 1, supportedSchemes: ['exact'], supportedNetworks: ['base', 'base-sepolia', 'ethereum', 'bsc', 'solana', 'gully-chain-testnet'], supportedAssets: ['USDC', 'USDT', 'ETH', 'WETH'], networks: { 'gully-chain-testnet': { chainId: 485590, name: 'Gully Chain Testnet' } } }
 const GATEWAY = { public: [{ id: 'evm:8453', alias: 'base', blockTimeMs: 2000, state: 'OK' }, { id: 'evm:485590', alias: 'gully-testnet', blockTimeMs: 105299, state: 'OK' }, { id: 'evm:56', alias: 'bsc', state: 'DEGRADED' }] }
 const STATS = {
   quests: 3,
