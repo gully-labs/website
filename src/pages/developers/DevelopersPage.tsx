@@ -11,22 +11,25 @@ import { APP_DESCRIPTION, APP_TITLE, inviteTokenFromHash, PortalContext, restore
 import { mono, pillGold, pillLine } from './styles'
 import { BadgeFooterRow } from '../../components/PoweredByBadge'
 import { AppLauncher } from '../../console/Launcher'
+import { GullyIdButton, gullyIdAccessToken, gullyIdRedirectToken, isGullyIdReturn } from './gullyId'
 
 /* The Gully Labs App, the app dashboard (app.gullylabs.xyz; /app and /developers on localhost). Signed out: what the
-   free tier is and a "Connect wallet" button. Signing in is Sign-In with Ethereum: the wallet signs a
-   message (no transaction, no gas) and the server sets an HttpOnly session cookie. The wallet libraries
+   free tier is, a "Connect wallet" button and "Sign in with Gully ID". Wallet sign-in is Sign-In with Ethereum: the
+   wallet signs a message (no transaction, no gas) and the server sets an HttpOnly session cookie. Gully ID signs in
+   on gullyid.xyz in a popup and the account is the Gully ID's wallet (gullyId.ts, server/gully-id.mjs). The wallet libraries
    load only when that button is pressed; the signed-in dashboard itself never needs them. */
 
 const loadWallet = () => import('./WalletSignIn')
 const WalletSignIn = lazy(loadWallet)
 
-type Session = { state: 'loading' } | { state: 'out' } | { state: 'blocked'; message: string } | { state: 'error'; message: string } | { state: 'in'; account: Account; me: Me | null }
+type Session = { state: 'loading' } | { state: 'out'; gullyId?: boolean } | { state: 'blocked'; message: string } | { state: 'error'; message: string } | { state: 'in'; account: Account; me: Me | null }
 
 /** The workspace's account (/account) and who is signed in (/me, portal v2) together. */
 async function readSession(): Promise<Session> {
   // Signed out: stop here, so /account and /me never answer 401 into the console.
-  const probe = await api<{ signedIn: boolean }>('/api/developer/session')
-  if (probe.ok && !probe.data.signedIn) return { state: 'out' }
+  const probe = await api<{ signedIn: boolean; gullyId?: { enabled: boolean } }>('/api/developer/session')
+  // GULLY_ID_SIGNIN=off on the server hides the Gully ID option (the flag is in the session probe).
+  if (probe.ok && !probe.data.signedIn) return { state: 'out', gullyId: probe.data.gullyId?.enabled !== false }
   return Promise.all([api<Account>('/api/developer/account'), api<Me>('/api/developer/me')]).then(([r, m]) => {
     if (r.ok) return { state: 'in', account: r.data, me: m.ok ? m.data : null }
     if (r.status === 401) return { state: 'out' }
@@ -54,7 +57,7 @@ function useTiers(): Tiers {
   return t
 }
 
-function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolean; error: string | null }) {
+function SignedOut({ connect, busy, error, gully, gullyBusy, gullyOn = true }: { connect: () => void; busy: boolean; error: string | null; gully: () => void; gullyBusy: boolean; gullyOn?: boolean }) {
   const tiers = useTiers()
   return (
     <section className="relative mx-auto grid w-full max-w-[1240px] grid-cols-[minmax(0,1fr)] items-start gap-4 overflow-x-clip px-4 py-5 min-[1000px]:grid-cols-[380px_minmax(0,1fr)] min-[1000px]:px-6">
@@ -69,7 +72,7 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
           <h1 className="m-0 font-display text-[26px] leading-[1] font-bold uppercase">
             Sign in with <span className="text-gold">your wallet</span>
           </h1>
-          <p className="m-0 text-[13px] leading-[1.55] text-muted">Your address is your account: no email, no password. API keys, alerts, analytics and billing in one app; every Gully product one tap away.</p>
+          <p className="m-0 text-[13px] leading-[1.55] text-muted">Your address is your account: no email, no password. Or sign in with Gully ID, the one sign-in for every Gully app. API keys, alerts, analytics and billing in one app; every Gully product one tap away.</p>
         </div>
         {tiers ? (
           <dl className="m-0 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-line bg-line">
@@ -99,8 +102,23 @@ function SignedOut({ connect, busy, error }: { connect: () => void; busy: boolea
           {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Wallet size={18} aria-hidden />}
           {busy ? 'Opening wallets…' : 'Connect wallet'}
         </button>
+        {gullyOn && (
+          <>
+            <div className="flex items-center gap-3 text-[11px] text-faint uppercase" aria-hidden>
+              <span className="h-px flex-1 bg-line" />
+              or
+              <span className="h-px flex-1 bg-line" />
+            </div>
+            <GullyIdButton onClick={gully} busy={gullyBusy} disabled={busy} />
+          </>
+        )}
+        {gullyOn && gullyBusy && (
+          <p className="m-0 -mt-2 text-center font-mono text-[12px] text-faint" role="status">
+            Waiting for Gully ID…
+          </p>
+        )}
         <p className="m-0 text-[12px] leading-[1.5] text-faint" data-testid="signin-terms">
-          By connecting a wallet you agree to the{' '}
+          By connecting a wallet or signing in with Gully ID you agree to the{' '}
           <ExtLink href={`${SITE_URL}/legal/terms`} arrowSize={11} className="inline-flex min-h-11 items-center gap-[2px] text-muted underline underline-offset-2 hover:text-gold">
             Terms of Service
           </ExtLink>{' '}
@@ -136,6 +154,8 @@ export function DevelopersPage() {
   const [session, setSession] = useState<Session>({ state: 'loading' })
   const [wallet, setWallet] = useState({ mounted: false, trigger: 0, signedOut: 0 })
   const [busy, setBusy] = useState(false)
+  // Busy from the first render when this load is Gully ID's redirect back (finished in the effect below).
+  const [gullyBusy, setGullyBusy] = useState(() => isGullyIdReturn(window.location.search))
   const [error, setError] = useState<string | null>(null)
 
   const loadAccount = useCallback(() => readSession().then(setSession), [])
@@ -165,6 +185,37 @@ export function DevelopersPage() {
   useEffect(() => {
     readSession().then(setSession)
   }, [])
+
+  // Sign in with Gully ID: the token from gullyid.xyz is exchanged once for our own session cookie.
+  const gullyExchange = useCallback(
+    async (token: string) => {
+      const r = await api<{ address: string }>('/api/developer/gully', { method: 'POST', body: { accessToken: token } })
+      if (!r.ok) return setError(r.error)
+      setError(null)
+      await loadAccount()
+      restoreFocusSoon()
+    },
+    [loadAccount],
+  )
+  const gully = async () => {
+    setError(null)
+    setGullyBusy(true)
+    try {
+      await gullyExchange(await gullyIdAccessToken())
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : 'Gully ID sign-in failed. Try again.')
+    } finally {
+      setGullyBusy(false)
+    }
+  }
+  // A blocked popup makes the SDK fall back to a full-page redirect: finish it when Gully ID sends the browser back.
+  useEffect(() => {
+    if (!isGullyIdReturn(window.location.search)) return
+    gullyIdRedirectToken()
+      .then((t) => (t ? gullyExchange(t) : undefined))
+      .catch((e) => setError(e instanceof Error && e.message ? e.message : 'Gully ID sign-in failed. Try again.'))
+      .finally(() => setGullyBusy(false))
+  }, [gullyExchange])
 
   const connect = () => {
     setError(null)
@@ -263,7 +314,7 @@ export function DevelopersPage() {
             <InviteLanding token={invite} signedIn={false} connect={connect} connecting={busy} onDone={() => setInvite(null)} />
           </section>
         ) : (
-          <SignedOut connect={connect} busy={busy} error={error} />
+          <SignedOut connect={connect} busy={busy} error={error} gully={gully} gullyBusy={gullyBusy} gullyOn={session.gullyId !== false} />
         ))}
       {(session.state === 'error' || session.state === 'blocked') && (
         <section className="mx-auto flex min-h-[50vh] w-full max-w-[640px] flex-col items-start justify-center gap-4 px-4 py-16">
