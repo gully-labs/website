@@ -917,6 +917,9 @@ export function buildMap({ chainKey, token, symbol, name, decimals, kind, holder
     sources,
     coverage: coverage ?? { level: fromHistory ? 'full' : 'top', reason: null, shown: null },
     venue: launch?.venueName ?? (launch ? 'DeepCore' : null),
+    // Another launchpad's launch: its id (holders-launchpads.mjs, e.g. 'gully-launchpad'), so clients can gate on the
+    // launchpad itself and not on its display name. null for DeepCore launches, stocks and plain tokens.
+    venueId: kind === 'launch' && launch?.venue ? lower(launch.venue) : null,
     holders: { count: holderCount ?? (fromHistory ? positive.filter(([a]) => !INFRA.has(lbl.get(a)?.kind)).length : null), shown: nodes.length, graph: Math.min(graphMax, nodes.length), sharesOf: totalKnown ? 'total supply' : 'listed holders', partial },
     tier,
     locked: tier === 'pro' ? [] : ['replay', 'csv', 'more-holders', 'alerts'],
