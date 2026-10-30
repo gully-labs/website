@@ -24,6 +24,7 @@ import { addEnquiry, addToLaunchList } from './store.mjs'
 import { notifyIntake, startIntakeDigest } from './intake-notify.mjs'
 import { clientIp, DATA_DIR, readJson } from './http.mjs'
 import { handleAdmin } from './admin.mjs'
+import { handleGullyAdminRoute } from './admin-auth.mjs'
 import { handleEcosystem } from './ecosystem.mjs'
 import { handleDiscovery } from './discovery.mjs'
 import { pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
@@ -346,6 +347,8 @@ async function handleRequest(req, res) {
   // The web app manifest, one per host (pwa.mjs): the site's, the app's, none for admin and docs.
   if (handleManifest(req, res, url, host)) return
   if (isAdmin) res.setHeader('X-Robots-Tag', 'noindex, nofollow')
+  // Sign in with Gully ID for the admin dashboard (admin-auth.mjs): a full-page redirect flow, admin host only.
+  if (isAdmin && url.pathname.startsWith('/auth/gully/') && (await handleGullyAdminRoute(req, res, url))) return
 
   if (url.pathname.startsWith('/api/admin/')) {
     if (!isAdmin && !isLocal) return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })

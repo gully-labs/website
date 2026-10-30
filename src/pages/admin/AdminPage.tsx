@@ -22,7 +22,7 @@ import { FeeProxyBanner, FeeProxyCard, type FeeProxyStatus } from './FeeProxyCar
 import { isFeeProxy } from '../../../server/fee-proxy-guard.mjs'
 import { ChainLogo } from '../../components/logos/ChainLogo'
 import { toastError } from '../../components/ui/toast'
-import { LogOut, RefreshCw } from 'lucide-react'
+import { KeyRound, LogOut, RefreshCw } from 'lucide-react'
 import { AdminNav } from './AdminNav'
 import { useAdminSection } from './useAdminSection'
 import { pillCls } from './ui'
@@ -196,30 +196,68 @@ function Tile({ k, v, note, tone }: { k: string; v: string; note?: string; tone?
   )
 }
 
+interface AuthOptions {
+  gullyId: { enabled: boolean; issuer: string; clientId: string; allowlisted: number }
+  passwordLogin: boolean
+}
+
+/** Sign-in: Sign in with Gully ID (allowlisted accounts, server/admin-auth.mjs) and, while ADMIN_PASSWORD_LOGIN=on, the
+    break-glass admin token. The Gully ID button is the kit file, byte-identical (public/brand/gullyid). */
 function Login({ onToken, error }: { onToken: (t: string) => void; error: string | null }) {
   const [t, setT] = useState('')
+  const [opts, setOpts] = useState<AuthOptions | null>(null)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/admin/auth/config')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: AuthOptions | null) => alive && setOpts(d ?? { gullyId: { enabled: false, issuer: '', clientId: '', allowlisted: 0 }, passwordLogin: true }))
+      .catch(() => alive && setOpts({ gullyId: { enabled: false, issuer: '', clientId: '', allowlisted: 0 }, passwordLogin: true }))
+    return () => {
+      alive = false
+    }
+  }, [])
+  const gid = !!opts?.gullyId.enabled
+  const pw = opts ? opts.passwordLogin : false
   return (
     <main className="flex min-h-screen items-center justify-center bg-bg px-6">
       <form
         className="flex w-full max-w-[420px] flex-col gap-5 rounded-card border border-line bg-surface p-8"
         onSubmit={(e) => {
           e.preventDefault()
-          if (t.trim()) onToken(t.trim())
+          if (pw && t.trim()) onToken(t.trim())
         }}
       >
         <Wordmark height={28} />
         <div className="flex flex-col gap-1">
           <h1 className="m-0 font-display text-[30px] font-extrabold uppercase">Admin</h1>
-          <span className="text-[14px] text-muted">Enter the admin token. It stays in this tab only.</span>
+          <span className="text-[14px] text-muted">{gid ? 'Sign in with an approved Gully ID account.' : 'Enter the admin token. It stays in this tab only.'}</span>
         </div>
-        <label className="flex flex-col gap-2 text-[14px] text-ink-2">
-          Admin token
-          <input type="password" autoComplete="off" value={t} onChange={(e) => setT(e.target.value)} className="h-11 rounded-input border border-line-strong bg-bg px-3 font-mono text-[14px] text-ink outline-none focus:border-gold" />
-        </label>
+        {gid && (
+          <a href="/auth/gully/start" className="flex justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold" data-testid="admin-gully-id">
+            <img src="/brand/gullyid/sign-in-with-gullyid-dark-m.svg" width={222} height={48} alt="Sign in with Gully ID" />
+          </a>
+        )}
+        {gid && pw && (
+          <div className="flex items-center gap-3 text-[12px] text-faint" role="separator">
+            <span className="h-px flex-1 bg-line" />
+            or the admin token (break-glass)
+            <span className="h-px flex-1 bg-line" />
+          </div>
+        )}
+        {pw && (
+          <>
+            <label className="flex flex-col gap-2 text-[14px] text-ink-2">
+              Admin token
+              <input type="password" autoComplete="off" value={t} onChange={(e) => setT(e.target.value)} className="h-11 rounded-input border border-line-strong bg-bg px-3 font-mono text-[14px] text-ink outline-none focus:border-gold" />
+            </label>
+            <button type="submit" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-btn bg-gold px-5 text-[15px] font-semibold text-bg transition-colors hover:bg-gold-hover">
+              <KeyRound size={16} aria-hidden />
+              Sign in with the token
+            </button>
+          </>
+        )}
         {error && <p className="m-0 text-[14px] text-error">{error}</p>}
-        <button type="submit" className="min-h-11 rounded-btn bg-gold px-5 text-[15px] font-semibold text-bg transition-colors hover:bg-gold-hover">
-          Sign in
-        </button>
+        <span className="text-[12px] text-faint">Every sign-in is logged.</span>
       </form>
     </main>
   )
@@ -776,9 +814,31 @@ function Sec({ id, at, children }: { id: string; at: string; children: React.Rea
 
 export function AdminPage() {
   const [token, setTok] = useState<string | null>(getToken)
+  // A Gully ID session lives in an HttpOnly cookie; its CSRF token is the bearer for every admin call (server/admin-auth.mjs).
+  // It is kept in memory only: a reload asks the server for it again.
+  const [gidSession, setGidSession] = useState<'checking' | 'yes' | 'no'>(() => (getToken() ? 'no' : 'checking'))
   const { data, err, reload } = useAdmin(token)
   const [sec, goSection] = useAdminSection()
+  useEffect(() => {
+    if (gidSession !== 'checking') return
+    let alive = true
+    fetch('/api/admin/auth/session')
+      .then(async (r) => {
+        const d = r.ok ? await r.json().catch(() => null) : null
+        if (!alive) return
+        if (d?.csrf) {
+          setTok(d.csrf)
+          setGidSession('yes')
+        } else setGidSession('no')
+      })
+      .catch(() => alive && setGidSession('no'))
+    return () => {
+      alive = false
+    }
+  }, [gidSession])
   const signOut = () => {
+    if (gidSession === 'yes' && token) fetch('/api/admin/auth/logout', { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: '{}' }).catch(() => null)
+    setGidSession('no')
     setToken(null)
     setTok(null)
   }
@@ -793,7 +853,8 @@ export function AdminPage() {
     m.content = 'noindex, nofollow'
   }, [])
 
-  if (!token || (err && (err.status === 401 || err.status === 503 || err.status === 429) && !data))
+  if (gidSession === 'checking') return <main className="min-h-screen bg-bg" aria-busy="true" />
+  if (!token || (err && (err.status === 401 || err.status === 403 || err.status === 503 || err.status === 429) && !data))
     return (
       <Login
         error={err?.message ?? null}
