@@ -38,6 +38,7 @@ import { handleHubProducts } from './hub-products.mjs'
 import { handleHubLive } from './hub-live.mjs'
 import { handleProductStatus } from './product-status.mjs'
 import { API_URL, APP_URL, appTabUrl, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
+import { gullyIdConfig } from './gully-id.mjs'
 import { handleManifest } from './pwa.mjs'
 import { brandRootIcon } from './product-brand.mjs'
 import { handlePay } from './invoices.mjs'
@@ -172,10 +173,13 @@ function securityHeaders(host, pathname = '/') {
   const embed = !strict && !host.startsWith('docs.') && pathname.startsWith('/embed/')
   // pay. and embed. load nothing from third parties: no analytics beacon, no Cloudflare insights.
   const bare = pay || isEmbedHost(host)
+  // Sign in with Gully ID loads the Gully ID SDK (https://gullyid.xyz/sdk.js) on the app host only; the sign-in itself
+  // runs in a popup on that origin (COOP below keeps same-origin-allow-popups, so the popup can answer).
+  const gullyId = (isAppHost(host) || local) && gullyIdConfig().enabled ? ` ${new URL(gullyIdConfig().url).origin}` : ''
   const csp = [
     "default-src 'self'",
     // Cloudflare Web Analytics is enabled on the zone and injects its beacon into every page.
-    bare ? "script-src 'self'" : `script-src 'self' https://static.cloudflareinsights.com https://analytics.gullylabs.xyz${docs ? ' https://gullylabs.xyz https://embed.gullylabs.xyz' : ''}${miniApp ? ` ${TG_SDK_URL}` : ''}`,
+    bare ? "script-src 'self'" : `script-src 'self' https://static.cloudflareinsights.com https://analytics.gullylabs.xyz${docs ? ' https://gullylabs.xyz https://embed.gullylabs.xyz' : ''}${miniApp ? ` ${TG_SDK_URL}` : ''}${gullyId}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",

@@ -44,7 +44,7 @@ export function ApiKeys() {
           Keys are free and issued instantly at <Ext href="https://app.gullylabs.xyz">app.gullylabs.xyz</Ext>. There is no form and no approval:
         </P>
         <List>
-          <li>Press <b>Connect wallet</b> and pick any browser wallet or Coinbase Wallet. Your wallet address is your account; there is no email or password.</li>
+          <li>Press <b>Connect wallet</b> and pick any browser wallet or Coinbase Wallet, or press <b>Sign in with Gully ID</b> (passkey, wallet, email or social sign-in on gullyid.xyz). Your wallet address is your account (with Gully ID, your Gully ID wallet); there is no email or password.</li>
           <li>Sign the message your wallet shows. It is Sign-In with Ethereum (EIP-4361): a signature, not a transaction, so it costs nothing and moves nothing. It names app.gullylabs.xyz, expires after ten minutes and can be used once.</li>
           <li>Open <b>API keys</b>, press <b>Create key</b> and name it. The key works at once. Copy it then: it is shown in full only once, because we store only a hash of it.</li>
         </List>

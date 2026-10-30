@@ -4,6 +4,8 @@
 // lower-cased. Keys are issued instantly, up to MAX_KEYS_PER_ACCOUNT live keys per wallet.
 //   GET  /api/developer/nonce                 -> { nonce, expiresAt }            single use, 10 minutes
 //   POST /api/developer/siwe    { message, signature }  -> { address }  and sets the session cookie
+//   POST /api/developer/gully   { accessToken }         -> { address, via: 'gully-id' }  Sign in with Gully ID: the
+//                               account is the Gully ID's main wallet (gully-id.mjs); same session cookie as SIWE
 //   POST /api/developer/logout
 //   GET  /api/developer/account               -> address, limits, keys (prefix only, never secrets)
 //   POST /api/developer/keys    { name }      -> { key, secret }   the secret is shown once
@@ -69,6 +71,7 @@ import { APP_URL, SIGN_IN_HOSTS } from './hosts.mjs'
 import { bearer, clientIp, json, readJson } from './http.mjs'
 import { planOf, publicPlans } from './plans.mjs'
 import { verifySiwe, issueNonce } from './siwe.mjs'
+import { gullyIdConfig, gullyIdWallet } from './gully-id.mjs'
 import {
   addChainKitRequest,
   addEnquiry,
@@ -238,6 +241,24 @@ export async function handleDeveloper(req, res, url) {
     touchAccount(v.address)
     const id = createSession(v.address, { userAgent: String(req.headers['user-agent'] ?? '') })
     return json(res, 200, { address: v.address }, { 'Set-Cookie': sessionCookie(req, id, Math.floor(SESSION_TTL_MS / 1000)) }), true
+  }
+
+  // Sign in with Gully ID: the browser hands us a Gully ID access token (sdk.js popup on gullyid.xyz, client gully-labs).
+  if (p === '/api/developer/gully') {
+    if (!post) return json(res, 405, { error: 'POST only' }), true
+    const cfg = gullyIdConfig()
+    if (!cfg.enabled) return json(res, 404, { error: 'Sign in with Gully ID is switched off on this server. Connect a wallet instead.' }), true
+    if (!sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true
+    if (!allow('gully', ip, 20, 600_000)) return json(res, 429, { error: 'Too many sign-in attempts. Try again in ten minutes.' }), true
+    const host = hostOf(req)
+    if (!isLocalHost(host) && !SIGN_IN_HOSTS.includes(host)) return json(res, 400, { error: `Sign in at ${APP_URL}.` }), true
+    const body = await readJson(req, 8_000)
+    const v = await gullyIdWallet(body?.accessToken, { config: cfg })
+    if (!v.ok) return json(res, v.status, { error: v.error, code: v.code }), true
+    if (getAccount(v.address)?.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact team@gullylabs.xyz.' }), true
+    touchAccount(v.address)
+    const id = createSession(v.address, { userAgent: String(req.headers['user-agent'] ?? '') })
+    return json(res, 200, { address: v.address, via: 'gully-id' }, { 'Set-Cookie': sessionCookie(req, id, Math.floor(SESSION_TTL_MS / 1000)) }), true
   }
 
   // Whether this browser has a session, always 200: the app asks this first so a signed-out visit
