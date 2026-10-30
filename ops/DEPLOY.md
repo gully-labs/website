@@ -222,3 +222,24 @@ contact form, Security review requests) sends one message to the operators' chat
 
 TODO(email): there is no mail provider, so e-mail confirmations to submitters are NOT sent. Adding one (Resend,
 Postmark or SES) means calling it from `sendConfirmation()` in `server/intake-notify.mjs` for e-mail contacts.
+
+## Admin dashboard sign-in (admin.gullylabs.xyz)
+
+Owner decision 2026-10-30: **Sign in with Gully ID + an allowlist** (`server/admin-auth.mjs`, `server/admin-gully-id.mjs`).
+
+- The button runs a server-side OIDC code flow with PKCE on client `gully-labs` (full-page redirect, no popup):
+  `/auth/gully/start` -> gullyid.xyz -> `/auth/gully/callback` (registered for every `gully-labs` origin). The server
+  checks the token at `https://gullyid.xyz/v1/profile`: `client` must be `gully-labs` and the `sub` must be in
+  `ADMIN_GULLY_SUBS`. Others get 403, a token minted for another Gully app 401.
+- `ADMIN_GULLY_SUBS` (comma-separated, in `/srv/gully-web/.env`, never in the repo). Empty = nobody gets in through
+  Gully ID. **Find your sub:** sign in with Gully ID on admin.gullylabs.xyz; while you are not on the list the refusal
+  page shows your account id (sub). Then `ADMIN_GULLY_SUBS=<sub>` in `.env` and
+  `cd /srv/gully-web && docker compose up -d --no-deps --no-build web`.
+- Session: `__Host-gl_admin` cookie, HttpOnly, Secure, SameSite=Strict, 8 h absolute, 1 h idle (`ADMIN_SESSION_HOURS`,
+  `ADMIN_IDLE_MINUTES`), in memory (a restart signs everyone out). Every admin call sends the session's CSRF token as
+  the bearer; the cookie alone gets 403.
+- **Break-glass:** `ADMIN_PASSWORD_LOGIN=on` (default for this release) keeps `Authorization: Bearer <ADMIN_TOKEN>`
+  working. Once a Gully ID sign-in works, set `ADMIN_PASSWORD_LOGIN=off` and recreate `web`: the token is refused
+  from then on (scripts that call `/api/admin` with it stop too). Password off + empty list = the API answers 503.
+- Logs: one `{"evt":"admin_auth",...}` line per sign-in (token use at most every 10 min), the sub only as a 12-hex tag.
+- Test: `npm run test:admin-gully-id`.

@@ -1,7 +1,8 @@
 // /api/admin/* — the private admin dashboard's API.
 //
-// Auth: `Authorization: Bearer <ADMIN_TOKEN>`, compared in constant time. ADMIN_TOKEN lives only in
-// the box's .env (never the repo). Unset or short, every admin route answers 503, so a missing secret
+// Auth (admin-auth.mjs): Sign in with Gully ID + allowlist (a session cookie, its CSRF token as the bearer) or, while
+// ADMIN_PASSWORD_LOGIN=on (break-glass), `Authorization: Bearer <ADMIN_TOKEN>`, compared in constant time. ADMIN_TOKEN lives only in
+// the box's .env (never the repo). With no way in (no allowlist, token unset or password login off), every admin route answers 503, so a missing secret
 // fails closed. Ten failed attempts per IP per 15 minutes lock that address out.
 //
 //   GET  /api/admin/overview                  tracker health, API traffic, venues, process, counts
@@ -76,14 +77,15 @@ import { isFeeProxy } from './fee-proxy-guard.mjs'
 /** The plan offer for admin views: still loads when the fee-proxy guard refuses the treasury (and says why). */
 const adminOffer = () => guardOr(() => publicPlans(), (e) => ({ ...publicPlans({ treasuryOverride: null }), checkout: refusedCheckout(e) }))
 const PROXY_ACCOUNT = "That address is Request Network's fee proxy contract, not a wallet."
-import { bearer, clientIp, DATA_DIR, json, readJson } from './http.mjs'
+import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
+import { checkAdmin, handleAdminAuth } from './admin-auth.mjs'
 import { readStats } from './stats.mjs'
 import { statsWatchdogHealth } from './stats-watchdog.mjs'
 import { umamiConfigured } from './umami.mjs'
 import { linkedChat, telegramStats } from './telegram.mjs'
 import { handleChannelAdmin } from './telegram-channel.mjs'
 import { handleBroadcastAdmin } from './telegram-broadcast.mjs'
-import { deleteSessionsOf, developers, listEnquiries, listLaunch, markEnquiry, safeEqual, saveDevelopers, setBlocked } from './store.mjs'
+import { deleteSessionsOf, developers, listEnquiries, listLaunch, markEnquiry, saveDevelopers, setBlocked } from './store.mjs'
 import { trackerHealth } from './tracker.mjs'
 import * as holdersMod from './holders.mjs'
 import * as secMon from './sec-monitor.mjs'
@@ -98,23 +100,18 @@ import { teamView } from './workspaces.mjs'
 const failures = new Map()
 
 function authorised(req, res) {
-  const token = process.env.ADMIN_TOKEN
-  if (!token || token.length < 24) {
-    json(res, 503, { error: 'The admin dashboard is disabled: ADMIN_TOKEN is not set on the server.' })
-    return false
-  }
   const ip = clientIp(req)
   const recent = (failures.get(ip) ?? []).filter((t) => Date.now() - t < 900_000)
   if (recent.length >= 10) {
     json(res, 429, { error: 'Too many failed attempts. Try again in 15 minutes.' })
     return false
   }
-  if (!safeEqual(bearer(req) ?? '', token)) {
-    failures.set(ip, [...recent, Date.now()])
-    json(res, 401, { error: 'Wrong admin token.' })
-    return false
-  }
-  return true
+  // Gully ID session (cookie + its CSRF token as the bearer) or, while ADMIN_PASSWORD_LOGIN=on, ADMIN_TOKEN (admin-auth.mjs).
+  const r = checkAdmin(req)
+  if (r.ok) return true
+  if (r.counts) failures.set(ip, [...recent, Date.now()])
+  json(res, r.status, { error: r.error })
+  return false
 }
 
 /**
@@ -374,6 +371,8 @@ function chainKitAdmin() {
 export async function handleAdmin(req, res, url) {
   const p = url.pathname
   if (!p.startsWith('/api/admin/')) return false
+  // Sign-in options, the Gully ID session's CSRF token and sign-out answer before the auth check (admin-auth.mjs).
+  if (handleAdminAuth(req, res, url)) return true
   if (!authorised(req, res)) return true
   // Gully Ask content studio and ask log (ask.mjs): POST /api/admin/ask/draft, GET /api/admin/ask/log.
   if (p.startsWith('/api/admin/ask/')) return handleAskAdmin(req, res, url)
