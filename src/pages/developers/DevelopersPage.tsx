@@ -149,7 +149,8 @@ export function DevelopersPage() {
   const [session, setSession] = useState<Session>({ state: 'loading' })
   const [wallet, setWallet] = useState({ mounted: false, trigger: 0, signedOut: 0 })
   const [busy, setBusy] = useState(false)
-  const [gullyBusy, setGullyBusy] = useState(false)
+  // Busy from the first render when this load is Gully ID's redirect back (finished in the effect below).
+  const [gullyBusy, setGullyBusy] = useState(() => isGullyIdReturn(window.location.search))
   const [error, setError] = useState<string | null>(null)
 
   const loadAccount = useCallback(() => readSession().then(setSession), [])
@@ -205,7 +206,6 @@ export function DevelopersPage() {
   // A blocked popup makes the SDK fall back to a full-page redirect: finish it when Gully ID sends the browser back.
   useEffect(() => {
     if (!isGullyIdReturn(window.location.search)) return
-    setGullyBusy(true)
     gullyIdRedirectToken()
       .then((t) => (t ? gullyExchange(t) : undefined))
       .catch((e) => setError(e instanceof Error && e.message ? e.message : 'Gully ID sign-in failed. Try again.'))

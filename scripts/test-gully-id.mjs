@@ -38,7 +38,8 @@ const { renderToStaticMarkup } = await import('react-dom/server')
 const { GullyIdButton, GULLY_ID_BUTTON_SRC, GULLY_ID_URL, GULLY_ID_CLIENT_ID, isGullyIdReturn } = await import('../src/pages/developers/gullyId.ts')
 
 const html = renderToStaticMarkup(GullyIdButton({ onClick: () => {} }))
-check('the Gully ID option renders as a button', /^<button[^>]*type="button"/.test(html), html.slice(0, 80))
+// React 19 may hoist a <link rel="preload"> for the image ahead of the button.
+check('the Gully ID option renders as a button', /<button[^>]*type="button"[^>]*>\s*<img /.test(html), html.slice(0, 120))
 check('the button is labelled "Sign in with Gully ID"', html.includes('aria-label="Sign in with Gully ID"') && html.includes('alt="Sign in with Gully ID"'))
 check('the button shows the kit SVG', html.includes(`src="${GULLY_ID_BUTTON_SRC}"`) && GULLY_ID_BUTTON_SRC === '/brand/gullyid/sign-in-with-gullyid-dark-m.svg')
 const busy = renderToStaticMarkup(GullyIdButton({ onClick: () => {}, busy: true }))
