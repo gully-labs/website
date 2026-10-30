@@ -7,6 +7,7 @@ import type { ComponentType } from 'react'
 import { APP_URL, DOCS_URL } from '../site-host'
 import { ic, LivePill } from './ui'
 import { PRODUCTS } from '../terminal/catalog'
+import { PRODUCT_ICON } from './productIcons'
 
 type Icon = ComponentType<LucideProps>
 const BLOG_URL = 'https://blog.gullylabs.xyz'
@@ -40,6 +41,24 @@ function NavLink({ it, className, onClick }: { it: Item; className?: string; onC
   )
 }
 
+const headerItems = (home: boolean): Item[] => [
+  { label: 'Products', icon: LayoutGrid, to: '/products' },
+  { label: 'Services', icon: Briefcase, to: '/services' },
+  { label: 'Live', icon: ChartLine, to: '/#live' },
+  { label: 'Docs', icon: BookOpen, href: DOCS_URL },
+  { label: 'Blog', icon: MessageCircle, href: BLOG_URL },
+  { label: 'Contact', icon: Mail, to: home ? '/#contact' : '/services#contact' },
+]
+// Gully Labs' own pages. The products live on their own domains (the Products list below, and /products).
+const pages: Item[] = [
+  { label: 'All products', icon: LayoutGrid, to: '/products' },
+  { label: 'Tracker', icon: ChartCandlestick, to: '/tracker' },
+  { label: 'Gully Score', icon: Gauge, to: '/score' },
+  { label: 'Pricing', icon: Tag, to: '/pricing' },
+  { label: 'Gully AI', icon: Sparkles, to: '/ask' },
+  { label: 'Status', icon: Activity, to: '/status' },
+]
+
 export function ConsoleHeader() {
   const { pathname } = useLocation()
   const home = pathname === '/'
@@ -53,23 +72,7 @@ export function ConsoleHeader() {
     document.addEventListener('keydown', k)
     return () => document.removeEventListener('keydown', k)
   }, [open])
-  const items: Item[] = [
-    { label: 'Products', icon: LayoutGrid, to: '/products' },
-    { label: 'Services', icon: Briefcase, to: '/services' },
-    { label: 'Live', icon: ChartLine, to: '/#live' },
-    { label: 'Docs', icon: BookOpen, href: DOCS_URL },
-    { label: 'Blog', icon: MessageCircle, href: BLOG_URL },
-    { label: 'Contact', icon: Mail, to: home ? '/#contact' : '/services#contact' },
-  ]
-  // Gully Labs' own pages. The products live on their own domains (the Products list below, and /products).
-  const pages: Item[] = [
-    { label: 'All products', icon: LayoutGrid, to: '/products' },
-    { label: 'Tracker', icon: ChartCandlestick, to: '/tracker' },
-    { label: 'Gully Score', icon: Gauge, to: '/score' },
-    { label: 'Pricing', icon: Tag, to: '/pricing' },
-    { label: 'Gully AI', icon: Sparkles, to: '/ask' },
-    { label: 'Status', icon: Activity, to: '/status' },
-  ]
+  const items = headerItems(home)
   return (
     <>
     <header className="nav">
@@ -103,31 +106,37 @@ export function ConsoleHeader() {
         </div>
       </div>
     </header>
-      {open && (
-        <div id="lc-sheet" className="sheet">
-          <div className="wrap">
-            <ul className="sheet-list">
-              {[...items, ...pages].map((it) => (
-                <li key={`${it.label}${it.to ?? it.href}`}>
-                  <NavLink it={it} onClick={() => setOpen(false)} />
-                </li>
-              ))}
-            </ul>
-            <span className="lab">Products</span>
-            <ul className="sheet-list">
-              {PRODUCTS.map((p) => (
-                <li key={p.slug}>
-                  <Link to={`/products/${p.slug}`} onClick={() => setOpen(false)}>
-                    {ic(ArrowRight)}
-                    <span className="lbl">{p.name}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+      {open && <ConsoleSheet home={home} close={() => setOpen(false)} />}
     </>
+  )
+}
+
+/** The Menu sheet below 1024 px: the header's items, Gully Labs' pages, then every product with its own icon. */
+export function ConsoleSheet({ home, close }: { home: boolean; close: () => void }) {
+  const { pathname } = useLocation()
+  return (
+    <div id="lc-sheet" className="sheet">
+      <div className="wrap">
+        <ul className="sheet-list">
+          {[...headerItems(home), ...pages].map((it) => (
+            <li key={`${it.label}${it.to ?? it.href}`}>
+              <NavLink it={it} onClick={close} />
+            </li>
+          ))}
+        </ul>
+        <span className="lab">Products</span>
+        <ul className="sheet-list">
+          {PRODUCTS.map((p) => (
+            <li key={p.slug}>
+              <Link to={`/products/${p.slug}`} aria-current={pathname === `/products/${p.slug}` ? 'page' : undefined} onClick={close}>
+                {ic(PRODUCT_ICON[p.slug])}
+                <span className="lbl">{p.name}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
   )
 }
 
@@ -182,7 +191,10 @@ export function ConsoleFooter() {
               <ul>
                 {PRODUCTS.filter((p) => p.group === g).map((p) => (
                   <li key={p.slug}>
-                    <Link to={`/products/${p.slug}`}>{p.name}</Link>
+                    <Link to={`/products/${p.slug}`}>
+                      {ic(PRODUCT_ICON[p.slug])}
+                      <span className="lbl">{p.name}</span>
+                    </Link>
                   </li>
                 ))}
               </ul>

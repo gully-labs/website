@@ -332,7 +332,8 @@
 .lcp footer .wrap>div:first-child .tagline{margin-top:0}
 .lcp footer .wrap>div:first-child .gt-badge{margin-top:0}
 .lcp footer .wrap>div:first-child .gt-badge img{width:auto;height:36px}
-.lcp footer .fprods .ic{color:var(--gl-cyan)}
+.lcp footer .fprods .ic{color:var(--gl-text-muted);transition:color .15s}
+.lcp footer ul a:hover .ic,.lcp footer ul a[aria-current] .ic{color:var(--gl-cyan)}
 .lc .sheet-list a .ic.ext{width:14px;height:14px;margin-left:auto;opacity:.7}
 .lc .handoff{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:18px;align-items:center}
 @media (min-width:860px){.lc .handoff{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;padding:22px 24px}}

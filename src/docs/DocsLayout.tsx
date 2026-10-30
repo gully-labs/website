@@ -288,9 +288,11 @@ export function DocsLayout() {
               <ApiPill />
             </span>
             <a href={`${SITE}/tracker`} {...newTab} className="inline-flex min-h-11 items-center gap-1 rounded-sm px-3 text-[14px] text-muted transition-colors hover:text-ink max-[700px]:hidden">
+              <ChartCandlestick aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint" />
               Tracker <NewTabMark size={14} className="flex-none" />
             </a>
             <a href={SITE} {...newTab} className="inline-flex min-h-11 items-center gap-1 rounded-sm border border-line-strong px-3 text-[14px] whitespace-nowrap text-ink transition-colors hover:border-gold hover:text-ink max-[479px]:px-2 max-[479px]:text-[13px]">
+              <Home aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint max-[359px]:hidden" />
               gullylabs.xyz
               <NewTabMark size={14} className="flex-none" />
             </a>
