@@ -17,7 +17,8 @@ export interface HolderNode {
   balance: number
   /** Share of total supply (or of the listed holders when the supply is unknown: holders.sharesOf). */
   pct: number | null
-  label: { kind: HolderLabelKind; name: string } | null
+  /** `locked`: a pool whose launch liquidity is locked forever (a Gully Core launch). */
+  label: { kind: HolderLabelKind; name: string; locked?: boolean } | null
   contract: boolean | null
   cluster: string | null
   flags: HolderFlag[]
@@ -178,6 +179,8 @@ export interface HolderMapOk {
     largestCluster: { pct: number | null; wallets: number } | null
     line: string
     plain: string[]
+    /** Pools, locks, burn and protocol contracts among the listed holders: shown with their share, never counted as wallets. */
+    excluded?: { id: string; short: string; kind: HolderLabelKind; tag: string; name: string; pct: number | null }[]
   }
   forensics: HolderForensics | null
   fair: {
