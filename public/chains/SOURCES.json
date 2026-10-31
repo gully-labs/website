@@ -79,9 +79,9 @@
   },
   "gully": {
     "file": "/chains/gully-chain.svg",
-    "from": "gully-labs/gully-ops design/chains (the canonical Gully chain-logo pack; per-logo source URL and brand terms in its SOURCES.md): the GullyChain brand kit v3 icon (brand-kit/icon/gullychain-icon-dark-512.png) embedded at 128 px",
+    "from": "gully-labs/gully-ops design/chains (the canonical Gully chain-logo pack; per-logo source URL and brand terms in its SOURCES.md): the GullyChain brand kit v4 icon (brand-kit-v4/logo/gc-icon.svg), vector nested unchanged on a kit-ink disc",
     "terms": "Our own mark.",
-    "fetchedAt": "2026-10-28T10:00:00Z"
+    "fetchedAt": "2026-10-31T19:00:00Z"
   },
   "arbitrum-sepolia": {
     "file": "/chains/arbitrum-sepolia.svg",

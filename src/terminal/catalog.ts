@@ -43,7 +43,8 @@ export interface ProductDef {
 }
 
 const LOGO = {
-  chain: { kind: 'kit', webp: '/brand/web/logos/gullychain-logo.webp', src: '/brand/web/logos/gullychain-logo.png', w: 415, h: 80, display: 32 },
+  // GullyChain brand kit v4 is icon-only (no wordmark file): the kit gc-icon.svg, byte-identical
+  chain: { kind: 'kit', src: '/brand/web/logos/gc-icon.svg', w: 220, h: 220, display: 36 },
   pay: { kind: 'kit', src: '/brand/products/gullypay-logo-ondark.svg', w: 895.23, h: 230.4, display: 34 },
   rpc: { kind: 'kit', webp: '/brand/web/logos/gullyrpc-logo.webp', src: '/brand/web/logos/gullyrpc-logo.png', w: 279, h: 80, display: 38 },
   holders: { kind: 'kit', webp: '/brand/web/logos/holdermaps-logo.webp', src: '/brand/web/logos/holdermaps-logo.png', w: 388, h: 80, display: 34 },
