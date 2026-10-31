@@ -2,7 +2,7 @@
    below 1280), a Menu sheet below 1024, Lucide icon on every item, live pill, pill buttons. */
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { Activity, BookOpen, Box, Briefcase, ChartCandlestick, ChartLine, FileText, Gauge, LayoutGrid, Lock, Mail, Menu, MessageCircle, Send, Sparkles, Tag, X, Zap, ArrowUpRight, ArrowRight, type LucideProps } from 'lucide-react'
+import { Activity, ArrowRight, ArrowUpRight, BookOpen, Box, Briefcase, ChartCandlestick, ChartLine, FileText, Gauge, KeyRound, LayoutGrid, Lock, Mail, Menu, MessageCircle, Send, Sparkles, Tag, type LucideProps, X, Zap } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { APP_URL, DOCS_URL } from '../site-host'
 import { ic, LivePill } from './ui'
@@ -159,6 +159,7 @@ export function ConsoleFooter() {
     { label: 'Gully AI', icon: Sparkles, to: '/ask' },
     { label: 'Terms', icon: FileText, to: '/legal/terms' },
     { label: 'Privacy', icon: Lock, to: '/legal/privacy' },
+    { label: 'Gully ID sign-in', icon: KeyRound, to: '/gully-id' },
   ]
   return (
     <footer>

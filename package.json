@@ -46,6 +46,7 @@
     "test:e2e": "node scripts/e2e.mjs",
     "test:siwe": "node scripts/test-siwe.mjs",
     "test:gully-id": "node scripts/test-gully-id.mjs",
+    "test:gully-id-page": "node scripts/test-gully-id-page.mjs",
     "test:sec-monitor": "node scripts/test-sec-monitor.mjs",
     "test:badges": "node scripts/test-badges.mjs",
     "test:gully-score": "node scripts/test-gully-score.mjs",
