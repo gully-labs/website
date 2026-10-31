@@ -21,7 +21,7 @@ interface Endpoint {
 const THROTTLE_MS = 1000
 const MAX_LINES = 70
 
-const client = (keyed: boolean) => `import { createTrackerClient } from '@gullylabs/tracker'\n\nconst tracker = createTrackerClient(${keyed ? '{ apiKey: process.env.GULLY_API_KEY }' : ''})`
+const client = (keyed: boolean) => `import { createTrackerClient } from '@gullylabs/widgets/tracker'\n\nconst tracker = createTrackerClient(${keyed ? '{ apiKey: process.env.GULLY_API_KEY }' : ''})`
 const plainFetch = (path: string, keyed: boolean, name: string) =>
   `// Not wrapped by the SDK yet: plain fetch\nconst res = await fetch('${API_URL}${path}'${keyed ? ',\n  { headers: { Authorization: `Bearer ${process.env.GULLY_API_KEY}` } }' : ''})\nconst ${name} = await res.json()`
 

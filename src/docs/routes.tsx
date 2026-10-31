@@ -18,6 +18,8 @@ export const docsRoutes: RouteObject[] = [
     hydrateFallbackElement: <p className="px-6 py-24 font-mono text-[13px] text-faint">Loading the docs…</p>,
     children: [
       { index: true, lazy: () => import('./pages/Overview').then((m) => ({ Component: m.Overview })) },
+      { path: 'integrate', lazy: () => import('./pages/IntegrateDocs').then((m) => ({ Component: m.IntegrateDocs })) },
+      { path: 'integrate', lazy: () => import('./pages/IntegrateDocs').then((m) => ({ Component: m.IntegrateDocs })) },
       { path: 'methodology', lazy: () => import('./pages/Methodology').then((m) => ({ Component: m.Methodology })) },
       { path: 'api', lazy: () => import('./pages/ApiReference').then((m) => ({ Component: m.ApiReference })) },
       { path: 'widget', lazy: () => import('./pages/WidgetGuide').then((m) => ({ Component: m.WidgetGuide })) },

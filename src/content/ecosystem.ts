@@ -69,7 +69,7 @@ const DOCS = DOCS_URL
 export const benefits: Benefit[] = [
   { id: 'map', title: 'Holder Map embed', text: 'The bubble map of a token’s holders with clusters and the launch health score, as one script tag on your page.', status: 'Live', docs: { label: 'Holder Map docs', href: `${DOCS}/holder-map` }, for: ['launchpads', 'wallets', 'explorers', 'chains'] },
   { id: 'badge', title: 'Health badge', text: 'The Gully Score badge: an SVG with the score and the date it was read, linking to its evidence. Nobody can pay to change a score.', status: 'Live', docs: { label: 'Gully Score docs', href: `${DOCS}/gully-score` }, for: ['launchpads', 'explorers', 'wallets'] },
-  { id: 'sdk', title: 'SDK', text: 'Typed TypeScript clients: @gullylabs/tracker for the API and @gullylabs/widget (with a React component) for the embeds.', status: 'Live', docs: { label: 'SDK docs', href: `${DOCS}/sdk` }, for: ['wallets', 'explorers', 'launchpads'] },
+  { id: 'sdk', title: 'SDK', text: 'Typed TypeScript clients on npm under @gullylabs: widgets (tracker, Holder Map, widget), chain, id, pay, security, kre8-embed and ads. ESM + CJS, MIT.', status: 'Live', docs: { label: 'Integrate in 5 minutes', href: `${DOCS}/integrate` }, for: ['wallets', 'explorers', 'launchpads'] },
   { id: 'webhooks', title: 'Launch webhooks', text: 'A signed webhook (and optional Telegram message) for every new DeepCore launch on a chain you choose.', status: 'Live', docs: { label: 'Plans and alerts docs', href: `${DOCS}/plans-alerts` }, for: ['launchpads', 'wallets'] },
   { id: 'whitelabel', title: 'White-label', text: 'The embedded map without the “Powered by Gully Labs” credit, on the Business plan. Add your embed key to the widget; the server checks your plan on every load.', status: 'Live', docs: { label: 'API keys docs', href: `${DOCS}/api-keys` }, for: ['launchpads', 'wallets', 'explorers'] },
   { id: 'pay', title: 'Gully Pay', text: 'Non-custodial crypto checkout: invoices, pay links and signed webhooks, paid to your own wallets. A transaction fee only.', status: 'Live', docs: { label: 'Gully Pay docs', href: `${DOCS}/gully-pay-merchants` }, for: ['chains', 'wallets', 'launchpads'] },
@@ -104,8 +104,8 @@ export const snippets: Snippet[] = [
     id: 'sdk',
     label: 'SDK',
     lang: 'js',
-    caption: 'JavaScript · @gullylabs/tracker',
-    code: "// npm install @gullylabs/tracker @gullylabs/widget\nimport { createTrackerClient } from '@gullylabs/tracker'\n\nconst tracker = createTrackerClient({ apiKey: process.env.GULLY_API_KEY }) // key optional\nconst widest = await tracker.widestGaps(5)\n\n// React\nimport { GullyWidget } from '@gullylabs/widget/react'\n<GullyWidget type=\"badge\" ticker=\"NVDA\" chain=\"robinhood\" />",
+    caption: 'JavaScript · @gullylabs/widgets',
+    code: "// npm install @gullylabs/widgets\nimport { createTrackerClient } from '@gullylabs/widgets/tracker'\n\nconst tracker = createTrackerClient({ apiKey: process.env.GULLY_API_KEY }) // key optional\nconst widest = await tracker.widestGaps(5)\n\n// React\nimport { GullyWidget } from '@gullylabs/widgets/widget/react'\n<GullyWidget type=\"badge\" ticker=\"NVDA\" chain=\"robinhood\" />",
   },
   {
     id: 'webhook',
