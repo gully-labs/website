@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-29T20:58:52.399Z",
+ "updatedAt": "2026-10-31T01:05:03.947Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -55,6 +55,96 @@
    "section": "Where the numbers come from",
    "text": "Fair prices are Chainlink feeds read on chain with latestRoundData(); on Solana, where a share has no Chainlink feed, the issuer’s own xStocks quote, and every row names its source. Onchain prices are read from each token’s deepest pool on chain; DexScreener and GeckoTerminal only find the pool. Nothing is estimated or typed in: a price that cannot be read is reported as unreadable, never as zero. The methodology gives the exact rules. The tracker reports what two public sources say. It is not investment advice, and a gap is not a promise that anyone can trade it away.",
    "updatedAt": "2026-10-18T19:46:28.270Z"
+  },
+  {
+   "id": "1842c55621ca",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate",
+   "section": null,
+   "text": "Every Gully product ships a TypeScript SDK on npm under the @gullylabs scope: ESM and CommonJS builds with types, MIT, semver 0.x, nothing but the built code in the tarball, and a README whose quickstart runs against production in five minutes. Pick the ones you need; each works alone. Every Gully SDK on npm under @gullylabs, with a five-minute quickstart each: Gully Chain, Gully ID, Gully Pay, HolderMaps and widgets, Gully Security, kre8.fun embeds and Gully Ads.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
+  },
+  {
+   "id": "31d379dce3dc",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#packages",
+   "section": "The packages",
+   "text": "@gullylabs/widgets (HolderMaps client and <HolderMap> frame, the stock token tracker client and widget): gully-labs/sdk @gullylabs/chain (Gully Chain: chain objects for viem, every address and ABI, launchpad, swap,.gully names, passkey accounts, bridge, indexer, CLI): gullychain-sdk @gullylabs/id (Sign in with Gully (OIDC + PKCE), passkey and email sign-in, the account directory): gully-id @gullylabs/pay (Gully Pay: x402 micropayments, Agent Wallets, the MCP server, on-chain payment verification): gull-pay @gullylabs/security (Gully Security scans of a token and the \"Secured by Gully Security\" badge): gully-labs/sdk @gullylabs/kre8-embed (kre8.fun coin cards, Drop and track players and \"Back this\" buttons on your own site): gully-labs/sdk @gullylabs/ads (Gully Ads publisher SDK (beta): ad slots with signed serve requests and reporting): gully-labs/sdk Every SDK supports Gully Chain Testnet (chain id 485590) today and picks up mainnet when it is live. Building on the chain itself? The same page for chain builders is docs.gullychain.xyz/sdks.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
+  },
+  {
+   "id": "432ff322b820",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#widgets",
+   "section": "Holders and prices: @gullylabs/widgets",
+   "text": "The map of any token, who holds it and how the biggest wallets connect, from HolderMaps; the same package carries the tracker client and widget. It replaces @gullylabs/tracker, @gullylabs/widget and @gullylabs/holders. No key needed; a key from the app raises the rate limit.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
+  },
+  {
+   "id": "a010afd3c246",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#chain",
+   "section": "Gully Chain: @gullylabs/chain",
+   "text": "viem is the only dependency (a peer). Subpath imports (@gullylabs/chain/launchpad, /names, /accounts, /abis) keep bundles small, the gullychain CLI prints addresses and ABIs, and @gullylabs/chain/xchain quotes cross-chain buys across Relay, LI.FI and the Hyperlane warp route. Chain docs: docs.gullychain.xyz.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
+  },
+  {
+   "id": "38ca564764ce",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#id",
+   "section": "Sign in with Gully: @gullylabs/id",
+   "text": "Create the client in the Gully ID console. The id_token carries the user's Gully Chain wallet,.gully name and reputation; verify it on your backend with the issuer's JWKS. No build step? The hosted button is https://gullyid.xyz/sdk/v1.js. Guide: Gully ID sign-in.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
+  },
+  {
+   "id": "ad79b5679116",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#pay",
+   "section": "Payments: @gullylabs/pay",
+   "text": "@gullylabs/pay/wallet adds on-chain verification (verifyStablecoinPayment), the token registry and wallet helpers (needs viem). Gully Pay is the gateway for every Gully product; docs at gullypay.xyz/docs.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
+  },
+  {
+   "id": "d70193f5b2fd",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#security",
+   "section": "Security badge: @gullylabs/security",
+   "text": "The badge is the official \"Secured by Gully Security\" kit image, linking to the token's public report on gullysecurity.xyz. The same package has the typed client to start a scan and read its report; see Gully Security.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
+  },
+  {
+   "id": "bc74548c2a1b",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#kre8",
+   "section": "kre8.fun embeds: @gullylabs/kre8-embed",
+   "text": "Each element is a sandboxed iframe served by kre8.fun; messages are checked against the kre8.fun origin and a per-instance nonce, no auth tokens cross the frame, and any money action opens kre8.fun in a new tab. React: @gullylabs/kre8-embed/react.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
+  },
+  {
+   "id": "c1ead3a95345",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#ads",
+   "section": "Gully Ads (beta): @gullylabs/ads",
+   "text": "Gully Ads is not live yet (serving is off in production), so the package is published under the beta tag. Impressions count at 50% visible for one second; clicks are reported with the token the server issued with the creative.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
+  },
+  {
+   "id": "7e22799ac225",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#versions",
+   "section": "Versions and support",
+   "text": "All packages start at 0.x: minor versions may change APIs, patch versions never do. Each repository has a CHANGELOG. Releases are tagged and published with npm provenance, so every tarball links back to the commit that built it. Questions: Discord, @Gully_Labs, or GitHub.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
   },
   {
    "id": "e20f8be116a1",
@@ -485,8 +575,8 @@
    "title": "SDK",
    "url": "https://docs.gullylabs.xyz/sdk",
    "section": null,
-   "text": "Three small MIT packages: a typed client for the tracker API, the widget with a loader and a React component, and a Holder Map client with its own component. All are optional; the API and the widget work without them. The Gully Labs SDK: a typed TypeScript client for the stock token tracker API, and the embeddable widget with a React component.",
-   "updatedAt": "2026-10-22T00:47:24.677Z"
+   "text": "One small MIT package, @gullylabs/widgets: a typed client for the tracker API, the widget with a loader and a React component, and a Holder Map client with its own component. All optional; the API and the widget work without them. Every other Gully SDK is on the Integrate in 5 minutes page. The Gully Labs SDK: a typed TypeScript client for the stock token tracker API, and the embeddable widget with a React component.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
   },
   {
    "id": "5d034a178334",
@@ -494,8 +584,8 @@
    "title": "SDK",
    "url": "https://docs.gullylabs.xyz/sdk#packages",
    "section": "Packages",
-   "text": "The public API now has its own host, api.gullylabs.xyz (same /api/… paths). The packages still default to https://gullylabs.xyz, which keeps serving the API without redirects, so nothing needs to change. Calls made without the packages can use the new host today, and the widget script now loads from embed.gullylabs.xyz (the old script address still works). @gullylabs/tracker: a typed client with no dependencies. Runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget: loads widget.js once and mounts widgets, with @gullylabs/widget/react for React. @gullylabs/holders: a typed Holder Map client and a React component that frames the map. See Integrate the Holder Map. Source: github.com/gully-labs/sdk.",
-   "updatedAt": "2026-10-22T00:47:24.677Z"
+   "text": "The public API now has its own host, api.gullylabs.xyz (same /api/… paths). The packages still default to https://gullylabs.xyz, which keeps serving the API without redirects, so nothing needs to change. Calls made without the packages can use the new host today, and the widget script now loads from embed.gullylabs.xyz (the old script address still works). @gullylabs/widgets/tracker: a typed tracker client with no dependencies. Runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widgets/widget: loads widget.js once and mounts widgets, with @gullylabs/widgets/widget/react for React. @gullylabs/widgets/holders: a typed Holder Map client (Gully Chain included) and a React component that frames the map. See Integrate the Holder Map. The package replaces @gullylabs/tracker, @gullylabs/widget and @gullylabs/holders (same APIs; only the package path changes). The other Gully SDKs (@gullylabs/chain, @gullylabs/id, @gullylabs/pay, @gullylabs/security, @gullylabs/kre8-embed, @gullylabs/ads) are on Integrate in 5 minutes. Source: github.com/gully-labs/sdk.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
   },
   {
    "id": "4392c5b4a649",
@@ -512,8 +602,8 @@
    "title": "SDK",
    "url": "https://docs.gullylabs.xyz/sdk#widget",
    "section": "Widget",
-   "text": "Every option of the widget guide is a prop. To self-host the script, copy @gullylabs/widget/widget.js to your site and pass its URL as scriptSrc.",
-   "updatedAt": "2026-10-17T16:09:52.545Z"
+   "text": "Every option of the widget guide is a prop. To self-host the script, copy @gullylabs/widgets/widget.js to your site and pass its URL as scriptSrc.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
   },
   {
    "id": "f7ecb62fa4e8",
@@ -980,8 +1070,8 @@
    "title": "Integrate the Holder Map",
    "url": "https://docs.gullylabs.xyz/holder-map-integrate#sdk",
    "section": "The SDK",
-   "text": "npm install @gullylabs/holders gives you a typed client and a React component: createHoldersClient() with getMap() and cardUrl(), and a <HolderMap chain token height /> component that frames the embed above. The tracker client and widget are in the same SDK.",
-   "updatedAt": "2026-10-22T00:47:24.677Z"
+   "text": "npm install @gullylabs/widgets gives you a typed client and a React component: createHoldersClient() with getMap() and cardUrl(), and a <HolderMap chain token height /> component that frames the embed above. The tracker client and widget are in the same SDK.",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
   },
   {
    "id": "d3386bc1a4a6",
@@ -2132,8 +2222,8 @@
    "title": "Changelog",
    "url": "https://docs.gullylabs.xyz/changelog#2026-10-16",
    "section": "16 October 2026",
-   "text": "The tracker launched: tokenised stocks on Robinhood Chain and BNB Chain against their Chainlink fair price, with a gap history per token. The public API: /api/tracker and /api/tracker/history. The embeddable widget (ticker, badge, table) and its builder. API keys for higher rate limits. These docs. Onchain prices are now read straight from each token’s deepest pool every refresh; DexScreener and GeckoTerminal only find the pool and report its depth. Every row carries logo and chainLogo, and every chain reports its poolSource. Widget v2: real logos, coloured gaps, value flashes on change, a 24-hour gap chart on the badge, and a sortable, clickable table. The app dashboard: sign in with a wallet and create keys instantly, with usage charts and a request log. The SDK: @gullylabs/tracker and @gullylabs/widget.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "The tracker launched: tokenised stocks on Robinhood Chain and BNB Chain against their Chainlink fair price, with a gap history per token. The public API: /api/tracker and /api/tracker/history. The embeddable widget (ticker, badge, table) and its builder. API keys for higher rate limits. These docs. Onchain prices are now read straight from each token’s deepest pool every refresh; DexScreener and GeckoTerminal only find the pool and report its depth. Every row carries logo and chainLogo, and every chain reports its poolSource. Widget v2: real logos, coloured gaps, value flashes on change, a 24-hour gap chart on the badge, and a sortable, clickable table. The app dashboard: sign in with a wallet and create keys instantly, with usage charts and a request log. The SDK: @gullylabs/tracker and @gullylabs/widget (since merged into @gullylabs/widgets, see Integrate in 5 minutes).",
+   "updatedAt": "2026-10-31T01:05:03.947Z"
   },
   {
    "id": "b0e370f78bcc",
@@ -4483,8 +4573,8 @@
    "title": "Tracker API client (SDK)",
    "url": "https://docs.gullylabs.xyz/api",
    "section": "Tracker API client",
-   "text": "Tracker API client is part of SDK. Status: in beta (usable, and still changing). @gullylabs/tracker is a typed client for the stock token tracker API, with no dependencies. It runs anywhere fetch exists. Package @gullylabs/tracker, version 0.1.0 in package.json Methods include getTracker, getStock, getRows, widestGaps, getHistory and watch Covers tokenised stocks on Robinhood Chain and BNB Chain (chain keys 'robinhood' and 'bsc') Anonymous calls are limited to 60 a minute per IP; an API key raises that to 600 watch() polls every 60 seconds by default, matching the tracker refresh isTrusted(row) keeps rows with a readable gap and status in-line, drifting, premium or discount A price that cannot be read is null, never zero Failures raise GullyApiError with a status (0 for network error or timeout) and retryAfter on a 429",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "text": "Tracker API client is part of SDK. Status: in beta (usable, and still changing). @gullylabs/widgets/tracker is a typed client for the stock token tracker API, with no dependencies. It runs anywhere fetch exists. Package @gullylabs/widgets (entry /tracker), version 0.1.0 in package.json Methods include getTracker, getStock, getRows, widestGaps, getHistory and watch Covers tokenised stocks on Robinhood Chain and BNB Chain (chain keys 'robinhood' and 'bsc') Anonymous calls are limited to 60 a minute per IP; an API key raises that to 600 watch() polls every 60 seconds by default, matching the tracker refresh isTrusted(row) keeps rows with a readable gap and status in-line, drifting, premium or discount A price that cannot be read is null, never zero Failures raise GullyApiError with a status (0 for network error or timeout) and retryAfter on a 429",
+   "updatedAt": "2026-10-31T01:05:03.947Z",
    "feature": "sdk-tracker-client",
    "status": "beta"
   },
@@ -4494,8 +4584,8 @@
    "title": "Embeddable tracker widget (SDK)",
    "url": "https://gullylabs.xyz/tracker",
    "section": "Embeddable tracker widget",
-   "text": "Embeddable tracker widget is part of SDK. Status: in beta (usable, and still changing). @gullylabs/widget puts the tracker on any page as a ticker, a one-stock badge or a sortable table. It ships a loader script and a React component. Package @gullylabs/widget, version 0.1.0 Widget types are ticker, badge and table Drawn in its own shadow root so it does not clash with page styles Script-tag install via https://embed.gullylabs.xyz/widget.js and a data-gully-widget attribute React component GullyWidget is exported from @gullylabs/widget/react Badge shows a 24-hour gap chart for one stock; table and ticker take a limit option Supports a light theme option",
-   "updatedAt": "2026-10-21T01:30:05.761Z",
+   "text": "Embeddable tracker widget is part of SDK. Status: in beta (usable, and still changing). @gullylabs/widgets/widget puts the tracker on any page as a ticker, a one-stock badge or a sortable table. It ships a loader script and a React component. Package @gullylabs/widgets (entry /widget), version 0.1.0 Widget types are ticker, badge and table Drawn in its own shadow root so it does not clash with page styles Script-tag install via https://embed.gullylabs.xyz/widget.js and a data-gully-widget attribute React component GullyWidget is exported from @gullylabs/widgets/widget/react Badge shows a 24-hour gap chart for one stock; table and ticker take a limit option Supports a light theme option",
+   "updatedAt": "2026-10-31T01:05:03.947Z",
    "feature": "sdk-widget",
    "status": "beta"
   },
@@ -4505,8 +4595,8 @@
    "title": "Holder Map client and component (SDK)",
    "url": "https://gullylabs.xyz/holders",
    "section": "Holder Map client and component",
-   "text": "Holder Map client and component is part of SDK. Status: in beta (usable, and still changing). @gullylabs/holders is a typed client for the Holder Map API plus a React component that frames the live map. Package @gullylabs/holders, version 0.1.0 createHoldersClient().getMap(chain, tokenOrTicker) returns the map or a state of unavailable, not-found, busy or error Chains supported: robinhood, bsc, base, hyperevm, solana cardUrl() builds a 1200 x 630 share card image URL getCsv needs a plan that includes CSV export React HolderMap component frames embed.gullylabs.xyz/embed/holders/:chain/:token; height is 360 to 2000, default 760 A 'Powered by Gully Labs' credit always shows in the frame",
-   "updatedAt": "2026-10-21T01:30:05.761Z",
+   "text": "Holder Map client and component is part of SDK. Status: in beta (usable, and still changing). @gullylabs/widgets/holders is a typed client for the Holder Map API plus a React component that frames the live map. Package @gullylabs/widgets (entry /holders), version 0.1.0 createHoldersClient().getMap(chain, tokenOrTicker) returns the map or a state of unavailable, not-found, busy or error Chains supported: robinhood, bsc, base, hyperevm, solana cardUrl() builds a 1200 x 630 share card image URL getCsv needs a plan that includes CSV export React HolderMap component frames embed.gullylabs.xyz/embed/holders/:chain/:token; height is 360 to 2000, default 760 A 'Powered by Gully Labs' credit always shows in the frame",
+   "updatedAt": "2026-10-31T01:05:03.947Z",
    "feature": "sdk-holders",
    "status": "beta"
   },

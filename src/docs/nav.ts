@@ -4,6 +4,7 @@ import { DOCS_URL, isDocsHost } from '../site-host'
 /** Every docs page, in sidebar order. `slug` is the relative route path ('' is the index). */
 export const DOC_PAGES = [
   { slug: '', title: 'Overview', group: 'Start' },
+  { slug: 'integrate', title: 'Integrate in 5 minutes', group: 'Start' },
   { slug: 'methodology', title: 'Tracker methodology', group: 'Start' },
   { slug: 'api', title: 'API reference', group: 'Build' },
   { slug: 'widget', title: 'Widget guide', group: 'Build' },
@@ -37,12 +38,13 @@ export type DocSlug = (typeof DOC_PAGES)[number]['slug']
 /** Extra words the sidebar search matches besides each page's title (lower case). */
 export const DOC_KEYWORDS: Partial<Record<DocSlug, string[]>> = {
   '': ['home', 'start', 'tracker', 'quick start', 'chains'],
+  integrate: ['sdk', 'npm', 'install', 'quickstart', 'gully chain', 'gully id', 'gully pay', 'widgets', 'security', 'kre8', 'ads', 'typescript', '@gullylabs'],
   methodology: ['fair price', 'chainlink', 'gap', 'premium', 'discount', 'pool', 'status'],
   api: ['endpoint', 'json', 'rest', 'tracker', 'history', 'holders', 'curl', 'errors'],
   widget: ['embed', 'ticker', 'badge', 'table', 'html', 'script'],
   'api-keys': ['key', 'token', 'bearer', 'rate limit', 'auth'],
   'plans-alerts': ['pricing', 'price', 'plan', 'alert', 'webhook', 'telegram', 'checkout'],
-  sdk: ['typescript', 'javascript', 'npm', 'client', 'library'],
+  sdk: ['typescript', 'javascript', 'npm', 'client', 'library', 'widgets', 'holders', 'tracker'],
   teams: ['workspace', 'members', 'roles', 'invite'],
   badges: ['badge', 'embed', 'readme', 'svg', 'markdown', 'built by', 'shield'],
   'holder-map': ['holders', 'clusters', 'bubbles', 'whales', 'deepcore', 'health score'],

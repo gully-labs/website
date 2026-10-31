@@ -107,7 +107,8 @@ export function Changelog() {
           </li>
           <li>
             The <DocLink to="sdk">SDK</DocLink>: <code className="font-mono text-[.9em] text-ink">@gullylabs/tracker</code> and{' '}
-            <code className="font-mono text-[.9em] text-ink">@gullylabs/widget</code>.
+            <code className="font-mono text-[.9em] text-ink">@gullylabs/widget</code> (since merged into <code className="font-mono text-[.9em] text-ink">@gullylabs/widgets</code>, see{' '}
+            <DocLink to="integrate">Integrate in 5 minutes</DocLink>).
           </li>
         </List>
       </Section>
