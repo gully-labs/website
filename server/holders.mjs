@@ -616,9 +616,6 @@ export const GULLY_CHAIN_LABELS = {
     [GULLY_CHAIN.positionManager, 'pool', 'Gully Swap positions'],
     [GULLY_CHAIN.weth, 'token', 'Wrapped ETH'],
     [GULLY_CHAIN.glusdPsm, 'gully', 'glUSD PSM'],
-    // Then every other protocol contract of gully-ops' registry (server/gully-chain-registry.mjs): the Gully Core
-    // vault, pool and position managers, LP lockers, launch kit, hooks, routers, token contracts.
-    ...gullyRegistryLabels(),
   ],
 }
 /** The v3 factory whose pools are labelled as pools on Gully Chain (factory() of a holder contract). */
@@ -659,6 +656,9 @@ export function staticLabels({ chainKey, token, venue, launch, trackerPool }) {
   }
   put(UNIV4_POOL_MANAGERS[HOLDER_CHAINS[chainKey]?.id], 'pool', 'Uniswap v4 PoolManager (pools)')
   for (const [a, kind, name] of GULLY_CHAIN_LABELS[HOLDER_CHAINS[chainKey]?.id] ?? []) put(a, kind, name)
+  // Then every other protocol contract of gully-ops' registry (server/gully-chain-registry.mjs): the Gully Core
+  // vault, pool and position managers, LP lockers, launch kit, hooks, routers, token contracts.
+  if (HOLDER_CHAINS[chainKey]?.id === 485590) for (const [a, kind, name] of gullyRegistryLabels()) put(a, kind, name)
   const reg = FEE_PROXY_REGISTRY[HOLDER_CHAINS[chainKey]?.id]
   for (const a of [...(reg?.erc20 ?? []), ...(reg?.native ?? [])]) put(a, 'gully', 'Gully Pay fee proxy')
   if (isAddr(trackerPool?.pair)) put(trackerPool.pair, 'pool', `Trading pool${trackerPool.dex ? ` (${trackerPool.dex})` : ''}`)
