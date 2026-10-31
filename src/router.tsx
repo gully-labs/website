@@ -74,6 +74,7 @@ const mainRoutes = [
       { path: '/products/:key', lazy: () => import('./pages/products/ProductPage').then((m) => ({ Component: m.ProductPage })) },
       // Our own projects with live numbers, what the code integrates with, and the partner page with its two forms.
       { path: '/ecosystem', lazy: () => import('./pages/Ecosystem').then((m) => ({ Component: m.Ecosystem })) },
+      { path: '/gully-id', lazy: () => import('./pages/GullyId').then((m) => ({ Component: m.GullyId })) },
       { path: '/partners', lazy: () => import('./pages/Partners').then((m) => ({ Component: m.Partners })) },
       // Gully Security: the product page, the published reports and one report (noindex unless its owner opts in).
       // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), MainSecurityPage leaves for it.
