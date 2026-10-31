@@ -60,6 +60,7 @@ const MAIN = {
   '/score': ['Gully Score: transparent contract scores · Gully Labs', 'The Gully Score rates a contract 0 to 100 from public evidence only: verified code, who controls it, upgrades, delays, recent privileged changes, locks and holders. Nobody can pay to change a score.'],
   '/ecosystem': ['Ecosystem: our projects and what we integrate with · Gully Labs', 'Every Gully Labs project with its own live numbers, the third-party services the code integrates with, and the launchpads on the Holder Map.'],
   '/partners': ['Partners: Holder Map, SDK and webhooks for launchpads, wallets, explorers and chains · Gully Labs', 'What launchpads, wallets, explorers and chains get from Gully Labs: the embeddable Holder Map, the Gully Score badge, the SDK, launch webhooks, Gully Pay and Chain Kit, with copy-paste setup and a form to list your launchpad.'],
+  '/gully-id': ['Gully ID: the official sign-in service of Gully Labs · Gully Labs', 'Gully ID (gullyid.xyz) is the sign-in and wallet service built and operated by Gully Labs: one passkey for every Gully app. It never asks for a seed phrase or a private key.'],
   '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
 }
 for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${slug}`] = [`${name} · Gully Labs`, text]
