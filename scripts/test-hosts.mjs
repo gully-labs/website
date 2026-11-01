@@ -417,7 +417,6 @@ try {
       ['/gully-pay/x402', 'https://gullypay.xyz/x402'],
       ['/gully-pay/nope', 'https://gullypay.xyz/'],
       ['/x402', 'https://gullypay.xyz/x402'],
-      ['/glusd', 'https://gullypay.xyz/glusd'],
       ['/rpc', 'https://gullyrpc.xyz/'],
       ['/rpc/docs', 'https://gullyrpc.xyz/docs/'],
       ['/rpc/status', 'https://gullyrpc.xyz/status/'],
