@@ -175,7 +175,7 @@ export function HolderMap({ chain, token, compact = false, embed = false, tradeH
 
 /* ---------- loading and empty states (animated, never dead) ---------- */
 
-const mapHeight = (page: boolean, compact: boolean, wide: boolean) => (compact ? 340 : page ? (wide ? 'clamp(440px, calc(100svh - 236px), 780px)' : 'clamp(360px, 60svh, 620px)') : wide ? 540 : 'clamp(340px, 60svh, 520px)')
+const mapHeight = (page: boolean, compact: boolean, wide: boolean) => (compact ? 340 : page ? (wide ? 'clamp(440px, calc(100svh - 190px), 780px)' : 'clamp(340px, 58svh, 620px)') : wide ? 540 : 'clamp(340px, 60svh, 520px)')
 
 function MapSkeleton({ compact, page = false }: { compact: boolean; page?: boolean }) {
   return (
@@ -729,9 +729,9 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
     </div>
   )
   const why = !compact && m.summary.plain.length > 0 && (
-    <details className="group rounded-[12px] border border-line-strong" style={{ background: K.night }} data-why>
+    <details open={page} className="group rounded-[12px] border border-line-strong" style={{ background: K.night }} data-why>
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 font-mono text-[12px] tracking-[1px] text-muted hover:text-ink">
-        WHY THIS SCORE · IN PLAIN WORDS
+        WHAT THIS MEANS · IN PLAIN WORDS
         <ChevronDown size={15} aria-hidden className="transition-transform group-open:rotate-180" />
       </summary>
       <ul className="m-0 flex list-none flex-col gap-1 px-4 pt-1 pb-4 text-[14px] leading-[1.55] text-muted">
@@ -777,11 +777,11 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
       {/* One line: what this is, how fresh, live; the explainer sits behind (i). */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-3">
-          <Title className={`flex min-w-0 items-center gap-2 ${page ? 'heading-3 min-[600px]:heading-2' : 'heading-3'}`}>
+          <Title className="heading-3 flex min-w-0 items-center gap-2" data-map-title>
             {m.token.symbol && <TokenLogo symbol={m.token.symbol} chain={m.chain.key} address={m.token.address} size={32} decorative className="max-[599px]:hidden" />}
             <span className="min-w-0">
               Who holds {m.token.symbol ?? 'this token'}
-              <span className="text-muted max-[599px]:sr-only"> · {m.chain.name}</span>
+              <span className={`text-muted ${page ? '' : 'max-[599px]:sr-only'}`}> · {m.chain.name}</span>
             </span>
           </Title>
           <span className="flex flex-none items-center gap-2">
@@ -793,7 +793,7 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
         </div>
         <div className="flex flex-wrap items-center gap-x-2">
           <span className="font-mono text-[12px] text-dim">
-            <span className="min-[600px]:hidden">{m.chain.name} · </span>
+            {!page && <span className="min-[600px]:hidden">{m.chain.name} · </span>}
             {kindLabel(m)} · updated {ageText(m.asOf, now)}
             {m.holders.count !== null ? ` · ${m.holders.count.toLocaleString('en-US')} holders` : ''}
             <span className="max-[599px]:hidden"> · {m.holders.shown} listed</span>
@@ -801,7 +801,20 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
           </span>
           <InfoPop />
         </div>
-        {m.coverage?.level === 'top' && (
+        {m.coverage?.level === 'top' && page && (
+          <details data-coverage="top" className="m-0 text-[13px] leading-[1.5] text-muted">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 hover:text-ink">
+              <Info size={14} aria-hidden className="flex-none text-gold" />
+              <b className="font-semibold text-ink">Top holders only{m.coverage.shown ? ` (the biggest ${m.coverage.shown.toLocaleString('en-US')})` : ''}.</b> Why
+              <ChevronDown size={14} aria-hidden />
+            </summary>
+            <p className="m-0 pb-2">
+              {m.coverage.reason ? `${m.coverage.reason[0].toUpperCase()}${m.coverage.reason.slice(1)}. ` : ''}
+              Smaller wallets, and links between wallets outside the listed ones, are not shown. Shares are of {m.holders.sharesOf}.
+            </p>
+          </details>
+        )}
+        {m.coverage?.level === 'top' && !page && (
           <p role="note" data-coverage="top" className="m-0 flex items-start gap-2 rounded-btn border border-line-strong px-3 py-2 text-[13px] leading-[1.5] text-muted" style={{ background: alpha(K.night, 0.92) }}>
             <Info size={14} aria-hidden className="mt-[3px] flex-none text-gold" />
             <span>
@@ -832,6 +845,18 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
             <RankedList m={m} selected={selected} onSelect={setSelected} srOnly />
           </div>
           {side}
+        </div>
+      ) : page ? (
+        // A phone: the map, how to read it and what it found come first; the tools under them.
+        <div className="flex flex-col gap-3">
+          {stage}
+          <Legend m={m} noLinks={noLinks} clusterIdx={clusterIdx} />
+          {side}
+          {replay}
+          {controls}
+          {notes}
+          {strip}
+          <RankedList m={m} selected={selected} onSelect={setSelected} srOnly />
         </div>
       ) : (
         <div className="flex flex-col gap-3">

@@ -25,7 +25,8 @@ interface LogoFile {
 }
 
 export const PRODUCT_LOGOS: Record<KitLogoKey, LogoFile> = {
-  chain: { name: 'Gully Chain', src: '/brand/products/gullychain-lockup-transparent.png', src2x: '/brand/products/gullychain-lockup-transparent-2x.png', w: 1556, h: 300, display: 31 },
+  // Gully Chain kit v4 ships no wordmark: its dark badge carries the name (brand-kit-v4/badge-dark.png, byte-exact).
+  chain: { name: 'Gully Chain', src: '/brand/products/gc-badge-dark.png', w: 960, h: 256, display: 40 },
   pay: { name: 'Gully Pay', src: '/brand/products/gullypay-logo-ondark.svg', w: 895.23, h: 230.4, display: 34 },
   rpc: { name: 'Gully RPC', src: '/brand/products/gullyrpc-logo-transparent.png', w: 860, h: 247, display: 39 },
   // The HolderMaps kit (2026-10-26) transparent lockup, PNG (the kit SVG's globe image has no source): public/brand/holdermaps, byte-exact.

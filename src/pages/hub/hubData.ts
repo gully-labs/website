@@ -48,7 +48,7 @@ const I = '/brand/hub/icons/'
 export const HUB_PRODUCTS: HubProduct[] = [
   {
     key: 'id', name: 'Gully ID', domain: 'gullyid.xyz', url: 'https://gullyid.xyz', page: 'gully-id', layer: 'identity', status: 'live', color: '#00D2FF',
-    icon: I + 'labs.png', iconNote: 'Gully ID has no kit yet: Gully Labs icon',
+    icon: I + 'gully-id.svg',
     line: 'Passwordless sign-in for any app.',
     about: 'Passkeys, wallets (SIWE) and email codes over standard OpenID Connect, with per-app consent and slow, visible recovery. Free up to 1,000 monthly active users.',
     live: ['Passkey, wallet and email sign-in', 'Sign in with Gully SDK for any site', 'Developer console (gullyid.xyz/developers/console)', 'Required by the Gully Chain faucet'],
@@ -66,13 +66,13 @@ export const HUB_PRODUCTS: HubProduct[] = [
   },
   {
     key: 'chain', name: 'Gully Chain', domain: 'gullychain.xyz', url: 'https://gullychain.xyz', page: 'chain', layer: 'chain', status: 'testnet', color: '#00B2FA',
-    icon: I + 'chain.png',
+    icon: '/brand/web/logos/gc-icon.svg',
     line: 'The social L3 where your profile is your wallet.',
     about: 'An Arbitrum Orbit L3 (testnet, chain 485590): one passkey, one .gully name, sponsored gas. Launch, swap, copy trades, run quests and bridge in a minute.',
-    live: ['Gully Street app and social feed', 'Gully Social: posts, follows and profiles', 'Copy trading with your own limits', 'Quests with on-chain rewards', 'Gully launchpad and Gully Swap', 'Bridge, faucet (Gully ID), explorer', 'Gully Safe and token lists', 'Contract verification (verify.gullychain.xyz)', 'Gully Sentry: free testnet Sentry Keys and watchers', 'Gully Offerwall: funded quests any site can embed (offers.kre8.fun)'],
+    live: ['kre8.fun app and social feed', 'Gully Social: posts, follows and profiles', 'Copy trading with your own limits', 'Quests with on-chain rewards', 'Gully launchpad and Gully Swap', 'Bridge, faucet (Gully ID), explorer', 'Gully Safe and token lists', 'Contract verification (verify.gullychain.xyz)', 'Gully Sentry: free testnet Sentry Keys and watchers', 'Gully Offerwall: funded quests any site can embed (offers.kre8.fun)'],
     next: ['Mainnet'],
     links: [['App', 'https://kre8.fun'], ['Docs', 'https://docs.gullychain.xyz'], ['Verify', 'https://verify.gullychain.xyz'], ['Sentry', 'https://sentry.gullychain.xyz'], ['Offerwall', 'https://offers.kre8.fun/'], ['Social', 'https://kre8.fun'], ['Copy trading', 'https://kre8.fun/copy']],
-    pages: [['Gully Social', 'gully-social'], ['Copy Trading', 'copy-trading'], ['Gully Offerwall', 'offerwall'], ['Gully Quests', 'quests'], ['Gully Street', 'street']],
+    pages: [['Gully Social', 'gully-social'], ['Copy Trading', 'copy-trading'], ['Gully Offerwall', 'offerwall'], ['Gully Quests', 'quests'], ['kre8.fun', 'street']],
   },
   {
     key: 'rpc', name: 'Gully RPC', domain: 'gullyrpc.xyz', url: 'https://gullyrpc.xyz', page: 'rpc', layer: 'chain', status: 'beta', color: '#FF7300',

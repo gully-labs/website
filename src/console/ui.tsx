@@ -99,12 +99,14 @@ export function Ticker({ label = 'Live' }: { label?: string }) {
 
 /** Header pill: when /api/stats was last read. */
 export function LivePill() {
-  const { stats, statsState } = useLive()
-  const down = statsState === 'error'
+  // Live as soon as any source answered: the venue figures (/api/stats) can take long, the hub read does not.
+  const { stats, statsState, hub } = useLive()
+  const at = stats?.generatedAt ?? hub?.generatedAt
+  const down = !at && statsState === 'error'
   return (
     <span className={`pill ${down ? 'down' : 'live'}`}>
       <span className="dot" />
-      <span>{down ? 'Stats unreadable' : stats ? `Live · ${fmtTimeUtc(stats.generatedAt)}` : 'Connecting'}</span>
+      <span>{down ? 'Stats unreadable' : at ? `Live · ${fmtTimeUtc(at)}` : 'Connecting'}</span>
     </span>
   )
 }
