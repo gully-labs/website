@@ -55,6 +55,7 @@ import { isOnCurve, b58decode, isSolanaAddress, solanaRpc } from './solana.mjs'
 import { archiveKnown, readOwnHistory } from './holders-logs.mjs'
 import { probeToken, reserveAnySlot, resetAnyForTest, takeAnyBuild } from './holders-any.mjs'
 import { knownLaunch } from './holders-launchpads.mjs'
+import { gullyCoreLaunchVault, KIND_TAG, registryLabels as gullyRegistryLabels } from './gully-chain-registry.mjs'
 import { GULLY_CHAIN, gullyNames, indexerGet as gullyIndexerGet, LAUNCHPADS as GULLY_LAUNCHPADS, setGullyFetchForTest } from './gully-chain.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -587,6 +588,19 @@ export const LABEL_KINDS = {
 /** Kinds that are infrastructure, not people: never clustered, never counted as wallets. */
 const INFRA = new Set(['pool', 'lock', 'burn', 'token', 'deepcore', 'router', 'gully', 'exchange'])
 
+/**
+ * The kind a contract's public name (Blockscout, Moralis) gives away: 'pool' for "UniswapV3Pool", "PancakePair",
+ * "…PoolManager"; 'lock' for an LP or token locker; 'router' for a router. null: no telling (a named contract
+ * such as a lending market or a Safe stays a named holder). For contracts only, never wallets. Pure.
+ */
+export function infraKindOfName(name) {
+  const n = String(name ?? '')
+  if (/(Pool|Pair|PoolManager)\b/.test(n)) return 'pool'
+  if (/(Locker|LPLock|TokenLock)\b/.test(n)) return 'lock'
+  if (/Router\d*\b/.test(n)) return 'router'
+  return null
+}
+
 /** Uniswap v4 PoolManagers hold the tokens of v4 pools (Peddles and others): pools, not wallets. */
 const UNIV4_POOL_MANAGERS = { 4663: '0x8366a39CC670B4001A1121B8F6A443A643e40951', 8453: '0x498581fF718922c3f8e6A244956aF099B2652b2b', 56: '0x28e2Ea090877bF75740558f6BFB36A5ffeE9e9dF' }
 
@@ -642,6 +656,9 @@ export function staticLabels({ chainKey, token, venue, launch, trackerPool }) {
   }
   put(UNIV4_POOL_MANAGERS[HOLDER_CHAINS[chainKey]?.id], 'pool', 'Uniswap v4 PoolManager (pools)')
   for (const [a, kind, name] of GULLY_CHAIN_LABELS[HOLDER_CHAINS[chainKey]?.id] ?? []) put(a, kind, name)
+  // Then every other protocol contract of gully-ops' registry (server/gully-chain-registry.mjs): the Gully Core
+  // vault, pool and position managers, LP lockers, launch kit, hooks, routers, token contracts.
+  if (HOLDER_CHAINS[chainKey]?.id === 485590) for (const [a, kind, name] of gullyRegistryLabels()) put(a, kind, name)
   const reg = FEE_PROXY_REGISTRY[HOLDER_CHAINS[chainKey]?.id]
   for (const a of [...(reg?.erc20 ?? []), ...(reg?.native ?? [])]) put(a, 'gully', 'Gully Pay fee proxy')
   if (isAddr(trackerPool?.pair)) put(trackerPool.pair, 'pool', `Trading pool${trackerPool.dex ? ` (${trackerPool.dex})` : ''}`)
@@ -702,6 +719,9 @@ export function recentFlowsOf({ transfers, labels, total, decimals, times = new 
 export function buildMap({ chainKey, token, symbol, name, decimals, kind, holders, history, labels, supply, holderCount = null, launch = null, funding = null, fair = null, fairHistory = [], times = new Map(), sources, partial = null, coverage = null, tier = 'pro', balancesFrom = null, codeOf = new Map(), now = Date.now() }) {
   const { list: listMax, graph: graphMax } = TIERS[tier] ?? TIERS.free
   const lbl = new Map(labels)
+  // A Gully Core launch: the kit seeded the vault and locked that liquidity forever, so the vault is a locked pool.
+  const coreVault = HOLDER_CHAINS[chainKey]?.id === 485590 ? gullyCoreLaunchVault(history?.transfers) : null
+  if (coreVault && lbl.get(coreVault)?.kind === 'pool') lbl.set(coreVault, { kind: 'pool', name: 'Pool (locked) · Gully Core vault', locked: true })
   // 1. Balances: exact from a complete history, else the holder API's list.
   let balances
   const fromHistory = balancesFrom ? balancesFrom === 'history' : !!history?.complete && !holders?.length
@@ -885,6 +905,11 @@ export function buildMap({ chainKey, token, symbol, name, decimals, kind, holder
     const legs = Array.isArray(launch.legs) ? launch.legs : []
     plain.push(legs.some((g) => g?.lock?.status === 'indexed') ? 'The launch liquidity sits in DeepCore’s launch lock.' : 'DeepCore does not say whether the liquidity is locked.')
   }
+  // Pools, locks, burn and protocol contracts are shown with their share but never counted as wallets.
+  const excluded = nodes.filter((n) => INFRA.has(n.label?.kind)).map((n) => ({ id: n.id, short: n.short, kind: n.label.kind, tag: n.label.locked ? 'Pool (locked)' : (KIND_TAG[n.label.kind] ?? 'Contract'), name: n.label.name, pct: n.pct }))
+  const byTag = new Map()
+  for (const e of excluded) if (e.pct > 0) byTag.set(e.tag, (byTag.get(e.tag) ?? 0) + e.pct)
+  if (byTag.size) plain.push(`Not counted as wallets: ${[...byTag].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([t, p]) => `${t} ${fmtPct(round2(p))}`).join(', ')}.`)
   const burnPct = round2(pctOf(nodes.filter((n) => n.label?.kind === 'burn').reduce((s, n) => s + (balances.get(n.id) ?? 0n), 0n), total))
   if (burnPct) plain.push(`${fmtPct(burnPct)} has been burned.`)
   let fairSummary = null
@@ -924,7 +949,7 @@ export function buildMap({ chainKey, token, symbol, name, decimals, kind, holder
     links,
     clusters: clusters.slice(0, 30),
     legend: Object.entries(LABEL_KINDS).filter(([k]) => kindsPresent.includes(k)).map(([k, v]) => ({ kind: k, text: v })),
-    summary: { top10Pct, largestCluster: biggest ? { pct: biggest.pct, wallets: biggest.count } : null, line, plain },
+    summary: { top10Pct, largestCluster: biggest ? { pct: biggest.pct, wallets: biggest.count } : null, line, plain, excluded },
     forensics,
     fair: fairSummary,
     timeline,
@@ -1255,14 +1280,15 @@ async function buildOne(chainKey, tier, { stock, token, launch: dcLaunch = null,
   const prelim = history?.complete ? [...reconstructBalances(history.transfers)].filter(([, v]) => v > 0n).sort((a, b) => (b[1] > a[1] ? 1 : -1)).slice(0, want).map(([a]) => a) : (holders ?? []).slice(0, want).map((h) => h.address)
   if (chainKey !== 'solana') {
     const [codes, tags] = await Promise.all([readCode(chainKey, prelim.filter((a) => a !== ZERO).slice(0, 120)), readNameTags(c.id, prelim.filter((a) => !labels.has(a)).slice(0, 60))])
-    for (const [a, t] of tags) if (!labels.has(a)) labels.set(a, { kind: t.exchange ? 'exchange' : 'known', name: t.name })
+    for (const [a, t] of tags) if (!labels.has(a)) labels.set(a, { kind: t.exchange ? 'exchange' : (codes.get(a) === true && infraKindOfName(t.name)) || 'known', name: t.name })
     if (holders) for (const h of holders) if (h.contract === undefined && codes.has(h.address)) h.contract = codes.get(h.address)
     holders ??= prelim.map((a) => ({ address: a, raw: 0n, contract: codes.get(a) }))
     if (history?.complete) holders = holders.map((h) => ({ ...h, contract: codes.get(h.address) }))
     // Gully Chain: Gully Swap pools are pools, not wallets.
     await labelGullyPools(chainKey, [...codes].filter(([, isContract]) => isContract).map(([a]) => a), labels)
     // Moralis names entities itself.
-    for (const h of holders) if (h.name && !labels.has(h.address)) labels.set(h.address, { kind: EXCHANGE_RE.test(h.name) || EXCHANGE_RE.test(h.entity ?? '') ? 'exchange' : 'known', name: String(h.name).slice(0, 48) })
+    // A named contract whose name says pool, locker or router is that, not a wallet ("UniswapV3Pool" on Blockscout).
+    for (const h of holders) if (h.name && !labels.has(h.address)) labels.set(h.address, { kind: EXCHANGE_RE.test(h.name) || EXCHANGE_RE.test(h.entity ?? '') ? 'exchange' : (h.contract === true && infraKindOfName(h.name)) || 'known', name: String(h.name).slice(0, 48) })
     // Gully Chain: wallets with a primary .gully name (reverse record verified forward) are shown by that name.
     if (chainKey === 'gully') {
       const wallets = prelim.filter((a) => !labels.has(a) && a !== ZERO && !codes.get(a)).slice(0, 60)

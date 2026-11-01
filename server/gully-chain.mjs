@@ -18,6 +18,7 @@
 // by hand: this module never reads another repo at run time.
 
 import { keccak_256 } from './vendor/noble.mjs'
+import { registryInfra } from './gully-chain-registry.mjs'
 import { rpc as payRpc } from './payments.mjs'
 import { bytecodeNotes, tokenControls } from './security/bytecode.mjs'
 
@@ -322,7 +323,8 @@ export async function findHolder(tokenIn) {
   try {
     const r = await indexerGet(`/tokens/${lower(tokenIn)}/holders?limit=12`)
     const rows = Array.isArray(r.body?.holders) ? r.body.holders : []
-    const infra = new Set([...LAUNCHPADS.map((l) => l.address), ...LAUNCHPADS.map((l) => l.locker).filter(Boolean), GULLY_CHAIN.positionManager, GULLY_CHAIN.swapRouter, GULLY_CHAIN.v3Router, ZERO, '0x000000000000000000000000000000000000dead'])
+    // Plus every protocol contract of gully-ops' registry (the Gully Core vault, lockers, routers, ...).
+    const infra = new Set([...LAUNCHPADS.map((l) => l.address), ...LAUNCHPADS.map((l) => l.locker).filter(Boolean), GULLY_CHAIN.positionManager, GULLY_CHAIN.swapRouter, GULLY_CHAIN.v3Router, ZERO, '0x000000000000000000000000000000000000dead', ...registryInfra()])
     const h = rows.find((x) => !x.tag && isAddr(x.address) && !infra.has(lower(x.address)) && /^[1-9]\d*$/.test(String(x.balance ?? '')))
     return h ? lower(h.address) : null
   } catch {
