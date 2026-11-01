@@ -105,6 +105,9 @@ export function Footer() {
             <Link to="/legal/scan-terms" className={legalLink}>
               Scan terms
             </Link>
+            <Link to="/gully-id" className={legalLink}>
+              Gully ID
+            </Link>
           </nav>
         </span>
         <p className="m-0 max-w-[680px] min-[1024px]:text-right">
