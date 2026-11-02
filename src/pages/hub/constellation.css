@@ -216,7 +216,7 @@
 .cst-card .top img { display: block; width: 36px; height: 36px; border-radius: 4px; object-fit: contain; }
 .cst-card h3 { font: 600 16px/1.2 var(--gt-head); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cst-card .cst-tag { margin: 0; }
-.cst-card .what { margin: 0 !important; flex: 1; color: var(--gt-muted); font-size: 13.5px; line-height: 1.45; }
+.cst-card .cst-what { margin: 0 !important; flex: 1; color: var(--gt-muted); font-size: 13.5px; line-height: 1.45; }
 .cst-card .read { display: grid; grid-template-columns: minmax(0, 1fr) 72px; align-items: end; gap: 8px; min-height: 44px; }
 .cst-card .fig { display: grid; gap: 2px; min-width: 0; grid-column: 1; }
 .cst-card .fig b { font: 500 20px/1.1 var(--gt-mono); font-variant-numeric: tabular-nums; }
@@ -237,8 +237,8 @@
   .cst-dir-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .cst-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; padding: 12px; gap: 8px 12px; }
   .cst-card:hover, .cst-card:focus-within { transform: none; }
-  .cst-card .top, .cst-card .what { grid-column: 1 / -1; }
-  .cst-card .what { font-size: 13px; }
+  .cst-card .top, .cst-card .cst-what { grid-column: 1 / -1; }
+  .cst-card .cst-what { font-size: 13px; }
   .cst-card .read { min-height: 0; grid-template-columns: minmax(0, 1fr) 56px; }
   .cst-card .go { padding-top: 0; border-top: 0; }
   .cst-more { display: none; }
@@ -256,5 +256,5 @@
 @media (max-width: 960px) { .cst-hero-in { padding-top: 16px; padding-bottom: 20px; } .cst-ctas .gt-btn { flex: 1 1 140px; justify-content: center; } }
 .cst-seg button { height: 32px; }
 @media (max-width: 760px) { .cst-seg button { height: 44px; } .cst-tabs [role='tab'] { height: 44px; } .cst-events li:nth-child(n + 5) { display: none; } }
-@media (max-width: 767px) { .cst .gt-tab { min-height: 44px; } .cst-cell .gt-uptime .nm a { display: inline-flex; align-items: center; min-height: 44px; } .cst .gt-chart .gt-head { flex-wrap: wrap; } }
-@media (max-width: 767px) { .cst-sendline a, .cst-sendline .cst-linkbtn { display: inline-flex; align-items: center; min-height: 44px; } }
+@media (max-width: 1023px) { .cst .gt-tab { min-height: 44px; } .cst-cell .gt-uptime .nm a { display: inline-flex; align-items: center; min-height: 44px; } .cst .gt-chart .gt-head { flex-wrap: wrap; } }
+@media (max-width: 1023px) { .cst-sendline a, .cst-sendline .cst-linkbtn { display: inline-flex; align-items: center; min-height: 44px; } }

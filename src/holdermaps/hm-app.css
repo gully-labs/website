@@ -471,3 +471,12 @@
 }
 @media (max-width: 767px) { .hm [data-holder-map] [data-supply-strip] button, .hm [data-holder-map] li > button { min-height: 44px } }
 @media (max-width: 767px) { .hm-legend button { min-height: 44px } }
+/* 44 px targets through tablet widths; until the hero has two columns, the box and the map come first. */
+@media (max-width: 1099px) { .hmh .hm-search .hmt-steps, .hmh .hm-chainchips { display: none } }
+@media (max-width: 1023px) {
+  .hmt .gt-tab, .hmt-seg button, .hm-legend button, .hm [data-holder-map] button, .hm [data-holder-map] summary, .hmh-clusters button, .hmh-open, .hmt-crumbs a, .hm-foot ul a { min-height: 44px }
+  .hm-brand, .hm-badge, .hm-foot-about .hm-brand { display: inline-flex; align-items: center; min-height: 44px }
+  .hmt-tape, .hmt-tape-row a { height: 44px }
+  .hmt-crumbs .hmt-crumb-acts .hm-btn { min-height: 44px }
+  .hm-switch > summary { height: 44px }
+}

@@ -482,3 +482,4 @@
 .lcp footer ul a{min-height:44px}
 .lcp footer .more ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px;font-size:13.5px}
 }
+@media (max-width:1023px){.lcp footer ul a,.lcp footer .fgrp ul a{min-height:44px}.lcp footer .gt-badge{display:inline-flex;align-items:center;min-height:44px}}

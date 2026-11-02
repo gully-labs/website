@@ -423,7 +423,7 @@ function Directory({ R, open }: { R: Record<ProductKey, Reading>; open: (k: Prod
                   <h3>{p.name}</h3>
                   <span className={`cst-tag ${tagOf(p.status)}`}>{STATUS_LABEL[p.status]}</span>
                 </div>
-                <p className="what">{p.line}</p>
+                <p className="cst-what">{p.line}</p>
                 <div className="read" data-reading={p.key}>
                   {r.kpi ? (
                     <div className="fig">

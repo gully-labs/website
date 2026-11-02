@@ -92,7 +92,12 @@ const inspect = () => {
     if (!own.length || !shown(el) || srOnly(el)) continue
     const range = document.createRange()
     range.selectNodeContents(own[0])
-    const r = range.getBoundingClientRect()
+    let r = range.getBoundingClientRect()
+    // Text clipped by its own box (an ellipsis) only takes the box's room on screen.
+    if (getComputedStyle(el).overflow !== 'visible') {
+      const b = el.getBoundingClientRect()
+      r = { left: Math.max(r.left, b.left), right: Math.min(r.right, b.right), top: Math.max(r.top, b.top), bottom: Math.min(r.bottom, b.bottom), width: r.width, height: r.height }
+    }
     if (r.width && r.height) texts.push({ el, r, t: own[0].textContent.trim().slice(0, 28), fixed: !!el.closest('[class*="fixed"],.cst-drawer') })
   }
   const overlap = []
