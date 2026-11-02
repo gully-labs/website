@@ -6,6 +6,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { ArrowRight, ArrowUpRight, BookOpen, Check } from 'lucide-react'
+import { PoweredByGullyCoreBadge } from '../../components/PoweredByGullyCoreBadge'
 import { Seo } from '../../components/Seo'
 import { fmtInt, fmtPct, fmtUsd } from '../../console/charts'
 import { chainHead, useLive, type Live } from '../../console/live'
@@ -751,6 +752,8 @@ export function ProductView({ p }: { p: ProductDef }) {
               </li>
               <li>{p.group === 'chain' ? 'Runs on Gully Chain' : 'Supports Gully Chain'}</li>
             </ul>
+            {/* Gully Chain and Gully Core run on Gully Core: the kit badge (brand kit v4), nothing typed next to it. */}
+            {(p.slug === 'chain' || p.slug === 'gully-core') && <PoweredByGullyCoreBadge className="mt-4" />}
           </div>
           <div className="gt-kpis k2 rise">
             {d.kpis.map((k) => (

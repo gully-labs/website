@@ -9,11 +9,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { ArrowUpRight, ChevronRight, Gauge as GaugeIcon, LineChart, ListOrdered, Map as MapIcon, Plug, RefreshCw, ScanSearch } from 'lucide-react'
+import { PoweredByGullyCoreBadge } from '../components/PoweredByGullyCoreBadge'
 import { Seo } from '../components/Seo'
 import { HolderMap } from '../components/holders/HolderMap'
 import { ChainLogo } from '../components/logos/ChainLogo'
 import { consoleToast } from '../console/toast'
-import { useHolderMap, type HolderMapOk } from '../lib/holders'
+import { isGullyCoreLaunch, useHolderMap, type HolderMapOk } from '../lib/holders'
 import { ageText } from '../lib/tracker'
 import { Dot, Kpi } from '../terminal/kit'
 import { Bars, BubbleField, Donut, Gauge, Lorenz, NotReadable, Trend } from './charts'
@@ -145,6 +146,8 @@ function Loaded({ m, chain, token, symbol, title }: { m: HolderMapOk; chain: str
             Who holds <em>{sym}</em> on {chain === 'gully' ? 'Gully Chain' : m.chain.name}
           </h2>
           <p className="sum">{m.summary.line}</p>
+          {/* A Gully Core launch (Gully Launchpad on Gully Chain): the kit badge, nothing typed next to it. */}
+          {isGullyCoreLaunch(m) && <PoweredByGullyCoreBadge className="mt-1" />}
         </div>
         <div className="hmt-acts">
           <button type="button" className="hm-btn" onClick={() => openTab('deep')}>
