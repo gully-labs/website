@@ -68,7 +68,7 @@ try {
   checkSurface('gullylabs.xyz Menu sheet', at('/products/pay', h(chrome.ConsoleSheet, { home: false, close: () => {} })), { min: 12 + PRODUCTS.length })
   // Off the home page the footer also lists the site pages.
   checkSurface('gullylabs.xyz footer', at('/pricing', h(chrome.ConsoleFooter)), { min: 6 + PRODUCTS.length + 8 })
-  checkSurface('HolderMaps header', at('/', h(hm.HmHeader)), { min: 6 })
+  checkSurface('HolderMaps header', at('/', h(hm.HmHeader)), { min: 5 }) // Map a token is the header's button, not a menu item
   checkSurface('HolderMaps footer', at('/', h(hm.HmFooter)), { min: 8 })
   checkSurface('admin section nav', at('/admin', h(admin.AdminNav, { section: 'health', go: () => {} })), { min: 5 })
 

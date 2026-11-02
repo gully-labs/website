@@ -28,7 +28,7 @@ export interface LaunchItem {
 /** Every Gully product, one card each, in the order a newcomer meets them. Each supports Gully Chain. */
 export const LAUNCH: LaunchItem[] = [
   { key: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz', icon: Network, line: 'L3 testnet 485590 with a live network board.', hub: ['chain-site', 'rpc-public'] },
-  { key: 'street', name: 'Gully Street', url: 'https://kre8.fun', icon: Rocket, line: 'Social feed, 5 wallets per passkey, copy trading, Quests.', hub: ['street'] },
+  { key: 'street', name: 'kre8.fun', url: 'https://kre8.fun', icon: Rocket, line: 'Social feed, 5 wallets per passkey, copy trading, Quests.', hub: ['street'] },
   { key: 'bridge', name: 'Gully Bridge', url: 'https://testnet-bridge.gullychain.xyz', icon: ArrowLeftRight, line: 'Hyperlane fast lane (gETH) plus the canonical bridge.', hub: ['bridge'] },
   { key: 'safe', name: 'Gully Safe', url: 'https://safe.gullychain.xyz', icon: Vault, line: 'Multisig wallets on Gully Chain.', hub: ['safe'] },
   { key: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz', icon: CircleDollarSign, line: 'Open sign-up, hosted checkout, x402 on five chains.', hub: ['pay', 'x402'] },
@@ -174,9 +174,9 @@ export function whatsNew(hub: HubBody | null): NewItem[] {
   const q = hub?.quests
   return [
     { product: 'Gully Chain', text: 'New landing with a live network board', url: 'https://gullychain.xyz', hub: ['chain-site'] },
-    { product: 'Gully Street', text: 'Social feed, profiles, invites and a verified badge', url: 'https://kre8.fun', hub: ['street'] },
-    { product: 'Gully Street', text: 'Multi-wallet: up to 5 wallets per passkey', url: 'https://kre8.fun', hub: ['street'] },
-    { product: 'Gully Street', text: 'Copy trading on the copy.kre8.fun engine', url: 'https://kre8.fun/copy', hub: ['copy'] },
+    { product: 'kre8.fun', text: 'Social feed, profiles, invites and a verified badge', url: 'https://kre8.fun', hub: ['street'] },
+    { product: 'kre8.fun', text: 'Multi-wallet: up to 5 wallets per passkey', url: 'https://kre8.fun', hub: ['street'] },
+    { product: 'kre8.fun', text: 'Copy trading on the copy.kre8.fun engine', url: 'https://kre8.fun/copy', hub: ['copy'] },
     { product: 'Gully Quests', text: q?.active != null ? `${q.active} live quests, rewards paid on chain` : 'Quests on chain, rewards paid on chain', url: 'https://kre8.fun/quests', hub: ['street'] },
     { product: 'Gully Bridge', text: 'Hyperlane fast lane (gETH, Gully Bridged ETH) and the canonical bridge', url: 'https://testnet-bridge.gullychain.xyz', hub: ['bridge'] },
     { product: 'Gully Bridge', text: 'Bridge SDK: integrators earn a fee on every bridge', url: 'https://docs.gullychain.xyz', tag: 'in progress' },

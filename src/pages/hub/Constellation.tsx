@@ -1,33 +1,35 @@
 /* The gullylabs.xyz landing, "Constellation" (owner pick, 2026-10-27; replaces landing v3). Gully Labs as the studio
    behind one connected suite: the eight products as a live map around Gully Chain (solid links are live integrations,
-   dashed ones flagged or planned), a live reading on every node and a drawer per product; below, one tabbed board
-   (live board, what's new, all products, work with us, contact) so the page stays near 1.5 screens.
+   dashed ones flagged or planned), a live reading on every node and a drawer per product; right under it the directory
+   (design standard, 2026-11-01): what each product is, its live number and where to go; then one tabbed board (live
+   board, what's new, work with us, contact). On a phone the directory comes before the map.
    Every figure is read live (src/pages/hub/hubData.ts adapters): /api/hub, /api/hub/products, /api/stats and
    /api/hub/live. A source that cannot be read says so. Toasts only on real events seen between two polls. */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { Activity, ArrowRight, ArrowUpRight, Blocks, Briefcase, ChartSpline, ChevronRight, CircleCheck, CircleDot, CreditCard, ExternalLink, FingerprintPattern, Hammer, Info, MessageSquare, Newspaper, Orbit, Send, Table2, Trophy, X, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowDown, ArrowRight, ArrowUpRight, Blocks, Briefcase, ChartSpline, ChevronDown, CircleCheck, CircleDot, ExternalLink, FingerprintPattern, Hammer, Info, MessageSquare, Newspaper, Send, Trophy, X, type LucideIcon } from 'lucide-react'
 import { Seo } from '../../components/Seo'
 import { useLive } from '../../console/live'
 import { consoleToast } from '../../console/toast'
-import { Spark } from '../../console/ui'
+import { Count, Spark } from '../../console/ui'
 import '../../terminal/terminal.css'
 import { A, TChart, UptimeGrid, useHubProducts, type ChartTab } from '../../terminal/kit'
 import { ContactForm, Process, ServicesList } from '../../terminal/sections'
 import './constellation.css'
 import { useHubLive } from './useHubLive'
-import { changes, curve, EDGES, fmtNum, HUB_PRODUCTS, JOURNEY, kpiText, LAYERS, liveEvents, MAP, NEWS, productOf, readings, seenOf, STATUS_LABEL, suite, ago,  type ProductKey, type Reading, type Seen, type Sources } from './hubData'
+import { changes, curve, EDGES, fmtNum, HUB_PRODUCTS, kpiText, liveEvents, MAP, NEWS, productOf, readings, seenOf, STATUS_LABEL, suite, ago,  type ProductKey, type Reading, type Seen, type Sources } from './hubData'
 
 const fmtUsd = (v: number | null) => (v == null ? '—' : v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : v >= 1e4 ? `$${(v / 1e3).toFixed(1)}K` : `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}`)
 const tagOf = (s: string) => (s === 'live' ? 'live' : s === 'soon' || s === 'rolling out' || s === 'coming soon' ? 'soon' : 'new')
 
 /* ---------------------------------------------------------------- the map ---- */
 /** A node's one-line reading when it has no KPI: the short note, never a sentence cut mid-word (the full `why` stays
-    in the node's aria-label, its title and the drawer). Nodes sit about 300 map units apart, so 22 characters is the cap. */
-function mapNote(rd: Reading) {
+    in the node's aria-label, its title and the drawer). Wide-map nodes sit about 300 units apart (22 characters); on the
+    phone map two nodes share a row (16). */
+function mapNote(rd: Reading, cap = 22) {
   const t = rd.note ?? (rd.why && /unreadable/i.test(rd.why) ? 'source unreadable' : rd.why) ?? '…'
-  if (t.length <= 22) return t
-  const cut = t.slice(0, 22)
+  if (t.length <= cap) return t
+  const cut = t.slice(0, cap)
   return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), 12)).replace(/[\s,:·]+$/, '')}…`
 }
 
@@ -78,7 +80,7 @@ function ConstellationMap({ R, onOpen, hot, setHot }: { R: Record<ProductKey, Re
           {EDGES.map(([, , kind], i) =>
             kind === 'live' ? (
               <circle key={`s${i}`} className="spark" r={2.4}>
-                <animateMotion dur={`${3 + (i % 4) * 0.7}s`} repeatCount="indefinite" begin={`${(i * 0.37).toFixed(2)}s`}>
+                <animateMotion dur={`${3 + (i % 4) * 0.7}s`} repeatCount="indefinite" begin={`-${(i * 0.37).toFixed(2)}s`}>
                   <mpath href={`#cst-e${i}`} />
                 </animateMotion>
               </circle>
@@ -89,7 +91,7 @@ function ConstellationMap({ R, onOpen, hot, setHot }: { R: Record<ProductKey, Re
           const r = p.key === 'chain' ? L.rc : L.r
           const at = L.at[p.key]
           const rd = R[p.key]
-          const metric = p.key === 'chain' && rd.kpi ? `block ${fmtNum(rd.kpi.v)}` : rd.kpi ? `${kpiText(rd.kpi)} ${rd.kpi.short}` : mapNote(rd)
+          const metric = p.key === 'chain' && rd.kpi ? `block ${fmtNum(rd.kpi.v)}` : rd.kpi ? `${kpiText(rd.kpi)} ${rd.kpi.short}` : mapNote(rd, tall ? 16 : 22)
           const cls = ['node', p.status === 'soon' ? 'is-soon' : rd.state === 'up' ? 'is-up' : '', lit ? (lit.on.has(p.key) ? 'hot' : 'dim') : ''].join(' ')
           return (
             <g
@@ -290,15 +292,14 @@ function Drawer({ k, R, onClose }: { k: ProductKey | null; R: Record<ProductKey,
 }
 
 /* ---------------------------------------------------------------- the board ---- */
-type TabId = 'live' | 'news' | 'products' | 'work' | 'contact'
+type TabId = 'live' | 'news' | 'work' | 'contact'
 const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: 'live', label: 'Live board', icon: Activity },
   { id: 'news', label: "What's new", icon: Newspaper },
-  { id: 'products', label: 'All products', icon: Table2 },
   { id: 'work', label: 'Work with us', icon: Briefcase },
   { id: 'contact', label: 'Contact', icon: MessageSquare },
 ]
-const HASH: Record<string, TabId> = { '#live': 'live', '#news': 'news', '#products': 'products', '#work': 'work', '#services': 'work', '#contact': 'contact' }
+const HASH: Record<string, TabId> = { '#live': 'live', '#news': 'news', '#work': 'work', '#services': 'work', '#contact': 'contact' }
 
 function LiveBoard({ src, R }: { src: Sources; R: Record<ProductKey, Reading> }) {
   const ev = liveEvents(src)
@@ -308,6 +309,19 @@ function LiveBoard({ src, R }: { src: Sources; R: Record<ProductKey, Reading> })
     { id: 'chain', label: 'Chain txs', title: 'Gully Chain transactions per hour (UTC)', series: [{ name: 'Transactions', color: '#00D2FF', values: chainRows.map((r) => r.v) }], labels: chainRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'indexer unreadable right now', sub: 'source: /api/hub/products (Gully Chain RPC and indexer)', legendTotal: chainRows.length ? `${chainRows.length} h total` : undefined },
     { id: 'id', label: 'ID sign-ins', title: 'Gully ID sign-ins per hour (UTC)', series: [{ name: 'Sign-ins', color: '#00D2FF', values: idRows.map((r) => r.v) }], labels: idRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.live?.id ? 'ok' : src.live ? 'offline' : 'loading', empty: 'Gully ID stats unreadable right now', sub: 'source: gullyid.xyz/v1/stats/public', legendTotal: idRows.length ? `${idRows.length} h total` : undefined },
   ]
+  const mapRows = src.products?.holders?.daily ?? []
+  const volRows = (src.stats?.daily ?? []).slice(-30)
+  tabs.push(
+    { id: 'maps', label: 'Maps / day', title: 'HolderMaps maps opened per day (UTC)', series: [{ name: 'Maps', color: '#00D2FF', values: mapRows.map((r) => r.maps) }], labels: mapRows.map((r) => r.day.slice(5)), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'HolderMaps figures unreadable right now', sub: 'source: /api/hub/products', legendTotal: mapRows.length ? `${mapRows.length} days total` : undefined },
+    { id: 'volume', label: 'Venue volume', title: 'Daily volume on the venues we built, USD', series: [{ name: 'Volume', color: '#00D2FF', values: volRows.map((r) => r.v) }], labels: volRows.map((r) => new Date(r.t * 1000).toISOString().slice(5, 10)), fmt: (v) => fmtUsd(v), state: src.stats ? 'ok' : 'loading', empty: 'venue figures unreadable right now', sub: 'source: /api/stats (each venue’s own API, DefiLlama as fallback)', legendTotal: volRows.length ? `${volRows.length} days total` : undefined },
+  )
+  // The tab with something to show comes first; decided once, so a poll never moves the tabs under the reader.
+  const order = useRef<string[] | null>(null)
+  if (!order.current && src.products && src.stats) {
+    const moving = (t: ChartTab) => t.series[0].values.some((v) => (v ?? 0) > 0)
+    order.current = [...tabs.filter(moving), ...tabs.filter((t) => !moving(t))].map((t) => t.id)
+  }
+  const shown = order.current ? order.current.map((id) => tabs.find((t) => t.id === id) as ChartTab) : tabs
   const s = suite(src)
   return (
     <div className="cst-live">
@@ -319,7 +333,7 @@ function LiveBoard({ src, R }: { src: Sources; R: Record<ProductKey, Reading> })
         <UptimeGrid hub={src.hub} keys={['gully-id', 'chain-site', 'pay', 'rpc-gateway', 'holders', 'security', 'studio', 'gullyai']} compact />
       </section>
       <div className="cst-cell-chart">
-        <TChart label="Live across the suite" tabs={tabs} height={220} />
+        <TChart label="Live across the suite" tabs={shown} height={220} />
       </div>
       <section className="cst-cell">
         <header>
@@ -388,85 +402,75 @@ function News() {
   )
 }
 
-function ProductTable({ R, open }: { R: Record<ProductKey, Reading>; open: (k: ProductKey, from: Element) => void }) {
-  const LN = Object.fromEntries(LAYERS.map((l) => [l.key, l.name]))
+/** The directory: every product, what it is, its live number and where to go. The domain is the main link (new tab);
+    Details opens the drawer on this page. */
+function Directory({ R, open }: { R: Record<ProductKey, Reading>; open: (k: ProductKey, from: Element) => void }) {
   return (
-    <div className="cst-table-wrap">
-      <table className="cst-table">
-        <caption className="sr-only">Every Gully product with its live reading</caption>
-        <thead>
-          <tr>
-            <th scope="col">Product</th>
-            <th scope="col" className="hide-s">
-              Layer
-            </th>
-            <th scope="col">Status</th>
-            <th scope="col">Live reading</th>
-            <th scope="col" className="hide-s">
-              Trend
-            </th>
-            <th scope="col">
-              <span className="sr-only">Open</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+    <section className="cst-dir" id="products" aria-labelledby="cst-dir-h">
+      <div className="gt-wrap">
+        <header className="cst-dir-head">
+          <h2 id="cst-dir-h">Where to go</h2>
+          <p>Each product runs on its own site. The numbers are read live.</p>
+        </header>
+        <ul className="cst-dir-grid">
           {HUB_PRODUCTS.map((p) => {
             const r = R[p.key]
             const vals = r.series?.rows.map((x) => x.v) ?? []
             return (
-              <tr key={p.key}>
-                <td>
-                  <Link className="cst-pn" to={`/products/${p.page}`}>
-                    <img src={p.icon} alt="" width={26} height={26} />
-                    <span>
-                      {p.name}
-                      <small>{p.domain}</small>
-                    </span>
-                  </Link>
-                </td>
-                <td className="hide-s">{LN[p.layer]}</td>
-                <td>
+              <li key={p.key} className="cst-card" style={{ ['--c' as string]: p.color }}>
+                <div className="top">
+                  <img src={p.icon} alt="" width={36} height={36} loading="lazy" decoding="async" />
+                  <h3>{p.name}</h3>
                   <span className={`cst-tag ${tagOf(p.status)}`}>{STATUS_LABEL[p.status]}</span>
-                </td>
-                <td className="cst-rd">
+                </div>
+                <p className="cst-what">{p.line}</p>
+                <div className="read" data-reading={p.key}>
                   {r.kpi ? (
-                    <>
-                      <b className="num">{kpiText(r.kpi)}</b>
-                      <span>{r.kpi.label}</span>
-                    </>
+                    <div className="fig">
+                      {r.kpi.of != null ? <b className="num">{kpiText(r.kpi)}</b> : <Count as="b" className="num" value={r.kpi.v} fmt={fmtNum} />}
+                      <small>{r.kpi.label}</small>
+                    </div>
                   ) : (
-                    <span>{r.why ?? 'No data yet'}</span>
+                    <small className="why">{r.why ?? 'No live reading yet'}</small>
                   )}
-                </td>
-                <td className="hide-s cst-trend">
-                  {vals.length >= 2 ? (
-                    <>
-                      <Spark values={vals} color="#00D2FF" h={26} />
-                      <span>{r.series?.unit === 'ms' ? 'site response time' : `${r.series?.unit} per ${r.series?.name.includes('day') ? 'day' : 'hour'}`}</span>
-                    </>
-                  ) : (
-                    <span>–</span>
+                  {vals.length >= 2 && (
+                    <div className="sp" aria-hidden>
+                      <Spark values={vals} color={p.color} h={28} />
+                    </div>
                   )}
-                </td>
-                <td>
-                  <button type="button" className="gt-btn sec sm" onClick={(e) => open(p.key, e.currentTarget)}>
-                    <ChevronRight className="gt-ic" aria-hidden />
+                </div>
+                <div className="go">
+                  <A href={p.url} className="cst-go">
+                    {p.domain}
+                    <ArrowUpRight className="gt-ic" aria-hidden />
+                  </A>
+                  <button type="button" className="cst-more" aria-label={`${p.name} details`} onClick={(e) => open(p.key, e.currentTarget)}>
                     Details
                   </button>
-                </td>
-              </tr>
+                </div>
+              </li>
             )
           })}
-        </tbody>
-      </table>
-    </div>
+        </ul>
+      </div>
+    </section>
   )
 }
 
-// The venues line: Peddles, PeddleSwap and PeddleQuest only. /api/stats still reads a `deepcore` venue, but that is
-// DeepCore's own cross-chain API (deepcore.fun), not Gully Core, and the partnership ended 2026-10-29, so it is left
-// out of the sum and the names rather than relabelled.
+/** True while the media query matches: the phone layout moves the map below the directory. */
+function useMedia(q: string) {
+  const [on, setOn] = useState(() => typeof window !== 'undefined' && window.matchMedia(q).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(q)
+    const f = () => setOn(mq.matches)
+    f()
+    mq.addEventListener('change', f)
+    return () => mq.removeEventListener('change', f)
+  }, [q])
+  return on
+}
+
+// The venues line: Peddles, PeddleSwap and PeddleQuest (/api/stats no longer reads DeepCore, partnership ended 2026-10-29).
 const BUILT = ['peddles', 'peddleswap', 'peddlequest'] as const
 function builtVenues(src: Sources) {
   const vs = (src.stats?.venues ?? []).filter((v) => (BUILT as readonly string[]).includes(v.key) && v.state === 'ok') as { tvlUsd?: number | null; volumeAllUsd?: number | null; feesAllUsd?: number | null }[]
@@ -534,12 +538,6 @@ function Contact() {
 }
 
 /* ---------------------------------------------------------------- the page ---- */
-const FLOW: { k: 'id' | 'pay' | 'chain'; icon: LucideIcon; pre: string; name: string }[] = [
-  { k: 'id', icon: FingerprintPattern, pre: 'Sign in with', name: 'Gully ID' },
-  { k: 'pay', icon: CreditCard, pre: 'pay with', name: 'Gully Pay' },
-  { k: 'chain', icon: Blocks, pre: 'built on', name: 'Gully Chain' },
-]
-
 export function Constellation() {
   const live = useLive()
   const hp = useHubProducts()
@@ -552,6 +550,8 @@ export function Constellation() {
   const back = useRef<Element | null>(null)
   const [tab, setTab] = useState<TabId>(() => (typeof location !== 'undefined' && HASH[location.hash]) || 'live')
   const board = useRef<HTMLElement>(null)
+  const stacked = useMedia('(max-width: 960px)')
+  const [mapOpen, setMapOpen] = useState(false)
 
   // toasts: only for real changes between two polls
   const seen = useRef<Seen | null>(null)
@@ -589,7 +589,6 @@ export function Constellation() {
   const tabBody: Record<TabId, ReactNode> = {
     live: <LiveBoard src={src} R={R} />,
     news: <News />,
-    products: <ProductTable R={R} open={openDrawer} />,
     work: <Work src={src} />,
     contact: <Contact />,
   }
@@ -613,59 +612,53 @@ export function Constellation() {
               <em>Eight products</em> that work as one.
             </h1>
             <p className="cst-lede">We build the whole path a user takes on chain, and every piece plugs into the next.</p>
-            <ol className="cst-flow" aria-label="How the products connect">
-              {FLOW.map((f) => (
-                <li key={f.k}>
-                  <button
-                    type="button"
-                    className={hot && !hot.nb && hot.keys.join() === JOURNEY[f.k].join() ? 'on' : ''}
-                    onPointerEnter={() => setHot({ keys: JOURNEY[f.k], nb: false })}
-                    onPointerLeave={() => setHot(null)}
-                    onFocus={() => setHot({ keys: JOURNEY[f.k], nb: false })}
-                    onBlur={() => setHot(null)}
-                    onClick={(e) => openDrawer(f.k, e.currentTarget)}
-                  >
-                    <f.icon className="gt-ic" aria-hidden />
-                    <span>
-                      {f.pre} <b>{f.name}</b>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ol>
             <div className="cst-kpis" aria-live="polite">
               <div>
                 <span className="gt-k">Services up</span>
                 <b className="num">{s.up == null ? '—' : `${s.up}/${s.total}`}</b>
-                <small>/api/hub</small>
+                <small>all Gully sites</small>
               </div>
               <div>
                 <span className="gt-k">Sign-ins 24 h</span>
-                <b className="num">{kpiText(R.id.kpi)}</b>
+                <Count as="b" className="num" value={R.id.kpi?.v ?? null} fmt={fmtNum} />
                 <small>gullyid.xyz</small>
               </div>
               <div>
                 <span className="gt-k">Gully Chain block</span>
-                <b className="num">{kpiText(R.chain.kpi)}</b>
-                <small>gullychain.xyz</small>
+                <Count as="b" className="num" value={R.chain.kpi?.v ?? null} fmt={fmtNum} />
+                <small>testnet 485590</small>
               </div>
             </div>
             <div className="cst-ctas">
-              <button type="button" className="gt-btn pri" onClick={() => go('work')}>
+              <a className="gt-btn pri" href="#products">
+                <ArrowDown className="gt-ic" aria-hidden />
+                See the products
+              </a>
+              <button type="button" className="gt-btn sec" onClick={() => go('work')}>
                 <Briefcase className="gt-ic" aria-hidden />
                 Work with us
               </button>
-              <button type="button" className="gt-btn sec" onClick={(e) => openDrawer('id', e.currentTarget)}>
-                <Orbit className="gt-ic" aria-hidden />
-                Explore the suite
-              </button>
             </div>
           </div>
-          <ConstellationMap R={R} onOpen={openDrawer} hot={hot} setHot={setHot} />
+          {!stacked && <ConstellationMap R={R} onOpen={openDrawer} hot={hot} setHot={setHot} />}
         </div>
       </section>
 
-      <section className="cst-board" id="board" ref={board} aria-label="Live board, news, products, services and contact">
+      <Directory R={R} open={openDrawer} />
+
+      {stacked && (
+        <section className="cst-mapsec" aria-label="How the products connect">
+          <details className="gt-wrap" onToggle={(e) => setMapOpen(e.currentTarget.open)}>
+            <summary>
+              How they connect
+              <ChevronDown className="gt-ic" aria-hidden />
+            </summary>
+            {mapOpen && <ConstellationMap R={R} onOpen={openDrawer} hot={hot} setHot={setHot} />}
+          </details>
+        </section>
+      )}
+
+      <section className="cst-board" id="board" ref={board} aria-label="Live board, news, services and contact">
         <div className="gt-wrap">
           <div className="cst-tabs" role="tablist" aria-label="Board">
             {TABS.map((t) => (
@@ -700,7 +693,7 @@ export function Constellation() {
             {tabBody[tab]}
           </div>
           <p className="cst-sendline">
-            <Send className="gt-ic" aria-hidden /> Building something? <button type="button" className="cst-linkbtn" onClick={() => go('contact')}>Send us a brief</button> or <Link to="/products">see every product page</Link>.
+            <Send className="gt-ic" aria-hidden /> Building something? <button type="button" className="cst-linkbtn" onClick={() => go('contact')}>Send us a brief</button> or <Link to="/products">browse every product page</Link>.
           </p>
         </div>
       </section>

@@ -1,12 +1,11 @@
-/* holdermaps.xyz/<chain>/<token>: one token's map, Gully Terminal redesign (2026-10-27). A chart-led header (the
-   question, the summary line and six stat tiles with sparklines from the map's own replay frames), then the
-   interactive bubble map (the shared HolderMap: replay, live transfers, wallet panel, list view), then tabs that keep
-   the page near 1.5 screens: Read the map (top-10 gauge, who holds the supply, Lorenz curve and Gini, share by rank,
-   linked clusters, a compact bubble field), Over time, Top holders, Deep check (the $9 purchase stepper, billed
-   through Gully Pay) and Embed (the embed/widget/badge/API stepper). Every figure is the map's own
-   (GET /api/holders/:chain/:token, re-read every five minutes); the mascot carries the loading, empty and error
-   states. The gullylabs.xyz /holders page keeps its own layout (src/pages/HoldersPage.tsx). */
-import { useEffect, useRef, useState } from 'react'
+/* holdermaps.xyz/<chain>/<token>: one token's map (design standard, 2026-11-01): the interactive bubble map comes first
+   on every screen (the shared HolderMap: its title is the page's h1, its side panel says what it found, replay, live
+   transfers, wallet panel, list view). Then four stat tiles with sparklines from the map's own replay frames and tabs:
+   Read the map (top-10 gauge, who holds the supply, Lorenz curve and Gini, share by rank, linked clusters), Over time,
+   Top holders, Deep check (the $9 purchase stepper, billed through Gully Pay) and Embed. Every figure is the map's own
+   (GET /api/holders/:chain/:token, re-read every five minutes); the mascot carries the loading, empty and error states.
+   The gullylabs.xyz /holders page keeps its own layout (src/pages/HoldersPage.tsx). */
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { ArrowUpRight, ChevronRight, Gauge as GaugeIcon, LineChart, ListOrdered, Map as MapIcon, Plug, RefreshCw, ScanSearch } from 'lucide-react'
 import { Seo } from '../components/Seo'
@@ -14,12 +13,10 @@ import { HolderMap } from '../components/holders/HolderMap'
 import { ChainLogo } from '../components/logos/ChainLogo'
 import { consoleToast } from '../console/toast'
 import { useHolderMap, type HolderMapOk } from '../lib/holders'
-import { ageText } from '../lib/tracker'
-import { Dot, Kpi } from '../terminal/kit'
-import { Bars, BubbleField, Donut, Gauge, Lorenz, NotReadable, Trend } from './charts'
+import { Kpi } from '../terminal/kit'
+import { Bars, Donut, Gauge, Lorenz, NotReadable, Trend } from './charts'
 import { CHAIN_NAMES, clusterRows, fmtInt, fmtPct, HM_C, isInfraNode, lorenz, rankBands, supplySplit, timelineSeries } from './insights'
 import { HmLoading, HmState } from './HmStates'
-import { useNow } from './hooks'
 import { HmSearch } from './HmSearch'
 import { HmTabs } from './HmKit'
 import { HmDeepCheck } from './HmDeepCheck'
@@ -42,10 +39,16 @@ export function HmTokenPage() {
     m?.state === 'ok'
       ? `${m.summary.line} ${m.forensics?.riskLine ?? ''}`.trim().slice(0, 300)
       : comingSoon
-        ? `Token maps for ${chainName} are coming soon. DeepCore launches and tokens on the other chains already have live maps on HolderMaps.`
+        ? `Token maps for ${chainName} are coming soon. Tokens on the other chains already have live maps on HolderMaps.`
         : `Who holds ${symbol ?? 'this token'} on ${chainName}: the biggest wallets as bubbles, the ones that trade with each other, and how concentrated it is, read live.`
   const ok = m?.state === 'ok' ? m : null
   useRefreshToast(ok)
+  const [tab, setTab] = useState('read')
+  const tabsRef = useRef<HTMLDivElement>(null)
+  const openTab = useCallback((id: string) => {
+    setTab(id)
+    requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }, [])
 
   return (
     <div className="gt hmt hm-token">
@@ -66,6 +69,16 @@ export function HmTokenPage() {
               Explorer <ArrowUpRight aria-hidden className="hm-ic sm" />
               <span className="hm-sr"> (opens in a new tab)</span>
             </a>
+          )}
+          {ok && (
+            <span className="hmt-crumb-acts">
+              <button type="button" className="hm-btn sm" onClick={() => openTab('deep')}>
+                <GaugeIcon aria-hidden className="hm-ic" /> Deep check
+              </button>
+              <button type="button" className="hm-btn ghost sm" onClick={() => openTab('embed')}>
+                <Plug aria-hidden className="hm-ic" /> Embed
+              </button>
+            </span>
           )}
         </nav>
 
@@ -113,58 +126,28 @@ export function HmTokenPage() {
             )}
           </div>
         ) : ok ? (
-          <Loaded m={ok} chain={chain} token={token} symbol={symbol} title={title} />
+          <Loaded m={ok} chain={chain} token={token} symbol={symbol} title={title} tab={tab} setTab={setTab} tabsRef={tabsRef} />
         ) : null}
       </div>
     </div>
   )
 }
 
-function Loaded({ m, chain, token, symbol, title }: { m: HolderMapOk; chain: string; token: string; symbol: string | null; title: string }) {
-  const now = useNow(30_000)
-  const [tab, setTab] = useState('read')
+function Loaded({ m, chain, token, symbol, title, tab, setTab, tabsRef }: { m: HolderMapOk; chain: string; token: string; symbol: string | null; title: string; tab: string; setTab: (id: string) => void; tabsRef: React.RefObject<HTMLDivElement | null> }) {
   const tl = timelineSeries(m)
   const lz = lorenz(m)
   const clusters = clusterRows(m)
   const linked = clusters.reduce((a, c) => a + c.wallets, 0)
-  const tabsRef = useRef<HTMLDivElement>(null)
-  const openTab = (id: string) => {
-    setTab(id)
-    requestAnimationFrame(() => tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-  }
-  const sym = symbol ? `$${symbol}` : 'this token'
   return (
     <>
-      <header className="hmt-tokhead">
-        <div>
-          <span className="hmt-lbl">
-            <i className="hm-dot" aria-hidden /> Live · {m.asOf ? ageText(m.asOf, now) : 'just now'} · {m.coverage?.level === 'top' ? 'top holders' : 'full history'}
-          </span>
-          {/* The shared HolderMap below carries the page's h1. */}
-          <h2>
-            Who holds <em>{sym}</em> on {chain === 'gully' ? 'Gully Chain' : m.chain.name}
-          </h2>
-          <p className="sum">{m.summary.line}</p>
-        </div>
-        <div className="hmt-acts">
-          <button type="button" className="hm-btn" onClick={() => openTab('deep')}>
-            <GaugeIcon aria-hidden className="hm-ic" /> Deep check
-          </button>
-          <button type="button" className="hm-btn ghost" onClick={() => openTab('embed')}>
-            <Plug aria-hidden className="hm-ic" /> Embed
-          </button>
-        </div>
-      </header>
-      <div className="gt-kpis k6">
-        <Kpi label="Holders" value={m.holders.count} spark={tl.holders ?? undefined} color={Y} sub={m.holders.count === null ? 'not readable' : tl.holders ? 'over the replay' : 'live count'} />
-        <Kpi label="On the map" value={m.nodes.length} sub="biggest wallets" />
+      <div className="hmt-mapwrap">
+        <HolderMap chain={chain} token={token} page />
+      </div>
+      <div className="gt-kpis k4 hmt-tokkpis">
+        <Kpi label="Holders" value={m.holders.count} spark={tl.holders ?? undefined} color={Y} sub={m.holders.count === null ? 'not readable' : tl.holders ? 'over the replay' : `${fmtInt(m.nodes.length)} on the map`} />
         <Kpi label="Top 10 hold" value={m.summary.top10Pct} fmt={fmtPct} spark={tl.top10 ?? undefined} color={Y} sub={m.holders.sharesOf === 'total supply' ? 'of total supply' : 'of listed holders'} />
         <Kpi label="Gini" value={lz ? lz.gini : null} fmt={(v) => v.toFixed(2)} sub={lz ? `${lz.n} wallets · 0 even, 1 one holder` : 'fewer than 3 shares'} />
         <Kpi label="Linked wallets" value={linked} sub={`${clusters.length} cluster${clusters.length === 1 ? '' : 's'}`} />
-        <Kpi label="Status" text={<Dot s="up" label="live" />} sub={m.asOf ? `read ${ageText(m.asOf, now)}` : 'just read'} />
-      </div>
-      <div className="hmt-mapwrap">
-        <HolderMap chain={chain} token={token} page />
       </div>
       <div className="hmt-sec" ref={tabsRef} style={{ scrollMarginTop: 72 }}>
         <h2 className="hm-sr">{title}: read the map</h2>
@@ -256,9 +239,6 @@ function Insights({ m }: { m: HolderMapOk }) {
         ) : (
           <NotReadable text="No linked wallets among the top holders: none of them sent this token to each other" />
         )}
-      </Card>
-      <Card title="Bubble field" sub="The biggest holders, sized by share. Yellow ones are linked." id="hm-c-field">
-        <BubbleField m={m} max={30} height={240} />
       </Card>
     </div>
   )

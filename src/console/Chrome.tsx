@@ -143,6 +143,7 @@ export function ConsoleSheet({ home, close }: { home: boolean; close: () => void
 export function ConsoleFooter() {
   const home = useLocation().pathname === '/'
   const links: Item[] = [
+    { label: 'Products', icon: LayoutGrid, to: '/products' },
     { label: 'Docs', icon: BookOpen, href: DOCS_URL },
     { label: 'App', icon: Zap, href: APP_URL },
     { label: 'Status', icon: Activity, to: '/status' },
@@ -214,7 +215,7 @@ export function ConsoleFooter() {
           </nav>
         )}
         <p className="copy2">
-          © 2026 Gully Labs · Figures are read live from each product's own API and the Gully Chain testnet; a venue that cannot be read is shown as unreadable, never as zero.
+          © 2026 Gully Labs · Figures are read live from each product and the Gully Chain testnet; a source that cannot be read says so.
         </p>
       </div>
     </footer>

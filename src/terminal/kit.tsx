@@ -82,15 +82,12 @@ export const ACCENT = '#00D2FF'
 /** A product's logo: the kit file (WebP with a PNG fallback, or the kit SVG), or the kit mark plus its name. */
 export function Logo({ def, name, scale = 1, decorative = false }: { def: LogoDef; name: string; scale?: number; decorative?: boolean }) {
   if (def.kind === 'mark') {
-    const src = def.mark === 'chain' ? '/brand/web/logos/gullychain-mark' : null
     const h = Math.round(28 * scale)
     return (
       <span className="gt-logo gt-logo-mark" style={{ height: Math.round(40 * scale), fontSize: Math.round(19 * scale) }} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : name} aria-hidden={decorative || undefined}>
-        {src ? (
-          <picture>
-            <source srcSet={`${src}.webp`} type="image/webp" />
-            <img src={`${src}.png`} width={h} height={h} alt="" decoding="async" draggable={false} />
-          </picture>
+        {def.mark === 'chain' ? (
+          // GullyChain brand kit v4 icon (gc-icon.svg, byte-identical to the kit; kit v4 is icon-only)
+          <img src="/brand/web/logos/gc-icon.svg" width={h} height={h} alt="" decoding="async" draggable={false} />
         ) : (
           <img src="/brand/icon/gully-labs-icon.png" width={Math.round((h * 343) / 372)} height={h} alt="" decoding="async" draggable={false} />
         )}

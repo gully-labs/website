@@ -1,5 +1,5 @@
 /* What is live across Gully (2026-10-26), all read from GET /api/hub through the one live provider (live.tsx):
-   - ChainSuite: every Gully Chain surface (Gully Street and its features, explorer, faucet, bridge, docs, developer
+   - ChainSuite: every Gully Chain surface (kre8.fun and its features, explorer, faucet, bridge, docs, developer
      portal, public RPC, indexer), each with its state, response time and a live sparkline;
    - QuestsPanel: Gully Quests on chain 485590 (quests, completions, the ETH left in the pools, hourly completions);
    - NetworkChips: Gully Pay's x402 networks or Gully RPC's gateway networks, Gully Chain included;
@@ -16,7 +16,7 @@ type Icon = ComponentType<LucideProps>
 export const STREET = 'https://kre8.fun'
 export const EXPLORER = 'https://testnet-explorer.gullychain.xyz'
 
-/** Gully Street's features (its own nav, read from app.gullychain.xyz on 2026-10-26). */
+/** kre8.fun's features (its own nav, read from app.gullychain.xyz on 2026-10-26). */
 export const STREET_FEATURES: { label: string; path: string; icon: Icon }[] = [
   { label: 'Launchpad', path: '/launch', icon: Rocket },
   { label: 'Gully Swap', path: '/swap', icon: Repeat },
@@ -37,7 +37,7 @@ const SURF_LINE: Record<string, string> = {
   devportal: 'SDKs, contract addresses and examples for builders.',
   'rpc-public': 'The free, rate-limited RPC. Keys at Gully RPC.',
   indexer: 'Tokens, trades, names and quests as JSON.',
-  copy: 'The engine behind copy trading in Gully Street.',
+  copy: 'The engine behind copy trading in kre8.fun.',
   safe: 'Multisig wallets on Gully Chain.',
 }
 /** A sparkline once there are two readings; before that a small pulsing note (history builds one point a minute). */
@@ -91,13 +91,13 @@ function Surface({ k, s, name, url }: { k: string; s?: HubService; name: string;
   )
 }
 
-/** Gully Street: the consumer app on Gully Chain, with a deep link to each feature. */
+/** kre8.fun: the consumer app on Gully Chain, with a deep link to each feature. */
 function StreetCard({ s }: { s?: HubService }) {
   return (
     <div className="sv street2 card" data-surface="street">
       <span className="svh">
         {ic(Rocket)}
-        <b>Gully Street</b>
+        <b>kre8.fun</b>
         <State s={s} />
       </span>
       <span className="svu">kre8.fun · your profile is your wallet</span>
@@ -131,7 +131,7 @@ const CHAIN_ORDER: { k: string; name: string; url: string }[] = [
   { k: 'safe', name: 'Gully Safe', url: 'https://safe.gullychain.xyz' },
 ]
 
-/** Every Gully Chain surface, live: Gully Street with its features, then explorer, faucet, bridge, docs, developer portal, public RPC. */
+/** Every Gully Chain surface, live: kre8.fun with its features, then explorer, faucet, bridge, docs, developer portal, public RPC. */
 export function ChainSuite() {
   const { hub } = useLive()
   const by = (k: string) => hub?.services.find((s) => s.key === k)

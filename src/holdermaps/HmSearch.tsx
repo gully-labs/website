@@ -1,15 +1,14 @@
-/* HolderMaps' token search (GET /api/holders/resolve): a chain picker (every chain we map, Gully Chain 485590 first;
-   "All chains" checks every one at once), one box for an address or a ticker, and a three-step stepper under it that
-   follows the search as it runs (paste, check the chains, open the map). No match is never a dead end: what was
-   checked on each chain, in plain words; a pick on one chain that only matches elsewhere offers those matches. */
+/* HolderMaps' token search (GET /api/holders/resolve): one box for an address or a ticker, checked on every chain at
+   once, and a short stepper under it that follows the search as it runs (paste, check the chains, open the map). A
+   token on several chains offers each one. No match is never a dead end: what was checked on each chain, in plain
+   words. */
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { ChevronDown, Loader2, Map as MapIcon, Radar, Search } from 'lucide-react'
+import { Loader2, Map as MapIcon, Radar, Search } from 'lucide-react'
 import { ChainLogo } from '../components/logos/ChainLogo'
 import type { ResolveChecked, ResolveMatch } from '../lib/holders'
 import { isTokenAddress, resolveToken } from '../lib/holderResolve'
 import { holderHref } from '../site-host'
-import { chainLabel, PICK_CHAINS } from './insights'
 import { HmSteps, type HmStep } from './HmKit'
 import { Mascot } from './Mascot'
 
@@ -17,15 +16,14 @@ import { Mascot } from './Mascot'
 const STEPS: HmStep[] = [
   { t: 'Paste', d: 'An address or a ticker', icon: Search },
   { t: 'We check', d: 'Every chain at once', icon: Radar },
-  { t: 'Read the map', d: 'Bubbles, clusters, charts', icon: MapIcon },
+  { t: 'Read it', d: 'Bubbles, clusters, charts', icon: MapIcon },
 ]
 
-type S = { k: 'idle' } | { k: 'busy' } | { k: 'none'; checked: ResolveChecked[]; address: boolean } | { k: 'error' } | { k: 'limit' } | { k: 'many'; matches: ResolveMatch[]; elsewhere: boolean }
+type S = { k: 'idle' } | { k: 'busy' } | { k: 'none'; checked: ResolveChecked[]; address: boolean } | { k: 'error' } | { k: 'limit' } | { k: 'many'; matches: ResolveMatch[] }
 
 export function HmSearch({ compact = false, autoFocus = false }: { compact?: boolean; autoFocus?: boolean }) {
   const nav = useNavigate()
   const [q, setQ] = useState('')
-  const [chain, setChain] = useState<string>('all')
   const [s, setS] = useState<S>({ k: 'idle' })
   const open = (path: string) => {
     const to = holderHref(path)
@@ -39,31 +37,15 @@ export function HmSearch({ compact = false, autoFocus = false }: { compact?: boo
     setS({ k: 'busy' })
     const r = await resolveToken(v)
     if (r.k !== 'ok') return setS({ k: r.k })
-    const here = chain === 'all' ? r.matches : r.matches.filter((m) => m.chain === chain)
     if (!r.matches.length) return setS({ k: 'none', checked: r.checked, address: isTokenAddress(v) })
-    if (here.length === 1) return open(here[0].path)
-    if (here.length > 1) return setS({ k: 'many', matches: here, elsewhere: false })
-    setS({ k: 'many', matches: r.matches, elsewhere: true })
+    if (r.matches.length === 1) return open(r.matches[0].path)
+    setS({ k: 'many', matches: r.matches })
   }
   const step = s.k === 'busy' ? 1 : s.k === 'many' ? 2 : q.trim() ? 0 : -1
   const id = compact ? 'hm-q2' : 'hm-q'
   return (
     <div className={`hm-search ${compact ? 'compact' : ''}`}>
       <form role="search" onSubmit={go} className="hm-search-box">
-        <span className="hm-chainpick">
-          <label htmlFor={`${id}-c`} className="hm-sr">
-            Chain
-          </label>
-          <select id={`${id}-c`} value={chain} onChange={(e) => setChain(e.target.value)} data-chain-pick>
-            <option value="all">All chains</option>
-            {PICK_CHAINS.map((c) => (
-              <option key={c} value={c}>
-                {chainLabel(c)}
-              </option>
-            ))}
-          </select>
-          <ChevronDown aria-hidden className="hm-ic" />
-        </span>
         <Search aria-hidden className="hm-ic" />
         <label htmlFor={id} className="hm-sr">
           Token address or ticker
@@ -71,7 +53,7 @@ export function HmSearch({ compact = false, autoFocus = false }: { compact?: boo
         <input id={id} value={q} onChange={(e) => {
             setQ(e.target.value)
             if (s.k !== 'busy') setS({ k: 'idle' })
-          }} placeholder="0x… address, Solana mint or ticker" spellCheck={false} autoComplete="off" autoFocus={autoFocus} enterKeyHint="search" />
+          }} placeholder="Token address or ticker" spellCheck={false} autoComplete="off" autoFocus={autoFocus} enterKeyHint="search" />
         <button type="submit" className="hm-btn" disabled={s.k === 'busy'}>
           {s.k === 'busy' ? <Loader2 aria-hidden className="hm-ic hm-spin" /> : null}
           <span>{s.k === 'busy' ? 'Mapping…' : 'Map it'}</span>
@@ -84,7 +66,6 @@ export function HmSearch({ compact = false, autoFocus = false }: { compact?: boo
         {s.k === 'error' && <p className="hm-note err">The search did not answer just now. Try again.</p>}
         {s.k === 'many' && (
           <>
-            {s.elsewhere && <p className="hm-matches-note">Nothing on {chainLabel(chain)} for that; found on:</p>}
             <ul className="hm-matches" aria-label="Pick a token" data-resolve-matches>
               {s.matches.map((m) => (
                 <li key={`${m.chain}:${m.token}`}>
@@ -93,7 +74,7 @@ export function HmSearch({ compact = false, autoFocus = false }: { compact?: boo
                     <b>{m.symbol ?? `${m.token.slice(0, 6)}…${m.token.slice(-4)}`}</b>
                     <span className="c">{m.chain === 'gully' ? 'Gully Chain' : m.chainName}</span>
                     <span className="k">
-                      {m.kind === 'deepcore-launch' ? 'DeepCore launch' : m.kind === 'launch' ? 'Launchpad token' : m.kind === 'token' ? 'Token' : 'Stock token'}
+                      {m.kind === 'deepcore-launch' ? 'Launch' : m.kind === 'launch' ? 'Launchpad token' : m.kind === 'token' ? 'Token' : 'Stock token'}
                       {m.available === false ? ' · coming soon' : ''}
                     </span>
                   </Link>

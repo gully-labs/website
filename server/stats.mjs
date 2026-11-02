@@ -10,10 +10,20 @@
 //   - a figure published in a token (Peddles' creator fees, in ETH) is passed through as-is and
 //     never added to a dollar total;
 //   - "all-time" volume is what the venue has recorded since its own `volumeAllSince`, stated
-//     beside the figure: DeepCore's is the sum of its daily
-//     index, Peddles' is its all-time legs valued at the prices its own token endpoint reports.
+//     beside the figure: Peddles' is its all-time legs valued at the prices its own token endpoint reports.
+//
+// DeepCore (deepcore.fun) is not a venue here since 2026-11-01: the partnership ended 2026-10-29, and its index reads
+// DeepCore's own deployments. Gully Core is our fork, deployed separately on Gully Chain, so its figures are not these.
+//
+// Serving: a reader never waits for the upstreams when any good document exists. A document older than CACHE_MS is
+// answered at once (`stale: true`, `generatedAt` still says when it was read) and refreshed in the background, one
+// refresh at a time. The last good document is kept in DATA_DIR/stats-last-good.json so a restart starts warm. Only a
+// first ever read, with no copy on disk, waits.
 
 // Under the page's 60 s poll, so every poll lands on a fresh read and the "read HH:MM" stamp moves each time.
+import fs from 'node:fs'
+import path from 'node:path'
+import { DATA_DIR } from './http.mjs'
 import { divergence, mergeDaily, onchainSnapshot } from './peddles.mjs'
 import { GULLY_CHAIN, ledgerFigures as gullyLedger } from './gully-chain.mjs'
 
@@ -47,7 +57,7 @@ async function getJson(url, ms = TIMEOUT_MS) {
 
 /* ------------------------------------------------------------- DefiLlama --- */
 
-// DefiLlama lists Peddles (volume + fees), PeddleQuest (TVL + fees) and DeepCore (all three),
+// DefiLlama lists Peddles (volume + fees) and PeddleQuest (TVL + fees),
 // each from an adapter in its public repositories with a stated methodology. Where a venue's own
 // API has no dollar figure or no daily history, DefiLlama's is used and named as the source. Its
 // figures lag the venue's own by up to a day (DefiLlama runs adapters daily), which the provenance says.
@@ -180,109 +190,6 @@ export async function buildSeries(spec) {
 const seriesFields = (b) => ({ series: b.series, sources: b.sources, lastActivity: b.lastActivity, daily: b.series.volume })
 
 /* ---------------------------------------------------------------- venues --- */
-
-// DeepCore's documented public API host. The old path on the app host is read only if the API
-// host refuses, so a move or outage of one never blanks the venue.
-export const DEEPCORE_HOSTS = ['https://api.deepcore.fun', 'https://deepcore.fun']
-
-// Every chain must state a figure for the sum to be stated: a chain that leaves it out makes the
-// total unknown, never a smaller number.
-const sumAll = (xs) => (xs.length && xs.every((x) => x !== null && x !== undefined) ? xs.reduce((a, b) => a + b, 0) : null)
-
-/** The figures the landing shows beside DeepCore's dollars, from one /v1/overview document:
-    hosted sites (pads), launches in the last 24 hours, locks and the dollars they hold. */
-export function deepcoreExtras(items) {
-  const lockUsd = items.map((it) => num(it.locks?.usd))
-  const unpricedLocks = items.reduce((a, it) => a + (num(it.locks?.unpricedLocks) ?? 0), 0)
-  return {
-    sites: sumAll(items.map((it) => num(it.sites?.total))),
-    sites24h: sumAll(items.map((it) => num(it.sites?.last24h))),
-    launches24h: sumAll(items.map((it) => num(it.launches?.last24h))),
-    locks: sumAll(items.map((it) => num(it.locks?.count))),
-    lockedUsd: sumAll(lockUsd),
-    unpricedLocks,
-  }
-}
-
-async function deepcore() {
-  let url = null
-  let j = null
-  const failed = []
-  for (const host of DEEPCORE_HOSTS) {
-    try {
-      j = await getJson(`${host}/v1/overview`, 25_000)
-      if (!Array.isArray(j?.data?.items)) throw new Error('no items in the overview')
-      url = `${host}/v1/overview`
-      break
-    } catch (e) {
-      failed.push(`${host.replace('https://', '')} ${String(e?.message ?? e)}`)
-      j = null
-    }
-  }
-  if (!j) throw new Error(`every DeepCore host refused: ${failed.join('; ')}`)
-  const items = j.data.items
-  const byDay = new Map()
-  let unpriced = 0
-  let launches = 0
-  let pools = 0
-  const chains = []
-  for (const it of items) {
-    launches += it.launches?.total ?? 0
-    pools += it.pools?.total ?? 0
-    const v24 = it.volume?.last24h ?? {}
-    unpriced += (v24.unpricedTokens ?? 0) + (it.valueLocked?.unpricedTokens ?? 0)
-    for (const d of it.volume?.daily ?? []) byDay.set(dayKey(d.t), (byDay.get(dayKey(d.t)) ?? 0) + (num(d.usd) ?? 0))
-    chains.push({
-      chainId: it.chainId,
-      // A day with no swaps and nothing unpriced is a true zero, which the index reports as null.
-      volume24hUsd: num(v24.usd) ?? (v24.swaps === 0 && !v24.unpricedTokens ? 0 : null),
-      tvlUsd: num(it.valueLocked?.usd),
-      feesPaidUsd: num(it.fees?.paid?.usd),
-      feesAccruedUsd: num(it.fees?.accrued?.usd),
-    })
-  }
-  const daily = seriesOf(byDay)
-  const extras = deepcoreExtras(items)
-  const notes = failed.map((f) => `${f} could not be read; the fallback host was used.`)
-  if (extras.unpricedLocks) notes.push(`${extras.unpricedLocks} lock${extras.unpricedLocks === 1 ? '' : 's'} could not be priced and are left out of the locked dollars.`)
-  if (unpriced) notes.push(`${unpriced} token${unpriced === 1 ? '' : 's'} could not be priced and are left out of the dollar figures.`)
-  const prov = j.provenance ?? {}
-  // The index's fee figures carry no window: `paid` is what the protocol has collected and
-  // `accrued` what is owed and not yet collected, so together they are fees earned to date.
-  const feesAllUsd = sumKnown(chains.flatMap((c) => [c.feesPaidUsd, c.feesAccruedUsd]))
-  let fees24hUsd = null
-  const sources = [url]
-  try {
-    const f = await llama('fees', 'deepcore')
-    fees24hUsd = f.total24h
-    sources.push(f.url)
-    notes.push("Fees in the last 24 hours are read from DefiLlama's DeepCore adapter, which lags by up to a day.")
-  } catch (e) {
-    notes.push(`DefiLlama could not be read for 24h fees (${String(e?.message ?? e)}).`)
-  }
-  const own = { name: 'DeepCore API', url }
-  const tvlUsd = sumKnown(chains.map((c) => c.tvlUsd))
-  const built = await buildSeries({ volume: { own: daily, ownSource: own, llama: 'deepcore' }, fees: { llama: 'deepcore' }, tvl: { llama: 'deepcore', now: tvlUsd, ownSource: own } })
-  notes.push(...built.notes)
-  return {
-    ...seriesFields(built),
-    volume24hUsd: sumKnown(chains.map((c) => c.volume24hUsd)),
-    // The index's daily dollars, summed from the first day it holds.
-    volumeAllUsd: daily.length ? daily.reduce((a, p) => a + p.v, 0) : null,
-    volumeAllSince: daily.length ? new Date(daily[0].t * 1000).toISOString() : null,
-    tvlUsd,
-    fees24hUsd,
-    feesAllUsd,
-    // Dollars held in DeepCore locks (launch liquidity locked forever, timed LP locks, token locks
-    // and vesting), as the index values them. Not added to any total: it overlaps value locked.
-    lockedUsd: extras.lockedUsd,
-    chains,
-    sourceNote: "DeepCore's own index, daily",
-    counts: { launches, pools, chains: items.length, sites: extras.sites, sites24h: extras.sites24h, launches24h: extras.launches24h, locks: extras.locks },
-    notes,
-    source: { url: sources.join(' + '), readAt: prov.generatedAt ?? new Date().toISOString() },
-  }
-}
 
 /** Each chain's daily TVL summed by day. A chain without a point for a day counts at its last known value
     (the APIs skip days), and a day before a chain's first point counts it as nothing. */
@@ -560,7 +467,6 @@ async function gullychain() {
 }
 
 export const VENUES = [
-  { key: 'deepcore', read: deepcore },
   { key: 'peddleswap', read: peddleswap },
   { key: 'peddles', read: peddles },
   { key: 'peddlequest', read: peddlequest },
@@ -568,18 +474,51 @@ export const VENUES = [
 ]
 
 let cache = null
+let restored = false
+let inflight = null
+const KEEP_MS = 7 * 86_400_000
+const lastGoodFile = () => path.join(DATA_DIR, 'stats-last-good.json')
 
-/** Tests: forget the cached document and (unless documentOnly) every cached DefiLlama read. */
-export function resetStatsForTest({ documentOnly = false } = {}) {
+/** Tests: forget the cached document and (unless documentOnly) every cached DefiLlama read. `restore: true` reads the
+    copy on disk again, as a restart would. */
+export function resetStatsForTest({ documentOnly = false, restore = false } = {}) {
   cache = null
+  inflight = null
+  restored = !restore
   if (documentOnly) return
   llamaCache.clear()
   llamaInflight.clear()
 }
 
-/** The combined document the page renders. Cached for a minute; never throws for one bad venue. */
-export async function readStats() {
-  if (cache && Date.now() - cache.at < CACHE_MS) return cache.body
+/** The copy from before a restart, if it is usable: no older than a week, and only venues we still read. */
+function restoreLastGood() {
+  if (restored) return
+  restored = true
+  try {
+    const body = JSON.parse(fs.readFileSync(lastGoodFile(), 'utf8'))
+    const at = Date.parse(body?.generatedAt)
+    if (!Array.isArray(body?.venues) || !Number.isFinite(at) || Date.now() - at > KEEP_MS) return
+    const known = new Set(VENUES.map((v) => v.key))
+    if (!body.venues.every((v) => known.has(v.key))) return
+    cache = { at, body }
+  } catch {
+    // no copy yet, or an unreadable one: the first read fills it
+  }
+}
+
+// One save at a time, in order, so an older document can never land after a newer one.
+let saving = Promise.resolve()
+function saveLastGood(body) {
+  const file = lastGoodFile()
+  const tmp = `${file}.${process.pid}.tmp`
+  saving = saving
+    .then(() => fs.promises.mkdir(path.dirname(file), { recursive: true }))
+    .then(() => fs.promises.writeFile(tmp, JSON.stringify(body)))
+    .then(() => fs.promises.rename(tmp, file))
+    .catch((e) => console.warn(`[stats] could not save the last good document: ${String(e?.message ?? e)}`))
+}
+
+async function buildDocument() {
   const settled = await Promise.allSettled(VENUES.map((v) => v.read()))
   const venues = VENUES.map((v, i) => {
     const r = settled[i]
@@ -588,6 +527,8 @@ export async function readStats() {
       : { key: v.key, state: 'error', error: String(r.reason?.message ?? r.reason) }
   })
   const ok = venues.filter((v) => v.state === 'ok')
+  // Nothing could be read at all: keep what we had rather than replace good figures with none.
+  if (!ok.length && cache) return cache.body
   const byDay = new Map()
   for (const v of ok) for (const p of v.daily ?? []) byDay.set(p.t, (byDay.get(p.t) ?? 0) + p.v)
   const covers = (field) => ok.filter((v) => v[field] !== null && v[field] !== undefined).map((v) => v.key)
@@ -607,5 +548,29 @@ export async function readStats() {
     venues,
   }
   cache = { at: Date.now(), body }
+  if (ok.length) saveLastGood(body)
   return body
+}
+
+/** One read of the upstreams at a time, however many readers ask. */
+function refresh() {
+  if (!inflight) {
+    const run = buildDocument().finally(() => {
+      if (inflight === run) inflight = null
+    })
+    inflight = run
+  }
+  return inflight
+}
+
+/** The combined document the page renders. Never waits on the upstreams while a good document exists (see the top of
+    this file); `fresh: true` waits for a new read, for a check that must not judge an old one. Never throws for one bad venue. */
+export async function readStats({ fresh = false } = {}) {
+  restoreLastGood()
+  if (cache && Date.now() - cache.at < CACHE_MS) return cache.body
+  if (cache && !fresh) {
+    refresh().catch((e) => console.warn(`[stats] background refresh failed: ${String(e?.message ?? e)}`))
+    return { ...cache.body, stale: true }
+  }
+  return refresh()
 }

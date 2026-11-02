@@ -263,6 +263,8 @@ const RPC_PAGES = new Set(['docs', 'status'])
 /** The new home of a moved main-site page (gullylabs.xyz), or null when the path still belongs to Gully Labs. */
 export function movedPageUrl(pathname) {
   const p = String(pathname ?? '').replace(/(.)\/+$/, '$1')
+  // The DeepCore partnership ended on 2026-10-29: its old pages open Gully Core, Gully Chain's own launchpad and DEX core.
+  if (p === '/products/deepcore' || p === '/projects/deepcore') return 'https://gullylabs.xyz/products/gully-core'
   // Gully Chain: the L3 offer, its launch flow and Chain Kit.
   if (p === '/chains/launch') return `${CHAIN_APP_URL}/`
   if (/^\/(chains|chain-kit|gully-chain|gully-chains|l3)(\/|$)/.test(p)) return `${CHAIN_URL}/`
