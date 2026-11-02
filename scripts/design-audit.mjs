@@ -6,7 +6,7 @@
 // Env: TARGETS='[["hub","https://gullylabs.xyz/"],...]', WIDTHS='[390,...]'. Exit 1 on overflow or a page error.
 import fs from 'node:fs'
 import path from 'node:path'
-import { chromium } from 'playwright'
+import { chromium, request } from 'playwright'
 
 const out = process.argv[2]
 const di = process.argv.indexOf('--dist')
@@ -16,10 +16,35 @@ const TARGETS = JSON.parse(process.env.TARGETS || '[["hub","https://gullylabs.xy
 const WIDTHS = JSON.parse(process.env.WIDTHS || '[390,768,1024,1440,1920]')
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.avif': 'image/avif', '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json' }
 
+// The kept hero map, read once before any page opens (a first read can take a minute, longer than a page stays open).
+let heroStandIn = JSON.stringify({ state: 'reading' })
+async function prepareStandIn() {
+  const api = await request.newContext()
+  for (let i = 0; i < 4; i++) {
+    const map = await api.get('https://holdermaps.xyz/api/holders/robinhood/AAPL?peek=1', { timeout: 120_000 }).then((r) => r.json()).catch(() => null)
+    if (map?.state === 'ok') {
+      heroStandIn = JSON.stringify({ ...map, pick: { chain: 'robinhood', token: 'AAPL' } })
+      break
+    }
+  }
+  await api.dispose()
+}
+
 async function serveDist(ctx) {
   const index = fs.readFileSync(path.join(dist, 'index.html'))
-  await ctx.route(/^https:\/\/(gullylabs\.xyz|holdermaps\.xyz)\//, (route) => {
+  await ctx.route(/^https:\/\/(gullylabs\.xyz|holdermaps\.xyz)\//, async (route) => {
     const u = new URL(route.request().url())
+    // A build tested before its deploy: the hero's kept map may not be live yet, so stand in the real map it would keep.
+    if (u.pathname === '/api/holders/hero') {
+      const live = await route.fetch().catch(() => null)
+      if (live?.ok()) return route.fulfill({ response: live })
+      return route.fulfill({ status: 200, contentType: 'application/json', body: heroStandIn })
+    }
+    // Reading a map from a test must never count as somebody opening it.
+    if (/^\/api\/holders\/[^/]+\/[^/]+$/.test(u.pathname) && !u.searchParams.has('peek')) {
+      u.searchParams.set('peek', '1')
+      return route.continue({ url: u.href })
+    }
     if (u.pathname.startsWith('/api/')) return route.continue()
     const f = path.join(dist, decodeURIComponent(u.pathname))
     if (fs.existsSync(f) && fs.statSync(f).isFile()) return route.fulfill({ status: 200, contentType: TYPES[path.extname(f)] ?? 'application/octet-stream', body: fs.readFileSync(f) })
@@ -36,7 +61,8 @@ const inspect = () => {
     const r = el.getBoundingClientRect()
     if (r.width < 1 || r.height < 1) return false
     const s = getComputedStyle(el)
-    if (s.visibility === 'hidden' || s.display === 'none' || +s.opacity === 0) return false
+    if (s.visibility === 'hidden' || s.display === 'none') return false
+    for (let a = el; a; a = a.parentElement) if (+getComputedStyle(a).opacity === 0) return false
     return r.width > 1 && !(s.position === 'absolute' && s.clip !== 'auto' && r.width <= 1)
   }
   const srOnly = (el) => {
@@ -60,6 +86,8 @@ const inspect = () => {
   const texts = []
   for (const el of document.querySelectorAll('body *')) {
     if (el.closest('svg,canvas,[aria-hidden="true"],script,style,noscript')) continue
+    const shut = el.closest('details:not([open])')
+    if (shut && !el.closest('summary')) continue
     const own = [...el.childNodes].filter((n) => n.nodeType === 3 && n.textContent.trim())
     if (!own.length || !shown(el) || srOnly(el)) continue
     const range = document.createRange()
@@ -115,6 +143,8 @@ const inspect = () => {
   if (vw < 1024)
     for (const el of document.querySelectorAll('a[href],button,input,select,summary,[role="button"],[role="tab"]')) {
       if (!shown(el) || srOnly(el) || el.closest('.sr-only,.hm-sr,svg')) continue
+      const closed = el.closest('details:not([open])')
+      if (closed && !el.closest('summary')) continue
       const r = el.getBoundingClientRect()
       const inline = getComputedStyle(el).display === 'inline'
       if (!inline && r.height < 43.5) small.push(`${(el.getAttribute('aria-label') || el.textContent || el.tagName).trim().slice(0, 22)} ${Math.round(r.width)}x${Math.round(r.height)}`)
@@ -124,19 +154,30 @@ const inspect = () => {
   return { scrollW: de.scrollWidth, vw, height: de.scrollHeight, overflow: [...new Set(over)].slice(0, 8), overlap: [...new Set(overlap)], lowContrast: [...low.keys()].slice(0, 14), smallTargets: small.slice(0, 16), title: document.title, h1: document.querySelector('h1')?.innerText?.replace(/\s+/g, ' ').slice(0, 80), inputY: firstInput ? Math.round(firstInput.y + scrollY) : null, mapY: mapBox ? Math.round(mapBox.y + scrollY) : null }
 }
 
+if (dist) await prepareStandIn()
 const browser = await chromium.launch()
 const report = []
 let bad = 0
 for (const [name, url] of TARGETS) {
   for (const w of WIDTHS) {
-    const ctx = await browser.newContext({ viewport: { width: w, height: w < 500 ? 844 : w < 1100 ? 1024 : 900 }, deviceScaleFactor: w < 500 ? 2 : 1 })
+    const ctx = await browser.newContext({ viewport: { width: w, height: w < 500 ? 844 : w < 1100 ? 1024 : 900 }, deviceScaleFactor: w < 500 ? 2 : 1, ...(dist ? { serviceWorkers: 'block' } : {}) })
     if (dist) await serveDist(ctx)
+    // Reading a map from a test must never count as somebody opening it, on the live sites either.
+    else
+      await ctx.route(/\/api\/holders\/[^/?]+\/[^/?]+(\?|$)/, (route) => {
+        const u = new URL(route.request().url())
+        u.searchParams.set('peek', '1')
+        return route.continue({ url: u.href })
+      })
     const page = await ctx.newPage()
     const errors = []
     page.on('pageerror', (e) => errors.push(String(e).slice(0, 200)))
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 }).catch((e) => errors.push(`goto ${e.message.slice(0, 100)}`))
     await page.waitForTimeout(7000)
-    await page.screenshot({ path: `${out}/${name}-${w}-fold.png` }).catch(() => {})
+    const f1 = await page.screenshot({ path: `${out}/${name}-${w}-fold.png` }).catch(() => null)
+    await page.waitForTimeout(1500)
+    const f2 = await page.screenshot().catch(() => null)
+    const moves = !!(f1 && f2 && !f1.equals(f2))
     // walk down the page so everything that waits to be on screen runs, then shoot it whole
     const h = await page.evaluate(() => document.documentElement.scrollHeight)
     for (let y = 0; y < h; y += 700) {
@@ -147,10 +188,10 @@ for (const [name, url] of TARGETS) {
     await page.waitForTimeout(1200)
     const m = await page.evaluate(inspect)
     await page.screenshot({ path: `${out}/${name}-${w}.png`, fullPage: true }).catch(() => {})
-    const row = { name, w, errors, ...m }
+    const row = { name, w, errors, moves, ...m }
     report.push(row)
     if (m.scrollW > m.vw || m.overflow.length || errors.length) bad++
-    console.log(`${name} ${w}: h ${m.height}${m.mapY != null ? ` map@${m.mapY}` : ''}${m.inputY != null ? ` input@${m.inputY}` : ''} | overflow ${m.overflow.length} | overlap ${m.overlap.length} | contrast ${m.lowContrast.length} | small ${m.smallTargets.length} | errors ${errors.length}`)
+    console.log(`${name} ${w}: h ${m.height}${m.mapY != null ? ` map@${m.mapY}` : ''}${m.inputY != null ? ` input@${m.inputY}` : ''} | overflow ${m.overflow.length} | overlap ${m.overlap.length} | contrast ${m.lowContrast.length} | small ${m.smallTargets.length} | moves ${moves} | errors ${errors.length}`)
     await ctx.close()
   }
 }

@@ -184,6 +184,19 @@ function LivePanel({ feed, feedState, items, now }: { feed: CheckedLaunches | nu
   const hubState = hub.state === 'ok' ? 'ok' : hub.state === 'error' ? 'offline' : 'loading'
   const tabs: ChartTab[] = [
     {
+      id: 'daily',
+      label: 'Maps / day',
+      title: 'HolderMaps maps opened per day',
+      series: [{ name: 'Maps', color: Y, values: daily.map((d) => d.maps) }],
+      labels: daily.map((d) => d.day.slice(5)),
+      fmt: (v) => fmtInt(v ?? 0),
+      integer: true,
+      state: hubState === 'ok' ? (hub.data?.holders ? 'ok' : 'offline') : hubState,
+      empty: daily.length < 2 ? 'one day recorded so far · the line starts tomorrow' : undefined,
+      head: hub.data?.holders ? fmtInt(hub.data.holders.today) : '—',
+      sub: 'maps opened today (UTC)',
+    },
+    {
       id: 'launches',
       label: 'Launches',
       title: 'Launches checked per hour, last 24 h',
@@ -208,19 +221,6 @@ function LivePanel({ feed, feedState, items, now }: { feed: CheckedLaunches | nu
       empty: 'Gully Chain could not be read · retrying every minute',
       head: hub.data?.chain ? fmtInt(chainH.reduce((a, r) => a + r.txs, 0)) : '—',
       sub: 'transactions on chain 485590 · every token on it maps here',
-    },
-    {
-      id: 'daily',
-      label: 'Maps / day',
-      title: 'HolderMaps maps opened per day',
-      series: [{ name: 'Maps', color: Y, values: daily.map((d) => d.maps) }],
-      labels: daily.map((d) => d.day.slice(5)),
-      fmt: (v) => fmtInt(v ?? 0),
-      integer: true,
-      state: hubState === 'ok' ? (hub.data?.holders ? 'ok' : 'offline') : hubState,
-      empty: daily.length < 2 ? 'one day recorded so far · the line starts tomorrow' : undefined,
-      head: hub.data?.holders ? fmtInt(hub.data.holders.today) : '—',
-      sub: 'maps opened today (UTC)',
     },
   ]
   return (

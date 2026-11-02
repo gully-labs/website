@@ -1461,7 +1461,7 @@ function Trade({ m, embed, tradeHref, onTrade, pageUrl }: { m: HolderMapOk; embe
         {m.summary.line}
       </p>
       <div className="flex flex-wrap items-center gap-3">
-        <a href={href} {...(external ? newTab : {})} onClick={() => onTrade?.()} className="inline-flex min-h-11 items-center gap-2 rounded-btn px-5 font-semibold text-bg transition-[filter] hover:brightness-110" style={{ background: K.gold }}>
+        <a href={href} {...(external ? newTab : {})} onClick={() => onTrade?.()} data-trade-btn className="inline-flex min-h-11 items-center gap-2 rounded-btn px-5 font-semibold text-bg transition-[filter] hover:brightness-110" style={{ background: K.gold }}>
           {generic && !embed ? `View ${sym} on the explorer` : `Buy or sell ${sym}`}
           {external ? ' ↗' : ''}
         </a>

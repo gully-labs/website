@@ -216,7 +216,7 @@ export interface Sources {
   live: HubLive | null
   liveState: Load
   /** /api/stats totals (venues we built) */
-  stats?: { totals: { tvlUsd: number | null; volumeAllUsd: number | null; feesAllUsd: number | null }; venues?: { key: string; state: string }[] } | null
+  stats?: { totals: { tvlUsd: number | null; volumeAllUsd: number | null; feesAllUsd: number | null }; venues?: { key: string; state: string }[]; daily?: { t: number; v: number }[] } | null
 }
 export interface Row {
   v: number

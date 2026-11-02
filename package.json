@@ -53,6 +53,7 @@
     "test:gully-chain": "node --test scripts/test-gully-chain.mjs",
     "seo:indexnow": "node scripts/indexnow-submit.mjs",
     "test:holders": "node --test scripts/test-holders.mjs",
+    "test:holders-hero": "node --test scripts/test-holders-hero.mjs",
     "test:holders-partners": "node scripts/test-holders-partners.mjs",
     "test:holders-deep": "node scripts/test-holders-deep.mjs",
     "test:launchpads": "node --test scripts/test-launchpads.mjs",

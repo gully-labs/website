@@ -24,7 +24,6 @@ const dayN = (n) => today - n * DAY // n days ago, seconds
 /* ---- the stubbed network ---- */
 const calls = []
 let llamaDown = false
-let deepcoreDaily = Array.from({ length: 9 }, (_, i) => ({ t: dayN(8 - i), usd: '0.00' }))
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 const llamaChart = (pts) => ({ total24h: pts.at(-1)?.[1] ?? 0, total7d: 0, totalAllTime: pts.reduce((a, p) => a + p[1], 0), chains: ['Robinhood'], totalDataChart: pts })
 const tvlDoc = (pts) => ({ currentChainTvls: { Robinhood: pts.at(-1).totalLiquidityUSD }, tvl: pts })
@@ -46,12 +45,9 @@ globalThis.fetch = async (input) => {
     if (u.pathname === '/protocol/peddles') return json(tvlDoc(peddlesTvl))
     if (u.pathname === '/summary/fees/peddlequest') return json(llamaChart(Array.from({ length: 20 }, (_, i) => [dayN(19 - i), i % 3 === 0 ? 2 : 0])))
     if (u.pathname === '/protocol/peddlequest') return json(tvlDoc(questTvl))
-    if (u.pathname === '/summary/fees/deepcore') return json(llamaChart([[dayN(1), 0], [dayN(0), 0]]))
     return json({ message: 'Protocol not found' }, 404)
   }
-  if (u.hostname === 'api.deepcore.fun') {
-    return json({ data: { items: [{ chainId: 4663, launches: { total: 3, last24h: 0 }, pools: { total: 2 }, volume: { last24h: { usd: '0.00', swaps: 0 }, daily: deepcoreDaily }, valueLocked: { usd: '1200.00' }, fees: { paid: { usd: '1.5' }, accrued: { usd: '0.5' } }, sites: { total: 1, last24h: 0 }, locks: { count: 0, usd: '0', unpricedLocks: 0 } }] } })
-  }
+  if (u.hostname === 'api.deepcore.fun') throw new Error('DeepCore is not a venue any more')
   if (u.hostname.endsWith('peddleswap.xyz')) {
     if (u.hostname !== 'api.peddleswap.xyz') throw new TypeError('fetch failed')
     return json({ volumeUsd24h: 0, tvlUsd: 0, fees24hUsd: 0, counts: { pools: 0, activeLocks: 0 }, volumeSeries: Array.from({ length: 30 }, (_, i) => ({ t: (dayN(29 - i)) * 1000, v: 0 })), tvlSeries: Array.from({ length: 5 }, (_, i) => ({ t: (dayN(5 - i)) * 1000, v: 0 })) })
@@ -89,7 +85,9 @@ const iso = (t) => new Date(t * 1000).toISOString()
 test('every venue carries series for volume, fees and value locked, with a source per series', async () => {
   S.resetStatsForTest()
   const doc = await S.readStats()
-  assert.equal(doc.venues.length, 5)
+  assert.equal(doc.venues.length, 4)
+  assert.ok(!doc.venues.some((v) => /deepcore/i.test(v.key)), 'DeepCore partnership ended 2026-10-29')
+  assert.ok(!calls.some((u) => /deepcore/.test(u)), 'nothing is read from DeepCore')
   assert.ok(!doc.venues.some((v) => /cartel/i.test(v.key)), 'Cartel Family never comes back')
   for (const v of doc.venues) {
     assert.equal(v.state, 'ok', `${v.key} read`)
@@ -145,23 +143,10 @@ test('lastActivity is the last day with non-zero volume, even when the window si
 
 test("the venue's own series comes first; DefiLlama only when it is empty or flat while DefiLlama shows activity", async () => {
   S.resetStatsForTest()
-  // DeepCore: its own 9 days are all zero, DefiLlama has no DeepCore volume (404): the own series stays, labelled as the venue's.
-  let d = venue(await S.readStats(), 'deepcore')
-  assert.equal(d.series.volume.length, 9)
-  assert.equal(d.sources.volume.name, 'DeepCore API')
-  assert.equal(d.sources.volume.fallback, false)
-  assert.equal(d.lastActivity, null)
   // PeddleSwap: own 30 zeros, no DefiLlama: own.
   const ps = venue(await S.readStats(), 'peddleswap')
   assert.equal(ps.series.volume.length, 30)
   assert.equal(ps.sources.volume.fallback, false)
-  // DeepCore with real own activity keeps its own even though DefiLlama could answer.
-  S.resetStatsForTest()
-  deepcoreDaily = deepcoreDaily.map((x, i) => ({ ...x, usd: i === 3 ? '55.00' : '0.00' }))
-  d = venue(await S.readStats(), 'deepcore')
-  assert.equal(d.sources.volume.name, 'DeepCore API')
-  assert.equal(d.lastActivity, iso(dayN(5)))
-  deepcoreDaily = deepcoreDaily.map((x) => ({ ...x, usd: '0.00' }))
 })
 
 test("TVL: DefiLlama's history, with the venue's own reading as today's point and the source saying so", async () => {
@@ -227,6 +212,52 @@ test('the document is cached, and DefiLlama is read once per ten minutes even ac
   assert.equal(calls.filter((u) => u.includes('api.llama.fi')).length, new Set(calls.filter((u) => u.includes('api.llama.fi'))).size, 'every DefiLlama URL was read once')
 })
 
+test('a stale document is answered at once and refreshed in the background, one read at a time', async () => {
+  S.resetStatsForTest()
+  const first = await S.readStats()
+  const realNow = Date.now
+  Date.now = () => realNow() + 60_000 // past the 45 s cache
+  try {
+    calls.length = 0
+    const t0 = realNow()
+    const [a, b] = await Promise.all([S.readStats(), S.readStats()])
+    assert.ok(realNow() - t0 < 200, 'no waiting on the upstreams')
+    assert.equal(a.stale, true)
+    assert.equal(a.generatedAt, first.generatedAt, 'generatedAt still says when it was read')
+    assert.equal(b.generatedAt, first.generatedAt)
+    const fresh = await S.readStats({ fresh: true })
+    assert.notEqual(fresh.stale, true)
+    assert.equal(calls.filter((u) => u.includes('api.peddleswap.xyz')).length, 1, 'the readers shared one refresh')
+  } finally {
+    Date.now = realNow
+  }
+})
+
+test('the last good document survives a restart, and a too old or outdated copy is not served', async () => {
+  S.resetStatsForTest()
+  const doc = await S.readStats()
+  const file = path.join(tmp, 'stats-last-good.json')
+  const savedDoc = () => fs.existsSync(file) && fs.readFileSync(file, 'utf8').includes(doc.generatedAt)
+  for (let i = 0; i < 200 && !savedDoc(); i++) await new Promise((r) => setTimeout(r, 10))
+  assert.ok(savedDoc(), 'the copy is written')
+  calls.length = 0
+  S.resetStatsForTest({ restore: true })
+  const again = await S.readStats()
+  assert.equal(again.generatedAt, doc.generatedAt, 'served from the copy')
+  assert.equal(calls.length, 0, 'a warm start reads no upstream')
+  // A copy that still lists DeepCore (written before it was removed) is not served.
+  const saved = fs.readFileSync(file, 'utf8')
+  fs.writeFileSync(file, JSON.stringify({ ...JSON.parse(saved), venues: [{ key: 'deepcore', state: 'ok' }] }))
+  S.resetStatsForTest({ restore: true })
+  assert.ok(!(await S.readStats()).venues.some((v) => v.key === 'deepcore'))
+  // Older than a week: read again.
+  for (let i = 0; i < 200 && fs.readFileSync(file, 'utf8').includes('"key":"deepcore"'); i++) await new Promise((r) => setTimeout(r, 10))
+  const old = JSON.parse(fs.readFileSync(file, 'utf8'))
+  fs.writeFileSync(file, JSON.stringify({ ...old, generatedAt: new Date(Date.now() - 8 * 86_400_000).toISOString() }))
+  S.resetStatsForTest({ restore: true })
+  assert.ok(Date.now() - Date.parse((await S.readStats()).generatedAt) < 60_000)
+})
+
 /* ---- the chart's pure logic ---- */
 
 const mk = (key, vol, tvl = [], fees = [], extra = {}) => ({ key, state: 'ok', daily: vol, series: { volume: vol, tvl, fees }, ...extra })
@@ -278,7 +309,7 @@ const docOf = (...venues) => ({ venues })
 const NOW = Date.parse('2026-10-19T10:00:00Z')
 
 test('findIssues: unreadable, missing series, and a flat series over a moving venue', () => {
-  assert.deepEqual(W.findIssues(docOf(good('deepcore'), good('peddles'))), [])
+  assert.deepEqual(W.findIssues(docOf(good('peddleswap'), good('peddles'))), [])
   const err = W.findIssues(docOf({ key: 'peddles', state: 'error', error: 'HTTP 502' }))
   assert.deepEqual(err.map((i) => i.kind), ['error'])
   assert.match(err[0].detail, /HTTP 502/)
@@ -295,7 +326,7 @@ test('findIssues: unreadable, missing series, and a flat series over a moving ve
 })
 
 test('watchdog: ONE alert per venue per day, however many passes', async () => {
-  const bad = docOf({ key: 'peddles', state: 'error', error: 'HTTP 502' }, good('deepcore'))
+  const bad = docOf({ key: 'peddles', state: 'error', error: 'HTTP 502' }, good('peddleswap'))
   sent.length = 0
   let r = await W.watchdogTick({ now: NOW, doc: bad })
   assert.deepEqual(r.alerted, ['peddles'])
@@ -309,12 +340,12 @@ test('watchdog: ONE alert per venue per day, however many passes', async () => {
   r = await W.watchdogTick({ now: NOW + 86_400_000, doc: bad })
   assert.equal(sent.length, 1, 'the next UTC day, the same problem: no repeat')
   assert.match(sent[0], /when this changes, or in 7 days/)
-  const worse = docOf({ key: 'peddles', state: 'error', error: 'HTTP 503' }, good('deepcore'))
+  const worse = docOf({ key: 'peddles', state: 'error', error: 'HTTP 503' }, good('peddleswap'))
   await W.watchdogTick({ now: NOW + 86_400_000 + 60_000, doc: worse })
   assert.equal(sent.length, 2, 'the problem changed: one more')
   await W.watchdogTick({ now: NOW + 8 * 86_400_000 + 60_000, doc: worse })
   assert.equal(sent.length, 3, 'still the same after 7 days: a reminder')
-  await W.watchdogTick({ now: NOW + 9 * 86_400_000, doc: docOf(good('peddles'), good('deepcore')) })
+  await W.watchdogTick({ now: NOW + 9 * 86_400_000, doc: docOf(good('peddles'), good('peddleswap')) })
   await W.watchdogTick({ now: NOW + 9 * 86_400_000 + 60_000, doc: worse })
   assert.equal(sent.length, 4, 'fine, then broken again: a relapse alerts at once')
 })
@@ -322,7 +353,7 @@ test('watchdog: ONE alert per venue per day, however many passes', async () => {
 test('watchdog: another venue is its own alert; the daily total is capped; a failed send waits an hour', async () => {
   sent.length = 0
   const day = NOW + 13 * 86_400_000
-  const many = docOf(...['deepcore', 'peddleswap', 'peddles', 'peddlequest', 'x1', 'x2', 'x3', 'x4'].map((key) => ({ key, state: 'error', error: 'down' })))
+  const many = docOf(...['peddleswap', 'peddles', 'peddlequest', 'x1', 'x2', 'x3', 'x4', 'x5'].map((key) => ({ key, state: 'error', error: 'down' })))
   await W.watchdogTick({ now: day, doc: many })
   assert.equal(sent.length, W.MAX_PER_DAY, `capped at ${W.MAX_PER_DAY}`)
   await W.watchdogTick({ now: day + 20 * 60_000, doc: many })

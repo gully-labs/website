@@ -1,28 +1,28 @@
 /* The holdermaps.xyz hero: a real map, drawn by the same canvas as the token page (BubbleCanvas, its own lazy chunk, so
-   the headline and the search paint first). It shows today's most scanned token; on a day nobody has scanned one yet it
-   shows an example, labelled as one, and every figure is still read live (?peek=1, so reading it here never counts as a
-   scan). Under it: what the map found, in the server's own words, and the clusters as chips that light their wallets.
-   A candidate that cannot be read, or with too few wallets to show a map, gives way to the next one. */
+   the headline and the search paint first). GET /api/holders/hero answers at once with a kept copy of an example's map,
+   labelled as an example with the time it was read; when a token has been scanned today its map replaces it as soon as
+   it answers (?peek=1, so reading it here never counts as a scan). Under it: what the map found, in the server's own
+   words, and the clusters as chips that light their wallets. */
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowRight, CircleCheck } from 'lucide-react'
 import { ChainLogo } from '../components/logos/ChainLogo'
 import { useLiveSeries } from '../components/charts/useLiveSeries'
 import { useReducedMotion } from '../components/charts/chart-utils'
-import type { BLink, BNode, BTip, } from '../components/holders/BubbleCanvas'
+import type { BLink, BNode, BTip } from '../components/holders/BubbleCanvas'
 import { forceLayout, radiusFor } from '../components/holders/layout'
 import { fmtPct as fmtShare, norm } from '../components/holders/format'
 import { captionOf, glyphOf } from '../components/holders/motion'
 import { clusterHue, KIND_HUE, KIND_WORD, shade, textOn, WALLET_HUE, type KindKey } from '../components/holders/palette'
 import { isInfraNode, kindKeyOf } from '../components/holders/supply'
 import { K } from '../components/holders/theme'
-import { Count } from '../console/ui'
+import { Count, Spark } from '../console/ui'
 import type { HolderMap, HolderMapOk, TopScanned } from '../lib/holders'
 import { ageText } from '../lib/tracker'
 import { holderHref } from '../site-host'
 import { useBoxWidth, useNow } from './hooks'
 import { NotReadable } from './charts'
-import { CHAIN_NAMES, fmtInt, fmtPct } from './insights'
+import { CHAIN_NAMES, fmtInt, fmtPct, timelineSeries } from './insights'
 import { Mascot } from './Mascot'
 
 const BubbleCanvas = lazy(() => import('../components/holders/BubbleCanvas'))
@@ -88,27 +88,6 @@ function toCanvas(m: HolderMapOk, max: number, portrait: boolean) {
   return { nodes, links: blinks, shown: new Set(graph.map((n) => n.id)) }
 }
 
-function Stage({ pick, onBad, last }: { pick: Pick; onBad: () => void; last: boolean }) {
-  const { data, error } = useLiveSeries<HolderMap>(
-    (signal) => fetch(`/api/holders/${encodeURIComponent(pick.chain)}/${encodeURIComponent(pick.token)}?peek=1`, { headers: { accept: 'application/json' }, signal }).then((r) => r.json() as Promise<HolderMap>),
-    300_000,
-    { enabled: true },
-  )
-  const m = data && data.state === 'ok' ? data : null
-  const bad = !!error || (!!data && data.state !== 'ok') || (!!m && m.nodes.length < MIN_WALLETS)
-  useEffect(() => {
-    if (bad && !last) onBad()
-  }, [bad, last, onBad])
-  if (m && (last || m.nodes.length >= MIN_WALLETS)) return <Loaded m={m} pick={pick} />
-  if (bad && last) return <NotReadable text="This map could not be read just now; it retries every five minutes. Paste a token to read another." height={320} />
-  return (
-    <div className="hmh-load" role="status" aria-label="Reading the map">
-      <Mascot pose="laptop" width={96} />
-      <span>Reading the chain…</span>
-    </div>
-  )
-}
-
 function Loaded({ m, pick }: { m: HolderMapOk; pick: Pick }) {
   const reduced = useReducedMotion()
   const now = useNow(30_000)
@@ -135,6 +114,7 @@ function Loaded({ m, pick }: { m: HolderMapOk; pick: Pick }) {
   const sym = m.token.symbol ? `$${m.token.symbol}` : 'This token'
   const to = holderHref(pick.path)
   const biggest = m.summary.largestCluster
+  const tl = useMemo(() => timelineSeries(m), [m])
   return (
     <div className="hmh-panel" data-hero-map>
       <header className="hmh-head">
@@ -174,6 +154,11 @@ function Loaded({ m, pick }: { m: HolderMapOk; pick: Pick }) {
             <dt>Top 10 hold</dt>
             <dd>
               <Count value={m.summary.top10Pct} fmt={fmtPct} />
+              {tl.top10 && (
+                <span className="sp" aria-hidden>
+                  <Spark values={tl.top10} color="#FFD52E" h={24} />
+                </span>
+              )}
             </dd>
           </div>
           <div>
@@ -184,6 +169,11 @@ function Loaded({ m, pick }: { m: HolderMapOk; pick: Pick }) {
             <dt>Holders</dt>
             <dd>
               <Count value={m.holders.count} fmt={fmtInt} />
+              {tl.holders && (
+                <span className="sp" aria-hidden>
+                  <Spark values={tl.holders} color="#FFD52E" h={24} />
+                </span>
+              )}
             </dd>
           </div>
         </dl>
@@ -203,12 +193,32 @@ function Loaded({ m, pick }: { m: HolderMapOk; pick: Pick }) {
   )
 }
 
-/** Today's most scanned token if there is one, else the examples in turn. */
+type Hero = (HolderMapOk & { pick: { chain: string; token: string } }) | { state: 'reading' }
+
+const getJson = <T,>(url: string, signal: AbortSignal) => fetch(url, { headers: { accept: 'application/json' }, signal }).then((r) => r.json() as Promise<T>)
+
+/** Today's most scanned token once it answers; until then, and on a day without scans, the kept example. */
 export function HmHeroMap({ top }: { top: TopScanned['items'][number] | null }) {
-  const list = useMemo<Pick[]>(() => [...(top ? [{ chain: top.chain, token: top.token, symbol: top.symbol, path: top.path, note: 'Most scanned today' }] : []), ...EXAMPLES], [top])
-  const [skip, setSkip] = useState(new Set<string>())
-  const left = list.filter((p) => !skip.has(`${p.chain}:${p.token}`))
-  const pick = left[0] ?? list[list.length - 1]
-  const onBad = useCallback(() => setSkip((s) => new Set(s).add(`${pick.chain}:${pick.token}`)), [pick.chain, pick.token])
-  return <Stage key={`${pick.chain}:${pick.token}`} pick={pick} onBad={onBad} last={left.length <= 1} />
+  const [waiting, setWaiting] = useState(true)
+  const hero = useLiveSeries<Hero>((signal) => getJson<Hero>('/api/holders/hero', signal), waiting ? 8_000 : 300_000)
+  const scanned = useLiveSeries<HolderMap>((signal) => getJson<HolderMap>(`/api/holders/${encodeURIComponent(top?.chain ?? '')}/${encodeURIComponent(top?.token ?? '')}?peek=1`, signal), 300_000, { enabled: !!top })
+  const example = hero.data && hero.data.state === 'ok' ? hero.data : null
+  useEffect(() => {
+    if (example) setWaiting(false)
+  }, [example])
+  const best = top && scanned.data && scanned.data.state === 'ok' && scanned.data.nodes.length >= MIN_WALLETS ? scanned.data : null
+  if (best && top) return <Loaded key={`${top.chain}:${top.token}`} m={best} pick={{ chain: top.chain, token: top.token, symbol: top.symbol, path: top.path, note: 'Most scanned today' }} />
+  if (example) {
+    const { chain, token } = example.pick
+    return <Loaded key={`${chain}:${token}`} m={example} pick={hop(chain, token, example.token.symbol ?? '')} />
+  }
+  if (hero.error) return <div className="hmh-panel"><NotReadable text="The map could not be read just now; it retries by itself. Paste a token to read another." height={320} /></div>
+  return (
+    <div className="hmh-panel">
+      <div className="hmh-load" role="status" aria-label="Reading the map">
+        <Mascot pose="laptop" width={96} />
+        <span>Reading the chain. The first read of a big token can take a minute.</span>
+      </div>
+    </div>
+  )
 }

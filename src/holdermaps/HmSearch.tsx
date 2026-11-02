@@ -53,7 +53,7 @@ export function HmSearch({ compact = false, autoFocus = false }: { compact?: boo
         <input id={id} value={q} onChange={(e) => {
             setQ(e.target.value)
             if (s.k !== 'busy') setS({ k: 'idle' })
-          }} placeholder="Paste a token address or ticker" spellCheck={false} autoComplete="off" autoFocus={autoFocus} enterKeyHint="search" />
+          }} placeholder="Token address or ticker" spellCheck={false} autoComplete="off" autoFocus={autoFocus} enterKeyHint="search" />
         <button type="submit" className="hm-btn" disabled={s.k === 'busy'}>
           {s.k === 'busy' ? <Loader2 aria-hidden className="hm-ic hm-spin" /> : null}
           <span>{s.k === 'busy' ? 'Mapping…' : 'Map it'}</span>

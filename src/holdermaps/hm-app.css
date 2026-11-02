@@ -151,7 +151,7 @@
 .hm-search-box input { flex: 1; min-width: 0; min-height: 50px; padding: 0 12px; border: 0; outline: 0; background: transparent; color: #fff; font: 500 15px/1.2 'IBM Plex Mono', ui-monospace, monospace }
 .hm-search-box input::placeholder { color: #7a8ca4 }
 .hm-search-box .hm-btn { min-height: auto; margin: 5px; padding: 0 18px; border-radius: 2px }
-@media (max-width: 559px) { .hm-search-box { flex-wrap: wrap } .hm-matches { list-style: none; margin: 0; padding: 0; display: grid; border: 1px solid var(--hm-line); border-radius: 4px; overflow: hidden }
+.hm-matches { list-style: none; margin: 0; padding: 0; display: grid; border: 1px solid var(--hm-line); border-radius: 4px; overflow: hidden }
 .hm-matches li + li { border-top: 1px solid var(--hm-line) }
 .hm-matches a { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 14px; background: #000; color: #fff; text-decoration: none; font-size: 14px; animation: hm-in .35s ease both }
 .hm-matches a:hover { background: var(--hm-night) }
@@ -409,6 +409,7 @@
 .hmh-facts div { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
 .hmh-facts dt { font: 700 12px/1.2 var(--hm-label); letter-spacing: .08em; text-transform: uppercase; color: var(--hm-muted) }
 .hmh-facts dd { margin: 0; font: 500 20px/1.1 'IBM Plex Mono', monospace; color: #fff; font-variant-numeric: tabular-nums }
+.hmh-facts .sp { display: block; margin-top: 4px; min-width: 0 }
 .hmh-plain h2 { margin: 0 0 6px; font: 700 12px/1.2 var(--hm-label); letter-spacing: .08em; text-transform: uppercase; color: var(--hm-yellow) }
 .hmh-plain ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px }
 .hmh-plain li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 8px; font-size: 13px; line-height: 1.45; color: #dfe7f1 }
@@ -445,3 +446,28 @@
 @media (max-width: 479px) { .hmt-table th, .hmt-table td { padding: 10px 8px } .hmt-table .c { white-space: normal } }
 .hm-hide-s { }
 @media (max-width: 559px) { .hmt-table .hm-hide-s { display: none } }
+/* Dark text on the yellow: a site link colour was winning (1.4:1). */
+.hm a.hm-btn:not(.ghost), .hm [data-trade-btn] { color: #0a0a0a !important }
+/* The kit mascots are opaque on a dark scene: their edges fade into the page (CSS only, the file is untouched). */
+.hm-masc img { -webkit-mask-image: radial-gradient(ellipse 58% 58% at 50% 50%, #000 72%, transparent 100%); mask-image: radial-gradient(ellipse 58% 58% at 50% 50%, #000 72%, transparent 100%) }
+.hmh .hmt-steps li { align-items: center }
+.hmh .hmt-steps .n { grid-row: auto }
+.hmh .hmt-steps .t { align-self: center }
+.hmh-load span { max-width: 300px; text-align: center }
+.hmt-grid > :last-child:nth-child(4n + 1) { grid-column: 1 / -1 }
+.hm-search-box .hm-btn { min-height: 44px; align-self: center }
+@media (max-width: 767px) {
+  .hmt .gt-tab, .hmt-seg button { min-height: 44px }
+  .hm [data-holder-map] button, .hm [data-holder-map] summary { min-height: 44px }
+  .hm-brand { display: inline-flex; align-items: center; min-height: 44px }
+  .hm-badge { display: inline-flex; align-items: center; min-height: 44px }
+  .hm-foot-grid ul a { min-height: 44px }
+}
+@media (max-width: 767px) {
+  .hmh .hm-search .hmt-steps, .hmh .hm-chainchips { display: none }
+  .hmh-canvas { height: 320px }
+  .hmt-tape-row a { height: 44px }
+  .hmt-tape { height: 44px }
+}
+@media (max-width: 767px) { .hm [data-holder-map] [data-supply-strip] button, .hm [data-holder-map] li > button { min-height: 44px } }
+@media (max-width: 767px) { .hm-legend button { min-height: 44px } }
