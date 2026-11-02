@@ -370,6 +370,8 @@ try {
     const r = await post(ANON, { ...T2, expect: { priceUsd: 9 } })
     const id = r.data.check.id
     const inv = r.data.payment.invoiceId
+    const stranger = await makeClient(BASE).post(`${DEEP}/${id}/cancel`, {}, { headers: { 'cf-connecting-ip': '203.0.113.77' } })
+    check('someone else holding the link cannot cancel it (403), the check still waits for payment', stranger.status === 403 && stranger.data?.code === 'not-owner' && (await ANON.call(`${DEEP}/${id}`)).data?.check?.status === 'awaiting_payment', `${stranger.status}`)
     const c = await ANON.post(`${DEEP}/${id}/cancel`)
     check('cancel before payment: 200 cancelled, the invoice is cancelled too', c.status === 200 && c.data.check.status === 'cancelled' && invoices.adminInvoice(inv).status === 'cancelled')
 

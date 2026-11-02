@@ -215,14 +215,10 @@ function warmLogin(host) {
 /* ---------------------------------------------------------------- events --- */
 
 // The tracker reads `disabled` from any answer and stops sending for the rest of the page view.
+// Same CORS as every other tracker answer: any origin, never with credentials (leak sweep 2026-11-02: this used to
+// reflect the caller's Origin together with Allow-Credentials: true).
 function refuse(req, res, block) {
-  const origin = req.headers.origin
-  res.writeHead(402, {
-    'Content-Type': 'application/json',
-    'Cache-Control': 'no-store',
-    'Access-Control-Allow-Origin': origin ? String(origin) : '*',
-    ...(origin ? { 'Access-Control-Allow-Credentials': 'true', Vary: 'Origin' } : {}),
-  })
+  res.writeHead(402, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...TRACKER_CORS })
   res.end(JSON.stringify({ error: { message: block.message, code: block.code, status: 402 }, disabled: true }))
 }
 

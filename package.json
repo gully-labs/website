@@ -16,6 +16,7 @@
     "test:pay": "node scripts/test-pay.mjs",
     "test:movers": "node --test scripts/test-movers.mjs",
     "test:analytics": "node scripts/test-analytics.mjs",
+    "test:public-error": "node --test scripts/test-public-error.mjs",
     "test:chains": "node scripts/test-chains.mjs",
     "test:chains-launch": "node scripts/test-chains-launch.mjs",
     "test:telegram": "node scripts/test-telegram.mjs",
