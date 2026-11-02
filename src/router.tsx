@@ -34,6 +34,7 @@ const MOVED_PATHS = [
   ['/studio', 'studio'],
   // DeepCore partnership ended 2026-10-29: the launchpad page is Gully Core now
   ['/products/deepcore', 'gully-core'],
+  ['/projects/deepcore', 'gully-core'],
 ] as const
 
 // Gully Pay's checkout pages (pay.gullylabs.xyz; also /pay on the main host in development).
