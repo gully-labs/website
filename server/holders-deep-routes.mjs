@@ -512,6 +512,9 @@ export async function handleHolderDeep(req, res, url) {
 
   if (!post) return json(res, 405, { error: 'POST only' }), true
   if (!allow('cancel', clientIp(req), 60, 3_600_000)) return json(res, 429, { error: 'Too many requests. Try again later.' }), true
+  // Reading a check by its id is open (the link is shareable); cancelling it is for whoever asked for it: the same
+  // workspace, or for anonymous checks the same network (leak sweep 2026-11-02).
+  if (ownerOf(req, await whoIs(req)) !== job.owner) return json(res, 403, { error: 'Only whoever asked for this check can cancel it.', code: 'not-owner' }), true
   if (job.state === 'awaiting_payment') {
     if (adminInvoice(job.invoiceId)?.status === 'paid') {
       queue(job)

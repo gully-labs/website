@@ -23,7 +23,7 @@ import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
 import { apiAccess, flushUsage, observe } from './access.mjs'
 import { addEnquiry, addToLaunchList } from './store.mjs'
 import { notifyIntake, startIntakeDigest } from './intake-notify.mjs'
-import { clientIp, DATA_DIR, readJson } from './http.mjs'
+import { clientIp, DATA_DIR, publicError, readJson } from './http.mjs'
 import { handleAdmin } from './admin.mjs'
 import { handleEcosystem } from './ecosystem.mjs'
 import { handleDiscovery } from './discovery.mjs'
@@ -494,14 +494,14 @@ async function handleRequest(req, res) {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return readTracker().then(
       (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' }),
-      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
+      (err) => send(res, 502, JSON.stringify({ error: publicError(err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
     )
   }
   if (url.pathname === '/api/tracker/gap-index') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return readGapIndex().then(
       (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=300' }),
-      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
+      (err) => send(res, 502, JSON.stringify({ error: publicError(err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
     )
   }
   if (url.pathname === '/api/tracker/history') {
@@ -536,7 +536,7 @@ async function handleRequest(req, res) {
     if ((chain !== null && !/^[a-z]{2,12}$/.test(chain)) || (ticker !== null && (!chain || !/^[A-Z.]{1,8}$/.test(ticker)))) return send(res, 400, JSON.stringify({ error: 'chain, and ticker with a chain' }), { 'Content-Type': 'application/json' })
     return readMovers(window).then(
       (full) => send(res, 200, JSON.stringify(shapeMovers(full, { limit, chain, ticker })), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' }),
-      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
+      (err) => send(res, 502, JSON.stringify({ error: publicError(err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
     )
   }
   // The paid tiers: limits and prices from plans.mjs, and whether checkout is open. Public.
@@ -548,14 +548,14 @@ async function handleRequest(req, res) {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return handlePeddlesOnchain().then(
       (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=20' }),
-      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json' }),
+      (err) => send(res, 502, JSON.stringify({ error: publicError(err) }), { 'Content-Type': 'application/json' }),
     )
   }
   if (url.pathname === '/api/stats') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return readStats().then(
       (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30', 'Access-Control-Allow-Origin': '*' }),
-      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }),
+      (err) => send(res, 502, JSON.stringify({ error: publicError(err) }), { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }),
     )
   }
   // Whether the stock pages may show the swap here (geo.mjs). Per visitor, so never cached.
