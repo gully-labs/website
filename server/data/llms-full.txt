@@ -546,9 +546,9 @@ URL: https://gullychain.xyz/
 
 ### Tracker API client (SDK, beta)
 
-@gullylabs/tracker is a typed client for the stock token tracker API, with no dependencies. It runs anywhere fetch exists.
+@gullylabs/widgets/tracker is a typed client for the stock token tracker API, with no dependencies. It runs anywhere fetch exists.
 
-- Package @gullylabs/tracker, version 0.1.0 in package.json
+- Package @gullylabs/widgets (entry /tracker), version 0.1.0 in package.json
 - Methods include getTracker, getStock, getRows, widestGaps, getHistory and watch
 - Covers tokenised stocks on Robinhood Chain and BNB Chain (chain keys 'robinhood' and 'bsc')
 - Anonymous calls are limited to 60 a minute per IP; an API key raises that to 600
@@ -561,13 +561,13 @@ URL: https://docs.gullylabs.xyz/api
 
 ### Embeddable tracker widget (SDK, beta)
 
-@gullylabs/widget puts the tracker on any page as a ticker, a one-stock badge or a sortable table. It ships a loader script and a React component.
+@gullylabs/widgets/widget puts the tracker on any page as a ticker, a one-stock badge or a sortable table. It ships a loader script and a React component.
 
-- Package @gullylabs/widget, version 0.1.0
+- Package @gullylabs/widgets (entry /widget), version 0.1.0
 - Widget types are ticker, badge and table
 - Drawn in its own shadow root so it does not clash with page styles
 - Script-tag install via https://embed.gullylabs.xyz/widget.js and a data-gully-widget attribute
-- React component GullyWidget is exported from @gullylabs/widget/react
+- React component GullyWidget is exported from @gullylabs/widgets/widget/react
 - Badge shows a 24-hour gap chart for one stock; table and ticker take a limit option
 - Supports a light theme option
 
@@ -575,9 +575,9 @@ URL: https://gullylabs.xyz/tracker
 
 ### Holder Map client and component (SDK, beta)
 
-@gullylabs/holders is a typed client for the Holder Map API plus a React component that frames the live map.
+@gullylabs/widgets/holders is a typed client for the Holder Map API plus a React component that frames the live map.
 
-- Package @gullylabs/holders, version 0.1.0
+- Package @gullylabs/widgets (entry /holders), version 0.1.0
 - createHoldersClient().getMap(chain, tokenOrTicker) returns the map or a state of unavailable, not-found, busy or error
 - Chains supported: robinhood, bsc, base, hyperevm, solana
 - cardUrl() builds a 1200 x 630 share card image URL
@@ -932,6 +932,7 @@ URL: https://gullylabs.xyz/products
 ## Docs
 
 - [Overview](https://docs.gullylabs.xyz/): Start
+- [Integrate in 5 minutes](https://docs.gullylabs.xyz/integrate): Start
 - [Tracker methodology](https://docs.gullylabs.xyz/methodology): Start
 - [API reference](https://docs.gullylabs.xyz/api): Build
 - [Widget guide](https://docs.gullylabs.xyz/widget): Build

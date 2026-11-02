@@ -1,4 +1,4 @@
-import { Activity, ArrowLeftRight, BadgeCheck, BellRing, BookOpen, Bot, FileCheck, Network, Server, Gamepad2, CircleDollarSign, ChartCandlestick, ChartNoAxesCombined, Code2, Gauge, HardDrive, HeartPulse, History, Home, KeyRound, Lock, type LucideIcon, Menu, MessageCircleQuestion, Milestone, Newspaper, Orbit, Package, Plug, Puzzle, QrCode, ScanSearch, Search, Send, ShieldCheck, Smartphone, Tags, Users, X } from 'lucide-react'
+import { Activity, ArrowLeftRight, Rocket, BadgeCheck, BellRing, BookOpen, Bot, FileCheck, Network, Server, Gamepad2, CircleDollarSign, ChartCandlestick, ChartNoAxesCombined, Code2, Gauge, HardDrive, HeartPulse, History, Home, KeyRound, Lock, type LucideIcon, Menu, MessageCircleQuestion, Milestone, Newspaper, Orbit, Package, Plug, Puzzle, QrCode, ScanSearch, Search, Send, ShieldCheck, Smartphone, Tags, Users, X } from 'lucide-react'
 import { securityPrimary } from '../site-host'
 import { useContext, useEffect, useId, useMemo, useState } from 'react'
 import { NavLink, Outlet, ScrollRestoration, useNavigate, useResolvedPath } from 'react-router'
@@ -40,7 +40,7 @@ function ApiPill() {
   )
 }
 
-const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, analytics: ChartNoAxesCombined, 'gully-security': ShieldCheck, 'gully-score': Gauge, teams: Users, roadmap: Milestone, changelog: History, 'holder-map': ScanSearch, 'gully-ai': Bot, telegram: Send, 'telegram-mini-app': Smartphone, 'news-gate': Newspaper, 'stock-pages': ChartCandlestick, 'solana-pay': QrCode, swaps: ArrowLeftRight, solana: Orbit, ipfs: HardDrive, status: HeartPulse, contracts: FileCheck, 'holder-map-integrate': Plug, badges: BadgeCheck }
+const DOC_ICON: Record<DocSlug, LucideIcon> = { '': Home, integrate: Rocket, methodology: BookOpen, api: Code2, widget: Puzzle, 'api-keys': KeyRound, 'plans-alerts': BellRing, sdk: Package, analytics: ChartNoAxesCombined, 'gully-security': ShieldCheck, 'gully-score': Gauge, teams: Users, roadmap: Milestone, changelog: History, 'holder-map': ScanSearch, 'gully-ai': Bot, telegram: Send, 'telegram-mini-app': Smartphone, 'news-gate': Newspaper, 'stock-pages': ChartCandlestick, 'solana-pay': QrCode, swaps: ArrowLeftRight, solana: Orbit, ipfs: HardDrive, status: HeartPulse, contracts: FileCheck, 'holder-map-integrate': Plug, badges: BadgeCheck }
 
 /** Links to the rest of Gully Labs: all on another host, so each opens in a new tab with the ↗ marker. */
 const GULLY_LINKS: { label: string; href: string; icon: LucideIcon }[] = [

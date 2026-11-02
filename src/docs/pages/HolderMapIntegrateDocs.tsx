@@ -197,7 +197,7 @@ export function HolderMapIntegrateDocs() {
 
       <Section id="sdk" title="The SDK">
         <P>
-          <C>npm install @gullylabs/holders</C> gives you a typed client and a React component: <C>createHoldersClient()</C> with <C>getMap()</C> and <C>cardUrl()</C>, and a <C>&lt;HolderMap chain token height /&gt;</C> component that frames the embed above. The tracker client and widget are in the same <DocLink to="sdk">SDK</DocLink>.
+          <C>npm install @gullylabs/widgets</C> gives you a typed client and a React component: <C>createHoldersClient()</C> with <C>getMap()</C> and <C>cardUrl()</C>, and a <C>&lt;HolderMap chain token height /&gt;</C> component that frames the embed above. The tracker client and widget are in the same <DocLink to="sdk">SDK</DocLink>.
         </P>
       </Section>
 
