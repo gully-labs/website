@@ -13,6 +13,7 @@ import { handleDeepcoreLaunches, handleDeepcoreQuote, onLaunches, startDeepcore 
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { handleMiniApp } from './telegram-miniapp.mjs'
 import { handleHolders } from './holders.mjs'
+import { readHero } from './holders-hero.mjs'
 import { handleHolderBadge, handlePartnerLaunch } from './holders-partners.mjs'
 import { handleHolderDeep, startDeepRunner } from './holders-deep-routes.mjs'
 import { handleBadgeRoutes } from './badge-routes.mjs'
@@ -454,6 +455,12 @@ async function handleRequest(req, res) {
 
   // Holder Map (holders.mjs): who holds a DeepCore launch or a stock token, with the same key limits as the tracker.
   if (url.pathname.startsWith('/api/holders/')) {
+    // The front page's map on holdermaps.xyz, never waiting on a build (holders-hero.mjs).
+    if (url.pathname === '/api/holders/hero') {
+      if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
+      const hero = readHero()
+      return send(res, 200, JSON.stringify(hero), { 'Content-Type': 'application/json', 'Cache-Control': hero.state === 'ok' ? 'public, max-age=60' : 'no-store', 'Access-Control-Allow-Origin': '*' })
+    }
     if (await handleHolders(req, res, url, access)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }

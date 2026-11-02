@@ -470,3 +470,16 @@
 @media (min-width:1000px){.lc .newsgrid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}}
 .lc .trust.slim{padding:10px 14px}
 @media (prefers-reduced-motion:reduce){.lc .lxs.up i{animation:none}}
+
+/* Phones (design standard, 2026-11-01): 44 px targets in the header and a compact footer. The product list is in the
+   menu sheet and on /products, so the footer keeps two columns of links. */
+@media (max-width:1023px){.lc .navr .btn.sm,.lc .navr .menu-btn{min-height:44px;min-width:44px}.lc .brand{display:inline-flex;align-items:center;min-height:44px}}
+@media (max-width:599px){
+.lcp footer .fprods{display:none}
+.lcp footer .gt-badge{display:inline-flex;align-items:center;min-height:44px}
+.lcp footer nav[aria-label='Footer']{width:100%}
+.lcp footer nav[aria-label='Footer'] ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+.lcp footer ul a{min-height:44px}
+.lcp footer .more ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px;font-size:13.5px}
+}
+@media (max-width:1023px){.lcp footer ul a,.lcp footer .fgrp ul a{min-height:44px}.lcp footer .gt-badge{display:inline-flex;align-items:center;min-height:44px}}
