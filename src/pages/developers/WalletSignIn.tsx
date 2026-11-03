@@ -86,7 +86,7 @@ const adapter = createAuthenticationAdapter<string>({
 /** The line under the wallet list: connecting accepts the terms (src/pages/legal/Terms.tsx). */
 const Disclaimer: DisclaimerComponent = ({ Text, Link }) => (
   <Text>
-    By connecting a wallet you agree to the <Link href="https://gullylabs.xyz/legal/terms">Terms of Service</Link> and the <Link href="https://gullylabs.xyz/legal/privacy">Privacy policy</Link>.
+    By continuing you agree to the <Link href="https://gullylabs.xyz/terms">Terms</Link> and <Link href="https://gullylabs.xyz/privacy">Privacy Policy</Link>.
   </Text>
 )
 

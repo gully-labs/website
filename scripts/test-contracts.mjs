@@ -128,9 +128,9 @@ const docsMeta = pageMeta('docs.gullylabs.xyz', '/contracts')
 check('docs /contracts has SEO meta', docsMeta.found === true && docsMeta.canonical === 'https://docs.gullylabs.xyz/contracts')
 
 // ---------------------------------------------------------------- the legal pages
-const terms = pageMeta('gullylabs.xyz', '/legal/terms')
-check('/legal/terms has its own title and canonical, and is indexable', terms.found === true && terms.title === 'Terms of Service · Gully Labs' && terms.canonical === 'https://gullylabs.xyz/legal/terms' && !terms.noindex)
-check('/legal/terms, /legal/privacy and /legal/merchant-terms are in the sitemap', ['terms', 'privacy', 'merchant-terms'].every((x) => sitemapFor('gullylabs.xyz').includes(`<loc>https://gullylabs.xyz/legal/${x}</loc>`)))
+const terms = pageMeta('gullylabs.xyz', '/terms')
+check('/terms has its own title and canonical, and is indexable', terms.found === true && terms.title === 'Terms of Service · Gully Labs' && terms.canonical === 'https://gullylabs.xyz/terms' && !terms.noindex)
+check('/terms, /privacy, /legal and /legal/merchant-terms are in the sitemap (and not the old /legal/terms)', ['terms', 'privacy', 'legal', 'legal/merchant-terms'].every((x) => sitemapFor('gullylabs.xyz').includes(`<loc>https://gullylabs.xyz/${x}</loc>`)) && !sitemapFor('gullylabs.xyz').includes('/legal/terms<'))
 
 console.log(`\n${t.passed} passed, ${t.failed} failed`)
 process.exit(t.failed ? 1 : 0)

@@ -59,7 +59,7 @@ const CASES = [
   ['Swaps', 'How do swaps work and who holds my funds?', /swaps/],
   ['Status', 'Where can I check the status page for outages?', /status/],
   ['Pricing', 'How much does the paid API plan cost and what are the rate limits?', /pricing|plans-alerts/],
-  ['Legal', 'How long does Gully Labs keep my data?', /legal\/privacy/],
+  ['Legal', 'How long does Gully Labs keep my data?', /gullylabs\.xyz\/privacy/],
   ['Treasury Safe', 'How is the treasury Safe deployed on another chain?', /TREASURY-SAFE|gully-pay-merchants#safe/],
   ['Services', 'Can Gully Labs build a custom project for us?', /services|about/],
   ['Repos', 'Which GitHub repository is the Gully Analytics fork of Umami?', /github\.com\/gully-labs\/umami/],

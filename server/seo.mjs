@@ -53,8 +53,10 @@ const MAIN = {
   '/ask': ['Gully AI: ask about Gully Labs · Gully Labs', 'Ask Gully AI about Gully Labs: its products, the tracker and API, plans and docs. Every answer cites its sources and quotes live figures where they matter.'],
   '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
   '/legal/scan-terms': ['AI Security Scan terms · Gully Labs', 'The terms for the AI Security Scan: what an automated scan is and is not, free scans and prices, re-run credits instead of refunds, how long your code is kept, and the limits of our liability.'],
-  '/legal/terms': ['Terms of Service · Gully Labs', 'The terms for using Gully Labs: the site, the app, the API and widgets, Gully AI, the Holder Map, Gully Score, Gully Security, Gully Pay, Gully Chains and the Telegram bot. Self-custody, information not advice, final on-chain payments.'],
-  '/legal/privacy': ['Privacy policy · Gully Labs', 'What Gully Labs collects across the site, the app, Gully Analytics, Gully AI, the Telegram bot and Gully Pay, why, who else sees it and how long it is kept.'],
+  // The policies at their canonical short addresses (2026-11-03; /legal/terms and /legal/privacy 301 to them).
+  '/terms': ['Terms of Service · Gully Labs', 'The terms for using Gully Labs: the site, the app, the API and widgets, Gully AI, the Holder Map, Gully Score, Gully Security, Gully Pay checkouts and the Telegram bot. Self-custody, information not advice, final on-chain payments.'],
+  '/privacy': ['Privacy Policy · Gully Labs', 'What Gully Labs collects across the site, the app, Gully Analytics, Gully AI, Gully Security, the Holder Map, the Telegram bot and Gully Pay checkouts, why, who else sees it, where it is stored and how long it is kept.'],
+  '/legal': ['Legal: Terms and Privacy for every Gully product · Gully Labs', 'The Terms of Service and Privacy Policy of every Gully Labs product in one place: Gully Labs, HolderMaps, Gully Chain, kre8.fun, Gully Pay, Gully ID, Gully RPC, Gully AI, Gully Security and Gully Studio.'],
   '/links': ['Links · Gully Labs', 'Every Gully Labs link in one place: the site, the app, the stock tracker, Gully AI, Gully Analytics, Gully Pay, Chain Kit, docs, the Telegram bot and the news channel.'],
   '/score': ['Gully Score: transparent contract scores · Gully Labs', 'The Gully Score rates a contract 0 to 100 from public evidence only: verified code, who controls it, upgrades, delays, recent privileged changes, locks and holders. Nobody can pay to change a score.'],
   '/ecosystem': ['Ecosystem: our projects and what we integrate with · Gully Labs', 'Every Gully Labs project with its own live numbers, the third-party services the code integrates with, and the launchpads on the Holder Map.'],
@@ -260,6 +262,31 @@ const isLocal = (host) => /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host)
 /** Pay pages are noindex, but name their own host as canonical (links are shared on pay.gullylabs.xyz). */
 const payCanonical = (host, p) => (isLocal(host) ? null : `${PAY_URL}${p}`)
 
+/* The legal pages (2026-11-03): each is a WebPage published by Gully Labs LLC (src/pages/legal), and every indexed page on
+   gullylabs.xyz and holdermaps.xyz carries the Terms / Privacy / Legal links in its pre-render too (shellBody), so a
+   crawler (and a plain curl) finds them before scripts run. */
+export const LEGAL_PATHS = ['/terms', '/privacy', '/legal', '/legal/merchant-terms', '/legal/scan-terms']
+const LEGAL_PUBLISHER = { '@type': 'Organization', name: 'Gully Labs LLC', url: SITE, logo: `${SITE}/brand/icon/app-icon-512.png` }
+/** A legal page's JSON-LD: the page itself, published by Gully Labs LLC, last reviewed on the date it shows. */
+export function legalLd(url, name, description, site = { name: 'Gully Labs', url: `${SITE}/` }) {
+  return { '@context': 'https://schema.org', '@type': 'WebPage', name, url, description, inLanguage: 'en', dateModified: '2026-11-03', isPartOf: { '@type': 'WebSite', ...site }, publisher: LEGAL_PUBLISHER }
+}
+/** gullylabs.xyz/legal for crawlers: every product's Terms and Privacy Policy (src/pages/legal/LegalIndex.tsx LEGAL_INDEX). */
+export const LEGAL_INDEX_LINKS = [
+  ['/terms', 'Gully Labs Terms of Service'],
+  ['/privacy', 'Gully Labs Privacy Policy'],
+  ['/legal/merchant-terms', 'Gully Labs merchant terms'],
+  ['/legal/scan-terms', 'Gully Labs security scan terms'],
+  ...[['HolderMaps', 'holdermaps.xyz'], ['Gully Chain', 'gullychain.xyz'], ['kre8.fun', 'kre8.fun'], ['Gully Pay', 'gullypay.xyz'], ['Gully ID', 'gullyid.xyz'], ['Gully RPC', 'gullyrpc.xyz'], ['Gully AI', 'gullyai.xyz'], ['Gully Security', 'gullysecurity.xyz'], ['Gully Studio', 'gullystudio.xyz']].flatMap(([n, d]) => [
+    [`https://${d}/terms`, `${n} Terms of Service`],
+    [`https://${d}/privacy`, `${n} Privacy Policy`],
+  ]),
+  ['https://kre8.fun/content-policy', 'kre8.fun Content Policy'],
+  ['https://kre8.fun/copyright', 'kre8.fun Copyright'],
+]
+/** The pre-render's legal links (shellBody): this site's Terms and Privacy Policy, and the index of every product's. */
+const SHELL_LEGAL = { main: [['/terms', 'Terms'], ['/privacy', 'Privacy'], ['/legal', 'Legal']], holdermaps: [['/terms', 'Terms'], ['/privacy', 'Privacy'], ['https://gullylabs.xyz/legal', 'Legal']] }
+
 /* holdermaps.xyz (hosts.mjs): the Holder Map's own domain. Its pages are the main site's Holder Map pages under short
    paths, named HolderMaps, with holdermaps.xyz canonicals. */
 const HOLDERMAPS_HOME = ['Who really holds a token? Holder bubble maps · HolderMaps', 'Map any token’s holders on Gully Chain, Robinhood Chain, BNB Chain, Base, HyperEVM or Solana: top wallets, linked clusters and launch health, read live.']
@@ -297,7 +324,17 @@ const HM_LD = {
 const GULLYAI_OG = `${SITE}${PRODUCT_BRANDS.gullyai.og}`
 const GULLYAI_BRAND = headBrand('gullyai', { icons: false, siteName: false })
 
+const HM_LEGAL = {
+  '/terms': ['Terms of Service · HolderMaps', 'The terms for using HolderMaps: free holder bubble maps for any token, the paid Deep check, where the data comes from, why labels can be wrong, and why none of it is financial advice.'],
+  '/privacy': ['Privacy Policy · HolderMaps', 'What HolderMaps collects (very little: no account, no cookies), what is sent to the blockchain data providers, how long Deep checks are kept, and your rights.'],
+}
+
 function holderMapsMeta(p) {
+  if (HM_LEGAL[p]) {
+    const [title, description] = HM_LEGAL[p]
+    const canonical = `${HOLDERMAPS_URL}${p}`
+    return { title, description, canonical, found: true, image: HM_OG, brand: HOLDERMAPS_BRAND, legal: 'holdermaps', ld: legalLd(canonical, title.replace(/ · HolderMaps$/, ''), description, { name: 'HolderMaps', url: `${HOLDERMAPS_URL}/` }) }
+  }
   const internal = holderInternalPath(p)
   if (!internal) return { title: 'Not found · HolderMaps', description: HOLDERMAPS_HOME[1], canonical: null, found: false, image: HM_OG, brand: HOLDERMAPS_BRAND }
   const m = pageMeta('gullylabs.xyz', internal)
@@ -347,8 +384,16 @@ function securityMeta(p) {
   return { ...m, title: securityTitle(m.title), canonical: toShort(m.canonical, SECURITY_URL, securityShortPath) }
 }
 
-/** Head tags for one request. `found: false` means no page owns the path (served as a 404). */
+/** Head tags for one request. `found: false` means no page owns the path (served as a 404). On gullylabs.xyz and
+    holdermaps.xyz every page's pre-render also carries the footer's Terms / Privacy / Legal links (shellLegal). */
 export function pageMeta(host, pathname) {
+  const m = pageMetaFor(host, pathname)
+  const h = String(host ?? '').split(':')[0].toLowerCase()
+  const kind = isHolderMapsHost(h) ? 'holdermaps' : h === 'gullylabs.xyz' || isLocal(h) ? 'main' : null
+  return kind ? { ...m, shellLegal: SHELL_LEGAL[kind] } : m
+}
+
+function pageMetaFor(host, pathname) {
   const p = pathname.length > 1 ? pathname.replace(/\/+$/, '') : '/'
   if (isHolderMapsHost(host)) return holderMapsMeta(p)
   if (isSecurityHost(host)) return securityMeta(p)
@@ -413,7 +458,9 @@ export function pageMeta(host, pathname) {
   // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), its pages name it as canonical.
   const secShort = securityPrimary() && p.startsWith('/security') ? securityShortPath(p) : null
   const prod = productExtras(p)
-  const links = p === '/' || p === '/products' ? [...Object.entries(PRODUCT_PAGES).map(([k, d]) => [`/products/${k}`, d[0]]), ...(p === '/' ? [['/products', 'All products'], ['/services', 'Services'], ['/tracker', 'Stock token tracker'], ['/about', 'About']] : [])] : null
+  const links = p === '/' || p === '/products' ? [...Object.entries(PRODUCT_PAGES).map(([k, d]) => [`/products/${k}`, d[0]]), ...(p === '/' ? [['/products', 'All products'], ['/services', 'Services'], ['/tracker', 'Stock token tracker'], ['/about', 'About']] : [])] : p === '/legal' ? LEGAL_INDEX_LINKS : null
+  const legalPage = LEGAL_PATHS.includes(p)
+  if (legalPage) return { links, title: m[0], description: m[1], canonical: SITE + p, found: true, image: KIT_OG, legal: 'main', ld: legalLd(SITE + p, pageHeading(m[0]), m[1]) }
   return {
     links, title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: secShort ? SECURITY_URL + secShort : SITE + (p === '/' ? '/' : p), found: true, image: prod ? prod.image : p.startsWith('/security') ? `${SITE}/social/og-security.png` : p === '/ask' ? GULLYAI_OG : p === '/' ? HUB_OG : KIT_OG, ld: prod ? prod.ld : p === '/' ? [ORG, APP_LD, HUB_LD] : p === '/services' ? [ORG, SERVICES_LD] : p === '/tracker' ? TRACKER_LD : null, ...(p === '/ask' ? { brand: GULLYAI_BRAND } : {}) }
 }
@@ -435,7 +482,9 @@ const pageHeading = (title) => String(title).replace(/ · [^·]+$/, '')
 function shellBody(meta) {
   const links = (meta.links ?? []).filter(([href, text]) => href && text).slice(0, 40)
   const nav = links.length ? `<nav aria-label="Pages"><ul>${links.map(([href, text]) => `<li><a href="${esc(href)}">${esc(text)}</a></li>`).join('')}</ul></nav>` : ''
-  return `<main data-shell style="max-width:720px;margin:48px auto;padding:0 16px;font:16px/1.5 system-ui,sans-serif"><h1>${esc(pageHeading(meta.title))}</h1><p>${esc(meta.description)}</p>${nav}</main>`
+  // The Terms / Privacy / Legal links every footer carries (gullylabs.xyz and holdermaps.xyz pages; set by pageMeta).
+  const legal = meta.shellLegal ? `<footer><nav aria-label="Legal">${meta.shellLegal.map(([href, text]) => `<a href="${esc(href)}">${esc(text)}</a>`).join(' · ')}</nav></footer>` : ''
+  return `<main data-shell style="max-width:720px;margin:48px auto;padding:0 16px;font:16px/1.5 system-ui,sans-serif"><h1>${esc(pageHeading(meta.title))}</h1><p>${esc(meta.description)}</p>${nav}${legal}</main>`
 }
 
 /** Rewrites index.html's head for one page. */
@@ -516,7 +565,7 @@ export function sitemapFor(host) {
   // holdermaps.xyz lists the Holder Map pages under their short paths.
   // A page with no short path there (a ticker the short form cannot carry, like BRK.B) is left out, not written as
   // "https://holdermaps.xyznull".
-  else if (isHolderMapsHost(host)) urls = holderPaths().flatMap((p) => { const short = holderShortPath(p); return short ? [[HOLDERMAPS_URL + short, p === '/holders' ? '1.0' : '0.7', p === '/holders' ? 'daily' : 'monthly']] : [] })
+  else if (isHolderMapsHost(host)) urls = [...holderPaths().flatMap((p) => { const short = holderShortPath(p); return short ? [[HOLDERMAPS_URL + short, p === '/holders' ? '1.0' : '0.7', p === '/holders' ? 'daily' : 'monthly']] : [] }), ...Object.keys(HM_LEGAL).map((p) => [HOLDERMAPS_URL + p, '0.3', 'yearly'])]
   // gullysecurity.xyz lists the Security pages and the reports their owners let search engines index, under short paths.
   else if (isSecurityHost(host)) urls = securityPaths().filter((p) => securityShortPath(p)).map((p) => [SECURITY_URL + securityShortPath(p), p === '/security' ? '1.0' : '0.7', p === '/security' || p === '/security/reports' ? 'daily' : 'monthly'])
   else

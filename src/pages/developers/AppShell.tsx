@@ -652,7 +652,20 @@ export function AppShell<T extends string>({
           <div className="flex min-w-0 flex-1 flex-col">{children}</div>
           {/* The app's footer row: the "Powered by Gully Labs" badge (owner rule 2026-10-26). */}
           <footer className="border-t border-line px-6 py-4 max-[480px]:px-4 print:hidden">
-            <BadgeFooterRow />
+            <BadgeFooterRow>
+              <nav aria-label="Legal" className="flex flex-wrap items-center gap-x-4" data-testid="footer-legal">
+                <span>© 2026 Gully Labs LLC</span>
+                <ExtLink href={`${SITE_URL}/terms`} arrow={false} className="inline-flex min-h-11 items-center hover:text-ink">
+                  Terms
+                </ExtLink>
+                <ExtLink href={`${SITE_URL}/privacy`} arrow={false} className="inline-flex min-h-11 items-center hover:text-ink">
+                  Privacy
+                </ExtLink>
+                <ExtLink href={`${SITE_URL}/legal`} arrow={false} className="inline-flex min-h-11 items-center hover:text-ink">
+                  Legal
+                </ExtLink>
+              </nav>
+            </BadgeFooterRow>
           </footer>
         </div>
       </div>

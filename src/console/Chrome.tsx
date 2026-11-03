@@ -2,7 +2,7 @@
    below 1280), a Menu sheet below 1024, Lucide icon on every item, live pill, pill buttons. */
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { Activity, ArrowRight, ArrowUpRight, BookOpen, Box, Briefcase, ChartCandlestick, ChartLine, FileText, Gauge, KeyRound, LayoutGrid, Lock, Mail, Menu, MessageCircle, Send, Sparkles, Tag, type LucideProps, X, Zap } from 'lucide-react'
+import { Activity, ArrowRight, ArrowUpRight, BookOpen, Box, Briefcase, ChartCandlestick, ChartLine, FileText, Gauge, KeyRound, LayoutGrid, Lock, Mail, Menu, MessageCircle, Scale, Send, Sparkles, Tag, type LucideProps, X, Zap } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { APP_URL, DOCS_URL } from '../site-host'
 import { ic, LivePill } from './ui'
@@ -158,9 +158,13 @@ export function ConsoleFooter() {
     { label: 'Gully Score', icon: Gauge, to: '/score' },
     { label: 'Pricing', icon: Tag, to: '/pricing' },
     { label: 'Gully AI', icon: Sparkles, to: '/ask' },
-    { label: 'Terms', icon: FileText, to: '/legal/terms' },
-    { label: 'Privacy', icon: Lock, to: '/legal/privacy' },
     { label: 'Gully ID sign-in', icon: KeyRound, to: '/gully-id' },
+  ]
+  // Every page, the home included: the Terms, the Privacy Policy and the index of every Gully product's (2026-11-03).
+  const legal: Item[] = [
+    { label: 'Terms', icon: FileText, to: '/terms' },
+    { label: 'Privacy', icon: Lock, to: '/privacy' },
+    { label: 'Legal', icon: Scale, to: '/legal' },
   ]
   return (
     <footer>
@@ -214,8 +218,17 @@ export function ConsoleFooter() {
             </ul>
           </nav>
         )}
+        <nav aria-label="Legal" className="legal" data-testid="footer-legal">
+          <ul>
+            {legal.map((it) => (
+              <li key={it.label}>
+                <NavLink it={it} />
+              </li>
+            ))}
+          </ul>
+        </nav>
         <p className="copy2">
-          © 2026 Gully Labs · Figures are read live from each product and the Gully Chain testnet; a source that cannot be read says so.
+          © 2026 Gully Labs LLC · Figures are read live from each product and the Gully Chain testnet; a source that cannot be read says so.
         </p>
       </div>
     </footer>

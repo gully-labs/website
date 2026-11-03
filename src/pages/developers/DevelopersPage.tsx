@@ -118,13 +118,13 @@ function SignedOut({ connect, busy, error, gully, gullyBusy, gullyOn = true }: {
           </p>
         )}
         <p className="m-0 text-[12px] leading-[1.5] text-faint" data-testid="signin-terms">
-          By connecting a wallet or signing in with Gully ID you agree to the{' '}
-          <ExtLink href={`${SITE_URL}/legal/terms`} arrowSize={11} className="inline-flex min-h-11 items-center gap-[2px] text-muted underline underline-offset-2 hover:text-gold">
-            Terms of Service
+          By continuing you agree to the{' '}
+          <ExtLink href={`${SITE_URL}/terms`} arrowSize={11} className="inline-flex min-h-11 items-center gap-[2px] text-muted underline underline-offset-2 hover:text-gold">
+            Terms
           </ExtLink>{' '}
-          and the{' '}
-          <ExtLink href={`${SITE_URL}/legal/privacy`} arrowSize={11} className="inline-flex min-h-11 items-center gap-[2px] text-muted underline underline-offset-2 hover:text-gold">
-            Privacy policy
+          and{' '}
+          <ExtLink href={`${SITE_URL}/privacy`} arrowSize={11} className="inline-flex min-h-11 items-center gap-[2px] text-muted underline underline-offset-2 hover:text-gold">
+            Privacy Policy
           </ExtLink>
           .
         </p>
