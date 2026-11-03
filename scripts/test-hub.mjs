@@ -105,7 +105,7 @@ test('surfaces still being set up read "coming" until they answer 200, never "do
     if (u.includes('safe.gullychain')) throw new TypeError('fetch failed')
     if (u.includes('ai.gullylabs.xyz')) return new Response('', { status: 404 })
     if (u.includes('dev.gullystudio')) return new Response('ok', { status: 200 })
-    if (u.includes('copy.gullychain')) return new Response('', { status: 502 })
+    if (u.includes('copy.kre8.fun')) return new Response('', { status: 502 })
     if (init.method === 'POST') return new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result: '0x1' }), { status: 200 })
     return new Response('ok', { status: 200 })
   })

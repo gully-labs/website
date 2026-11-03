@@ -68,7 +68,7 @@ test('redirects: every product hash leaves for the product\'s own app; the app\'
     assert.equal(nav.redirectFor(id), url, id)
     assert.equal(nav.redirectFor(`#${id}`), url, `#${id}`)
     assert.equal(nav.redirectFor(`${id}/anything`), url, `${id}/sub`)
-    assert.match(url, /^https:\/\/[a-z.]+(\/|$)/, 'an https address on the product\'s own domain')
+    assert.match(url, /^https:\/\/[a-z0-9.-]+(\/|$)/, 'an https address on the product\'s own domain')
   }
   // The old Gully Chain hashes go to Gully Chain's app.
   for (const h of ['chains', 'chains/launch', 'chain-kit', 'deepcore']) assert.equal(nav.redirectFor(h), 'https://kre8.fun', h)
