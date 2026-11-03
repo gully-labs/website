@@ -165,6 +165,9 @@ try {
   execFileSync(process.execPath, [path.join(ROOT, 'scripts/build-ask-index.mjs'), '--out', out, '--features', path.join(ROOT, 'scripts/fixtures/features.sample.ts')], { stdio: 'pipe' })
   const chunks = JSON.parse(fs.readFileSync(out, 'utf8')).chunks.filter((c) => c.source === 'Legal')
   check('Gully AI index: the legal pages are cited at their canonical URLs (/terms#s1…s20, /privacy#s1…s15), never /legal/terms', Array.from({ length: 20 }, (_, i) => `https://${MAIN}/terms#s${i + 1}`).every((u) => chunks.some((c) => c.url === u)) && Array.from({ length: 15 }, (_, i) => `https://${MAIN}/privacy#s${i + 1}`).every((u) => chunks.some((c) => c.url === u)) && !chunks.some((c) => /\/legal\/(terms|privacy)/.test(c.url)) && !chunks.some((c) => DRAFT.test(c.text)), `${chunks.length} legal chunks`)
+} catch (e) {
+  // A throw (a missing module or export on an older tree) is a failure, never a silent pass.
+  check(`the test ran to the end (threw: ${e?.message ?? e})`, false)
 } finally {
   console.log(`\n${t.passed} passed, ${t.failed} failed`)
   fs.rmSync(tmp, { recursive: true, force: true })
