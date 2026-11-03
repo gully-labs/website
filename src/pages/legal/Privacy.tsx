@@ -61,6 +61,7 @@ const RETENTION: [string, string][] = [
   ['Holder Map view counts', 'Reset every UTC day; the key that hashes visitors is never written down'],
   ['Telegram announcements: deliveries and opened links', 'The newest 200 announcements'],
   ['Telegram bot records (first and last seen, language, opt-out)', 'Not deleted automatically today'],
+  ['Server and edge logs', 'As long as needed to run and secure the services, then deleted'],
   ['Backups of all of the above (on the same server)', '7 days'],
   ['Accounts, workspaces, keys, payments, invoices, stores, Telegram links, waitlists, analytics data', 'Not deleted automatically today; ask us and we delete what the law lets us'],
 ]
@@ -192,6 +193,9 @@ export function PrivacyPage() {
             <b>Geolocation.</b> Cloudflare, which carries our traffic, tells our server the country of each request. We use it only to decide whether the stock token swap may be shown, and don’t store it.
           </P>
           <P>If you sign up for Gully Analytics, we also keep your wallet address, your sites, your plan and trial dates, and monthly event counts. Your Umami password is never stored by us.</P>
+          <P>
+            <b>Server logs.</b> Our own server keeps no log of every request. It logs errors and service events, which can include the address of a page or API call, and our network edge (Cloudflare and the proxy in front of our server) can log requests, including IP addresses, to keep the services secure. We keep these logs only as long as we need them to run and secure the services, then delete them.
+          </P>
         </S>
 
         <S n={4} title="Gully AI">
