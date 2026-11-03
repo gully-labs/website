@@ -14,6 +14,7 @@ import { CHAIN_NAMES, PICK_CHAINS } from './insights'
    Privacy Policy on gullylabs.xyz, which these pages name. Section ids s1…sN. */
 
 const CHAINS = PICK_CHAINS.map((k) => CHAIN_NAMES[k])
+const CHAIN_LIST = `${CHAINS.slice(0, -1).join(', ')} and ${CHAINS[CHAINS.length - 1]}`
 
 const RELATED = [
   { href: '/terms', label: 'HolderMaps Terms' },
@@ -56,7 +57,7 @@ export function HmTermsPage() {
 
         <S n={2} title="What HolderMaps is">
           <P>
-            HolderMaps draws a token’s holders as a bubble map: the biggest wallets, the wallets that trade with each other or share a funder (clusters), how concentrated the supply is, and, for launches we can read from their first block, launch health such as snipers and bundled buys. It covers tokens on {CHAINS.join(', ').replace(/, ([^,]*)$/, ' and $1')}, where a source for that chain is available. Maps are free and need no account.
+            HolderMaps draws a token’s holders as a bubble map: the biggest wallets, the wallets that trade with each other or share a funder (clusters), how concentrated the supply is, and, for launches we can read from their first block, launch health such as snipers and bundled buys. It covers tokens on {CHAIN_LIST}, where a source for that chain is available. Maps are free and need no account.
           </P>
         </S>
 
