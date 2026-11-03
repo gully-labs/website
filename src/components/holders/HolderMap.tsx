@@ -58,7 +58,7 @@ const fmtUsd = (n: number) => `${n < 0 ? '−' : ''}$${Math.abs(Math.round(n)).t
 const fmtUnits = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n.toLocaleString('en-US', { maximumFractionDigits: 4 }))
 const PCT = { maximumFractionDigits: 2 } as const
 /** A holder's label for a narrow row: the parenthetical detail ("Burn (dead address)") is dropped. */
-const shortLabel = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '').replace(/^DeepCore launch lock$/, 'Launch lock')
+const shortLabel = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '').replace(/^\w+( \w+)? launch lock$/, 'Launch lock')
 
 const VIEWS: SegOption<'map' | 'list'>[] = [
   { id: 'map', label: 'Map' },
@@ -128,7 +128,7 @@ export interface HolderMapProps {
   compact?: boolean
   /** Embedded on another site: trades and shares open gullylabs.xyz. */
   embed?: boolean
-  /** Where Buy / Sell goes: '#swap' on a stock page; null hides it. Launches go to DeepCore's swap by default. */
+  /** Where Buy / Sell goes: '#swap' on a stock page; null hides it. Launches go to the launchpad's swap by default. */
   tradeHref?: string | null
   onTrade?: () => void
   /** The map's own page: the title is the page's h1, live mode runs, the map takes the first screen. */
@@ -157,7 +157,7 @@ export function HolderMap({ chain, token, compact = false, embed = false, tradeH
                 ? 'The Holder Map could not check this token'
                 : 'The Holder Map is busy'
         }
-        text={m.comingSoon ? `Maps for tokens on ${chainName} are on the way. DeepCore launches already have live maps you can open now.` : m.reason}
+        text={m.comingSoon ? `Maps for tokens on ${chainName} are on the way. Launchpad launches already have live maps you can open now.` : m.reason}
         action={
           m.state === 'busy'
             ? undefined
@@ -1442,7 +1442,7 @@ function FairBlock({ m }: { m: HolderMapOk }) {
 
 /** The line under the title: what kind of token this map is of. */
 function kindLabel(m: HolderMapOk) {
-  return m.kind === 'deepcore-launch' ? 'DeepCore launch' : m.kind === 'launch' ? `${m.venue ?? 'Launchpad'} launch` : m.kind === 'token' ? 'Token' : 'Stock token'
+  return m.kind === 'deepcore-launch' ? 'Launchpad launch' : m.kind === 'launch' ? `${m.venue ?? 'Launchpad'} launch` : m.kind === 'token' ? 'Token' : 'Stock token'
 }
 
 function Trade({ m, embed, tradeHref, onTrade, pageUrl }: { m: HolderMapOk; embed: boolean; tradeHref?: string | null; onTrade?: () => void; pageUrl: string }) {
@@ -1453,7 +1453,7 @@ function Trade({ m, embed, tradeHref, onTrade, pageUrl }: { m: HolderMapOk; embe
   const net = { robinhood: 'robinhood', bsc: 'bsc', base: 'base', hyperevm: 'hyperevm' }[m.chain.key] ?? m.chain.key
   const href = embed ? pageUrl : (tradeHref ?? (generic ? m.token.url : launch ? `https://deepcore.fun/app/swap?net=${net}&in=0x0000000000000000000000000000000000000000&out=${m.token.address}` : `/tracker/${m.chain.key}/${sym}#swap`))
   const external = embed || /^https?:/.test(href)
-  const note = generic ? 'Opens the block explorer; Gully Labs has no swap for this token.' : launch ? `Opens DeepCore’s own swap; Gully Labs takes no fee there.` : m.chain.key === 'solana' ? jupiterFeeText() : feeText()
+  const note = generic ? 'Opens the block explorer; Gully Labs has no swap for this token.' : launch ? `Opens the launchpad’s own swap; Gully Labs takes no fee there.` : m.chain.key === 'solana' ? jupiterFeeText() : feeText()
   return (
     <div className="flex flex-col gap-2 rounded-[12px] border border-line-strong p-4" style={{ background: K.night }} data-holder-trade>
       <p className="m-0 text-[14px] leading-[1.5] text-ink">

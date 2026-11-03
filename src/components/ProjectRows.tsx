@@ -42,7 +42,7 @@ function figure(v: Venue | undefined, c: Col): { n: number | null; note?: string
   return { n: v.fees24hUsd, note: v.fees24hUsd === null ? undefined : '24h' }
 }
 
-/** Small secondary facts a venue publishes beyond the three figures (DeepCore: hosted sites,
+/** Small secondary facts a venue publishes beyond the three figures (a launchpad, say: hosted sites,
     launches in 24h, dollars in locks). A fact the venue left out reads "—", never 0. */
 function extrasOf(v: Venue | undefined): string | null {
   if (!v || v.state !== 'ok' || v.key !== 'deepcore') return null

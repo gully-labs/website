@@ -150,7 +150,7 @@ export function captionOf(n: HolderNode): string | null {
         deployer: 'DEPLOYER',
         token: 'TOKEN',
         exchange: 'EXCHANGE',
-        deepcore: 'DEEPCORE',
+        deepcore: 'LAUNCHPAD',
         gully: 'GULLY',
       } as Partial<Record<HolderLabelKind, string>>
     )[k] ?? null

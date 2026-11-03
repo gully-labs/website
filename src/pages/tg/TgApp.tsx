@@ -203,7 +203,7 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
             </div>
           }
         >
-          The widest stock-token gaps, new DeepCore launches as they happen and product drops. Join the channel, then tap <b>I&apos;ve joined</b>.
+          The widest stock-token gaps, new launchpad launches as they happen and product drops. Join the channel, then tap <b>I&apos;ve joined</b>.
         </Notice>
         {fresh > 0 && <p className="m-0 px-1 text-[13px] text-error">Not joined yet. Telegram can take a few seconds: join the channel, wait a moment, then tap again.</p>}
         {m.linked && (
@@ -218,7 +218,7 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
   const rowOf = (chain: string, ticker: string): TrackerRow | null => (tracker.k === 'ok' ? (tracker.data.rows.find((r) => r.chain === chain && r.ticker === ticker) ?? null) : null)
   const openStock = (chain: string, ticker: string) => setStack((s) => [...s, { k: 'stock', chain, ticker }])
   const openHolders = (chain: string, token: string) => setStack((s) => [...s, { k: 'holders', chain, token }])
-  // Stock tokens get "Who holds?" only on chains where the Holder Map has data (DeepCore launches always do).
+  // Stock tokens get "Who holds?" only on chains where the Holder Map has data (launchpad launches always do).
   const stockHolders = (chain: string) => (m.holderChains ?? []).includes(chain)
 
   return (

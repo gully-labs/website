@@ -59,7 +59,7 @@ export const productsNav: NavGroup = {
     { label: 'Swap', desc: 'Swap any stock token from its page', to: '/tracker/robinhood/NVDA#swap', icon: ArrowLeftRight },
     { label: 'Alerts', desc: 'Gap alerts by Telegram or webhook', to: '/#alerts', icon: BellRing },
     { label: 'Gully Analytics', desc: 'Web analytics that see the wallet', to: '/analytics', icon: ChartNoAxesCombined, match: ['/analytics'] },
-    { label: 'Gully Chain', desc: 'The L3, DeepCore and Chain Kit', href: 'https://gullychain.xyz/', newTab: true, icon: Boxes },
+    { label: 'Gully Chain', desc: 'The L3, Gully Core and Chain Kit', href: 'https://gullychain.xyz/', newTab: true, icon: Boxes },
     { label: 'Gully Security', desc: 'AI Security Scan and code reviews', href: 'https://gullysecurity.xyz/', newTab: true, icon: ShieldCheck },
     scoreNavEntry,
     { label: 'Gully RPC', desc: 'One RPC key for every Gully chain', href: 'https://gullyrpc.xyz/', newTab: true, icon: Network },

@@ -19,7 +19,7 @@ import { StatusPill as KitPill } from '../../../components/ui/StatusPill'
      Widest gaps   GET /api/tracker every 30 s, the widest trusted gaps on every chain (animated bars)
      Gap index     the average absolute gap of the 8 widest stock tokens over 24 h, in 30-minute buckets,
                    from GET /api/tracker/gap-index (one call, every 5 minutes), a line with hover tooltips
-     DeepCore      GET /api/deepcore/launches: launches in the last 24 h per chain, and the newest
+     Launches      GET /api/deepcore/launches: launches in the last 24 h per chain, and the newest
      API status    this browser's own round trip to GET /healthz every 5 s, as a live sparkline
    Gully Pay has no public network-wide volume, so it is not shown (never invented). */
 
@@ -151,8 +151,8 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
         <Tile
           testId="mk-deepcore"
           icon={<Rocket size={15} aria-hidden />}
-          title="DeepCore launches · 24h"
-          sub="Launches per chain over 24 hours, from DeepCore's indexer"
+          title="New launches · 24h"
+          sub="Launches per chain over 24 hours, from the launchpad's indexer"
           figure={d ? <AnimatedNumber value={day.length} className="font-display text-[20px] leading-none font-bold" /> : <span className="font-mono text-[11px] text-faint">{dc.k === 'loading' ? '…' : 'unreadable'}</span>}
         >
           {newest && (
@@ -163,7 +163,7 @@ export function MarketBand({ onPick }: { onPick?: () => void }) {
               </span>
             </span>
           )}
-          {!d ? dc.k === 'loading' ? <Skeleton h={MINI} /> : <LiveMarker text="The launch list is unreadable right now" height={MINI} /> : perChain.length ? <HBars rowH={22} minH={MINI} rows={perChain.slice(0, 3)} label={`DeepCore launches in the last 24 hours: ${perChain.map((c) => `${c.name} ${c.value}`).join(', ')}.`} /> : <LiveMarker text="Watching DeepCore for launches" height={MINI} />}
+          {!d ? dc.k === 'loading' ? <Skeleton h={MINI} /> : <LiveMarker text="The launch list is unreadable right now" height={MINI} /> : perChain.length ? <HBars rowH={22} minH={MINI} rows={perChain.slice(0, 3)} label={`New launches in the last 24 hours: ${perChain.map((c) => `${c.name} ${c.value}`).join(', ')}.`} /> : <LiveMarker text="Watching the launchpad for launches" height={MINI} />}
         </Tile>
 
         <Tile

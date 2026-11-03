@@ -14,17 +14,18 @@ import { declinedInvites, restoreFocus, usePortal } from './portal'
 import { ExtLink } from './ExtLink'
 import { StatusPill as KitPill, type PillTone } from '../../components/ui/StatusPill'
 import { BadgeFooterRow } from '../../components/PoweredByBadge'
+import { HUB_NAV_IDS } from './services/nav'
 
 /* The Gully Labs App's frame (app.gullylabs.xyz): a left sidebar and a slim header around the page.
 
    Sidebar, top to bottom: the Gully mark (home), the workspace switcher and the collapse button in one row,
-   every page in one
-   full-height list under folding group headings (Workspace, Services, Developer, Account; 34px rows with
-   16px icons, the fold remembered), and the wallet menu. All 19 pages fit at 800px tall, so it has no inner
-   scrollbar. From 1280px it is open (212px); from 860px to 1279px it starts as an icon rail (64px, each row
-   with a tooltip); the chevron toggles it at any width and the choice is remembered. Under 860px there is
-   no sidebar: a bottom tab bar holds Overview, Tracker, Keys and Alerts, and "More" (or the header's Menu
-   button) opens every page as a bottom sheet (a modal dialog: focus moves in, Tab stays in, Escape closes).
+   the seven pages (services/nav.ts SIDEBAR: Overview, Activity, Products, Keys, Billing, Team, Settings) as one
+   flat list of 40px rows with 16px Lucide icons, and the wallet menu. From 1280px it is open (212px); from 860px
+   to 1279px it starts as an icon rail (64px, each row with a tooltip); the chevron toggles it at any width and
+   the choice is remembered. Under 860px there is no sidebar: a bottom tab bar holds Overview, Activity, Products
+   and Keys, and "More" (or the header's Menu button) opens every page as a bottom sheet (a modal dialog: focus
+   moves in, Tab stays in, Escape closes). Gully AI is the floating assistant button at the bottom right of every
+   page (AskLauncher: the drawer, ⌘K / Ctrl+K).
 
    Header: a Menu button and the Gully mark linking home (narrow screens, so home is one tap away at every
    width), the breadcrumb (workspace / page), Docs ↗ / Status / gullylabs.xyz as icon buttons (wide
@@ -302,7 +303,7 @@ function NavList<T extends string>({ items, current, go, compact, dense }: { ite
                 e.preventDefault()
                 go(t.id)
               }}
-              className={`group/row relative flex items-center gap-[10px] rounded-[8px] font-medium transition-colors ${dense ? 'min-h-[30px] text-[13px] [@media(max-height:820px)]:min-h-7' : 'min-h-11 text-[14px]'} ${compact ? 'justify-center px-0' : 'px-[10px]'} ${on ? 'bg-surface text-ink' : 'text-dim hover:bg-surface-hover hover:text-ink'}`}
+              className={`group/row relative flex items-center gap-[10px] rounded-md font-medium transition-colors ${dense ? 'min-h-10 text-[13px]' : 'min-h-11 text-[14px]'} ${compact ? 'min-h-11 justify-center px-0' : 'px-[10px]'} ${on ? 'bg-surface text-ink' : 'text-dim hover:bg-surface-hover hover:text-ink'}`}
             >
               {on && <span className="absolute top-[8px] bottom-[8px] left-0 w-[3px] rounded-full bg-gold" aria-hidden />}
               <span className={on ? 'text-gold' : ''}>{t.icon}</span>
@@ -497,7 +498,7 @@ function Sheet({ open, onClose, children }: { open: boolean; onClose: () => void
 
 /* ------------------------------------------------------------ phone tab bar --- */
 
-const TAB_BAR_IDS = ['overview', 'tracker', 'keys', 'alerts']
+const TAB_BAR_IDS = ['overview', 'activity', 'products', 'keys']
 
 /** Under 860px: the four key pages as a bottom tab bar, plus "More" for the full menu sheet. */
 function TabBar<T extends string>({ items, current, go, more, sheetOpen }: { items: NavItem<T>[]; current: T; go: (t: T) => void; more: () => void; sheetOpen: boolean }) {
@@ -596,8 +597,7 @@ export function AppShell<T extends string>({
     <div className="flex min-h-dvh" data-testid="app-shell" data-sidebar={narrow ? 'sheet' : compact ? 'icons' : 'open'}>
       {!narrow && (
         <aside aria-label="App" className={`sticky top-0 z-40 flex h-dvh shrink-0 flex-col gap-[6px] border-r border-line bg-bg-alt py-[6px] transition-[width] duration-200 print:hidden ${compact ? 'w-16 px-2' : 'w-[212px] px-[10px]'}`} data-testid="app-sidebar">
-          {/* The Gully mark (home), the workspace switcher and the collapse button share one row, so every page
-              still fits the full-height list as the app grows (19 pages fit at 800 px). */}
+          {/* The Gully mark (home), the workspace switcher and the collapse button share one row. */}
           <div className={`flex items-center gap-1 ${compact ? 'flex-col' : ''}`}>
             <Brand compact onHome={() => go(first)} />
             <div className={compact ? 'w-full' : 'min-w-0 flex-1'}>
@@ -607,9 +607,8 @@ export function AppShell<T extends string>({
               {compact ? <ChevronsRight size={ICON} aria-hidden /> : <ChevronsLeft size={ICON} aria-hidden />}
             </button>
           </div>
-          {/* One full-height list: it fits at 800px and up, so it scrolls only on short windows (and the icon
-              rail never clips its tooltips). */}
-          <nav aria-label="App pages" className={`-mx-1 min-h-0 flex-1 px-1 ${compact ? '' : 'overflow-y-auto [scrollbar-width:thin]'}`} data-testid="app-nav">
+          {/* The seven pages: one flat list (it fits any window; the icon rail never clips its tooltips). */}
+          <nav aria-label="App pages" className={`-mx-1 min-h-0 flex-1 px-1 pt-1 ${compact ? '' : 'overflow-y-auto [scrollbar-width:thin]'}`} data-testid="app-nav" data-nav-ids={HUB_NAV_IDS}>
             <NavLinks items={items} current={current} go={go} compact={compact} dense />
           </nav>
           <div className="border-t border-line pt-[6px]">
@@ -659,10 +658,9 @@ export function AppShell<T extends string>({
 
       {narrow && <TabBar items={items} current={current} go={pick} more={() => setSheet(true)} sheetOpen={sheet} />}
 
-      {/* Gully AI everywhere in the app: the floating button (bottom right) and ⌘K / Ctrl+K. On the Gully AI
-          page itself the chat is the page, so only the shortcut stays. */}
+      {/* Gully AI everywhere in the app: the floating assistant button (bottom right, opens the drawer) and ⌘K / Ctrl+K. */}
       <div className={`pointer-events-none fixed right-5 z-40 max-[600px]:right-4 print:hidden ${narrow ? 'bottom-[calc(76px+env(safe-area-inset-bottom))]' : 'bottom-5'}`} data-testid="corner-dock">
-        <AskLauncher variant="floating" hideButton={current === ('ai' as T)} />
+        <AskLauncher variant="floating" />
       </div>
 
       <PwaCards kind="app" lift={narrow} />

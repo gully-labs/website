@@ -130,7 +130,7 @@ export interface HolderFrame {
   top10Pct: number | null
   holders: number | null
 }
-/** deepcore-launch: a DeepCore launch. launch: another launchpad's token (venue says which). stock: a tracked stock token. token: any other token. */
+/** deepcore-launch: a launch from the launchpad's indexer. launch: another launchpad's token (venue says which). stock: a tracked stock token. token: any other token. */
 export type HolderKind = 'deepcore-launch' | 'launch' | 'stock' | 'token'
 export interface HolderMapOk {
   state: 'ok'

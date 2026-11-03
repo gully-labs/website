@@ -14,7 +14,7 @@ import { LineChart } from './LineChart'
 /* The app's Status view (the header's Status button). It reads the public status (GET /api/status on
    gullylabs.xyz, server/status.mjs: every part of the stack checked once a minute by the server, 24 h kept in
    30-minute buckets) every 15 s while open, and links to the full public page (https://gullylabs.xyz/status, a
-   new tab). The API (uptime over 24 h, latency per bucket), tracker data per chain and the DeepCore launch
+   new tab). The API (uptime over 24 h, latency per bucket), tracker data per chain and the launch
    poller come first; every other part follows in one compact list. Nothing is guessed: a part the server
    could not read says "Not checked yet", one not set up on the server "Not configured". */
 
@@ -114,8 +114,8 @@ function Body() {
         <GroupRows title="Tracker data" list={of('tracker')} empty={s.error ? 'GET /api/status did not answer.' : 'Reading…'} />
       </Section>
 
-      <Section icon={<Rocket size={15} aria-hidden />} title="DeepCore launch poller" state={stateChip(of('deepcore'))}>
-        <GroupRows title="DeepCore launch poller" list={of('deepcore')} empty={s.error ? 'GET /api/status did not answer.' : 'Reading…'} />
+      <Section icon={<Rocket size={15} aria-hidden />} title="Launch poller" state={stateChip(of('deepcore'))}>
+        <GroupRows title="Launch poller" list={of('deepcore')} empty={s.error ? 'GET /api/status did not answer.' : 'Reading…'} />
       </Section>
 
       <Section icon={<LayoutGrid size={15} aria-hidden />} title="Everything else" state={stateChip(others.flatMap((g) => of(g.id)))}>

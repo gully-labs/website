@@ -98,7 +98,7 @@ export default function TelegramView({ ctx }: { ctx: ServiceCtx }) {
       <ServiceHeader
         icon={Send}
         title="Telegram"
-        desc="Gap and DeepCore launch alerts in a Telegram chat, with Mute and Open buttons; the bot also answers /gap, /top, /launches and Gully AI."
+        desc="Gap and new-launch alerts in a Telegram chat, with Mute and Open buttons; the bot also answers /gap, /top, /launches and Gully AI."
         status={status}
         docs={docsPage('plans-alerts')}
         page={{ href: bot, label: 'Open the bot' }}
@@ -147,7 +147,7 @@ export default function TelegramView({ ctx }: { ctx: ServiceCtx }) {
               {onTg.slice(0, 6).map((a) => (
                 <li key={a.id} className="flex items-center gap-2 text-[13px] text-ink-2">
                   <span className={`size-[6px] rounded-full ${a.enabled ? 'bg-green' : 'bg-faint'}`} aria-hidden />
-                  <span className="truncate">{a.name || (a.ticker ? `${a.ticker} gap` : 'DeepCore launches')}</span>
+                  <span className="truncate">{a.name || (a.ticker ? `${a.ticker} gap` : 'New launches')}</span>
                 </li>
               ))}
             </ul>
