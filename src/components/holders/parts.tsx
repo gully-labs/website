@@ -144,11 +144,11 @@ export function DeployerHistoryCard({ d, now }: { d: DeployerHistory; now: numbe
       {!d.checked ? (
         <p className="m-0 text-[13px] text-muted">{d.reason ?? 'Not checked yet.'}</p>
       ) : !d.launches.length ? (
-        <p className="m-0 text-[13px] text-muted">No other launches by this deployer on DeepCore.</p>
+        <p className="m-0 text-[13px] text-muted">No other launches by this deployer on the launchpad.</p>
       ) : (
         <>
           <p className="m-0 text-[13px] text-muted">
-            {d.total} other launch{d.total === 1 ? '' : 'es'} by this deployer on DeepCore.
+            {d.total} other launch{d.total === 1 ? '' : 'es'} by this deployer on the launchpad.
           </p>
           <ul className="m-0 flex list-none flex-col gap-1 p-0">
             {d.launches.slice(0, 8).map((l) => (

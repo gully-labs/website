@@ -129,7 +129,7 @@ for (const [chainId, address] of [
   })
 }
 
-// ------------------------------------------------------------------------------------------ DeepCore (SDK address book)
+// ------------------------------------------------------------------------------------------ Gully Core (SDK address book)
 {
   const source = 'deepcore:packages/sdk/src/deployments/index.ts'
   const text = read(source)
@@ -139,7 +139,7 @@ for (const [chainId, address] of [
     clPoolManager: 'Concentrated-liquidity pool manager of the core.',
     binPoolManager: 'Liquidity-bin pool manager of the core.',
     universalRouter: 'The router users trade through.',
-    fillRouter: 'Best-price router across DeepCore pools and the major DEXes.',
+    fillRouter: 'Best-price router across Gully Core pools and the major DEXes.',
     governanceSafe: 'The Safe that governs this chain deployment (owner of the registry and timelocks).',
     feeController: 'Sets and collects protocol fees within their caps.',
     registry: 'Registry of hosted Launchpads and DEXes.',
@@ -155,7 +155,7 @@ for (const [chainId, address] of [
   chainBlocks.forEach((m, i) => {
     const chainId = Number(m[2])
     if (m[6] !== 'true') return
-    if (!CHAINS[chainId]) throw new Error(`DeepCore chain ${chainId} unknown to the generator`)
+    if (!CHAINS[chainId]) throw new Error(`Gully Core chain ${chainId} unknown to the generator`)
     const block = text.slice(starts[i], starts[i + 1] ?? text.length)
     // Only the top-level and launchpadV2 fields; the token list and the revShareHooks history are left out.
     const head = block.split(/\n {4}tokens: \[/)[0].replace(/\n {4}revShareHooks: \[[\s\S]*?\n {4}\],/, '')
@@ -165,9 +165,9 @@ for (const [chainId, address] of [
       add({
         chainId,
         address,
-        name: `DeepCore ${label(key)}`,
-        role: ROLE[key] ?? `Part of the DeepCore protocol on this chain: ${label(key).toLowerCase()}.`,
-        project: 'DeepCore',
+        name: `Gully Core ${label(key)}`,
+        role: ROLE[key] ?? `Part of the Gully Core protocol on this chain: ${label(key).toLowerCase()}.`,
+        project: 'Gully Core',
         source,
       })
     }
@@ -258,7 +258,7 @@ fs.mkdirSync(path.dirname(CACHE), { recursive: true })
 fs.writeFileSync(CACHE, JSON.stringify(cache, null, 1) + '\n')
 
 // ------------------------------------------------------------------------------------------ write
-const order = { 'Gully Labs': 0, DeepCore: 1, Peddles: 2, PeddleSwap: 3, PeddleQuest: 4 }
+const order = { 'Gully Labs': 0, 'Gully Core': 1, Peddles: 2, PeddleSwap: 3, PeddleQuest: 4 }
 entries.sort((a, b) => order[a.project] - order[b.project] || a.chainId - b.chainId || a.name.localeCompare(b.name))
 const block = `// BEGIN ENTRIES\nexport const contracts: ContractEntry[] = [\n${entries.map((e) => `  ${JSON.stringify(e)},`).join('\n')}\n]\n// END ENTRIES`
 const src = fs.readFileSync(OUT, 'utf8')

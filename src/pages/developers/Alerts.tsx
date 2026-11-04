@@ -116,7 +116,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
   const [hAbove, setHAbove] = useState('20')
   const [hDrop, setHDrop] = useState('')
   const [hSell, setHSell] = useState('25')
-  // DeepCore launch alerts, offered when the server lists that kind (with its chains).
+  // New-launch alerts (the launchpad feed), offered when the server lists that kind (with its chains).
   const launchKind = view.kinds?.find((k) => k.id === 'deepcore-launch')
   const [dcChain, setDcChain] = useState('')
   // Gully AI's "Set an alert at 2% above" (&pct=&dir= with ?alert=) opens with that gap filled in.
@@ -145,12 +145,12 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
     setName('')
     setWebhook('')
     setToTelegram(false)
-    toastSuccess('Alert created', { detail: name.trim() || (kind === 'holders' ? 'Holder alert' : kind === 'deepcore' ? 'DeepCore launch alert' : ticker ? `${ticker} alert` : 'Any-stock alert') })
+    toastSuccess('Alert created', { detail: name.trim() || (kind === 'holders' ? 'Holder alert' : kind === 'deepcore' ? 'Launch alert' : ticker ? `${ticker} alert` : 'Any-stock alert') })
     onCreated(r.data.secret)
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title={kind === 'holders' ? 'New holder alert' : kind === 'deepcore' ? 'New DeepCore launch alert' : 'New gap alert'}>
+    <Dialog open={open} onClose={onClose} title={kind === 'holders' ? 'New holder alert' : kind === 'deepcore' ? 'New launch alert' : 'New gap alert'}>
       <form className="flex flex-col gap-4" onSubmit={submit}>
         <label className={fieldLabel}>
           <span>
@@ -179,7 +179,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
           <label className={fieldLabel}>
             Chain
             <select className={select} value={dcChain} onChange={(e) => setDcChain(e.target.value)}>
-              <option value="">Every chain DeepCore runs on</option>
+              <option value="">Every chain the launchpad runs on</option>
               {(launchKind.chains ?? []).map((c) => (
                 <option key={c.chainId} value={String(c.chainId)}>
                   {c.name}
@@ -191,7 +191,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
         <label className={fieldLabel}>
           Stock
           <select className={select} value={target} onChange={(e) => setTarget(e.target.value)}>
-            <option value="any">Any stock the tracker follows</option>
+            <option value="any">Any stock HolderMaps follows</option>
             {Object.entries(byChain).map(([chain, stocks]) => (
               <optgroup key={chain} label={CHAIN_NAMES[chain] ?? chain}>
                 {stocks.map((s) => (
@@ -212,7 +212,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
               <option value="premium">It turns premium</option>
               <option value="discount">It turns discount</option>
               <option value="either">It turns premium or discount</option>
-              {launchKind && <option value="deepcore">A new token launches on DeepCore</option>}
+              {launchKind && <option value="deepcore">A new token launches on the launchpad</option>}
               {holdersKind && <option value="holders">Holders: a cluster grows or sells</option>}
             </select>
           </label>
@@ -262,8 +262,8 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
               ? 'Holder alerts come with the Pro plan.'
               : `Holder alert: the token's Holder Map is re-read every ${holdersKind?.everyMinutes ?? 10} minutes. "Sells" and "falls from its high" fire when the cluster or the deployer moves tokens out. Counts as one of your plan's alerts.`
             : kind === 'deepcore'
-            ? `Once per new launch read from DeepCore's public API (checked every minute or two); launches within ${launchKind?.cooldownMinutes ?? 5} minutes of the last delivery go out together. Counts as one of your plan's alerts.`
-            : kind === 'gap' ? <>Only pools deep enough to flag count; the gap is the on-chain price against fair.</> : <>Premium and discount are the tracker&apos;s own flags (a gap of {view.limits.flagPct}% or more in a pool deep enough to count).</>}
+            ? `Once per new launch read from the launchpad's public API (checked every minute or two); launches within ${launchKind?.cooldownMinutes ?? 5} minutes of the last delivery go out together. Counts as one of your plan's alerts.`
+            : kind === 'gap' ? <>Only pools deep enough to flag count; the gap is the on-chain price against fair.</> : <>Premium and discount are HolderMaps&apos; own flags (a gap of {view.limits.flagPct}% or more in a pool deep enough to count).</>}
         </span>
         <label className={fieldLabel}>
           Webhook URL
@@ -481,7 +481,7 @@ export function TelegramCard({ info, reload, compact = false, from = 'alerts' }:
           </ExtLink>
         </div>
       )}
-      {!compact && chat && <span className="text-[12px] leading-[1.55] text-muted">Tick Telegram on an alert to have it sent here, with Open and Mute 24h buttons. In the chat, /alerts lists your alerts, /gap NVDA and /top read the tracker, and /stop unlinks.</span>}
+      {!compact && chat && <span className="text-[12px] leading-[1.55] text-muted">Tick Telegram on an alert to have it sent here, with Open and Mute 24h buttons. In the chat, /alerts lists your alerts, /gap NVDA and /top read HolderMaps, and /stop unlinks.</span>}
       {!compact && info.enabled && !chat && !link && <span className="text-[12px] leading-[1.55] text-muted">Connect opens the bot with a one-time code that links the chat to this wallet. The bot also answers /gap NVDA and /top for anyone. In a group, only the person who links it can unlink it.</span>}
       {err && <ErrorLine>{err}</ErrorLine>}
     </div>
@@ -532,7 +532,7 @@ function AlertsSetup({ view, reload, onCreate, act, busy, full }: { view: Alerts
           <TelegramCard info={view.telegram} reload={reload} compact />
         ) : id === 'create' ? (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="min-w-0 flex-[1_1_260px] text-[13px] text-muted">A webhook{view.telegram.enabled ? ' or Telegram message' : ''} when a stock&apos;s gap crosses your line, or a DeepCore token launches.</span>
+            <span className="min-w-0 flex-[1_1_260px] text-[13px] text-muted">A webhook{view.telegram.enabled ? ' or Telegram message' : ''} when a stock&apos;s gap crosses your line, or a new token launches.</span>
             <Can cat="alerts" what="create alerts">
               <button type="button" disabled={full} onClick={onCreate} className={pillGold}>
                 <Plus size={16} aria-hidden /> Create your first alert
@@ -619,10 +619,10 @@ export function Alerts({ goBilling, creating, onCreateDone, prefill = null, pref
   const deliveries = view.alerts.reduce((t, a) => t + a.deliveries.length, 0)
   return (
     <div className="flex flex-col gap-2">
-      <ServiceHeader icon={BellRing} title="Alerts" desc="A webhook or a Telegram message when a stock token's gap crosses your line, or when DeepCore launches a token." status={{ tone: view.alerts.length ? 'live' : 'idle', text: `${view.limits.used} of ${view.limits.max} in use` }} docs={`${DOCS_URL}/plans-alerts`} />
+      <ServiceHeader icon={BellRing} title="Alerts" desc="A webhook or a Telegram message when a stock token's gap crosses your line, or when a new token launches." status={{ tone: view.alerts.length ? 'live' : 'idle', text: `${view.limits.used} of ${view.limits.max} in use` }} docs={`${DOCS_URL}/plans-alerts`} />
       <div className="flex flex-wrap items-center gap-2">
         <InfoTip className="flex-1" summary={`${view.limits.used} of ${view.limits.max} alerts on ${view.limits.planName} · checked every five minutes`}>
-          An alert fires when its condition becomes true and re-arms once it is false again, at most one delivery per alert every {view.limits.cooldownMinutes} minutes. Alerts look only at stocks the tracker would flag: a readable feed and pool, a pool deep enough to count, and an open feed session. Webhook payloads and how to check the signature are in the{' '}
+          An alert fires when its condition becomes true and re-arms once it is false again, at most one delivery per alert every {view.limits.cooldownMinutes} minutes. Alerts look only at stocks HolderMaps would flag: a readable feed and pool, a pool deep enough to count, and an open feed session. Webhook payloads and how to check the signature are in the{' '}
           <ExtLink href={`${DOCS_URL}/plans-alerts`} className="text-gold underline-offset-4 hover:underline">
             Plans &amp; alerts docs
           </ExtLink>

@@ -8,7 +8,6 @@ import type { ServiceTab } from './nav'
 
 const VIEWS = {
   tracker: lazy(() => import('./TrackerView')),
-  ai: lazy(() => import('./AiView')),
   score: lazy(() => import('./ScoreView')),
   widgets: lazy(() => import('./WidgetsView')),
   telegram: lazy(() => import('./TelegramView')),

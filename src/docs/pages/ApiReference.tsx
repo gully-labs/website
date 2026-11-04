@@ -16,7 +16,7 @@ const sections = [
   { id: 'stats', title: 'GET /api/stats' },
   { id: 'status', title: 'GET /api/status' },
   { id: 'geo', title: 'GET /api/geo' },
-  { id: 'deepcore', title: 'DeepCore' },
+  { id: 'deepcore', title: 'Launchpad' },
   { id: 'solana', title: 'Solana' },
   { id: 'ask', title: 'Gully AI' },
   { id: 'plans', title: 'Plans and alert channels' },
@@ -61,7 +61,7 @@ export function ApiReference() {
       slug="api"
       eyebrow="BUILD · API"
       title="API reference"
-      description="Every public Gully Labs endpoint: the tracker (rows, history, movers, gap index), Holder Map, Gully Score, Gully Security, stats, status, geo, DeepCore, Solana and Jupiter, Gully AI, plans and Gully Pay, with response fields, caching, CORS, rate limits and errors."
+      description="Every public Gully Labs endpoint: the tracker (rows, history, movers, gap index), Holder Map, Gully Score, Gully Security, stats, status, geo, launchpad launches, Solana and Jupiter, Gully AI, plans and Gully Pay, with response fields, caching, CORS, rate limits and errors."
       lead="Read-only JSON for the tracker, the Holder Map, Gully Score and more, plus the routes our own checkout and AI pages call. No key is needed to start; a key raises the tracker’s rate limit."
       sections={sections}
     >
@@ -72,7 +72,7 @@ export function ApiReference() {
             ['Base URL', 'https://api.gullylabs.xyz', <>Every endpoint lives under /api, except /healthz and the Score badge. The same paths still answer on <C>https://gullylabs.xyz</C> (no redirect, POSTs included) with a <C>Link: &lt;https://api.gullylabs.xyz/api/…&gt;; rel=&quot;canonical&quot;</C> header, so moving is a change of host only.</>],
             ['Methods', 'GET, OPTIONS', <>The data endpoints are read-only; anything else answers <C>405</C>. The few POST routes (checkout, Gully AI, review requests, Solana) are listed with their section.</>],
             ['Format', 'JSON', 'UTF-8. Times are ISO 8601 in UTC, except history points (Unix seconds) and gap-index points (Unix milliseconds).'],
-            ['CORS', 'Access-Control-Allow-Origin: *', <>On <C>/api/tracker*</C>, <C>/api/holders/*</C>, <C>/api/score*</C>, <C>/api/status</C>, <C>/api/plans</C>, <C>/api/alerts/channels</C> and the Security list and stats: call them from any browser origin. The routes behind our own pages (stats, geo, DeepCore, Solana, Gully AI, Gully Pay) send no CORS header.</>],
+            ['CORS', 'Access-Control-Allow-Origin: *', <>On <C>/api/tracker*</C>, <C>/api/holders/*</C>, <C>/api/score*</C>, <C>/api/status</C>, <C>/api/plans</C>, <C>/api/alerts/channels</C> and the Security list and stats: call them from any browser origin. The routes behind our own pages (stats, geo, launchpad, Solana, Gully AI, Gully Pay) send no CORS header.</>],
             ['Auth', 'Optional', <>Send <C>Authorization: Bearer &lt;key&gt;</C> on the tracker and Holder Map for a higher limit. See <DocLink to="api-keys">API keys</DocLink>.</>],
             ['Not found', '404, with a short JSON message', <>Any unknown <C>/api/…</C> path answers JSON, never the HTML page.</>],
           ]}
@@ -240,26 +240,26 @@ export function ApiReference() {
 
       <Section id="holders" title="Holder Map: /api/holders">
         <P>
-          The Holder Map: who holds a DeepCore launch or a tracked stock token, which of the biggest wallets sent tokens to each other (clusters), what known addresses they are, and a plain-English summary. Every path below passes the same gate as the tracker: CORS <C>*</C>, an optional key, and the same per-minute limit (a holder request counts against the tracker’s budget). <C>:chain</C> is <C>robinhood</C>, <C>bsc</C>, <C>base</C>, <C>hyperevm</C> or <C>solana</C> (or the numeric chain id); <C>:token</C> is the token address, a Solana mint, or a tracked stock’s ticker.
+          The Holder Map: who holds a launchpad launch or a tracked stock token, which of the biggest wallets sent tokens to each other (clusters), what known addresses they are, and a plain-English summary. Every path below passes the same gate as the tracker: CORS <C>*</C>, an optional key, and the same per-minute limit (a holder request counts against the tracker’s budget). <C>:chain</C> is <C>robinhood</C>, <C>bsc</C>, <C>base</C>, <C>hyperevm</C> or <C>solana</C> (or the numeric chain id); <C>:token</C> is the token address, a Solana mint, or a tracked stock’s ticker.
         </P>
         <Fields
           head={['Path', 'Answers', 'Cache-Control']}
           variant="routes"
           rows={[
-            ['GET /api/holders/launches', <>The newest DeepCore launches on holder chains (12): <C>{'{ state, asOf, launches[] }'}</C>, each with <C>chainKey</C>, <C>chainName</C>, <C>token</C>, <C>symbol</C>, <C>createdAt</C>, <C>path</C>, <C>state</C> (<C>checked</C>, <C>unavailable</C>, or <C>checking</C> while its map is built), <C>health</C> (<C>score</C> 0–100 or empty, <C>level</C>, <C>verdict</C>) and <C>riskLine</C>.</>, 'public, max-age=15'],
+            ['GET /api/holders/launches', <>The newest launchpad launches on holder chains (12): <C>{'{ state, asOf, launches[] }'}</C>, each with <C>chainKey</C>, <C>chainName</C>, <C>token</C>, <C>symbol</C>, <C>createdAt</C>, <C>path</C>, <C>state</C> (<C>checked</C>, <C>unavailable</C>, or <C>checking</C> while its map is built), <C>health</C> (<C>score</C> 0–100 or empty, <C>level</C>, <C>verdict</C>) and <C>riskLine</C>.</>, 'public, max-age=15'],
             ['GET /api/holders/top?limit=', <>The most scanned maps today (UTC): <C>{'{ day, items[] }'}</C>, each <C>chain</C>, <C>token</C>, <C>symbol</C>, <C>kind</C>, <C>scans</C> (unique visitors), <C>path</C>. <C>limit</C> 1–20, default 10.</>, 'public, max-age=60'],
             ['GET /api/holders/resolve?q=', <>Search: a ticker, a launch symbol, an EVM address or a Solana mint (64 characters at most, a leading <C>$</C> ignored). <C>{'{ matches[] }'}</C>, each <C>chain</C>, <C>chainName</C>, <C>token</C>, <C>symbol</C>, <C>name</C>, <C>kind</C>, <C>path</C>. Anything else matches nothing.</>, 'public, max-age=60'],
             ['GET /api/holders/:chain/:token', <>The map, below.</>, <>public, max-age=60 when <C>state</C> is ok; no-store otherwise</>],
             ['GET /api/holders/:chain/:token.csv', <>The holder list: <C>rank,address,label,balance,percent_of_supply,cluster,flags</C> (<C>percent_of_listed</C> when the supply is unknown). UTF-8, as a download.</>, 'private, no-store'],
             ['GET /api/holders/:chain/:token/card.png', 'A 1200 × 630 share card of the map. Free for everyone.', 'public, max-age=300'],
             ['GET /api/holders/:chain/:token/live?since=', <>Transfers since block <C>since</C> (default: the map’s cursor): <C>{'{ state, since, cursor, transfers[] (from, to, pct, block, at), pcts, asOf, note }'}</C>, 200 at most. <C>state: unsupported</C> on Solana. EVM only.</>, 'no-store (10 s server cache)'],
-            ['GET /api/holders/:chain/:token/wallet/:address', <>One wallet on a DeepCore launch: <C>firstBuy</C>, <C>buys</C>, <C>sells</C>, <C>entryPrice</C>, <C>priceNow</C>, <C>pnlPct</C>, <C>otherLaunches</C>. <C>state: unsupported</C> on Solana.</>, 'public, max-age=60'],
+            ['GET /api/holders/:chain/:token/wallet/:address', <>One wallet on a launchpad launch: <C>firstBuy</C>, <C>buys</C>, <C>sells</C>, <C>entryPrice</C>, <C>priceNow</C>, <C>pnlPct</C>, <C>otherLaunches</C>. <C>state: unsupported</C> on Solana.</>, 'public, max-age=60'],
           ]}
         />
         <H3>The map</H3>
         <Fields
           rows={[
-            ['state', 'string', <><C>ok</C>, <C>not-found</C> (404: the token is neither a DeepCore launch nor a tracked stock), <C>unavailable</C> (200, with <C>reason</C> and <C>needs</C>: the chain’s holder source is not set up on this server), <C>error</C> (502) or <C>busy</C> (429 or 503).</>],
+            ['state', 'string', <><C>ok</C>, <C>not-found</C> (404: the token is neither a launchpad launch nor a tracked stock), <C>unavailable</C> (200, with <C>reason</C> and <C>needs</C>: the chain’s holder source is not set up on this server), <C>error</C> (502) or <C>busy</C> (429 or 503).</>],
             ['kind', 'string', <><C>deepcore-launch</C> or <C>stock</C>.</>],
             ['chain, token', 'object', <>Chain <C>key</C>, <C>id</C>, <C>name</C>; token <C>address</C>, <C>symbol</C>, <C>name</C>, <C>decimals</C>, <C>supply</C> (empty when unknown) and explorer <C>url</C>.</>],
             ['holders', 'object', <><C>count</C> (empty when unknown), <C>shown</C>, <C>graph</C>, <C>sharesOf</C> (<C>total supply</C> or <C>listed holders</C>), <C>partial</C>.</>],
@@ -404,17 +404,17 @@ export function ApiReference() {
         </P>
       </Section>
 
-      <Section id="deepcore" title="DeepCore: /api/deepcore">
+      <Section id="deepcore" title="Launchpad: /api/deepcore">
         <Fields
           head={['Path', 'Answers', 'Limits and cache']}
           variant="routes"
           rows={[
-            ['GET /api/deepcore/launches?chain=&limit=', <>DeepCore’s newest launches from the server’s poller: <C>{'{ state (ok, stale, unreadable), launches[], asOf, chains[], error, pollSeconds }'}</C>. Each launch: <C>key</C>, <C>chainId</C>, <C>chainName</C>, <C>token</C>, <C>symbol</C>, <C>createdAt</C>, <C>creator</C>, <C>totalSupply</C>, <C>legs[]</C> (pools, lock), <C>links</C>, <C>locked</C>. <C>chain</C> is 56, 999, 4663 or 8453; <C>limit</C> 1–50, default 50.</>, 'public, max-age=30; no key'],
-            ['GET /api/deepcore/quote?chain=&token=&amount=', <>A DeepCore router quote for buying a stock token with the native coin, for comparison only (nothing is signed): <C>{'{ quote }'}</C> with <C>pay</C>, <C>out</C> (amount, minimum), <C>priceImpactPct</C>, <C>fee</C>, <C>route</C> (venues, hops), <C>alternatives</C>, <C>expiresAt</C>, <C>links</C>. <C>chain</C> is <C>robinhood</C> or <C>bsc</C>; <C>token</C> a tracked stock token; <C>amount</C> up to 1000 of the native coin.</>, <>10 a minute per address (<C>429</C>, <C>RATE_LIMITED</C>); answers cached 20 s (<C>cached: true</C>). Region-gated (<C>451</C>).</>],
+            ['GET /api/deepcore/launches?chain=&limit=', <>The launchpad’s newest launches from the server’s poller: <C>{'{ state (ok, stale, unreadable), launches[], asOf, chains[], error, pollSeconds }'}</C>. Each launch: <C>key</C>, <C>chainId</C>, <C>chainName</C>, <C>token</C>, <C>symbol</C>, <C>createdAt</C>, <C>creator</C>, <C>totalSupply</C>, <C>legs[]</C> (pools, lock), <C>links</C>, <C>locked</C>. <C>chain</C> is 56, 999, 4663 or 8453; <C>limit</C> 1–50, default 50.</>, 'public, max-age=30; no key'],
+            ['GET /api/deepcore/quote?chain=&token=&amount=', <>A launchpad router quote for buying a stock token with the native coin, for comparison only (nothing is signed): <C>{'{ quote }'}</C> with <C>pay</C>, <C>out</C> (amount, minimum), <C>priceImpactPct</C>, <C>fee</C>, <C>route</C> (venues, hops), <C>alternatives</C>, <C>expiresAt</C>, <C>links</C>. <C>chain</C> is <C>robinhood</C> or <C>bsc</C>; <C>token</C> a tracked stock token; <C>amount</C> up to 1000 of the native coin.</>, <>10 a minute per address (<C>429</C>, <C>RATE_LIMITED</C>); answers cached 20 s (<C>cached: true</C>). Region-gated (<C>451</C>).</>],
           ]}
         />
         <P>
-          Quote errors carry a <C>code</C>: <C>BAD_CHAIN</C>, <C>BAD_TOKEN</C>, <C>BAD_AMOUNT</C> (400), <C>NO_ROUTE</C> (404), <C>BUSY</C> (429, DeepCore’s own limit), <C>UNREADABLE</C> (502).
+          Quote errors carry a <C>code</C>: <C>BAD_CHAIN</C>, <C>BAD_TOKEN</C>, <C>BAD_AMOUNT</C> (400), <C>NO_ROUTE</C> (404), <C>BUSY</C> (429, the launchpad’s own limit), <C>UNREADABLE</C> (502).
         </P>
       </Section>
 

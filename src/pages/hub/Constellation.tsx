@@ -470,7 +470,7 @@ function useMedia(q: string) {
   return on
 }
 
-// The venues line: Peddles, PeddleSwap and PeddleQuest (/api/stats no longer reads DeepCore, partnership ended 2026-10-29).
+// The venues line: Peddles, PeddleSwap and PeddleQuest (/api/stats no longer reads the former launchpad partner, partnership ended 2026-10-29).
 const BUILT = ['peddles', 'peddleswap', 'peddlequest'] as const
 function builtVenues(src: Sources) {
   const vs = (src.stats?.venues ?? []).filter((v) => (BUILT as readonly string[]).includes(v.key) && v.state === 'ok') as { tvlUsd?: number | null; volumeAllUsd?: number | null; feesAllUsd?: number | null }[]

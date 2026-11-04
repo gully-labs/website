@@ -16,7 +16,7 @@ import { track } from '../../lib/track'
 import { HolderMap } from '../../components/holders/HolderMap'
 
 /* The Mini App's screens: the gap list across chains, one stock (24h chart and an alert composer driven
-   by Telegram's MainButton), DeepCore launches and the linked account's alerts. Colours come from the
+   by Telegram's MainButton), launchpad launches and the linked account's alerts. Colours come from the
    theme tokens TgApp maps from Telegram; charts get concrete colours (ECharts cannot read CSS vars). */
 
 const SITE = 'https://gullylabs.xyz'
@@ -62,7 +62,7 @@ const plainCondition = (cond: AlertCondition | HolderCondition, chains: Record<s
     return `${who} of ${holderTarget(cond)} change`
   }
   const c = cond
-  if (c.type === 'deepcore-launch') return `A new token launches on DeepCore (${c.chainId ? (chains[c.chainId] ?? LAUNCH_CHAIN_NAMES[c.chainId] ?? `chain ${c.chainId}`) : 'any chain'})`
+  if (c.type === 'deepcore-launch') return `A new token launches on the launchpad (${c.chainId ? (chains[c.chainId] ?? LAUNCH_CHAIN_NAMES[c.chainId] ?? `chain ${c.chainId}`) : 'any chain'})`
   if (c.type === 'gap') return c.direction === 'above' ? `▲ ${c.pct}% or more above the real share price` : c.direction === 'below' ? `▼ ${c.pct}% or more below the real share price` : `↕ ${c.pct}% or more above or below the real share price`
   return c.status === 'either' ? 'Well above or below the real share price' : c.status === 'premium' ? 'Well above the real share price' : c.status === 'discount' ? 'Well below the real share price' : String(c.status)
 }
@@ -73,7 +73,7 @@ export type Me = {
   portal: string
   /** Gully Labs news in the private chat with the bot (absent on an older server: treated as on). */
   announcements?: boolean
-  /** The stock chains whose Holder Map has data (DeepCore launches always have one). Absent: none. */
+  /** The stock chains whose Holder Map has data (launchpad launches always have one). Absent: none. */
   holderChains?: string[]
 }
 
@@ -472,7 +472,7 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
   )
 }
 
-/* ---------- DeepCore launches ---------- */
+/* ---------- Launchpad launches ---------- */
 
 type Launch = { key: string; chainId: number; chainKey: string; chainName: string; token: string; symbol: string | null; createdAt: string; legs: { kind: string | null; quote: string | null; locked: boolean | null }[]; links: { token: string } }
 type Launches = { state: 'ok' | 'stale' | 'unreadable'; launches: Launch[]; asOf: string | null; error: string | null; chainNames: Record<string, string> }
@@ -531,7 +531,7 @@ export function LaunchesTab({ wa, initData, ink, me, onHolders, onAlertsChanged 
 
   return (
     <div className="flex flex-col gap-3">
-      <Chips value={chain} options={LAUNCH_CHAINS} onChange={setChain} label="DeepCore chain" />
+      <Chips value={chain} options={LAUNCH_CHAINS} onChange={setChain} label="Launchpad chain" />
       {me && (
         <div className="flex flex-col gap-1">
           <Button tone="line" onClick={launchAlert} disabled={alertBusy}>
@@ -548,10 +548,10 @@ export function LaunchesTab({ wa, initData, ink, me, onHolders, onAlertsChanged 
       )}
       {load.k === 'loading' && <ListSkeleton n={5} />}
       {load.k === 'error' && <Notice title="Launches aren’t available right now">Try again in a minute.</Notice>}
-      {load.k === 'ok' && load.data.state === 'unreadable' && <Notice title="DeepCore isn’t answering right now">Try again in a minute.</Notice>}
+      {load.k === 'ok' && load.data.state === 'unreadable' && <Notice title="The launchpad isn’t answering right now">Try again in a minute.</Notice>}
       {load.k === 'ok' && load.data.state !== 'unreadable' && (
         <>
-          {load.data.state === 'stale' && <p className="m-0 px-1 text-[12px] text-faint">DeepCore isn’t answering right now; this list is from {ageText(load.data.asOf, now)}.</p>}
+          {load.data.state === 'stale' && <p className="m-0 px-1 text-[12px] text-faint">The launchpad isn’t answering right now; this list is from {ageText(load.data.asOf, now)}.</p>}
           {barOption && counts!.length > 1 && (
             <div className={`${card} px-2 pt-1`}>
               <EChart option={barOption} height={110} label={`Latest launches per chain: ${counts!.map((c) => `${c.name} ${c.n}`).join(', ')}`} />
@@ -570,7 +570,7 @@ export function LaunchesTab({ wa, initData, ink, me, onHolders, onAlertsChanged 
                         haptic.tap()
                         wa.openLink(l.links.token)
                       }}
-                      aria-label={`${l.symbol ?? 'New token'} on ${l.chainName}: open on DeepCore`}
+                      aria-label={`${l.symbol ?? 'New token'} on ${l.chainName}: open on the launchpad`}
                       className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-[14px] px-3 py-[10px] text-left active:opacity-80"
                     >
                       <TokenLogo symbol={l.symbol ?? 'Token'} chain={l.chainKey} address={l.token} size={32} />
@@ -731,7 +731,7 @@ export function AlertsTab({ wa, initData, me, version, onOpenStock, exitsOnly = 
             {load.data.alerts.map((a) => {
               const st = alertStateText(a, now)
               const hc = (a.condition as AlertCondition | HolderCondition).type === 'holders' ? (a.condition as unknown as HolderCondition) : null
-              const label = a.name || (hc ? `${hc.symbol ?? shortToken(hc.token)} holders · ${HOLDER_CHAIN_NAMES[hc.chain] ?? hc.chain}` : a.condition.type === 'deepcore-launch' ? 'DeepCore launches' : a.ticker ? `${a.ticker} · ${CHAIN_SHORT[a.chain ?? ''] ?? a.chain}` : 'Any stock')
+              const label = a.name || (hc ? `${hc.symbol ?? shortToken(hc.token)} holders · ${HOLDER_CHAIN_NAMES[hc.chain] ?? hc.chain}` : a.condition.type === 'deepcore-launch' ? 'New launches' : a.ticker ? `${a.ticker} · ${CHAIN_SHORT[a.chain ?? ''] ?? a.chain}` : 'Any stock')
               return (
                 <li key={a.id} className={`${card} flex flex-col gap-2 p-3`}>
                   <div className="flex items-start justify-between gap-2">

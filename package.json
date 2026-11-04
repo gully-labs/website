@@ -70,6 +70,8 @@
     "test:pwa": "node scripts/test-pwa.mjs",
     "test:peddles": "node --test scripts/test-peddles.mjs",
     "test:hub": "node --test scripts/test-hub.mjs",
+    "test:hub-nav": "node --test scripts/test-hub-nav.mjs",
+    "shots:hub": "node scripts/hub-shots.mjs shots/hub",
     "test:hub-landing": "node --test scripts/test-hub-landing.mjs",
     "test:hub-live": "node --test scripts/test-hub-live.mjs",
     "test:swap-math": "node --test scripts/test-swap-math.mjs"

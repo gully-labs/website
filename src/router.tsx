@@ -32,7 +32,7 @@ const MOVED_PATHS = [
   ['/rpc', 'rpc'],
   ['/studio/*', 'studio'],
   ['/studio', 'studio'],
-  // DeepCore partnership ended 2026-10-29: the launchpad page is Gully Core now
+  // The old launchpad partnership ended 2026-10-29: its pages open Gully Core now
   ['/products/deepcore', 'gully-core'],
   ['/projects/deepcore', 'gully-core'],
 ] as const

@@ -164,7 +164,7 @@ export function ProjectDetail() {
             <h2 id="dc-holders" className={cardTitle}>
               Latest launches · who holds them
             </h2>
-            <span className="font-mono text-[12px] text-faint">Holder Maps by Gully Labs: bundled buys, the deployer’s share and connected wallets, for every new DeepCore token.</span>
+            <span className="font-mono text-[12px] text-faint">Holder Maps by Gully Labs: bundled buys, the deployer’s share and connected wallets, for every new launchpad token.</span>
           </div>
           <LaunchHolders />
         </section>

@@ -13,7 +13,7 @@ export type FeatureStatus = 'live' | 'beta' | 'testnet' | 'building' | 'planned'
 export interface Feature {
   /** Kebab-case, unique. */
   id: string
-  /** The product or project it belongs to, e.g. 'Holder Map', 'Gully Pay', 'DeepCore'. */
+  /** The product or project it belongs to, e.g. 'Holder Map', 'Gully Pay', 'Gully Core'. */
   product: string
   /** Short feature name. */
   name: string
@@ -211,7 +211,7 @@ export const features: Feature[] = [
     status: "live",
     summary: "Shows who really holds a token: the biggest wallets as bubbles, wallets that trade with each other linked as clusters, and a plain-words summary.",
     facts: [
-      "Chains: Robinhood Chain, BNB Chain, Base, HyperEVM and Solana (HOLDER_CHAINS in server/holders.mjs); any token can be mapped, with launch checks for DeepCore launches and registered launchpads.",
+      "Chains: Robinhood Chain, BNB Chain, Base, HyperEVM and Solana (HOLDER_CHAINS in server/holders.mjs); any token can be mapped, with launch checks for indexed launchpad launches and registered launchpads.",
       "Pools, locks, burn addresses, exchanges and the token contract are labelled grey and never counted as wallets or put in a cluster.",
       "A chain without a data source says holder data is not available; it never draws an empty or invented map.",
       "Per-tier limits come from HOLDER_MAP in server/plans.mjs: Free lists 50 holders, Pro and Business 500; the map draws at most 120.",
@@ -231,7 +231,7 @@ export const features: Feature[] = [
     product: "Holder Map",
     name: "Launch Health score",
     status: "live",
-    summary: "Scores a DeepCore launch from 0 to 100 on liquidity, bundled buyers, the deployer's share and record, top-10 concentration and snipers. It is never behind a paywall.",
+    summary: "Scores a launchpad launch from 0 to 100 on liquidity, bundled buyers, the deployer's share and record, top-10 concentration and snipers. It is never behind a paywall.",
     facts: [
       "Weights (server/holders-intel.mjs): liquidity 20, bundle 20, deployer 20, top10 15, snipers 10, record 15.",
       "A part that cannot be read is left out and the score is computed over the rest."
@@ -598,7 +598,7 @@ export const features: Feature[] = [
     product: "Telegram bot",
     name: "@GullyLabsBot commands and alerts",
     status: "live",
-    summary: "A Telegram bot with a menu for gaps, movers, new DeepCore launches, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.",
+    summary: "A Telegram bot with a menu for gaps, movers, new launchpad launches, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.",
     facts: [
       "Private-chat commands: start, app, gap, top, movers, launches, holders, alerts, security, score, ask, help, stop. Groups get gap, top, launches and help.",
       "Alerts can be paused, muted for 24 hours, tested or deleted from the chat.",
@@ -633,7 +633,7 @@ export const features: Feature[] = [
     product: "Mini App",
     name: "Telegram Mini App",
     status: "live",
-    summary: "The Gully app inside Telegram, with stock gaps, DeepCore launches and alerts for the account linked to your chat.",
+    summary: "The Gully app inside Telegram, with stock gaps, launchpad launches and alerts for the account linked to your chat.",
     facts: [
       "Served at gullylabs.xyz/tg; each request carries Telegram initData, validated with HMAC-SHA256 and refused after 24 hours.",
       "Routes: /api/tg/me, /sparks, /launches, /alerts and /announcements."
@@ -648,11 +648,11 @@ export const features: Feature[] = [
   {
     id: "telegram-deepcore-launch-alerts",
     product: "Telegram bot",
-    name: "New DeepCore launch alerts",
+    name: "New launch alerts",
     status: "live",
-    summary: "Alerts when a new token launches on DeepCore, on any chain or one you pick.",
+    summary: "Alerts when a new token launches on the launchpad, on any chain or one you pick.",
     facts: [
-      "DeepCore chains: BNB Chain (56), HyperEVM (999), Robinhood Chain (4663) and Base (8453)."
+      "Launchpad chains: BNB Chain (56), HyperEVM (999), Robinhood Chain (4663) and Base (8453)."
     ],
     url: "https://docs.gullylabs.xyz/telegram",
     source: [
@@ -721,7 +721,7 @@ export const features: Feature[] = [
     product: "Docs",
     name: "Public status page",
     status: "live",
-    summary: "A public page and JSON endpoint showing the health of the API, tracker data, DeepCore poller, Telegram bot, payment RPCs, Gully AI, the scan engine, monitors and Holder Map sources.",
+    summary: "A public page and JSON endpoint showing the health of the API, tracker data, launch poller, Telegram bot, payment RPCs, Gully AI, the scan engine, monitors and Holder Map sources.",
     facts: [
       "Checks run every 60 seconds with 24 hours of samples kept; incidents open and close on state changes.",
       "Endpoint: GET /api/status."
@@ -756,7 +756,7 @@ export const features: Feature[] = [
     status: "live",
     summary: "The home page shows live figures read from each Gully Labs project's own public API, each with its source.",
     facts: [
-      "Venues read: DeepCore, PeddleSwap, Peddles and PeddleQuest (server/stats.mjs).",
+      "Venues read: PeddleSwap, Peddles and PeddleQuest (server/stats.mjs).",
       "A venue that cannot be read is reported as an error, never as zeros; a token-denominated figure is never added to a dollar total."
     ],
     url: "https://gullylabs.xyz/",
@@ -806,7 +806,7 @@ export const features: Feature[] = [
     summary: "Serves token logos by chain and address for the whole stack, from the first source that returns a valid image.",
     facts: [
       "GET /api/logo/:chain/:address at 64, 128 or 256 px.",
-      "Sources in order: DeepCore, DexScreener, Jupiter or the xStocks logo, CoinGecko, Trust Wallet."
+      "Sources in order: the launchpad token list, DexScreener, Jupiter or the xStocks logo, CoinGecko, Trust Wallet."
     ],
     url: "https://gullylabs.xyz/",
     source: [
@@ -884,12 +884,12 @@ export const features: Feature[] = [
     product: "Holder Map",
     name: "Map any token",
     status: "live",
-    summary: "The Holder Map accepts any ERC-20 on four EVM chains and any SPL token on Solana, not only DeepCore launches and stock tokens. A pasted address is checked to be a token first.",
+    summary: "The Holder Map accepts any ERC-20 on four EVM chains and any SPL token on Solana, not only launchpad launches and stock tokens. A pasted address is checked to be a token first.",
     facts: [
       "Chains in HOLDER_CHAINS (server/holders.mjs): Robinhood Chain (4663), BNB Chain (56), Base (8453), HyperEVM (999) and Solana.",
       "An address is probed before anything is built: an ERC-20 must answer decimals() and totalSupply(); on Solana it must be a mint. With no chain given, every supported chain is checked at once.",
       "Limits for non-listed tokens (ANY in server/holders-any.mjs): 5 new maps per IP per minute, 30 a minute across all IPs, 2 built at once; address probes 8 per IP per minute and 60 a minute overall. Maps already built are free.",
-      "Launch checks and the Launch Health score stay limited to DeepCore launches and launchpads in the registry; a plain token gets holders, clusters and concentration.",
+      "Launch checks and the Launch Health score stay limited to launchpad launches and launchpads in the registry; a plain token gets holders, clusters and concentration.",
       "GET /api/holders/sources reports per chain whether tokens map with full history, as top holders only, or not yet."
     ],
     url: "https://gullylabs.xyz/holders",
@@ -1130,7 +1130,7 @@ export const features: Feature[] = [
     product: "Holder Map",
     name: "Holder Map tab in the home console",
     status: "building",
-    summary: "The home page product console gains a Holder Map tab showing the live mini map of the newest DeepCore launch with the latest launches under it.",
+    summary: "The home page product console gains a Holder Map tab showing the live mini map of the newest launchpad launch with the latest launches under it.",
     facts: [
       "Data comes from GET /api/deepcore/launches; a quiet feed is said to be quiet.",
       "The Security tab also gains a ring chart of the Gully Score weights read from /api/score.",
@@ -1410,13 +1410,13 @@ export const features: Feature[] = [
   },
   {
     id: "deepcore-launchpad",
-    product: "DeepCore",
+    product: "Gully Core",
     name: "Launchpad",
     status: "live",
     summary: "A token, its pool and locked liquidity are created in one transaction, with a decaying anti-snipe fee at the open.",
     facts: [
       "LaunchpadKitV2 opens a launch on a concentrated-liquidity range or a shaped Bin distribution",
-      "Liquidity is locked forever via DeepCoreLPLocker / DeepCoreBinLPLocker",
+      "Liquidity is locked forever via the Gully Core LP lockers (CL and Bin)",
       "Anti-snipe fee: LaunchGuardHook caps the initial fee at 50% (MAX_INITIAL_FEE) and the final fee at 10%; README states 50% at the open, 10% on Bin, decaying over at least 60 seconds",
       "Optional creator tax is capped at 10% (MAX_TAX_BPS = 1000) and expires by itself, at most 180 days",
       "LaunchpadKitV2 is recorded in the SDK address book on Base, BNB Chain, HyperEVM and Robinhood Chain at the same address 0x78781DC6...",
@@ -1433,32 +1433,32 @@ export const features: Feature[] = [
   },
   {
     id: "deepcore-hosted-pads",
-    product: "DeepCore",
+    product: "Gully Core",
     name: "Hosted Launchpads and DEXes",
     status: "live",
     summary: "Anyone can open their own Launchpad or DEX on the core in one transaction, with a share of fees going to the site.",
     facts: [
-      "DeepCorePadFactory clones a pad at the same address on every chain (0x7878647B... in the address book)",
+      "The pad factory clones a pad at the same address on every chain (0x7878647B... in the address book)",
       "Owner, name, brand and terms are stored on chain",
       "Hosted site can use a deepcore.fun subdomain or the owner's own domain, with a theme pack and its own fee share (README)",
-      "Contracts: DeepCorePad, DeepCorePadFactory in packages/launchpad/src/pad"
+      "Contracts: the pad and its pad factory in packages/launchpad/src/pad"
     ],
     url: "https://deepcore.fun",
     source: [
       "deepcore:README.md",
-      "deepcore:packages/launchpad/src/pad/DeepCorePadFactory.sol",
+      "deepcore:packages/launchpad/src/pad",
       "deepcore:packages/sdk/src/deployments/index.ts",
       "deepcore:docs/custom-domains.md"
     ]
   },
   {
     id: "deepcore-router",
-    product: "DeepCore",
+    product: "Gully Core",
     name: "Best-price router",
     status: "live",
-    summary: "Swaps route across DeepCore pools and other venues. DeepCore pools carry no router fee; fills on other venues pay a small capped fee.",
+    summary: "Swaps route across Gully Core pools and other venues. Gully Core pools carry no router fee; fills on other venues pay a small capped fee.",
     facts: [
-      "DeepCoreFillRouter charges feeBps() on fills elsewhere; README states 0.15%",
+      "The fill router charges feeBps() on fills elsewhere; README states 0.15%",
       "The fee is bounded in the contract by ABSOLUTE_MAX_FEE_BPS = 100 (1%)",
       "Fee changes use a notice period of up to MAX_FEE_NOTICE_SECONDS = 30 days",
       "fillRouter is 0x78786244... on all four chains in the SDK address book"
@@ -1466,61 +1466,58 @@ export const features: Feature[] = [
     url: "https://deepcore.fun",
     source: [
       "deepcore:README.md",
-      "deepcore:packages/routing/src/DeepCoreFillRouter.sol",
+      "deepcore:packages/routing/src",
       "deepcore:packages/sdk/src/deployments/index.ts"
     ]
   },
   {
     id: "deepcore-locks-airdrops-splits",
-    product: "DeepCore",
+    product: "Gully Core",
     name: "Locks, vesting, airdrops, splits and multisend",
     status: "live",
     summary: "Utility contracts for locking liquidity or tokens, distributing tokens and splitting revenue.",
     facts: [
-      "Contracts: DeepCorePositionLock, DeepCoreTokenLock, DeepCoreMerkleDrop with DeepCoreDropFactory, DeepCoreSplit with DeepCoreSplitFactory, DeepCoreMultisend",
+      "Contracts: the position lock, token lock, Merkle drop with its drop factory, split with its split factory, and multisend",
       "positionLock, tokenLock, splitFactory and multisend are recorded at the same address on HyperEVM, BNB Chain, Robinhood Chain and Base",
       "Airdrops are Merkle-based"
     ],
     url: "https://deepcore.fun",
     source: [
       "deepcore:README.md",
-      "deepcore:packages/launchpad/src/lock/DeepCoreTokenLock.sol",
-      "deepcore:packages/launchpad/src/lock/DeepCorePositionLock.sol",
-      "deepcore:packages/launchpad/src/drop/DeepCoreMerkleDrop.sol",
-      "deepcore:packages/launchpad/src/drop/DeepCoreMultisend.sol",
-      "deepcore:packages/launchpad/src/split/DeepCoreSplit.sol",
+      "deepcore:packages/launchpad/src/lock",
+      "deepcore:packages/launchpad/src/drop",
+      "deepcore:packages/launchpad/src/split",
       "deepcore:packages/sdk/src/deployments/index.ts"
     ]
   },
   {
     id: "deepcore-limit-orders-dca",
-    product: "DeepCore",
+    product: "Gully Core",
     name: "Limit orders and DCA",
     status: "live",
     summary: "On-chain range (limit) orders and dollar-cost averaging contracts, deployed on three of the four chains.",
     facts: [
-      "Contracts: DeepCoreRangeOrders and DeepCoreDCA",
+      "Contracts: the range orders and DCA contracts",
       "In the SDK address book rangeOrders and dca have addresses on HyperEVM, Robinhood Chain and Base, and are null on BNB Chain",
-      "Also in the repo but not in the README feature list: DeepCoreManagedVault and DeepCoreVaultFactory (vaultFactory set on HyperEVM, Robinhood Chain and Base) and a liquidity-rewards hook"
+      "Also in the repo but not in the README feature list: a managed vault and its vault factory (vaultFactory set on HyperEVM, Robinhood Chain and Base) and a liquidity-rewards hook"
     ],
     url: "https://deepcore.fun",
     source: [
-      "deepcore:packages/orders/src/DeepCoreRangeOrders.sol",
-      "deepcore:packages/orders/src/DeepCoreDCA.sol",
+      "deepcore:packages/orders/src",
       "deepcore:packages/sdk/src/deployments/index.ts",
-      "deepcore:packages/vaults/src/DeepCoreVaultFactory.sol"
+      "deepcore:packages/vaults/src"
     ]
   },
   {
     id: "deepcore-four-chains",
-    product: "DeepCore",
+    product: "Gully Core",
     name: "Same addresses on four chains",
     status: "live",
     summary: "The core is deployed at the same contract addresses on HyperEVM, BNB Chain, Robinhood Chain and Base.",
     facts: [
       "Chain IDs in the SDK address book: 999, 56, 4663, 8453",
       "Address book is packages/sdk/src/deployments/index.ts; null means not deployed, never zero",
-      "Contracts are owned by a 2-of-3 Safe multisig and renounceOwnership is disabled on DeepCore's own contracts (README)",
+      "Contracts are owned by a 2-of-3 Safe multisig and renounceOwnership is disabled on Gully Core's own contracts (README)",
       "Built on the PancakeSwap Infinity architecture (GPL-2.0-or-later forks); SDK, widgets and tooling are MIT"
     ],
     url: "https://deepcore.fun",
@@ -1532,20 +1529,20 @@ export const features: Feature[] = [
   },
   {
     id: "deepcore-dev-tools",
-    product: "DeepCore",
+    product: "Gully Core",
     name: "SDK, widgets and scaffolders",
     status: "beta",
     summary: "An MIT SDK, swap widgets and project scaffolders for builders. The README says npm publication is pending.",
     facts: [
       "Packages in the repo: sdk, widgets, connect, cli, create-deepcore-app, create-deepcore-hook, router-core, tokenlists",
       "npm scope @deepcoreprotocol; the README says publication is pending",
-      "Dynamic-fee hooks exist for CL and Bin pools (DeepCoreDynamicFeeHook, DeepCoreBinDynamicFeeHook)"
+      "Dynamic-fee hooks exist for CL and Bin pools (packages/hooks/src/dex)"
     ],
     url: "https://deepcore.fun",
     source: [
       "deepcore:README.md",
       "deepcore:packages/sdk/src/deployments/index.ts",
-      "deepcore:packages/hooks/src/dex/DeepCoreDynamicFeeHook.sol"
+      "deepcore:packages/hooks/src/dex"
     ]
   },
   {

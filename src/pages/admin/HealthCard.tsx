@@ -265,14 +265,14 @@ export function HealthCard({ token }: { token: string }) {
                 <span className="flex items-center gap-2 text-ink-2">
                   <Dot tone={c.available ? 'ok' : 'down'} /> {c.name}
                 </span>
-                <span className={`truncate ${c.available ? 'text-faint' : 'text-error'}`} title={`Source: ${c.source ?? 'none'}${c.env ? ` (${c.env})` : ''}. DeepCore launches: ${c.launches ? 'mapped' : 'not on this chain'}.`}>
+                <span className={`truncate ${c.available ? 'text-faint' : 'text-error'}`} title={`Source: ${c.source ?? 'none'}${c.env ? ` (${c.env})` : ''}. Launchpad launches: ${c.launches ? 'mapped' : 'not on this chain'}.`}>
                   {c.available ? 'stocks available' : (c.reason ?? 'unavailable')}
                   {c.launches ? ' · launches' : ''}
                 </span>
               </li>
             ))}
           </ul>
-          <span className="font-mono text-[11px] text-faint">"launches": DeepCore launches map there without a key. Stock tokens need the source above.</span>
+          <span className="font-mono text-[11px] text-faint">"launches": launchpad launches map there without a key. Stock tokens need the source above.</span>
           <Spark history={h.history} field="holdersAvailable" tone={holdersTone} fmt={(v) => `${v} chains available`} label="Holder Map chains with data, per minute" />
         </Item>
 
@@ -296,7 +296,7 @@ export function HealthCard({ token }: { token: string }) {
 
         <Item
           icon={Satellite}
-          title="DeepCore poller"
+          title="Launch poller"
           tone={dcTone}
           status={TONE[dcTone].word}
           rows={[
@@ -309,7 +309,7 @@ export function HealthCard({ token }: { token: string }) {
           ]}
           testId="health-deepcore"
         >
-          <Spark history={h.history} field="deepcoreLagS" tone={dcTone} fmt={secs} label="Time since DeepCore's last good read, per minute" />
+          <Spark history={h.history} field="deepcoreLagS" tone={dcTone} fmt={secs} label="Time since the launch poller's last good read, per minute" />
         </Item>
 
         <Item

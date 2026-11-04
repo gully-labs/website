@@ -374,7 +374,7 @@ await step('tracker', async () => {
   await page.getByRole('heading', { name: 'Swap NVDA' }).scrollIntoViewIfNeeded()
   await page.getByRole('checkbox', { name: 'I understand' }).check()
   await page.getByText(/≈ 1\.84 NVDA/).first().waitFor({ timeout: 15_000 })
-  check('swap: the DeepCore comparison quote shows', (await page.getByRole('link', { name: 'Swap on DeepCore' }).count()) > 0)
+  check('swap: the launchpad comparison quote shows', (await page.getByRole('link', { name: 'Swap on the launchpad' }).count()) > 0)
   // LI.FI's widget logs its own errors when its (stubbed) API has no routes; those are not our page's.
   await w.verify([/li\.quest|lifi|LI\.FI|wagmi|walletconnect|coinbase|SwapWidget-|Failed to load resource: net::ERR_BLOCKED_BY_CLIENT/i])
   await ctx.close()
@@ -621,7 +621,8 @@ await step('portal', async () => {
   await page.getByText('Key revoked').first().waitFor()
   check('keys: revoke', true)
   // Alerts: create, test, pause.
-  await appNav.getByRole('link', { name: /^Alerts/ }).click()
+  // Alerts has no sidebar entry (a HolderMaps tool, opened from Products): its hash opens it.
+  await page.evaluate(() => (location.hash = 'alerts'))
   await page.getByRole('button', { name: 'New alert' }).first().click()
   const na = page.getByRole('dialog', { name: 'New gap alert' })
   await na.getByLabel('Stock').selectOption('robinhood:NVDA')
@@ -653,7 +654,7 @@ await step('portal', async () => {
   await page.getByTestId('refresh-chip').first().waitFor({ state: 'detached', timeout: 10_000 })
   check('alerts: retry clears the chip once the read answers', true)
   // Gully Analytics tab (sign-up is off on this server: it must say so, not break).
-  await appNav.getByRole('link', { name: /^Analytics/ }).click()
+  await page.evaluate(() => (location.hash = 'analytics'))
   await page.getByText(/sign-up is not open/).first().waitFor()
   check('analytics tab: says self-serve is off here', true)
   check('analytics tab: the traffic placeholder curve draws while there is no account', (await page.getByTestId('ghost-chart').getByText('Your page views and visitors will draw here').count()) === 1)
@@ -840,13 +841,7 @@ await step('chains launch wizard', async () => {
 
 const SERVICES = [
   ['tracker', 'Tracker'],
-  ['pay', 'Gully Pay'],
-  ['chain-kit', 'Chain Kit'],
-  ['chains', 'Chains'],
-  ['ai', 'Gully AI'],
   ['score', 'Gully Score'],
-  ['deepcore', 'DeepCore launches'],
-  ['holders', 'Holder Map'],
   ['widgets', 'Widgets'],
   ['telegram', 'Telegram'],
 ]
@@ -860,11 +855,11 @@ await step('app services', async () => {
   await page.goto(BASE + '/app')
   const appNav = page.getByRole('navigation', { name: 'App pages' })
   await appNav.waitFor()
-  const groups = await appNav.locator('[data-nav-group]').evaluateAll((els) => els.map((e) => e.getAttribute('data-nav-group')))
-  check('sidebar: grouped Workspace, Services, Tools, Account', JSON.stringify(groups) === JSON.stringify(['Workspace', 'Services', 'Tools', 'Account']), JSON.stringify(groups))
+  const navIds = await appNav.locator('a').evaluateAll((as) => as.map((a) => a.getAttribute('href').slice(1)))
+  check('sidebar: exactly the seven pages, in order (owner 2026-11-03)', JSON.stringify(navIds) === JSON.stringify(['overview', 'activity', 'products', 'keys', 'billing', 'team', 'settings']), JSON.stringify(navIds))
   const iconless = await appNav.locator('a').evaluateAll((as) => as.filter((a) => !a.querySelector('svg')).map((a) => a.textContent))
   check('sidebar: every item has an icon', iconless.length === 0, iconless.join(', '))
-  check('sidebar: Merchant sits under Services', (await appNav.locator('[data-nav-group="Services"]').getByRole('link', { name: /^Merchant/ }).count()) === 1)
+  check('sidebar: no product and no tool is listed (Products holds them)', (await appNav.getByRole('link', { name: /Merchant|Tracker|Gully AI|Gully Score|Widgets|Telegram|Alerts|Analytics|Gully Chain|Gully Pay|Gully RPC|HolderMaps|Gully Security|Gully Studio|Gully IPFS/ }).count()) === 0)
   // The Overview of a brand-new workspace: live NETWORK charts first (the stubbed tracker, its seeded
   // history, the launch list and this browser's /healthz round trips), then the workspace's own figures
   // in words ("none yet") with ghosted placeholder curves, never flat zeros.
@@ -876,7 +871,7 @@ await step('app services', async () => {
   check('overview: with no keys the requests chart is a ghosted "Your traffic will draw here"', (await ghost.count()) === 1 && (await ghost.getByText('Your traffic will draw here').count()) === 1 && (await ghost.locator('svg path').count()) >= 2)
   await shot(page, 'app-1440-overview-new')
   for (const [id, label] of SERVICES) {
-    // Gully Score has no sidebar entry of its own (it sits under Security), so it opens by its hash.
+    // The tools have no sidebar entry (Products lists them), so each opens by its hash.
     const navLink = appNav.getByRole('link', { name: label, exact: true })
     if (await navLink.count()) await navLink.click()
     else await page.evaluate((h) => (location.hash = h), id)
@@ -910,7 +905,7 @@ await step('app services', async () => {
     await shot(page, `app-1440-${id}`)
   }
   // Tracker: chain filter and "Alert" from a row.
-  await appNav.getByRole('link', { name: 'Tracker', exact: true }).click()
+  await page.evaluate(() => (location.hash = 'tracker'))
   const rows = page.locator('[data-service="tracker"] tr[data-row]')
   await rows.first().waitFor()
   const all = await rows.count()
@@ -929,10 +924,14 @@ await step('app services', async () => {
   // Gully AI in the app: floating button and Ctrl+K.
   await appNav.getByRole('link', { name: 'Overview', exact: true }).click()
   await launcherWorks(page, 'app')
-  // A deep link opens its service page directly.
-  await page.goto(BASE + '/app#deepcore')
-  await page.locator('[data-service="deepcore"]').getByTestId('service-header').waitFor()
-  check('app: #deepcore deep-links to its page', (await page.locator('main[data-page]').getAttribute('data-page')) === 'deepcore')
+  // A deep link opens its tool page directly; #ai opens the Gully AI drawer over the Overview.
+  await page.goto(BASE + '/app#score')
+  await page.locator('[data-service="score"]').getByTestId('service-header').waitFor()
+  check('app: #score deep-links to its page', (await page.locator('main[data-page]').getAttribute('data-page')) === 'score')
+  await page.goto(BASE + '/app#ai')
+  await page.getByTestId('ask-dialog').waitFor({ timeout: 10_000 })
+  check('app: #ai opens the Gully AI drawer over the Overview', (await page.locator('main[data-page]').getAttribute('data-page')) === 'overview')
+  await page.keyboard.press('Escape')
   await w.verify()
   await ctx.close()
 
@@ -954,26 +953,21 @@ await step('app services', async () => {
   await sp.waitForTimeout(200)
   check('sidebar at 1440x800: still no inner scrollbar', await fits(), await sNav.evaluate((el) => `${el.scrollHeight}/${el.clientHeight}`))
   const rowH = await sNav.getByRole('link', { name: 'Keys' }).evaluate((a) => a.getBoundingClientRect().height)
-  check('sidebar: rows are compact (30-36 px: 30 under 820 px tall so every page fits)', rowH >= 30 && rowH <= 36, String(rowH))
+  check('sidebar: rows are 40 px', rowH >= 39 && rowH <= 41, String(rowH))
   check('sidebar: Docs, Status and home sit in the header, not in a block under the list', (await sp.getByTestId('header-links').locator('a, button').count()) === 3 && (await sp.getByTestId('app-sidebar').getByTestId('status-link').count()) === 0)
   await sp.getByTestId('header-links').getByTestId('status-link').click()
   const st = sp.getByRole('dialog', { name: 'Status' })
   await st.getByTestId('status-view').waitFor()
   await st.locator('[data-chart].opacity-100 svg').first().waitFor({ timeout: 20_000 }).catch(() => {})
-  check('status: the Status button opens a Status view (API uptime and latency, tracker and DeepCore health), not another tab', (await st.getByText('Tracker data').count()) === 1 && (await st.getByText('DeepCore launch poller').count()) === 1 && /checks this session/.test((await st.textContent()) ?? '') && new URL(sp.url()).hash === '')
+  check('status: the Status button opens a Status view (API uptime and latency, tracker and launch poller health), not another tab', (await st.getByText('Tracker data').count()) === 1 && (await st.getByText('Launch poller').count()) === 1 && /checks this session/.test((await st.textContent()) ?? '') && new URL(sp.url()).hash === '')
   await shot(sp, 'app-1440x840-status')
   await sp.keyboard.press('Escape')
   await st.waitFor({ state: 'hidden' })
-  // Below 840 px of height the group labels fold into dividers (so the list fits); the toggles need the labels.
   await sp.setViewportSize({ width: 1440, height: 900 })
-  await sp.getByTestId('navgroup-toggle-tools').click()
-  check('sidebar: a group folds', (await sNav.locator('[data-nav-group="Tools"]').getByRole('link').count()) === 0)
+  check('sidebar: one flat list, no group headings', (await sNav.locator('[data-nav-group]').count()) === 0)
   // Reload on a page without the market band (its history reads count against the anonymous limit).
   await sp.goto(BASE + '/app#keys')
   await sNav.waitFor()
-  check('sidebar: the folded group is remembered', (await sNav.locator('[data-nav-group="Tools"][data-folded]').count()) === 1 && (await sp.getByTestId('navgroup-toggle-tools').getAttribute('aria-expanded')) === 'false')
-  await sp.getByTestId('navgroup-toggle-tools').click()
-  check('sidebar: and unfolds', (await sNav.locator('[data-nav-group="Tools"]').getByRole('link').count()) === 3)
   await sNav.getByRole('link', { name: 'Overview', exact: true }).click()
   const gs = sp.getByTestId('get-started')
   await gs.waitFor()
@@ -999,7 +993,7 @@ await step('app services', async () => {
       return Object.values(counts)
     })
   // The pixel-pass design audit on every app page (signed in): 11 px minimum, token colours only, other hosts in a new tab.
-  for (const id of ['overview', 'products', 'tracker', 'pay', 'merchant', 'security', 'chain-kit', 'chains', 'ai', 'deepcore', 'holders', 'widgets', 'telegram', 'keys', 'alerts', 'analytics', 'billing', 'team', 'activity', 'settings']) {
+  for (const id of ['overview', 'products', 'tracker', 'merchant', 'security', 'score', 'widgets', 'telegram', 'keys', 'alerts', 'analytics', 'billing', 'team', 'activity', 'settings']) {
     await sp.goto(`${BASE}/app#${id}`)
     await sp.locator(`main[data-page="${id}"]`).waitFor({ timeout: 15_000 })
     await sp.waitForLoadState('networkidle').catch(() => {})
@@ -1030,21 +1024,21 @@ await step('app services', async () => {
   await noHorizontalScroll(mp, 'app overview')
   await shot(mp, 'app-390-overview-new')
   const bar = mp.getByTestId('tab-bar')
-  check('app at 390: a bottom tab bar with Overview, Tracker, Keys, Alerts and More', JSON.stringify(await bar.locator('a, button').evaluateAll((els) => els.map((e) => e.textContent.trim()))) === JSON.stringify(['Overview', 'Tracker', 'Keys', 'Alerts', 'More']))
-  await bar.getByRole('link', { name: 'Tracker' }).tap()
-  await mp.locator('[data-service="tracker"]').getByTestId('service-header').waitFor({ timeout: 15_000 })
-  check('app at 390: a tab opens its page', new URL(mp.url()).hash === '#tracker')
+  check('app at 390: a bottom tab bar with Overview, Activity, Products, Keys and More', JSON.stringify(await bar.locator('a, button').evaluateAll((els) => els.map((e) => e.textContent.trim()))) === JSON.stringify(['Overview', 'Activity', 'Products', 'Keys', 'More']))
+  await bar.getByRole('link', { name: 'Products' }).tap()
+  await mp.getByTestId('products').waitFor({ timeout: 15_000 })
+  check('app at 390: a tab opens its page', new URL(mp.url()).hash === '#products')
   await bar.getByRole('link', { name: 'Overview' }).tap()
   await mp.getByTestId('tab-more').tap()
   await mp.getByTestId('app-sheet').waitFor()
-  check('app at 390: More opens the full menu sheet', (await mp.getByTestId('app-sheet').locator('[data-nav-group]').count()) === 4)
+  check('app at 390: More opens the full menu sheet with the seven pages', (await mp.getByTestId('app-sheet').getByRole('navigation', { name: 'App pages' }).getByRole('link').count()) === 7)
   await shot(mp, 'app-390-more')
   await mp.keyboard.press('Escape')
   await mp.getByTestId('app-sheet').waitFor({ state: 'hidden' })
   await mp.getByTestId('menu-button').tap()
   const sheet = mp.getByTestId('app-sheet')
   await sheet.waitFor()
-  check('app at 390: the menu sheet shows the groups', (await sheet.locator('[data-nav-group]').count()) === 4)
+  check('app at 390: the menu sheet shows the seven pages', (await sheet.getByRole('navigation', { name: 'App pages' }).getByRole('link').count()) === 7)
   await shot(mp, 'app-390-menu')
   await sheet.getByRole('link', { name: 'Overview', exact: true }).tap()
   for (const [id] of SERVICES) {
@@ -1057,9 +1051,9 @@ await step('app services', async () => {
   // Design audit 3 (D1, D4, D9, D10, D28): narrow screens read in full, nothing clipped, no empty-count badges.
   for (const w of [390, 320]) {
     await mp.setViewportSize({ width: w, height: 760 })
-    for (const id of ['deepcore', 'overview', 'keys', 'tracker', 'pay', 'chain-kit']) {
+    for (const id of ['overview', 'keys', 'tracker', 'products']) {
       await mp.goto(`${BASE}/app#${id}`)
-      await mp.locator(id === 'overview' ? 'main[data-page="overview"]' : id === 'keys' ? 'main[data-page="keys"]' : `[data-service="${id}"] [data-testid="service-header"]`).first().waitFor({ timeout: 15_000 })
+      await mp.locator(id === 'tracker' ? `[data-service="${id}"] [data-testid="service-header"]` : `main[data-page="${id}"]`).first().waitFor({ timeout: 15_000 })
       await mp.waitForTimeout(700)
       await noHorizontalScroll(mp, `app #${id} at ${w}`)
       const crumb = await mp.locator('[data-testid="breadcrumb"] [aria-current="page"]').evaluate((e) => [e.scrollWidth, e.clientWidth, e.textContent])
@@ -1799,7 +1793,7 @@ await step('security', async () => {
     const w = watch(page, 'security stepper 1440')
     await page.goto(BASE + '/developers#security-new')
     await page.getByTestId('stepper').waitFor({ timeout: 15_000 })
-    check('security: the sidebar has Security with its icon', (await page.getByRole('navigation', { name: 'App pages' }).getByRole('link', { name: /^Security/ }).locator('svg').count()) > 0)
+    check('security: the page opens by its hash (no sidebar entry: Products lists the products)', (await page.locator('main[data-page="security"]').count()) === 1)
     check('security: sub-tabs are a real tablist with icons', (await page.getByRole('tablist', { name: 'Security sections' }).getByRole('tab').count()) === 5 && (await page.getByRole('tab', { name: 'New scan' }).getAttribute('aria-selected')) === 'true')
     check('security: chain choices carry the chain marks', (await page.getByRole('radiogroup', { name: 'Chain' }).locator('img').count()) >= 5)
     await shot(page, 'security-step1-input')

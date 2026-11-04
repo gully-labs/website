@@ -30,8 +30,8 @@ const LIFI = (
 const JUPITER = (
   <Chip logo={<IntegrationLogo id="jupiter" name="Jupiter" size={14} decorative />}>Jupiter</Chip>
 )
-const DEEPCORE = (
-  <Chip logo={<VenueLogo venue="deepcore" name="DeepCore" size={14} decorative />}>DeepCore</Chip>
+const LAUNCHPAD = (
+  <Chip logo={<VenueLogo venue="deepcore" name="Launchpad" size={14} decorative />}>Launchpad</Chip>
 )
 const DEXSCREENER = (
   <Chip logo={<IntegrationLogo id="dexscreener" name="DexScreener" size={14} decorative />}>DexScreener</Chip>
@@ -94,8 +94,8 @@ export function SwapsDocs() {
 
       <Section id="evm" title="EVM chains: LI.FI">
         <P>
-          On {ROBINHOOD} and {BNB} the card is the {LIFI} widget, locked to the token’s chain and connected to the site’s own wallet connection. For comparison it also shows what {DEEPCORE}’s router would give for the same payment (read
-          through our cached <C>GET /api/deepcore/quote</C>); “Swap on DeepCore” opens {DEEPCORE}’s site (deepcore.fun), nothing is executed from here.
+          On {ROBINHOOD} and {BNB} the card is the {LIFI} widget, locked to the token’s chain and connected to the site’s own wallet connection. For comparison it also shows what the {LAUNCHPAD} router would give for the same payment (read
+          through our cached <C>GET /api/deepcore/quote</C>); “Swap on the launchpad” opens the {LAUNCHPAD} site (deepcore.fun), nothing is executed from here.
         </P>
       </Section>
 
