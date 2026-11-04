@@ -58,14 +58,27 @@ export function DeepStatusPanel({ check, onChange }: { check: DeepCheck; onChang
       </ol>
       {check.status === 'awaiting_payment' && pay && (
         <div className="flex flex-col gap-2">
-          <p className="m-0 text-[14px] leading-[1.55] text-muted">
-            Pay <b className="text-ink">${pay.usd}</b> to start the check. It runs the moment the invoice is paid, and this page updates by itself.
-            {pay.expiresAt && <> The invoice is open until {when(pay.expiresAt)}; an unpaid check is cancelled then.</>}
-          </p>
+          {pay.provider === 'gullypay' ? (
+            <p className="m-0 text-[14px] leading-[1.55] text-muted">
+              Pay <b className="text-ink">${pay.usd}</b> with Gully Pay (USDC or USDT) to start the check. It runs the moment Gully Pay confirms the payment, and this page updates by itself.
+              {pay.expiresAt && <> The checkout is open until {when(pay.expiresAt)}; an unpaid check is cancelled after that.</>}
+            </p>
+          ) : (
+            <p className="m-0 text-[14px] leading-[1.55] text-muted">
+              Pay <b className="text-ink">${pay.usd}</b> to start the check. It runs the moment the invoice is paid, and this page updates by itself.
+              {pay.expiresAt && <> The invoice is open until {when(pay.expiresAt)}; an unpaid check is cancelled then.</>}
+            </p>
+          )}
           <span className="flex flex-wrap items-center gap-2">
-            <a href={payHref(pay.payUrl)} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[14px]`} data-deep-pay>
-              <Receipt className="icon-md" aria-hidden /> Open the invoice · ${pay.usd}
-            </a>
+            {pay.provider === 'gullypay' ? (
+              <a href={pay.payUrl} {...ext} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[14px]`} data-deep-pay="gullypay">
+                <Receipt className="icon-md" aria-hidden /> Pay with Gully Pay · ${pay.usd} <ExternalLink className="icon-sm" aria-hidden />
+              </a>
+            ) : (
+              <a href={payHref(pay.payUrl)} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[14px]`} data-deep-pay>
+                <Receipt className="icon-md" aria-hidden /> Open the invoice · ${pay.usd}
+              </a>
+            )}
             <button
               type="button"
               disabled={busy}
