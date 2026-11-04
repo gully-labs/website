@@ -14,6 +14,7 @@ import { input, panel, pillGold, pillLine } from '../styles'
 import { ProgressSteps, type ProgressStep } from '../ui'
 import { PayStep, ScanDetail } from './ScanDetail'
 import { fileToBase64, useScan } from './useSecurity'
+import { ConsentLine } from '../../../components/legal/ConsentLine'
 
 /* "New scan": a five-step stepper.
      1 Input     what to scan: a deployed contract (address + chain, with the chains' marks), a smart contract
@@ -287,6 +288,7 @@ export function NewScan({ ov, onOpen }: { ov: SecurityOverview; onOpen: (id: str
             </ExtLink>{' '}
             first.
           </p>
+          <ConsentLine />
           <EngineStatus />
         </section>
       )}

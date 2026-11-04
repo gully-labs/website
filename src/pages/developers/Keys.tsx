@@ -25,6 +25,7 @@ import { ServiceHeader } from './services/ServiceHeader'
 import { docsPage } from './services/links'
 import { group } from './usage'
 import { StatusPill as KitPill } from '../../components/ui/StatusPill'
+import { ConsentLine } from '../../components/legal/ConsentLine'
 
 /* The Keys tab: a two-step setup stepper (create a key, make a first call), then sub-tabs that show one
    section at a time (#keys/keys, #keys/requests, #keys/quickstart, #keys/widget, remembered): live keys
@@ -320,6 +321,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
             <span className="text-[12px] text-faint">Only for you, to tell keys apart. Up to 40 characters.</span>
           </label>
           {err && <ErrorLine>{err}</ErrorLine>}
+          {dialog?.kind === 'create' && <ConsentLine />}
           <div className="flex justify-end gap-2">
             <button type="button" onClick={close} className={pillLine}>
               Cancel

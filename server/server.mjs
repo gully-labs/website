@@ -38,7 +38,7 @@ import { handleHub } from './hub.mjs'
 import { handleHubProducts } from './hub-products.mjs'
 import { handleHubLive } from './hub-live.mjs'
 import { handleProductStatus } from './product-status.mjs'
-import { API_URL, APP_URL, appTabUrl, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
+import { API_URL, APP_URL, appTabUrl, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, legalCanonicalPath, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
 import { gullyIdConfig } from './gully-id.mjs'
 import { handleManifest } from './pwa.mjs'
 import { brandRootIcon } from './product-brand.mjs'
@@ -338,10 +338,11 @@ async function handleRequest(req, res) {
   if (url.pathname === '/security/terms' || url.pathname === '/security/terms/') {
     return send(res, 301, '', { Location: '/legal/scan-terms', 'Cache-Control': 'public, max-age=86400' })
   }
-  // The short addresses people type for the policies.
+  // The policies live at their short addresses (hosts.mjs legalCanonicalPath, 2026-11-03): /legal/terms, /legal/privacy
+  // and a trailing slash answer 301 to /terms and /privacy, on gullylabs.xyz and (for HolderMaps' own) holdermaps.xyz.
   // (Not on gullysecurity.xyz, where /terms is the scan terms page.)
-  const shortLegal = isSecurity ? null : { '/terms': '/legal/terms', '/privacy': '/legal/privacy' }[url.pathname.replace(/(.)\/+$/, '$1')]
-  if (shortLegal) return send(res, 301, '', { Location: shortLegal, 'Cache-Control': 'public, max-age=86400' })
+  const legal = isSecurity ? null : legalCanonicalPath(url.pathname)
+  if (legal && legal !== url.pathname && (req.method === 'GET' || req.method === 'HEAD')) return send(res, 301, '', { Location: legal + url.search, 'Cache-Control': 'public, max-age=86400' })
   if (handleDiscovery(req, res, url)) return
   if (url.pathname === '/robots.txt') return send(res, 200, robotsFor(host), { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
   if (url.pathname === '/sitemap.xml') {

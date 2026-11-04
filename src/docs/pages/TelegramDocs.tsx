@@ -167,7 +167,7 @@ export function TelegramDocs() {
           announcements go to private chats only; “🔕 Stop announcements” on any of them, or <C>/stop announcements</C>, turns them off. That never stops your alerts.
         </P>
         <P>
-          Details are in the privacy policy at <Ext href="https://gullylabs.xyz/legal/privacy">gullylabs.xyz/legal/privacy</Ext>.
+          Details are in the privacy policy at <Ext href="https://gullylabs.xyz/privacy">gullylabs.xyz/privacy</Ext>.
         </P>
       </Section>
     </DocPage>

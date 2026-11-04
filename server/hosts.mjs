@@ -133,6 +133,19 @@ export function holderPageUrl(chain, token) {
 /** The Holder Map's home page, for links the server writes. */
 export const holderHomeUrl = () => (holderMapsPrimary() ? `${HOLDERMAPS_URL}/` : `${MAIN_URL}/holders`)
 
+/* The policies' canonical short addresses (2026-11-03). gullylabs.xyz/terms and /privacy are the Gully Labs Terms and
+   Privacy Policy, /legal lists every Gully product's; the old /legal/terms and /legal/privacy answer 301 to them (the
+   merchant and scan terms keep their /legal/ paths). holdermaps.xyz/terms and /privacy are HolderMaps' own. */
+export const HOLDERMAPS_LEGAL = ['/terms', '/privacy']
+const LEGAL_MOVED = { '/legal/terms': '/terms', '/legal/privacy': '/privacy' }
+/** The canonical path of a policy path (/terms for /terms, /terms/ and /legal/terms), or null when it is not one. */
+export function legalCanonicalPath(pathname) {
+  const p = String(pathname ?? '').replace(/(.)\/+$/, '$1')
+  return LEGAL_MOVED[p] ?? (HOLDERMAPS_LEGAL.includes(p) ? p : null)
+}
+/** On holdermaps.xyz: the path of HolderMaps' own policy page for a request path (itself when it is one), or null. */
+export const holderMapsLegalPath = (pathname) => legalCanonicalPath(pathname)
+
 /**
  * Where a request on holdermaps.xyz goes: { kind: 'allow' }, { kind: 'deny' } (JSON 404) or
  * { kind: 'redirect', location } (301). Static files and every /api/ path the main host serves (minus the
@@ -145,6 +158,10 @@ export function holderMapsRoute(host, pathname, search = '') {
   if (pathname.startsWith('/api/')) return API_DENIED.test(pathname) ? { kind: 'deny' } : { kind: 'allow' }
   if (pathname.startsWith('/assets/') || /\.[a-z0-9]+$/i.test(pathname)) return { kind: 'allow' }
   if (holderInternalPath(pathname)) return { kind: 'allow' }
+  // HolderMaps' own Terms and Privacy Policy (2026-11-03); the old /legal/terms and /legal/privacy links move to them.
+  const legal = holderMapsLegalPath(pathname)
+  if (legal === pathname) return { kind: 'allow' }
+  if (legal) return { kind: 'redirect', location: `${legal}${search}` }
   // The old long form on this host: the short path.
   const short = holderShortPath(pathname)
   if (short) return { kind: 'redirect', location: `${short}${search}` }
@@ -247,7 +264,7 @@ export function currentPageUrl(url) {
      Gully Studio    gullystudio.xyz
    Gully Security (gullysecurity.xyz) and HolderMaps (holdermaps.xyz) keep their own switches above (SECURITY_PRIMARY,
    HOLDERMAPS_PRIMARY). What never moves: pay.gullylabs.xyz (Gully Labs' own checkout: plans, paid scans, live
-   invoices), /legal/*, every /api/* path, /embed/*, widget.js and the badges: other sites and the SDK call them. */
+   invoices), /terms, /privacy, /legal and /legal/*, every /api/* path, /embed/*, widget.js and the badges: other sites and the SDK call them. */
 export const CHAIN_URL = 'https://gullychain.xyz'
 /** The Gully Chain app (kre8.fun since 2026-10-29, was app.gullychain.xyz). GULLY_APP_URL overrides it. */
 export const CHAIN_APP_URL = String(process.env.GULLY_APP_URL || 'https://kre8.fun').replace(/\/+$/, '')

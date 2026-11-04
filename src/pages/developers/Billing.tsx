@@ -20,6 +20,7 @@ import { ErrorLine, Skeleton } from './parts'
 import { PayFlow } from './PayFlow'
 import { mono, panel, panelTitle, pillGold, pillLine, pillSm, rise } from './styles'
 import { StatusPill as KitPill } from '../../components/ui/StatusPill'
+import { ConsentLine } from '../../components/legal/ConsentLine'
 
 /* Billing, as sub-tabs that show one section at a time (#billing/plan, #billing/plans, #billing/history,
    remembered): the plan in force with its usage rings and the payments chart (and the CSV exports); the
@@ -119,6 +120,7 @@ function PlanCheckout({ plan, view, initialAsset, autoQuote, onPaid, onCancel }:
           onPaid()
         }}
       />
+      <ConsentLine />
     </section>
   )
 }

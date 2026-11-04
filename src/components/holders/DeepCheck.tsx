@@ -5,6 +5,7 @@ import { deepConfirm, deepPagePath, deepQuote, PART_NAMES, PART_ORDER, rememberC
 import { APP_URL, holderHref, isLocalHost } from '../../site-host'
 import { btnGold, btnOutline } from '../ui'
 import { StatusPill } from '../ui/StatusPill'
+import { ConsentLine } from '../legal/ConsentLine'
 
 /* The Deep check offer on a Holder Map page: what it is, what can run on THIS chain (from GET /api/holders/deep),
    the price (free quota and credits first), and a two-step purchase: a quote, then a confirmation that sends the
@@ -170,6 +171,7 @@ export function DeepCheckCard({ chain, token, symbol }: { chain: string; token: 
             </button>
             {quote.priceUsd > 0 && <span className="font-mono text-[11px] text-dim">You pay on the next page, through a Gully Pay invoice.</span>}
           </span>
+          <ConsentLine terms="https://holdermaps.xyz/terms" privacy="https://holdermaps.xyz/privacy" />
         </div>
       )}
 

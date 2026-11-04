@@ -95,10 +95,13 @@ const mainRoutes = [
       // The Gully Pay merchant terms (the checkout's footer links here).
       { path: '/legal/merchant-terms', lazy: () => import('./pages/legal/MerchantTerms').then((m) => ({ Component: m.MerchantTermsPage })) },
       { path: '/legal/scan-terms', lazy: () => import('./pages/legal/ScanTerms').then((m) => ({ Component: m.ScanTermsPage })) },
-      { path: '/legal/privacy', lazy: () => import('./pages/legal/Privacy').then((m) => ({ Component: m.PrivacyPage })) },
-      { path: '/legal/terms', lazy: () => import('./pages/legal/Terms').then((m) => ({ Component: m.TermsPage })) },
-      { path: '/terms', element: <Navigate to="/legal/terms" replace /> },
-      { path: '/privacy', element: <Navigate to="/legal/privacy" replace /> },
+      // The policies at their canonical short addresses (2026-11-03); the old /legal/terms and /legal/privacy 301 here.
+      { path: '/terms', lazy: () => import('./pages/legal/Terms').then((m) => ({ Component: m.TermsPage })) },
+      { path: '/privacy', lazy: () => import('./pages/legal/Privacy').then((m) => ({ Component: m.PrivacyPage })) },
+      // Every Gully product's Terms and Privacy Policy.
+      { path: '/legal', lazy: () => import('./pages/legal/LegalIndex').then((m) => ({ Component: m.LegalIndexPage })) },
+      { path: '/legal/terms', element: <Navigate to="/terms" replace /> },
+      { path: '/legal/privacy', element: <Navigate to="/privacy" replace /> },
       { path: '/gully-pay/merchant-terms', element: <Navigate to="/legal/merchant-terms" replace /> },
       // A path no page owns: a branded 404 with ways back (the server answers it with status 404).
       { path: '*', element: <NotFoundRoute /> },
@@ -148,6 +151,9 @@ const holderMapsRoutes = [
       { path: '/:chain/:token', element: <HolderMapsTokenPage /> },
       { path: '/holders/*', element: <ToShortHolderPath /> },
       { path: '/holders', element: <ToShortHolderPath /> },
+      // HolderMaps' own Terms and Privacy Policy (2026-11-03), in its kit.
+      { path: '/terms', lazy: () => import('./holdermaps/HmLegal').then((m) => ({ Component: m.HmTermsPage })) },
+      { path: '/privacy', lazy: () => import('./holdermaps/HmLegal').then((m) => ({ Component: m.HmPrivacyPage })) },
       // The server 301s every gullylabs.xyz page to gullylabs.xyz, so a path that reaches the app here is a 404.
       { path: '*', element: <HmNotFoundRoute /> },
     ],
