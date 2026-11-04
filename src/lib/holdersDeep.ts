@@ -144,7 +144,8 @@ export interface DeepCheck {
   priceUsd: number
   listPriceUsd: number
   bundled: boolean
-  payment: { invoiceId: string; status: string; usd: number; payUrl: string; expiresAt: string | null } | null
+  /** provider 'gullypay': payUrl is the absolute Gully Pay hosted checkout URL (open in a new tab); 'invoice': a /pay/inv_… path. */
+  payment: { provider?: 'gullypay' | 'invoice'; invoiceId: string | null; sessionId?: string | null; status: string; usd: number; payUrl: string; expiresAt: string | null } | null
   progress: { pct: number; message: string } | null
   createdAt: string
   startedAt: string | null

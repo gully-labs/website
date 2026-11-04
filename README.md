@@ -68,6 +68,7 @@ server/              Node ESM, no runtime dependencies
   hosts.mjs          app host name
   tracker.mjs, solana-tracker.mjs, movers.mjs   stock token gaps and history
   holders*.mjs       Holder Map, deep check, launchpad partners
+  gullypay.mjs       Gully Pay hosted checkout + signed webhook (/api/gullypay/webhook); secrets in DATA_DIR/secrets/gullypay.json
   security*.mjs, security/   scan engine, monitors, reports
   payments.mjs, paylinks.mjs, invoices.mjs, solana-pay.mjs   Gully Pay
   telegram*.mjs      bot, Mini App, inline mode and broadcasts

@@ -16,6 +16,7 @@ import { handleHolders } from './holders.mjs'
 import { readHero } from './holders-hero.mjs'
 import { handleHolderBadge, handlePartnerLaunch } from './holders-partners.mjs'
 import { handleHolderDeep, startDeepRunner } from './holders-deep-routes.mjs'
+import { handleGullyPayWebhook } from './gullypay.mjs'
 import { handleBadgeRoutes } from './badge-routes.mjs'
 import { startChannel } from './telegram-channel.mjs'
 import { handleBroadcastRedirect, startBroadcasts } from './telegram-broadcast.mjs'
@@ -430,6 +431,8 @@ async function handleRequest(req, res) {
   // Holder Map partners (holders-partners.mjs): launch.created in (own key limits) and the cached-only health badge.
   if (url.pathname === '/api/partners/launch') return void (await handlePartnerLaunch(req, res))
   if (url.pathname.startsWith('/api/holders/') && url.pathname.endsWith('/badge.svg') && (await handleHolderBadge(req, res, url))) return
+  // Gully Pay's signed merchant webhook (gullypay.mjs): checkout.session.* events, the signature is the auth.
+  if (url.pathname === '/api/gullypay/webhook') return void (await handleGullyPayWebhook(req, res))
   // Holder Map Deep check (holders-deep-routes.mjs): paid per token through Gully Pay.
   if (url.pathname === '/api/holders/deep' || url.pathname.startsWith('/api/holders/deep/')) return void (await handleHolderDeep(req, res, url))
   // Badges (badge-routes.mjs): the Holder Map badge and "Built by Gully Labs". Open and cacheable, never metered.
