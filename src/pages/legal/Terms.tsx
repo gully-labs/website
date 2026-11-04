@@ -310,7 +310,7 @@ export function TermsPage() {
             <b>19.1 No warranties.</b> The services are provided “as is” and “as available”. Blockchains can fork, congest, reorganise or fail; tokens can be frozen or changed by their issuers; smart contracts can have bugs. <b>To the maximum extent the law allows, we disclaim all warranties and conditions, express or implied, including merchantability, fitness for a particular purpose, title and non-infringement.</b>
           </P>
           <P>
-            <b>19.2 Cap.</b> To the maximum extent the law allows, Gully Labs’ total liability for all claims arising out of or relating to the services or these terms is limited to the greater of the amount you paid Gully Labs for the service concerned in the 12 months before the claim, and 100 US dollars.
+            <b>19.2 Cap.</b> To the maximum extent the law allows, Gully Labs’ total liability for all claims arising out of or relating to the services or these terms is limited to the fees you paid Gully Labs for the service concerned in the prior 12 months. This never limits money Gully Labs already owes you.
           </P>
           <P>
             <b>19.3 Excluded damages.</b> We are not liable for lost profits, revenue, data, goodwill or trading opportunities, or for indirect, consequential, special, exemplary or punitive damages, even if told they were possible. We are not liable for losses from your trading or investment decisions, from transactions you sign, from funds sent to a wrong address, from a third-party protocol, token or chain, or from lost wallet keys.

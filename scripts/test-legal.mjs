@@ -136,6 +136,7 @@ try {
   }
   check('MerchantTerms: Common Paper attribution kept, MERCHANT_TERMS_VERSION equals server/merchants.mjs', read('src/pages/legal/MerchantTerms.tsx').includes('adapted="common-paper"') && read('src/pages/legal/MerchantTerms.tsx').match(/MERCHANT_TERMS_VERSION = '([^']+)'/)?.[1] === read('server/merchants.mjs').match(/MERCHANT_TERMS_VERSION = '([^']+)'/)?.[1])
   const terms = read('src/pages/legal/Terms.tsx')
+  check('Terms: liability capped at the fees paid in the prior 12 months, never money already owed (owner, 2026-11-03)', terms.includes('limited to the fees you paid Gully Labs for the service concerned in the prior 12 months') && terms.includes('never limits money Gully Labs already owes you') && !terms.includes('100 US dollars'))
   const n = (s) => [...s.matchAll(/<S n=\{(\d+)\}/g)].map((m) => Number(m[1]))
   check('Terms: sections s1…s20 in order (Gully AI cites them), 18+', n(terms).join() === Array.from({ length: 20 }, (_, i) => i + 1).join() && terms.includes('at least 18 years old'))
   check('Privacy: sections s1…s15 in order, the retention table in s11', n(read('src/pages/legal/Privacy.tsx')).join() === Array.from({ length: 15 }, (_, i) => i + 1).join() && /<S n=\{11\} title="How long we keep it">[^]*RETENTION\.map/.test(read('src/pages/legal/Privacy.tsx')))
