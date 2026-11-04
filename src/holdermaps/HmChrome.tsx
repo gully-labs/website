@@ -177,8 +177,10 @@ const COLS: [string, Item[]][] = [
     [
       { label: 'Gully Labs', icon: Sparkles, href: 'https://gullylabs.xyz' },
       { label: 'Gully Chain', icon: Boxes, href: 'https://gullychain.xyz' },
-      { label: 'Terms', icon: FileText, href: 'https://gullylabs.xyz/legal/terms' },
-      { label: 'Privacy', icon: FileText, href: 'https://gullylabs.xyz/legal/privacy' },
+      // HolderMaps' own Terms and Privacy Policy (holdermaps.xyz/terms, /privacy), and every Gully product's (2026-11-03).
+      { label: 'Terms', icon: FileText, to: '/terms' },
+      { label: 'Privacy', icon: FileText, to: '/privacy' },
+      { label: 'Legal', icon: FileText, href: 'https://gullylabs.xyz/legal' },
     ],
   ],
 ]

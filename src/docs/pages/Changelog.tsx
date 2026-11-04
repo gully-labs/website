@@ -37,7 +37,7 @@ export function Changelog() {
             A general <DocLink to="roadmap">Roadmap</DocLink> page listing each track with its status: the Gully L3 (planned) and <DocLink to="roadmap" hash="security">Gully Security</DocLink> (scan, score and monitors live; reviews on request; audits not offered).
           </li>
           <li>
-            Telegram announcements from @GullyLabsBot, with a 🔕 Stop announcements button on every one; alerts are never affected. See the <Ext href="https://gullylabs.xyz/legal/privacy">privacy policy</Ext> for what an announcement records.
+            Telegram announcements from @GullyLabsBot, with a 🔕 Stop announcements button on every one; alerts are never affected. See the <Ext href="https://gullylabs.xyz/privacy">privacy policy</Ext> for what an announcement records.
           </li>
           <li>
             <DocLink to="gully-pay">Gully Pay</DocLink> on three more chains: <ChainName name="OP Mainnet" /> (<AssetText text="USDC, USDT, ETH" />), <ChainName name="Polygon" /> (<AssetText text="USDC, POL" />) and <ChainName name="Avalanche" /> (<AssetText text="USDC, USDT, AVAX" />). Every token and Chainlink feed was read on chain first. Request Network's fee proxy was compared byte for byte with Base's: OP Mainnet's matches and will carry the merchant fee inside the payment once the treasury Safe is deployed there; Polygon's and Avalanche's are other builds, so the fee is invoiced there. Each chain opens for Gully Labs' own checkout once the treasury Safe is deployed on it.

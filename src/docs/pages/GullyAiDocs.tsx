@@ -141,7 +141,7 @@ export function GullyAiDocs() {
           </List>
         </Details>
         <P>
-          The full policy is at <Ext href="https://gullylabs.xyz/legal/privacy">gullylabs.xyz/legal/privacy</Ext>.
+          The full policy is at <Ext href="https://gullylabs.xyz/privacy">gullylabs.xyz/privacy</Ext>.
         </P>
       </Section>
 

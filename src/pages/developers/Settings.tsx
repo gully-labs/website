@@ -22,7 +22,7 @@ import { ServiceHeader } from './services/ServiceHeader'
      printed on receipts. POST /company.
    - Sessions (this wallet): device, created, last seen, which one is this browser; sign one out or
      every other one. GET /sessions, POST /sessions/revoke.
-   - Privacy: a link to /legal/privacy and how to ask for an export or deletion.
+   - Privacy: a link to /privacy and how to ask for an export or deletion.
    Each is its own sub-tab (#settings/profile, #settings/company, #settings/sessions, remembered); the
    wallet menu's Profile and Sessions links and the old #profile / #sessions hashes open theirs. */
 
@@ -80,7 +80,7 @@ function PrivacyCard() {
       <p className="m-0 text-[14px] leading-[1.6] text-ink-2">
         The privacy policy lists what the app, Gully AI, Gully Analytics, the Telegram bot and Gully Pay collect, who else sees it and how long it is kept. To see, export or delete your data, email team@gullylabs.xyz.
       </p>
-      <ExtLink href={site('/legal/privacy')} className={`${pillSm} self-start`}>
+      <ExtLink href={site('/privacy')} className={`${pillSm} self-start`}>
         Privacy policy <ExternalLink size={12} aria-hidden />
       </ExtLink>
     </section>

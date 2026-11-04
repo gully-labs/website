@@ -11,6 +11,11 @@ import { consoleToast } from '../console/toast'
 import { deepConfirm, deepPagePath, deepQuote, PART_NAMES, PART_ORDER, rememberCheck, useDeepOffer, type DeepQuote, type PartKey } from '../lib/holdersDeep'
 import { APP_URL, holderHref, isLocalHost } from '../site-host'
 import { HmSteps, type HmStep } from './HmKit'
+import { ConsentLine } from '../components/legal/ConsentLine'
+
+// HolderMaps' own policies (holdermaps.xyz/terms, /privacy).
+const HM_TERMS = 'https://holdermaps.xyz/terms'
+const HM_PRIVACY = 'https://holdermaps.xyz/privacy'
 
 const WHAT: Record<PartKey, string> = {
   trading: 'Wallets that bought in the first blocks, and the ones that bought together in one block.',
@@ -180,6 +185,7 @@ export function HmDeepCheck({ chain, token, symbol }: { chain: string; token: st
               </button>
               {quote.priceUsd > 0 && <span className="hmt-fine">You pay on the next page, through a Gully Pay invoice.</span>}
             </span>
+            <ConsentLine terms={HM_TERMS} privacy={HM_PRIVACY} />
           </div>
         )}
 

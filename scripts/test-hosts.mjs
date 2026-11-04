@@ -194,7 +194,7 @@ try {
     check('holdermaps policy: the session-only dashboard, admin and Telegram APIs are refused', ['/api/admin/x', '/api/developer/account', '/api/tg/me', '/api/telegram/x'].every((p) => r(p).kind === 'deny'))
     const rl = r(`/holders/base/${TOKEN}?x=1`)
     check('holdermaps policy: /holders/... is a 301 to the short path, query kept', rl.kind === 'redirect' && rl.location === `/base/${TOKEN}?x=1` && r('/holders').location === '/' && r(`/holders/deep/${DEEP}`).location === `/deep/${DEEP}`, JSON.stringify(rl))
-    check('holdermaps policy: any other page (and an unknown chain) goes to the same path on gullylabs.xyz', r('/pricing?a=1').location === `https://${MAIN}/pricing?a=1` && r('/legal/terms').location === `https://${MAIN}/legal/terms` && r('/tracker/robinhood/TSLA').location === `https://${MAIN}/tracker/robinhood/TSLA` && r('/embed/holders/base/x').location === `https://${MAIN}/embed/holders/base/x`)
+    check('holdermaps policy: any other page (and an unknown chain) goes to the same path on gullylabs.xyz', r('/pricing?a=1').location === `https://${MAIN}/pricing?a=1` && r('/legal').location === `https://${MAIN}/legal` && r('/legal/terms').location === '/terms' && r('/tracker/robinhood/TSLA').location === `https://${MAIN}/tracker/robinhood/TSLA` && r('/embed/holders/base/x').location === `https://${MAIN}/embed/holders/base/x`)
     check('holdermaps policy: www. is a 301 to the apex, path and query kept', r(`/base/${TOKEN}?q=1`, 'www.holdermaps.xyz').location === `https://holdermaps.xyz/base/${TOKEN}?q=1`)
     check('holdermaps: the main host policy is unchanged (holdermaps. is not a service host)', hostPolicy(HM, '/') === 'allow' && hostPolicy(MAIN, '/holders') === 'allow')
 
@@ -224,7 +224,7 @@ try {
       const nf = await get(HM, p)
       check(`holdermaps ${p}: its own 404, noindex, titled Not found · HolderMaps`, nf.status === 404 && !nf.headers.location && nf.text.includes('<div id="root">') && nf.text.includes('<title>Not found · HolderMaps</title>') && /<meta name="robots" content="noindex"/.test(nf.text) && nf.headers['x-robots-tag'] === 'noindex', `${nf.status} ${nf.headers.location ?? ''}`)
     }
-    for (const p of ['/legal/terms', '/tracker', '/admin', '/chains']) check(`holdermaps ${p}: still a 301 to gullylabs.xyz`, (await get(HM, p)).status === 301)
+    for (const p of ['/legal', '/tracker', '/admin', '/chains']) check(`holdermaps ${p}: still a 301 to gullylabs.xyz`, (await get(HM, p)).status === 301)
     const deep = await get(HM, `/deep/${DEEP}`)
     check('holdermaps /deep/<id>: 200, noindex, no canonical (private by link)', deep.status === 200 && /<meta name="robots" content="noindex"/.test(deep.text) && deep.headers['x-robots-tag'] === 'noindex' && !/rel="canonical"/.test(deep.text) && /HolderMaps/.test(deep.text.match(/<title>[^<]*<\/title>/)?.[0] ?? ''))
     const long = await get(HM, `/holders/base/${TOKEN}?ref=x`)
