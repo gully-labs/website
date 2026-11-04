@@ -5,11 +5,11 @@ import { NATIVE_SYMBOL } from './swapConfig'
 import { servable } from '../tracker/servable'
 import { TokenLogo } from '../logos/TokenLogo'
 
-/* "DeepCore route": what DeepCore's router would give for the same payment as the LI.FI swap on this card
+/* "Launchpad route": what the launchpad's router would give for the same payment as the LI.FI swap on this card
    (the chain's native coin in, this stock token out), for comparison only. It is mounted only where the swap
    itself is shown: after the region check and the visitor's "I understand". The quote comes from this site's
-   own GET /api/deepcore/quote (server/deepcore.mjs), which caches and rate-limits DeepCore's router API, so the
-   browser never calls DeepCore directly. Nothing is executed here: "Swap on DeepCore" opens deepcore.fun. */
+   own GET /api/deepcore/quote (server/deepcore.mjs), which caches and rate-limits the launchpad's router API, so the
+   browser never calls the launchpad directly. Nothing is executed here: "Swap on the launchpad" opens deepcore.fun. */
 
 interface Quote {
   chain: string
@@ -41,7 +41,7 @@ function show(v: string | null): string {
 
 const utc = (iso: string) => new Date(iso).toISOString().slice(11, 19) + ' UTC'
 
-export function DeepCoreQuote({ row }: { row: TrackerRow }) {
+export function LaunchpadQuote({ row }: { row: TrackerRow }) {
   const native = NATIVE_SYMBOL[row.chain] ?? 'native coin'
   const [amount, setAmount] = useState(DEFAULT_AMOUNT[row.chain] ?? '0.1')
   const [st, setSt] = useState<State>({ k: 'idle' })
@@ -75,12 +75,12 @@ export function DeepCoreQuote({ row }: { row: TrackerRow }) {
     <section aria-labelledby="dc-route-title" className="flex flex-col gap-3 rounded-input border border-line-strong bg-surface-deep p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 id="dc-route-title" className="m-0 inline-flex items-center gap-2 text-[15px] font-semibold text-ink">
-          <Route aria-hidden size={16} className="text-gold" /> DeepCore route
+          <Route aria-hidden size={16} className="text-gold" /> Launchpad route
         </h3>
         <span className="rounded-full border border-line-strong px-2 py-[2px] font-mono text-[11px] uppercase tracking-wide text-muted">Comparison only</span>
       </div>
       <p className="m-0 text-[13px] leading-[1.55] text-muted">
-        What DeepCore’s router quotes for the same payment, {native} for {row.ticker} on this chain. Type the amount you pay in the swap to compare its output.
+        What the launchpad’s router quotes for the same payment, {native} for {row.ticker} on this chain. Type the amount you pay in the swap to compare its output.
       </p>
       <label className="flex items-center gap-2 text-[14px] text-ink-2">
         <span className="shrink-0">You pay</span>
@@ -99,7 +99,7 @@ export function DeepCoreQuote({ row }: { row: TrackerRow }) {
       <div aria-live="polite" className="min-h-[24px]">
         {valid && st.k === 'loading' && (
           <p className="m-0 inline-flex items-center gap-2 text-[13px] text-faint" role="status">
-            <Loader2 aria-hidden size={14} className="animate-spin" /> Asking DeepCore’s router…
+            <Loader2 aria-hidden size={14} className="animate-spin" /> Asking the launchpad’s router…
           </p>
         )}
         {valid && st.k === 'error' && <p className="m-0 text-[13px] text-ink-2">{st.msg}</p>}
@@ -126,8 +126,8 @@ export function DeepCoreQuote({ row }: { row: TrackerRow }) {
               {q.fee === null
                 ? 'not stated'
                 : q.onDeepcorePool || q.fee.exempt
-                  ? 'No DeepCore routing fee (DeepCore pool)'
-                  : `${q.fee.pct}% DeepCore routing fee at an external venue${q.fee.amount ? ` (${show(q.fee.amount)} ${q.fee.symbol})` : ''}`}
+                  ? 'No routing fee (launchpad pool)'
+                  : `${q.fee.pct}% launchpad routing fee at an external venue${q.fee.amount ? ` (${show(q.fee.amount)} ${q.fee.symbol})` : ''}`}
               <span className="block text-[12px] text-faint">Pool fees are inside the quoted output.</span>
             </dd>
             {q.priceImpactPct !== null && (
@@ -147,10 +147,10 @@ export function DeepCoreQuote({ row }: { row: TrackerRow }) {
       )}
       {links && (
         <a href={links.swap} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 self-start text-[14px] text-gold hover:underline">
-          Swap on DeepCore <ArrowUpRight aria-hidden size={14} />
+          Swap on the launchpad <ArrowUpRight aria-hidden size={14} />
         <span className="sr-only"> (opens in a new tab)</span></a>
       )}
-      <p className="m-0 text-[12px] leading-[1.5] text-faint">Comparison only. Gully Labs does not route or execute swaps through DeepCore; the link opens deepcore.fun, where your wallet signs on DeepCore’s own page.</p>
+      <p className="m-0 text-[12px] leading-[1.5] text-faint">Comparison only. Gully Labs does not route or execute swaps through the launchpad; the link opens deepcore.fun, where your wallet signs on the launchpad’s own page.</p>
     </section>
   )
 }

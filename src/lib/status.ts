@@ -53,7 +53,7 @@ export interface StatusBody {
 export const STATUS_GROUPS: { id: StatusGroup; label: string }[] = [
   { id: 'platform', label: 'Platform' },
   { id: 'tracker', label: 'Tracker freshness' },
-  { id: 'deepcore', label: 'DeepCore' },
+  { id: 'deepcore', label: 'Launch poller' },
   { id: 'telegram', label: 'Telegram bot' },
   { id: 'payments', label: 'Gully Pay RPC' },
   { id: 'ai', label: 'Gully AI' },

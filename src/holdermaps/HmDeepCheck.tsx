@@ -1,6 +1,6 @@
 /* The $9 Deep check on a HolderMaps token page, as a stepper (owner rule): 01 what runs on this chain (GET
    /api/holders/deep coverage), 02 a quote (nothing charged), 03 confirm the price you saw (`expect`, so a changed
-   price is never charged silently), 04 pay through the Gully Pay invoice on the report page and read the report.
+   price is never charged silently), 04 pay through Gully Pay checkout from the report page and read the report.
    Same API and rules as the gullylabs.xyz card (src/components/holders/DeepCheck.tsx): free quota and credits first,
    a chain where no part can run is not sold, payment buys the work, never the result. A quote arriving is a real
    event, so it toasts. */
@@ -11,6 +11,11 @@ import { consoleToast } from '../console/toast'
 import { deepConfirm, deepPagePath, deepQuote, PART_NAMES, PART_ORDER, rememberCheck, useDeepOffer, type DeepQuote, type PartKey } from '../lib/holdersDeep'
 import { APP_URL, holderHref, isLocalHost } from '../site-host'
 import { HmSteps, type HmStep } from './HmKit'
+import { ConsentLine } from '../components/legal/ConsentLine'
+
+// HolderMaps' own policies (holdermaps.xyz/terms, /privacy).
+const HM_TERMS = 'https://holdermaps.xyz/terms'
+const HM_PRIVACY = 'https://holdermaps.xyz/privacy'
 
 const WHAT: Record<PartKey, string> = {
   trading: 'Wallets that bought in the first blocks, and the ones that bought together in one block.',
@@ -22,7 +27,7 @@ const STEPS: HmStep[] = [
   { t: 'Coverage', d: 'What runs on this chain' },
   { t: 'Quote', d: 'Nothing charged yet' },
   { t: 'Confirm', d: 'The price you saw' },
-  { t: 'Pay · report', d: 'Gully Pay invoice' },
+  { t: 'Pay · report', d: 'Gully Pay checkout' },
 ]
 const SIGN_IN = `${isLocalHost() ? '/app' : APP_URL}/`
 
@@ -178,8 +183,9 @@ export function HmDeepCheck({ chain, token, symbol }: { chain: string; token: st
               <button type="button" onClick={() => setQuote(null)} className="hm-btn ghost">
                 Change
               </button>
-              {quote.priceUsd > 0 && <span className="hmt-fine">You pay on the next page, through a Gully Pay invoice.</span>}
+              {quote.priceUsd > 0 && <span className="hmt-fine">You pay on the next page, through Gully Pay checkout (USDC or USDT).</span>}
             </span>
+            <ConsentLine terms={HM_TERMS} privacy={HM_PRIVACY} />
           </div>
         )}
 

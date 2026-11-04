@@ -7,7 +7,7 @@ import { ageText } from '../../lib/tracker'
 import { holdersPagePath } from '../../lib/holders'
 import { holderAbsUrl, holderHref } from '../../site-host'
 
-/* The latest DeepCore launches (GET /api/deepcore/launches, the poller's cache in deepcore.mjs), each with
+/* The latest launchpad launches (GET /api/deepcore/launches, the poller's cache in deepcore.mjs), each with
    a link to its Holder Map. On the site the links stay in the tab; in the app (another host) they open the
    site in a new tab. */
 
@@ -58,18 +58,18 @@ export function LaunchHolders({ external = false, limit = 8 }: { external?: bool
   )
   if (s.k === 'loading')
     return (
-      <div role="status" aria-label="Reading DeepCore launches" className="flex flex-col gap-2">
+      <div role="status" aria-label="Reading the launch list" className="flex flex-col gap-2">
         {[0, 1, 2].map((i) => (
           <div key={i} className="h-11 animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-[8px] bg-surface-deep" />
         ))}
       </div>
     )
-  if (s.k === 'error' || s.data.state === 'unreadable') return <p className="m-0 flex items-center gap-2 font-mono text-[12px] text-faint">{live} DeepCore’s launch list could not be read just now; it is retried every minute or two.</p>
+  if (s.k === 'error' || s.data.state === 'unreadable') return <p className="m-0 flex items-center gap-2 font-mono text-[12px] text-faint">{live} The launch list could not be read just now; it is retried every minute or two.</p>
   const list = s.data.launches.slice(0, limit)
   return (
     <div className="flex flex-col gap-2" data-launch-holders>
       <span className="flex items-center gap-2 font-mono text-[11px] tracking-[1px] text-faint">
-        {live} LIVE FROM DEEPCORE · {s.data.state === 'stale' ? `LAST READ ${ageText(s.data.asOf, now).toUpperCase()}` : `${list.length} LATEST`}
+        {live} LIVE FROM THE LAUNCHPAD · {s.data.state === 'stale' ? `LAST READ ${ageText(s.data.asOf, now).toUpperCase()}` : `${list.length} LATEST`}
       </span>
       {!list.length && <p className="m-0 text-[13px] text-muted">No launches yet.</p>}
       <ul className="m-0 flex list-none flex-col gap-1 p-0">

@@ -342,7 +342,7 @@ const HOLDER_CHAIN_NAMES: Record<string, string> = { robinhood: 'Robinhood Chain
 /** A holder alert's rule in words. */
 export const holdersText = (c: HolderAlertCondition) =>
   `${c.metric === 'top10' ? 'Top 10 wallets' : c.metric === 'deployer' ? 'Deployer' : 'Largest cluster'} of ${c.symbol ?? (c.token.length > 14 ? `${c.token.slice(0, 6)}…${c.token.slice(-4)}` : c.token)} on ${HOLDER_CHAIN_NAMES[c.chain] ?? c.chain}${c.above !== null ? ` ≥ ${c.above}%` : ''}${c.above !== null && c.dropPts !== null ? ' or' : ''}${c.dropPts !== null ? ` falls ${c.dropPts} pts` : ''}${c.sellPct != null ? ` sells ${c.sellPct}%` : ''}`
-export const conditionText = (c: AlertCondition) => (c.type === 'holders' ? holdersText(c) : c.type === 'deepcore-launch' ? `New DeepCore launch on ${c.chainId ? (DEEPCORE_CHAIN_NAMES[c.chainId] ?? `chain ${c.chainId}`) : 'any chain'}` : c.type === 'gap' ? gapText(c.pct, c.direction) : c.status === 'either' ? 'Status premium or discount' : `Status ${c.status}`)
+export const conditionText = (c: AlertCondition) => (c.type === 'holders' ? holdersText(c) : c.type === 'deepcore-launch' ? `New launch on ${c.chainId ? (DEEPCORE_CHAIN_NAMES[c.chainId] ?? `chain ${c.chainId}`) : 'any chain'}` : c.type === 'gap' ? gapText(c.pct, c.direction) : c.status === 'either' ? 'Status premium or discount' : `Status ${c.status}`)
 
 export const fmtUsd0 = (n: number) => n.toLocaleString('en-US')
 

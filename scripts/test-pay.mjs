@@ -137,12 +137,12 @@ try {
   check('every chain but Polygon and Avalanche reports a verified fee proxy, usable now (feeSplit) with an EOA treasury', plans.chains.every((c) => c.feeProxy === !noProxy.includes(c.id) && c.feeSplit === !noProxy.includes(c.id)) && plans.assets.every((a) => a.feeSplit === (a.kind === 'token' && !noProxy.includes(a.chainId))), JSON.stringify(plans.chains.map((c) => [c.id, c.feeProxy, c.feeSplit])))
   check('the new chains carry the on-chain-checked assets: OP USDC/USDT/ETH, Polygon USDC/POL, Avalanche USDC/USDT/AVAX', ['op-usdc', 'op-usdt', 'op-eth', 'polygon-usdc', 'polygon-pol', 'avax-usdc', 'avax-usdt', 'avax-avax'].every((id) => plans.assets.some((a) => a.id === id)) && plans.assets.find((a) => a.id === 'polygon-pol').feed.description === 'MATIC / USD' && plans.assets.find((a) => a.id === 'avax-avax').feed.description === 'AVAX / USD' && plans.assets.find((a) => a.id === 'op-usdc').address === TOKENS.opUsdc)
   {
-    // glUSD is retired (2026-10-28): Gully Chain testnet offers USDC.e and test ETH only, never gully-glusd
+    // Gully Chain testnet offers USDC.e and test ETH only
     const { execFileSync } = await import('node:child_process')
     const code = "const m = await import(process.argv[1]); console.log(JSON.stringify(m.ASSETS.filter((a) => a.chainId === 485590).map((a) => a.id + ':' + a.address + ':' + a.decimals)))"
     const url = new URL('../server/payments.mjs', import.meta.url).href
     const ids = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', code, url], { env: { ...process.env, NODE_ENV: 'test', GULLY_TESTNET_CHAINS: '485590' }, encoding: 'utf8' }).trim().split(/\r?\n/).pop())
-    check('Gully Chain testnet pays in USDC.e (6 decimals) and ETH; glUSD is no longer offered', JSON.stringify(ids) === JSON.stringify(['gully-usdc:0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76:6', 'gully-eth:null:18']), JSON.stringify(ids))
+    check('Gully Chain testnet pays in USDC.e (6 decimals) and ETH only', JSON.stringify(ids) === JSON.stringify(['gully-usdc:0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76:6', 'gully-eth:null:18']), JSON.stringify(ids))
   }
   check('the BNB Chain stablecoins have 18 decimals', plans.assets.filter((a) => a.chainId === 56 && a.kind === 'token').every((a) => a.decimals === 18))
   check('no RPC URL is published', !JSON.stringify(plans).includes('127.0.0.1') && !JSON.stringify(plans).includes('publicnode'))

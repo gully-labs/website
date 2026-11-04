@@ -58,7 +58,7 @@ const fmtUsd = (n: number) => `${n < 0 ? '−' : ''}$${Math.abs(Math.round(n)).t
 const fmtUnits = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n.toLocaleString('en-US', { maximumFractionDigits: 4 }))
 const PCT = { maximumFractionDigits: 2 } as const
 /** A holder's label for a narrow row: the parenthetical detail ("Burn (dead address)") is dropped. */
-const shortLabel = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '').replace(/^DeepCore launch lock$/, 'Launch lock')
+const shortLabel = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '').replace(/^\w+( \w+)? launch lock$/, 'Launch lock')
 
 const VIEWS: SegOption<'map' | 'list'>[] = [
   { id: 'map', label: 'Map' },
@@ -128,7 +128,7 @@ export interface HolderMapProps {
   compact?: boolean
   /** Embedded on another site: trades and shares open gullylabs.xyz. */
   embed?: boolean
-  /** Where Buy / Sell goes: '#swap' on a stock page; null hides it. Launches go to DeepCore's swap by default. */
+  /** Where Buy / Sell goes: '#swap' on a stock page; null hides it. Launches go to the launchpad's swap by default. */
   tradeHref?: string | null
   onTrade?: () => void
   /** The map's own page: the title is the page's h1, live mode runs, the map takes the first screen. */
@@ -157,7 +157,7 @@ export function HolderMap({ chain, token, compact = false, embed = false, tradeH
                 ? 'The Holder Map could not check this token'
                 : 'The Holder Map is busy'
         }
-        text={m.comingSoon ? `Maps for tokens on ${chainName} are on the way. DeepCore launches already have live maps you can open now.` : m.reason}
+        text={m.comingSoon ? `Maps for tokens on ${chainName} are on the way. Launchpad launches already have live maps you can open now.` : m.reason}
         action={
           m.state === 'busy'
             ? undefined
@@ -175,7 +175,7 @@ export function HolderMap({ chain, token, compact = false, embed = false, tradeH
 
 /* ---------- loading and empty states (animated, never dead) ---------- */
 
-const mapHeight = (page: boolean, compact: boolean, wide: boolean) => (compact ? 340 : page ? (wide ? 'clamp(440px, calc(100svh - 236px), 780px)' : 'clamp(360px, 60svh, 620px)') : wide ? 540 : 'clamp(340px, 60svh, 520px)')
+const mapHeight = (page: boolean, compact: boolean, wide: boolean) => (compact ? 340 : page ? (wide ? 'clamp(440px, calc(100svh - 190px), 780px)' : 'clamp(340px, 58svh, 620px)') : wide ? 540 : 'clamp(340px, 60svh, 520px)')
 
 function MapSkeleton({ compact, page = false }: { compact: boolean; page?: boolean }) {
   return (
@@ -729,9 +729,9 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
     </div>
   )
   const why = !compact && m.summary.plain.length > 0 && (
-    <details className="group rounded-[12px] border border-line-strong" style={{ background: K.night }} data-why>
+    <details open={page} className="group rounded-[12px] border border-line-strong" style={{ background: K.night }} data-why>
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 font-mono text-[12px] tracking-[1px] text-muted hover:text-ink">
-        WHY THIS SCORE · IN PLAIN WORDS
+        WHAT THIS MEANS · IN PLAIN WORDS
         <ChevronDown size={15} aria-hidden className="transition-transform group-open:rotate-180" />
       </summary>
       <ul className="m-0 flex list-none flex-col gap-1 px-4 pt-1 pb-4 text-[14px] leading-[1.55] text-muted">
@@ -777,11 +777,11 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
       {/* One line: what this is, how fresh, live; the explainer sits behind (i). */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-3">
-          <Title className={`flex min-w-0 items-center gap-2 ${page ? 'heading-3 min-[600px]:heading-2' : 'heading-3'}`}>
+          <Title className="heading-3 flex min-w-0 items-center gap-2" data-map-title>
             {m.token.symbol && <TokenLogo symbol={m.token.symbol} chain={m.chain.key} address={m.token.address} size={32} decorative className="max-[599px]:hidden" />}
             <span className="min-w-0">
               Who holds {m.token.symbol ?? 'this token'}
-              <span className="text-muted max-[599px]:sr-only"> · {m.chain.name}</span>
+              <span className={`text-muted ${page ? '' : 'max-[599px]:sr-only'}`}> · {m.chain.name}</span>
             </span>
           </Title>
           <span className="flex flex-none items-center gap-2">
@@ -793,7 +793,7 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
         </div>
         <div className="flex flex-wrap items-center gap-x-2">
           <span className="font-mono text-[12px] text-dim">
-            <span className="min-[600px]:hidden">{m.chain.name} · </span>
+            {!page && <span className="min-[600px]:hidden">{m.chain.name} · </span>}
             {kindLabel(m)} · updated {ageText(m.asOf, now)}
             {m.holders.count !== null ? ` · ${m.holders.count.toLocaleString('en-US')} holders` : ''}
             <span className="max-[599px]:hidden"> · {m.holders.shown} listed</span>
@@ -801,7 +801,20 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
           </span>
           <InfoPop />
         </div>
-        {m.coverage?.level === 'top' && (
+        {m.coverage?.level === 'top' && page && (
+          <details data-coverage="top" className="m-0 text-[13px] leading-[1.5] text-muted">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 hover:text-ink">
+              <Info size={14} aria-hidden className="flex-none text-gold" />
+              <b className="font-semibold text-ink">Top holders only{m.coverage.shown ? ` (the biggest ${m.coverage.shown.toLocaleString('en-US')})` : ''}.</b> Why
+              <ChevronDown size={14} aria-hidden />
+            </summary>
+            <p className="m-0 pb-2">
+              {m.coverage.reason ? `${m.coverage.reason[0].toUpperCase()}${m.coverage.reason.slice(1)}. ` : ''}
+              Smaller wallets, and links between wallets outside the listed ones, are not shown. Shares are of {m.holders.sharesOf}.
+            </p>
+          </details>
+        )}
+        {m.coverage?.level === 'top' && !page && (
           <p role="note" data-coverage="top" className="m-0 flex items-start gap-2 rounded-btn border border-line-strong px-3 py-2 text-[13px] leading-[1.5] text-muted" style={{ background: alpha(K.night, 0.92) }}>
             <Info size={14} aria-hidden className="mt-[3px] flex-none text-gold" />
             <span>
@@ -832,6 +845,18 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
             <RankedList m={m} selected={selected} onSelect={setSelected} srOnly />
           </div>
           {side}
+        </div>
+      ) : page ? (
+        // A phone: the map, how to read it and what it found come first; the tools under them.
+        <div className="flex flex-col gap-3">
+          {stage}
+          <Legend m={m} noLinks={noLinks} clusterIdx={clusterIdx} />
+          {side}
+          {replay}
+          {controls}
+          {notes}
+          {strip}
+          <RankedList m={m} selected={selected} onSelect={setSelected} srOnly />
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -1417,7 +1442,7 @@ function FairBlock({ m }: { m: HolderMapOk }) {
 
 /** The line under the title: what kind of token this map is of. */
 function kindLabel(m: HolderMapOk) {
-  return m.kind === 'deepcore-launch' ? 'DeepCore launch' : m.kind === 'launch' ? `${m.venue ?? 'Launchpad'} launch` : m.kind === 'token' ? 'Token' : 'Stock token'
+  return m.kind === 'deepcore-launch' ? 'Launchpad launch' : m.kind === 'launch' ? `${m.venue ?? 'Launchpad'} launch` : m.kind === 'token' ? 'Token' : 'Stock token'
 }
 
 function Trade({ m, embed, tradeHref, onTrade, pageUrl }: { m: HolderMapOk; embed: boolean; tradeHref?: string | null; onTrade?: () => void; pageUrl: string }) {
@@ -1428,7 +1453,7 @@ function Trade({ m, embed, tradeHref, onTrade, pageUrl }: { m: HolderMapOk; embe
   const net = { robinhood: 'robinhood', bsc: 'bsc', base: 'base', hyperevm: 'hyperevm' }[m.chain.key] ?? m.chain.key
   const href = embed ? pageUrl : (tradeHref ?? (generic ? m.token.url : launch ? `https://deepcore.fun/app/swap?net=${net}&in=0x0000000000000000000000000000000000000000&out=${m.token.address}` : `/tracker/${m.chain.key}/${sym}#swap`))
   const external = embed || /^https?:/.test(href)
-  const note = generic ? 'Opens the block explorer; Gully Labs has no swap for this token.' : launch ? `Opens DeepCore’s own swap; Gully Labs takes no fee there.` : m.chain.key === 'solana' ? jupiterFeeText() : feeText()
+  const note = generic ? 'Opens the block explorer; Gully Labs has no swap for this token.' : launch ? `Opens the launchpad’s own swap; Gully Labs takes no fee there.` : m.chain.key === 'solana' ? jupiterFeeText() : feeText()
   return (
     <div className="flex flex-col gap-2 rounded-[12px] border border-line-strong p-4" style={{ background: K.night }} data-holder-trade>
       <p className="m-0 text-[14px] leading-[1.5] text-ink">
@@ -1436,7 +1461,7 @@ function Trade({ m, embed, tradeHref, onTrade, pageUrl }: { m: HolderMapOk; embe
         {m.summary.line}
       </p>
       <div className="flex flex-wrap items-center gap-3">
-        <a href={href} {...(external ? newTab : {})} onClick={() => onTrade?.()} className="inline-flex min-h-11 items-center gap-2 rounded-btn px-5 font-semibold text-bg transition-[filter] hover:brightness-110" style={{ background: K.gold }}>
+        <a href={href} {...(external ? newTab : {})} onClick={() => onTrade?.()} data-trade-btn className="inline-flex min-h-11 items-center gap-2 rounded-btn px-5 font-semibold text-bg transition-[filter] hover:brightness-110" style={{ background: K.gold }}>
           {generic && !embed ? `View ${sym} on the explorer` : `Buy or sell ${sym}`}
           {external ? ' ↗' : ''}
         </a>

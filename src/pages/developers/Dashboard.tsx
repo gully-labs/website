@@ -1,6 +1,4 @@
-import { BellRing, Boxes, ChartNoAxesCombined, CreditCard, History, KeyRound, LayoutDashboard, Settings, ShieldCheck, Store, Users } from 'lucide-react'
-import { ProductHandoff, type HandoffCopy } from '../../console/Handoff'
-import { Btn } from '../../console/ui'
+import { ArrowUpRight, BellRing, ChartNoAxesCombined, ShieldCheck, Store } from 'lucide-react'
 import { securityPrimary } from '../../site-host'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ActivityTab } from './Activity'
@@ -16,79 +14,51 @@ import { Overview } from './Overview'
 import { PortalReceipt } from './PortalReceipt'
 import { APP_NAME, APP_TITLE, inviteTokenFromHash, usePortal } from './portal'
 import { Products } from './Products'
-import { grouped, HANDOFF_TABS, isHandoffTab, isServiceTab, SERVICE_TABS, type HandoffTab, type ServiceTab } from './services/nav'
+import { AI_TAB, HANDOFF_TABS, isHandoffTab, isServiceTab, LEGACY_CHAIN_HASHES, redirectFor, SERVICE_TABS, SIDEBAR, type HandoffTab, type ServiceTab, type SidebarTab } from './services/nav'
 import { ServiceView } from './services/ServiceView'
 import { SecurityTab } from './security/SecurityTab'
 import { SettingsTab } from './Settings'
 import { Team } from './Team'
+import { openAsk } from '../../components/ask/openAsk'
+import { pillSm } from './styles'
 
-/* The signed-in Gully Labs App (portal v2, app.gullylabs.xyz): the AppShell frame (sidebar with the
-   workspace switcher, the pages, Docs, Gully AI, Status and the wallet menu; a slim header with the
-   breadcrumb) around one page at a time. Pages are deep-linkable by hash (#keys, #alerts, #analytics,
-   #billing, #products, #team, #activity, #settings; the pricing page links to #billing). Old hashes
-   (#quickstart, #requests, #widget) open Keys at that section; #security-new, #security-reports and #security-review open Security there; #profile, #company and #sessions open
-   Settings there. #invite=<token> shows the invite landing above the page; #receipt=<chain>:<tx> a
-   printable receipt.
+/* The signed-in Gully Labs App (portal v2, app.gullylabs.xyz): the AppShell frame (a seven-item sidebar with the
+   workspace switcher and the wallet menu; a slim header with the breadcrumb; Gully AI as a floating assistant on
+   every page) around one page at a time.
 
-   Products on their own domains (2026-10-26): the "Gully products" group hands off to each product's domain
-   (services/nav.ts HANDOFF_TABS, console/Handoff.tsx). What was built here before the move stays reachable from its
-   hand-off without a sidebar entry: a merchant store (#merchant, from Gully Pay) and, once Gully Security is its own
-   app (SECURITY_PRIMARY), the scans and monitors made here (#scans, from Gully Security). */
+   Pages are deep-linkable by hash. The sidebar's seven: #overview (the home), #activity, #products, #keys, #billing,
+   #team, #settings. The tools (HolderMaps / Gully Security features) have no sidebar entry and are reached from
+   Products: #tracker, #score, #widgets, #telegram, #alerts, #analytics. Old hashes (#quickstart, #requests, #widget)
+   open Keys at that section; #security-new, #security-reports and #security-review open Security there; #profile,
+   #company and #sessions open Settings there. #invite=<token> shows the invite landing above the page; #receipt=<chain>:<tx>
+   a printable receipt. #ai opens the Gully AI drawer over the Overview.
 
-export type Tab = 'overview' | 'products' | 'keys' | 'alerts' | 'analytics' | 'billing' | 'merchant' | 'scans' | 'team' | 'activity' | 'settings'
+   Products on their own domains (2026-10-26, slimmed 2026-11-03): a product hash (#chain, #pay, #rpc, #ipfs,
+   #holders, #security, #studio, and the old #chains, #chain-kit, #deepcore) leaves for the product's own app
+   (services/nav.ts redirectFor). What was built here before the move stays reachable without a sidebar entry: a
+   merchant store (#merchant, from Gully Pay) and, once Gully Security is its own app (SECURITY_PRIMARY), the scans
+   and monitors made here (#scans). */
+
+export type Tab = SidebarTab | 'alerts' | 'analytics' | 'merchant' | 'scans'
 
 const ICON = 16
 const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
-  // The sidebar's pages, in order. A Merchant page (Store icon), when the merchant tab exists, goes after Billing.
-  { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={ICON} aria-hidden /> },
-  { id: 'products', label: 'Products', icon: <Boxes size={ICON} aria-hidden /> },
-  { id: 'keys', label: 'Keys', icon: <KeyRound size={ICON} aria-hidden /> },
+  // The sidebar's seven pages, in order (services/nav.ts SIDEBAR) ...
+  ...SIDEBAR.map((s) => ({ id: s.id, label: s.label, icon: <s.icon size={ICON} aria-hidden /> })),
+  // ... and the pages without a sidebar entry: two tools (opened from Products) and what Gully Pay and Gully Security
+  // left behind (opened from their product cards).
   { id: 'alerts', label: 'Alerts', icon: <BellRing size={ICON} aria-hidden /> },
   { id: 'analytics', label: 'Analytics', icon: <ChartNoAxesCombined size={ICON} aria-hidden /> },
-  { id: 'billing', label: 'Billing', icon: <CreditCard size={ICON} aria-hidden /> },
-  // Kept from before Gully Pay and Gully Security moved out; opened from their hand-offs, not listed in the sidebar.
   { id: 'merchant', label: 'Merchant store', icon: <Store size={ICON} aria-hidden /> },
   { id: 'scans', label: 'Security scans', icon: <ShieldCheck size={ICON} aria-hidden /> },
-  { id: 'team', label: 'Team', icon: <Users size={ICON} aria-hidden /> },
-  { id: 'activity', label: 'Activity', icon: <History size={ICON} aria-hidden /> },
-  { id: 'settings', label: 'Settings', icon: <Settings size={ICON} aria-hidden /> },
 ]
-const HIDDEN = new Set<string>(['merchant', 'scans'])
+const SIDEBAR_IDS = new Set<string>(SIDEBAR.map((s) => s.id))
 // Old hashes: Keys and Settings sections, Security's sections, and the Gully Chain features that moved to gullychain.xyz.
-const LEGACY: Record<string, AppTab> = { quickstart: 'keys', requests: 'keys', widget: 'keys', profile: 'settings', company: 'settings', sessions: 'settings', 'security-new': 'security', 'security-reports': 'security', 'security-monitors': 'security', 'security-review': 'security', chains: 'chain', 'chains/launch': 'chain', 'chain-kit': 'chain', deepcore: 'chain' }
+const LEGACY: Record<string, AppTab> = { quickstart: 'keys', requests: 'keys', widget: 'keys', profile: 'settings', company: 'settings', sessions: 'settings', 'security-new': 'security', 'security-reports': 'security', 'security-monitors': 'security', 'security-review': 'security', ...Object.fromEntries(LEGACY_CHAIN_HASHES.map((h) => [h, 'chain'])) }
 
-/** Every page: the tabs above plus the service pages and the product hand-offs (services/nav.ts), each with its icon. */
-type AppTab = Tab | ServiceTab | HandoffTab
-const ALL_TABS: { id: AppTab; label: string; icon: ReactNode }[] = [...TABS, ...[...SERVICE_TABS, ...HANDOFF_TABS].map((s) => ({ id: s.id, label: s.label, icon: <s.icon size={ICON} aria-hidden /> }))]
-
-/** What each hand-off says; `go` opens what stays here (alerts, a store or scans made before the move). */
-function handoffCopy(id: HandoffTab, go: (t: AppTab) => void): HandoffCopy {
-  const here = (label: string, t: AppTab) => (
-    <Btn kind="ter" size="xs" onClick={() => go(t)}>
-      {label}
-    </Btn>
-  )
-  switch (id) {
-    case 'chain':
-      return { line: <>Testnet 485590 is open: <b>Gully Street</b> (launchpad, Gully Swap, .gully names, Quests, Arcade, copy trading, referrals), the explorer, faucet and bridge. Gully Core is its launchpad and DEX core, and your own chain launches from Gully Chain&apos;s app too.</>, href: 'https://kre8.fun', docs: 'https://docs.gullychain.xyz/' }
-    case 'pay':
-      return {
-        line: <>x402 payments on Base, Ethereum, BNB Chain, Solana and <b>Gully Chain</b>, checkout, merchant stores and USDC run on Gully Pay&apos;s own platform. Your Gully Labs plan is still paid in Billing here, through Gully Pay checkout.</>,
-        docs: 'https://gullypay.xyz/docs',
-        legacy: <>Already run a store from this workspace? Its pay links and invoices keep working. {here('Manage that store', 'merchant')}</>,
-      }
-    case 'rpc':
-      return { line: <>RPC keys, usage and <b>every Gully chain behind one endpoint</b>: rpc.gullyrpc.xyz/&lt;project&gt;/evm/&lt;chainId&gt;, Gully Chain testnet included.</>, href: 'https://app.gullyrpc.xyz', docs: 'https://gullyrpc.xyz/docs/' }
-    case 'ipfs':
-      return { line: <>Our Kubo node and read-only gateway at <b>ipfs.gullylabs.xyz/ipfs/&lt;CID&gt;</b>: token art, metadata, NFT art and .gully sites, pinned for good.</>, href: 'https://docs.gullylabs.xyz/ipfs', docs: 'https://docs.gullylabs.xyz/ipfs' }
-    case 'holders':
-      return { line: <>Bubble maps, wallet clusters and deep checks for any token, <b>Gully Chain tokens included</b>. Holder alerts stay in Alerts here.</>, legacy: <>Cluster and holder alerts for the tokens you watch: {here('Open Alerts', 'alerts')}</> }
-    case 'security':
-      return { line: <>AI security scans, contract monitors and published reports run in <b>the Gully Security app</b>. Report badges and the scan API keep their addresses.</>, legacy: <>Scans and monitors made here before the move: {here('Open them', 'scans')}</> }
-    case 'studio':
-      return { line: <>Our game studio: <b>Unity 3D titles on Gully Chain</b> with the Gully Game SDK, paid through Gully Pay.</> }
-  }
-}
+/** Every page: the tabs above plus the service pages, the old Gully AI page and the product hand-offs (services/nav.ts). */
+type AppTab = Tab | ServiceTab | HandoffTab | typeof AI_TAB.id
+const ALL_TABS: { id: AppTab; label: string; icon: ReactNode }[] = [...TABS, ...[...SERVICE_TABS, AI_TAB, ...HANDOFF_TABS].map((s) => ({ id: s.id, label: s.label, icon: <s.icon size={ICON} aria-hidden /> }))]
 
 type View = { tab: AppTab; section: string | null; receipt: string | null; invite: string | null }
 
@@ -148,6 +118,25 @@ function alertGapFromUrl(): { pct: string; dir: 'above' | 'below' | 'both' } | n
   return { pct: String(pct), dir: dir === 'above' || dir === 'below' ? dir : 'both' }
 }
 
+/** A product hash: the app leaves for the product's own app at once; this line shows meanwhile (and is the way on when
+    the browser blocks the navigation). */
+function Leaving({ tab }: { tab: HandoffTab }) {
+  const h = HANDOFF_TABS.find((x) => x.id === tab)!
+  useEffect(() => {
+    window.location.assign(h.href)
+  }, [h.href])
+  return (
+    <div className="flex flex-col items-start gap-3 py-6" data-testid="product-redirect" data-product={tab}>
+      <p className="m-0 text-[14px] text-muted">
+        {h.label} lives in its own app now. Opening <span className="font-mono text-ink">{h.href.replace(/^https:\/\//, '')}</span>…
+      </p>
+      <a href={h.href} className={pillSm} rel="noopener">
+        Open {h.label} <ArrowUpRight size={14} aria-hidden />
+      </a>
+    </div>
+  )
+}
+
 export function Dashboard({ account, reload, onSignOut }: { account: Account; reload: () => Promise<void>; onSignOut: () => void }) {
   const [view, setTab, reread] = useView()
   const { tab, section } = view
@@ -186,9 +175,16 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
     [go],
   )
 
+  // #ai (the old Gully AI page): the Overview with the Gully AI drawer open.
+  useEffect(() => {
+    if (tab !== AI_TAB.id) return
+    go('overview')
+    openAsk()
+  }, [tab, go])
+
   const liveKeys = account.keys.filter((k) => !k.revokedAt).length
   const items: NavItem<AppTab>[] = useMemo(
-    () => grouped(ALL_TABS.filter((t) => !HIDDEN.has(t.id))).map((t) => (t.id === 'keys' && liveKeys > 0 ? { ...t, badge: <span className="rounded-full bg-surface-deep px-[6px] font-mono text-[11px] text-faint">{liveKeys}</span> } : t)),
+    () => ALL_TABS.filter((t) => SIDEBAR_IDS.has(t.id)).map((t) => (t.id === 'keys' && liveKeys > 0 ? { ...t, badge: <span className="rounded-full bg-surface-deep px-[6px] font-mono text-[11px] text-faint">{liveKeys}</span> } : t)),
     [liveKeys],
   )
   const page = ALL_TABS.find((t) => t.id === tab)?.label ?? 'Overview'
@@ -213,6 +209,8 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
 
   if (view.receipt) return <PortalReceipt id={view.receipt} onBack={() => go('billing')} />
 
+  // Gully Security stays a page here until gullysecurity.xyz is its home (SECURITY_PRIMARY); every other product hash leaves.
+  const leaving = isHandoffTab(tab) && !(tab === 'security' && !securityPrimary()) && redirectFor(tab) !== null
   const wsKey = me?.active.id ?? account.address
   return (
     <AppShell items={items} current={tab} go={goTab} account={account} pageLabel={page} wallet={wallet} onSignOut={onSignOut}>
@@ -241,11 +239,10 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
             }}
           />
         )}
-        {tab === 'products' && <Products account={account} go={go} />}
+        {tab === 'products' && <Products go={go} />}
         {tab === 'keys' && <KeysTab account={account} reload={reload} creating={newKey} onCreateDone={clearNewKey} section={section} />}
         {tab === 'alerts' && <Alerts goBilling={() => go('billing')} creating={newAlert} onCreateDone={clearNewAlert} prefill={alertFor} prefillGap={alertGap} />}
         {tab === 'analytics' && <AnalyticsPanel />}
-        {/* Gully Security hands off once gullysecurity.xyz is its home (SECURITY_PRIMARY); until then the page is here. */}
         {tab === 'security' && !securityPrimary() && <SecurityTab section={section} />}
         {tab === 'scans' && <SecurityTab section={section} />}
         {tab === 'billing' && <Billing account={account} reload={reload} intent={intent} onIntentDone={clearIntent} />}
@@ -254,7 +251,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
         {tab === 'activity' && <ActivityTab />}
         {tab === 'settings' && <SettingsTab section={section} />}
         {isServiceTab(tab) && <ServiceView id={tab} ctx={service} />}
-        {isHandoffTab(tab) && !(tab === 'security' && !securityPrimary()) && <ProductHandoff k={HANDOFF_TABS.find((h) => h.id === tab)!.product} copy={handoffCopy(tab, goTab)} />}
+        {leaving && <Leaving tab={tab as HandoffTab} />}
       </main>
     </AppShell>
   )

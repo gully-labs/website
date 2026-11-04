@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { HolderMapMini } from '../holders/HolderMapMini'
 import { LaunchHolders } from '../holders/LaunchHolders'
 
-/* The home console's Holder Map tab (design audit X11): the live mini map of the newest DeepCore launch (the
+/* The home console's Holder Map tab (design audit X11): the live mini map of the newest launchpad launch (the
    animated bubbles, the launch-health ring and the top-10 share since launch, all from the Holder Map's own
    components) with the latest launches under it, each linking to its full map. Stock maps are not shown here:
    they appear only where an archive RPC is configured (see /holders). Nothing is typed in: the launch comes

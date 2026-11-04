@@ -49,7 +49,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { isFeeProxy } from './fee-proxy-guard.mjs'
-import { DATA_DIR, json, readJson } from './http.mjs'
+import { DATA_DIR, json, publicError, readJson } from './http.mjs'
 import { CHAIN_LIST, CHAINS, checksumAddress, FEE_PROXIES, rpc as payRpc } from './payments.mjs'
 import { treasury } from './plans.mjs'
 import { keccak_256 } from './vendor/noble.mjs'
@@ -787,7 +787,7 @@ function allow(key, max, ms) {
   return b.n <= max
 }
 const send = (res, r) => (r.ok ? json(res, 200, r) : json(res, r.status ?? 400, { error: r.error, code: r.code ?? null, ...(r.checks ? { checks: r.checks } : {}), ...(r.origin ? { origin: r.origin } : {}), ...(r.setup ? { setup: r.setup } : {}), ...(r.warnings ? { warnings: r.warnings } : {}) }), true)
-const rpcFault = (res, e) => (json(res, 502, { error: String(e?.message ?? e), code: 'rpc' }), true)
+const rpcFault = (res, e) => (json(res, 502, { error: publicError(e, 'The chain RPC did not answer. Try again shortly.'), code: 'rpc' }), true)
 
 /** /api/developer/merchant/safe* (developer.mjs has checked the session, CSRF and role; ctx = { user, workspace, role }). */
 export async function handleMerchantSafe(req, res, url, ctx) {

@@ -11,7 +11,7 @@ const sections = [
   { id: 'paying', title: 'Paying' },
   { id: 'history', title: 'Longer history' },
   { id: 'alerts', title: 'Gap alerts' },
-  { id: 'deepcore-launches', title: 'DeepCore launch alerts' },
+  { id: 'deepcore-launches', title: 'New launch alerts' },
   { id: 'payload', title: 'Webhook payload' },
   { id: 'verify', title: 'Verifying the signature' },
   { id: 'telegram', title: 'Telegram' },
@@ -71,11 +71,11 @@ type LaunchDelivery = {
       poolId: string | null
       kind: 'CL' | 'Bin' | null
       quote: string | null           // the symbol it is paired with
-      locked: boolean | null         // true: DeepCore's indexer has a lock record; empty: unknown
+      locked: boolean | null         // true: the launchpad's indexer has a lock record; empty: unknown
       lockId: string | null
     }>
     links: { token: string; launch: string; swap: string }   // pages on deepcore.fun
-    snapshotAt: string               // the DeepCore poll that saw it
+    snapshotAt: string               // the launch poll that saw it
   }>
 }
 
@@ -228,29 +228,29 @@ export function PlansAlerts() {
         <H3Note />
       </Section>
 
-      <Section id="deepcore-launches" title="DeepCore launch alerts">
+      <Section id="deepcore-launches" title="New launch alerts">
         <P>
-          A second kind of alert watches <Ext href="https://deepcore.fun">DeepCore</Ext>, the launchpad and DEX in the Gully Labs family, for new token launches. It has no stock: it watches one DeepCore chain, or every chain when <C>chainId</C> is left empty.
+          A second kind of alert watches the <Ext href="https://deepcore.fun">launchpad</Ext> for new token launches. It has no stock: it watches one launchpad chain, or every chain when <C>chainId</C> is left empty.
         </P>
         <Fields
           head={['Condition', 'Body', 'Fires when']}
-          rows={[['deepcore-launch', '{ type: "deepcore-launch", chainId }', <>A token launches on DeepCore on that chain: <C>56</C> BNB Chain, <C>999</C> HyperEVM, <C>4663</C> Robinhood Chain or <C>8453</C> Base; empty for any of them.</>]]}
+          rows={[['deepcore-launch', '{ type: "deepcore-launch", chainId }', <>A token launches on the launchpad on that chain: <C>56</C> BNB Chain, <C>999</C> HyperEVM, <C>4663</C> Robinhood Chain or <C>8453</C> Base; empty for any of them.</>]]}
         />
-        <Details summary="DeepCore launch alerts: the details">
+        <Details summary="New launch alerts: the details">
           <List>
-            <li>DeepCore’s public API (<C>GET /v1/launches</C>) is read every 90 seconds. Each launch fires once, the first time it is seen; after a restart nothing already seen is sent again.</li>
+            <li>The launchpad’s public API (<C>GET /v1/launches</C>) is read every 90 seconds. Each launch fires once, the first time it is seen; after a restart nothing already seen is sent again.</li>
             <li>Only launches made after the alert was created count (with an hour of slack for indexer lag), so a new alert does not replay the backlog.</li>
             <li>One delivery at most every 5 minutes per alert: launches seen in the meantime wait and go out together, up to the 20 most recent.</li>
             <li>A paused, muted or over-the-plan alert neither sends nor queues: launches it missed are not sent later.</li>
             <li>It counts against your plan’s alerts like a gap alert, and delivers the same way: webhook, Telegram or both, signed the same way (see below).</li>
-            <li>When DeepCore cannot be read, nothing fires and nothing is invented; the next good read catches up on launches it has not seen.</li>
+            <li>When the launchpad cannot be read, nothing fires and nothing is invented; the next good read catches up on launches it has not seen.</li>
           </List>
         </Details>
         <Details summary="A launch delivery, as TypeScript">
           <CodeBlock lang="js" code={LAUNCH} caption="TypeScript · a launch delivery" />
         </Details>
         <P>
-          In Telegram, anyone can ask the bot <C>/launches</C> for the five latest DeepCore launches on every chain, or <C>/launches base</C> (also <C>bsc</C>, <C>robinhood</C>, <C>hyperevm</C>, or a chain id) for one chain. It reads the same 90-second cache as the alerts, says when the list is older because DeepCore could not be read, and names any chain DeepCore itself could not read. Launch information is not advice.
+          In Telegram, anyone can ask the bot <C>/launches</C> for the five latest launchpad launches on every chain, or <C>/launches base</C> (also <C>bsc</C>, <C>robinhood</C>, <C>hyperevm</C>, or a chain id) for one chain. It reads the same 90-second cache as the alerts, says when the list is older because the launchpad could not be read, and names any chain the launchpad itself could not read. Launch information is not advice.
         </P>
       </Section>
 

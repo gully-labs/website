@@ -24,12 +24,12 @@ const STAGE: Record<string, string> = {
   thinking: 'Reading the sources…',
   writing: 'Writing the answer…',
   'tool:get_plans': 'Reading the live plans…',
-  'tool:get_stock': 'Reading the tracker…',
-  'tool:get_top_gaps': 'Reading the tracker…',
+  'tool:get_stock': 'Reading HolderMaps…',
+  'tool:get_top_gaps': 'Reading HolderMaps…',
   'tool:get_ledger': 'Reading the live ledger…',
   'tool:get_alert_channels': 'Checking the alert channels…',
-  'tool:deepcore_launches': 'Reading DeepCore launches…',
-  'tool:deepcore_pool': 'Reading the DeepCore pool…',
+  'tool:deepcore_launches': 'Reading new launches…',
+  'tool:deepcore_pool': 'Reading the launch pool…',
   'tool:get_pay_chains': 'Reading the Gully Pay config…',
   'tool:get_holders': 'Reading the Holder Map…',
   'tool:search_docs': 'Searching again…',
@@ -42,7 +42,7 @@ const STAGE: Record<string, string> = {
   'tool:get_gully_score': 'Reading the Gully Score…',
   'tool:get_published_reports': 'Reading published reports…',
 }
-const TOOL_LABEL: Record<string, string> = { get_plans: 'plans', get_stock: 'tracker', get_top_gaps: 'tracker', get_ledger: 'ledger', get_alert_channels: 'alert channels', deepcore_launches: 'DeepCore launches', deepcore_pool: 'DeepCore pool', get_pay_chains: 'Gully Pay config', get_holders: 'Holder Map', search_docs: 'a second search', get_my_store: 'your store', get_my_usage: 'your usage', get_my_alerts: 'your alerts', get_status: 'status', get_pay_gas: 'gas costs', get_security_offer: 'Gully Security', get_gully_score: 'Gully Score', get_published_reports: 'published reports' }
+const TOOL_LABEL: Record<string, string> = { get_plans: 'plans', get_stock: 'HolderMaps', get_top_gaps: 'HolderMaps', get_ledger: 'ledger', get_alert_channels: 'alert channels', deepcore_launches: 'new launches', deepcore_pool: 'the launch pool', get_pay_chains: 'Gully Pay config', get_holders: 'Holder Map', search_docs: 'a second search', get_my_store: 'your store', get_my_usage: 'your usage', get_my_alerts: 'your alerts', get_status: 'status', get_pay_gas: 'gas costs', get_security_offer: 'Gully Security', get_gully_score: 'Gully Score', get_published_reports: 'published reports' }
 
 /** Where Gully AI was used, for the ask-asked event: the app, the docs side panel, the /ask page, the home console. */
 function askSurface(variant: 'page' | 'panel'): string {
@@ -438,7 +438,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
         </div>
         <div id={`${ids}-hint`} className="flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] text-faint">
           <span className="min-w-0 flex-1 basis-[240px] leading-[1.5]">
-            <Sparkles size={12} aria-hidden className="mr-1 inline align-[-1px] text-gold" /> Answers from the Gully Labs docs, site and live data, with sources. Information only, not advice. Questions are kept 90 days (<a href={isLocalHost() ? '/legal/privacy#s4' : `${SITE_URL}/legal/privacy#s4`} {...linkProps(isLocalHost() ? '/legal/privacy' : `${SITE_URL}/legal/privacy`)} className="relative underline underline-offset-2 before:absolute before:-inset-x-1 before:-inset-y-3 before:content-[''] hover:text-gold">privacy</a>).
+            <Sparkles size={12} aria-hidden className="mr-1 inline align-[-1px] text-gold" /> Answers from the Gully Labs docs, site and live data, with sources. Information only, not advice. Questions are kept 90 days (<a href={isLocalHost() ? '/privacy#s4' : `${SITE_URL}/privacy#s4`} {...linkProps(isLocalHost() ? '/privacy' : `${SITE_URL}/privacy`)} className="relative underline underline-offset-2 before:absolute before:-inset-x-1 before:-inset-y-3 before:content-[''] hover:text-gold">privacy</a>).
           </span>
           <span className={tooLong ? 'text-error' : undefined}>
             {q.length}/{MAX}

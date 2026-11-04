@@ -31,7 +31,7 @@ const byGap = (a: TrackerRow, b: TrackerRow) => (b.gapPct === null ? -1 : Math.a
 
 function RowSpark({ m, ticker }: { m: Mover | undefined; ticker: string }) {
   if (!m || m.spark.length < 2) return (
-      <span className="flex items-center" title="No 24h history for this stock yet: its gap trend draws here once the tracker has two readings." data-testid="spark-ghost">
+      <span className="flex items-center" title="No 24h history for this stock yet: its gap trend draws here once HolderMaps has two readings." data-testid="spark-ghost">
         <GhostSpark w={84} h={22} />
         <span className="sr-only">no 24 hour history yet</span>
       </span>
@@ -122,7 +122,7 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
 
       <SubTabs items={items} value={sub} onChange={setSub} label="Tracker sections" idBase="tracker" />
 
-      {st.k === 'error' && <ErrorLine>The tracker could not be read just now. It retries every minute.</ErrorLine>}
+      {st.k === 'error' && <ErrorLine>HolderMaps could not be read just now. It retries every minute.</ErrorLine>}
 
       <SubPanel idBase="tracker" value={sub}>
         {sub === 'chart' ? (

@@ -1128,3 +1128,85 @@ test('Gully Chain Testnet: the launchpad curve, LP locker and routers are labell
   assert.equal(m.get('0x26acccb2e98ca9e067e58668aa3b101bef432754')?.kind, 'token', 'WETH')
   assert.equal(H.staticLabels({ chainKey: 'base', token: '0x' + '11'.repeat(20) }).has('0x3378b659f6dda7f13d87599b383b3995f82d0974'), false, 'only on Gully Chain')
 })
+
+/* ------------------------------------------- Gully Core coins ($PILLAR fixture) --- */
+
+// $PILLAR on Gully Chain Testnet (launched 2026-10-31, block 3118): every Transfer of the token as the
+// indexer read it. The Gully Core launch kit mints the supply, seeds the Gully Core Vault (the pool) and
+// sends 13009 wei of dust to one wallet; one buyer then bought twice from the pool.
+const PILLAR = '0xf0fd2800d4d6201857c674369411a7536e633008'
+const CORE_VAULT = '0x90c882d9c307c2bf7e961bc279b0929f92997dd4'
+const CORE_KIT = '0xd46543fcb42878868eba0c62ea1f7801a357b12d'
+const PILLAR_BUYER = '0x5ad50dde058b2c41298d9c5a33527a7e2150cd78'
+const PILLAR_DUST = '0x205db84d9448208a7ecbecf6962865a08b2fcbfb'
+const pillarHistory = () => [
+  tr(ZERO, CORE_KIT, 10n ** 27n, 3118, '0x8574', 0),
+  tr(CORE_KIT, CORE_VAULT, 500_000_000n * E18, 3118, '0x8574', 1),
+  tr(CORE_KIT, CORE_VAULT, 300_000_000n * E18, 3118, '0x8574', 2),
+  tr(CORE_KIT, CORE_VAULT, 200_000_000n * E18 - 13009n, 3118, '0x8574', 3),
+  tr(CORE_KIT, PILLAR_DUST, 13009n, 3118, '0x8574', 4),
+  tr(CORE_VAULT, PILLAR_BUYER, 1_093_587_722_287_119_600_000_000n, 3120, '0x987a', 0),
+  tr(CORE_VAULT, PILLAR_BUYER, 6_523_049_290_744_419_913_550_712n - 1_093_587_722_287_119_600_000_000n, 3123, '0x013a', 0),
+]
+const pillarMap = () => H.buildMap({ chainKey: 'gully', token: PILLAR, symbol: 'PILLAR', decimals: 18, kind: 'token', holders: null, history: { transfers: pillarHistory(), complete: true }, labels: H.staticLabels({ chainKey: 'gully', token: PILLAR }), supply: 10n ** 27n, sources: {}, tier: 'pro' })
+
+test('$PILLAR: the Gully Core vault is a locked pool, not a 99.35% wallet; top 10 counts the buyer only', () => {
+  const m = pillarMap()
+  assert.equal(m.state, 'ok')
+  const by = Object.fromEntries(m.nodes.map((n) => [n.id, n]))
+  assert.equal(by[CORE_VAULT].pct, 99.35, 'the pool keeps its share on the map')
+  assert.deepEqual(by[CORE_VAULT].label, { kind: 'pool', name: 'Pool (locked) · Gully Core vault', locked: true })
+  assert.equal(by[CORE_VAULT].cluster, null, 'a pool is never clustered with its buyers')
+  assert.equal(by[PILLAR_BUYER].label, null)
+  assert.equal(m.summary.top10Pct, 0.65, 'only the real wallets: the buyer (0.65%) and the dust wallet')
+  assert.ok(m.summary.top10Pct < 100)
+  assert.equal(m.clusters.length, 0, 'the buyer only traded with the pool')
+  assert.equal(m.holders.count, 2, 'holders: the buyer and the dust wallet, not the vault')
+  assert.deepEqual(m.summary.excluded.map((e) => [e.id, e.tag, e.pct]), [[CORE_VAULT, 'Pool (locked)', 99.35]])
+  assert.ok(m.summary.plain.includes('Not counted as wallets: Pool (locked) 99%.'), m.summary.plain.join(' | '))
+  assert.deepEqual(m.legend.map((l) => l.kind), ['pool'])
+  assert.ok(m.timeline.frames.every((f) => f.top10Pct <= 1), 'no replay frame counts the kit or the vault')
+  assert.deepEqual(m.recentFlows.slice(-2).map((f) => f.side), ['buy', 'buy'], 'buys from the pool read as buys')
+})
+
+test('Gully Chain registry: Gully Core pools, lockers, launch kit and routers are labelled; Safes stay wallets', async () => {
+  const R = await import('../server/gully-chain-registry.mjs')
+  const m = H.staticLabels({ chainKey: 'gully', token: PILLAR })
+  const kind = (a) => m.get(a)?.kind
+  assert.equal(kind(CORE_VAULT), 'pool', 'Gully Core Vault')
+  assert.equal(kind('0x6d0721230b6bed4bc9eeb65e200b6f90c2c9aee6'), 'pool', 'CLPoolManager')
+  assert.equal(kind('0x4255b0b14f3dd4e2350954da78707e3fa6c94e2b'), 'pool', 'BinPoolManager')
+  assert.equal(kind('0x337c8e7b40132b677db2b99445ebc6b3835fd7a4'), 'pool', 'CLPositionManager')
+  assert.equal(kind('0xc1eef3aaf142dffde6551a557e9700db12817719'), 'pool', 'BinPositionManager')
+  assert.equal(kind('0x0ca509787bf2c6a241761586d02885b9719aca5f'), 'lock', 'GullyCoreLPLocker')
+  assert.equal(kind('0x444719a68d039639655edc943f1826cc2835c5a5'), 'lock', 'GullyCoreBinLPLocker')
+  assert.equal(kind('0x864b659f90b69d6b28a5c70c2d0e5502ce71485c'), 'lock', 'GullyLPLocker (v3), legacy')
+  assert.equal(kind('0x2d723cd02061e3f2e0e0b2dc20c0549c66c462de'), 'pool', 'GullyLaunchpadV3 bonding curve, legacy')
+  assert.equal(kind(CORE_KIT), 'gully', 'LaunchpadKitV2')
+  assert.equal(kind('0xb6ab6f0d23c769329db4b3cfb947fde3a9e797a5'), 'router', 'Gully Core UniversalRouter')
+  assert.equal(m.get('0x1283a251e34296675cc5130a2b02871384c0436a')?.name, 'Gully Swap router', 'the hand-written labels win over the registry')
+  assert.equal(kind(ZERO), 'burn')
+  assert.equal(kind('0x000000000000000000000000000000000000dead'), 'burn')
+  assert.equal(kind(PILLAR), 'token', 'the token contract itself')
+  assert.equal(kind('0xc5526e28b5cde3c5962a224896804a499d5bb240'), 'known', 'the governance Safe is named but counted')
+  assert.equal(R.registryKindOf({ name: 'Identity (first RWA deploy, block 102-119)', category: 'RWA' }), 'gully', '"block" is not a lock')
+  assert.equal(R.registryKindOf({ name: 'unidentified', category: 'Unidentified' }), null)
+  assert.equal(R.registryKindOf({ name: 'SafeProxyFactory 1.4.1', category: 'Safe' }), 'gully')
+  assert.ok(R.registryContracts().length > 300, 'the vendored registry is read')
+  const infra = R.registryInfra()
+  assert.ok(infra.has(CORE_VAULT) && infra.has(ZERO) && !infra.has('0xc5526e28b5cde3c5962a224896804a499d5bb240'))
+  // A vault that the kit never seeded (another coin's liquidity added by hand) is a pool, not "locked".
+  assert.equal(R.gullyCoreLaunchVault([tr(addr(9), CORE_VAULT, 1n, 1)]), null)
+  assert.equal(R.gullyCoreLaunchVault(pillarHistory()), CORE_VAULT)
+  assert.equal(H.staticLabels({ chainKey: 'base', token: PILLAR }).has(CORE_VAULT), false, 'only on Gully Chain')
+})
+
+test('named pool contracts (Blockscout "UniswapV3Pool") are pools, never wallets; plain named contracts stay known', () => {
+  assert.equal(H.infraKindOfName('UniswapV3Pool'), 'pool')
+  assert.equal(H.infraKindOfName('MetricOmmPool'), 'pool')
+  assert.equal(H.infraKindOfName('PancakePair'), 'pool')
+  assert.equal(H.infraKindOfName('Uniswap v4 PoolManager'), 'pool')
+  assert.equal(H.infraKindOfName('UNCX LP Locker'), 'lock')
+  assert.equal(H.infraKindOfName('SwapRouter02'), 'router')
+  for (const n of ['Morpho', 'SafeProxy', 'Escrow', 'TimelockController', 'MEV Bot: 0x51C…a7F', 'Poolside fan', 'vitalik.eth']) assert.equal(H.infraKindOfName(n), null, n)
+})

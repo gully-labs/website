@@ -23,7 +23,7 @@ export function TelegramDocs() {
       description="The @GullyLabsBot Telegram bot and its Mini App: commands, menus, gap and launch alerts with Mute, connecting a chat from the app, the @GullyLabsNews channel requirement, groups and announcements."
       lead={
         <>
-          <Ext href="https://t.me/GullyLabsBot">@GullyLabsBot</Ext> puts the tracker, DeepCore launches, your alerts and Gully AI in Telegram, with a Mini App for the full screens.
+          <Ext href="https://t.me/GullyLabsBot">@GullyLabsBot</Ext> puts the tracker, launchpad launches, your alerts and Gully AI in Telegram, with a Mini App for the full screens.
         </>
       }
       sections={sections}
@@ -32,7 +32,7 @@ export function TelegramDocs() {
         <List>
           <li>Looks up any stock token the tracker follows, on Robinhood Chain, BNB Chain and Solana, with its gap to the fair price and a 24-hour sparkline.</li>
           <li>Lists the widest gaps now and the biggest gap moves over 24 hours and one hour.</li>
-          <li>Shows the newest DeepCore launches, per chain, and can alert you to new ones.</li>
+          <li>Shows the newest launchpad launches, per chain, and can alert you to new ones.</li>
           <li>Delivers your gap, launch and Holder Map alerts, and lets you pause, mute, test or delete them.</li>
           <li>Answers questions through <DocLink to="gully-ai">Gully AI</DocLink>.</li>
         </List>
@@ -69,7 +69,7 @@ export function TelegramDocs() {
             ['/gap NVDA', 'private, groups', 'One stock token’s card'],
             ['/top', 'private, groups', 'The tokens furthest from their real share price'],
             ['/movers', 'private', 'Biggest gap moves in 24 hours'],
-            ['/launches', 'private, groups', 'Newest tokens launched on DeepCore'],
+            ['/launches', 'private, groups', 'Newest tokens launched on the launchpad'],
             ['/alerts', 'private', 'Your alerts: pause, mute, test or delete'],
             ['/ask', 'private', 'Ask Gully AI a question'],
             ['/help', 'private, groups', 'What the bot does'],
@@ -91,7 +91,7 @@ export function TelegramDocs() {
             <strong className="text-ink">Top gaps</strong> and <strong className="text-ink">Movers</strong> (24 h or 1 h).
           </li>
           <li>
-            <strong className="text-ink">DeepCore launches</strong>: filter by chain, open a launch, set a new-launch alert, or open its Holder Map.
+            <strong className="text-ink">Launchpad launches</strong>: filter by chain, open a launch, set a new-launch alert, or open its Holder Map.
           </li>
           <li>
             <strong className="text-ink">My alerts</strong>: pause, resume, mute for 24 hours, send a test, or delete.
@@ -121,7 +121,7 @@ export function TelegramDocs() {
 
       <Section id="alerts" title="Alerts and Mute">
         <P>
-          Gap alerts, DeepCore new-launch alerts and Holder Map alerts are created in the app, the bot or the Mini App, all through the same rules. Each delivery carries a <strong className="text-ink">Mute 24h</strong> button that silences that
+          Gap alerts, new-launch alerts and Holder Map alerts are created in the app, the bot or the Mini App, all through the same rules. Each delivery carries a <strong className="text-ink">Mute 24h</strong> button that silences that
           alert for a day; Settings can mute every alert at once.
         </P>
         <P>Sending respects Telegram’s own limits (about one message a second per chat), so a burst of alerts arrives spread out rather than dropped.</P>
@@ -139,7 +139,7 @@ export function TelegramDocs() {
             <strong className="text-ink">Stock</strong>: a 24-hour chart and an alert composer; Telegram’s main button creates the alert.
           </li>
           <li>
-            <strong className="text-ink">Launches</strong>: DeepCore launches per chain, each with its Holder Map.
+            <strong className="text-ink">Launches</strong>: launchpad launches per chain, each with its Holder Map.
           </li>
           <li>
             <strong className="text-ink">My alerts</strong>: your linked account’s alerts, to pause, resume, test or delete.
@@ -167,7 +167,7 @@ export function TelegramDocs() {
           announcements go to private chats only; “🔕 Stop announcements” on any of them, or <C>/stop announcements</C>, turns them off. That never stops your alerts.
         </P>
         <P>
-          Details are in the privacy policy at <Ext href="https://gullylabs.xyz/legal/privacy">gullylabs.xyz/legal/privacy</Ext>.
+          Details are in the privacy policy at <Ext href="https://gullylabs.xyz/privacy">gullylabs.xyz/privacy</Ext>.
         </P>
       </Section>
     </DocPage>

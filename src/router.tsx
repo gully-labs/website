@@ -32,8 +32,9 @@ const MOVED_PATHS = [
   ['/rpc', 'rpc'],
   ['/studio/*', 'studio'],
   ['/studio', 'studio'],
-  // DeepCore partnership ended 2026-10-29: the launchpad page is Gully Core now
+  // The old launchpad partnership ended 2026-10-29: its pages open Gully Core now
   ['/products/deepcore', 'gully-core'],
+  ['/projects/deepcore', 'gully-core'],
 ] as const
 
 // Gully Pay's checkout pages (pay.gullylabs.xyz; also /pay on the main host in development).
@@ -74,6 +75,7 @@ const mainRoutes = [
       { path: '/products/:key', lazy: () => import('./pages/products/ProductPage').then((m) => ({ Component: m.ProductPage })) },
       // Our own projects with live numbers, what the code integrates with, and the partner page with its two forms.
       { path: '/ecosystem', lazy: () => import('./pages/Ecosystem').then((m) => ({ Component: m.Ecosystem })) },
+      { path: '/gully-id', lazy: () => import('./pages/GullyId').then((m) => ({ Component: m.GullyId })) },
       { path: '/partners', lazy: () => import('./pages/Partners').then((m) => ({ Component: m.Partners })) },
       // Gully Security: the product page, the published reports and one report (noindex unless its owner opts in).
       // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), MainSecurityPage leaves for it.
@@ -93,10 +95,13 @@ const mainRoutes = [
       // The Gully Pay merchant terms (the checkout's footer links here).
       { path: '/legal/merchant-terms', lazy: () => import('./pages/legal/MerchantTerms').then((m) => ({ Component: m.MerchantTermsPage })) },
       { path: '/legal/scan-terms', lazy: () => import('./pages/legal/ScanTerms').then((m) => ({ Component: m.ScanTermsPage })) },
-      { path: '/legal/privacy', lazy: () => import('./pages/legal/Privacy').then((m) => ({ Component: m.PrivacyPage })) },
-      { path: '/legal/terms', lazy: () => import('./pages/legal/Terms').then((m) => ({ Component: m.TermsPage })) },
-      { path: '/terms', element: <Navigate to="/legal/terms" replace /> },
-      { path: '/privacy', element: <Navigate to="/legal/privacy" replace /> },
+      // The policies at their canonical short addresses (2026-11-03); the old /legal/terms and /legal/privacy 301 here.
+      { path: '/terms', lazy: () => import('./pages/legal/Terms').then((m) => ({ Component: m.TermsPage })) },
+      { path: '/privacy', lazy: () => import('./pages/legal/Privacy').then((m) => ({ Component: m.PrivacyPage })) },
+      // Every Gully product's Terms and Privacy Policy.
+      { path: '/legal', lazy: () => import('./pages/legal/LegalIndex').then((m) => ({ Component: m.LegalIndexPage })) },
+      { path: '/legal/terms', element: <Navigate to="/terms" replace /> },
+      { path: '/legal/privacy', element: <Navigate to="/privacy" replace /> },
       { path: '/gully-pay/merchant-terms', element: <Navigate to="/legal/merchant-terms" replace /> },
       // A path no page owns: a branded 404 with ways back (the server answers it with status 404).
       { path: '*', element: <NotFoundRoute /> },
@@ -146,6 +151,9 @@ const holderMapsRoutes = [
       { path: '/:chain/:token', element: <HolderMapsTokenPage /> },
       { path: '/holders/*', element: <ToShortHolderPath /> },
       { path: '/holders', element: <ToShortHolderPath /> },
+      // HolderMaps' own Terms and Privacy Policy (2026-11-03), in its kit.
+      { path: '/terms', lazy: () => import('./holdermaps/HmLegal').then((m) => ({ Component: m.HmTermsPage })) },
+      { path: '/privacy', lazy: () => import('./holdermaps/HmLegal').then((m) => ({ Component: m.HmPrivacyPage })) },
       // The server 301s every gullylabs.xyz page to gullylabs.xyz, so a path that reaches the app here is a 404.
       { path: '*', element: <HmNotFoundRoute /> },
     ],

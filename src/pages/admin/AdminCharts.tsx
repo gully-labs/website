@@ -202,7 +202,7 @@ function Charts({ data, split, setSplit }: { data: AdminChartsData; split: 'asse
           days={d}
           lines={[
             { name: 'Gap alerts', data: data.alerts.gap, color: C.gold },
-            { name: 'DeepCore launch alerts', data: data.alerts.launch, color: PALETTE[2] },
+            { name: 'New launch alerts', data: data.alerts.launch, color: PALETTE[2] },
             { name: 'Telegram sends', data: data.alerts.telegram, color: PALETTE[1], kind: 'line' },
           ]}
           label="Alerts fired per day"

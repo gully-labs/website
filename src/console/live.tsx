@@ -9,7 +9,7 @@ import { consoleToast } from './toast'
 
 export const GULLY_CHAIN_ID = 485590
 export const GULLY_RPC = 'https://testnet-rpc.gullychain.xyz'
-export const NAMES: Record<string, string> = { deepcore: 'DeepCore', peddleswap: 'PeddleSwap', peddles: 'Peddles', peddlequest: 'PeddleQuest', gullychain: 'Gully Chain' }
+export const NAMES: Record<string, string> = { peddleswap: 'PeddleSwap', peddles: 'Peddles', peddlequest: 'PeddleQuest', gullychain: 'Gully Chain' }
 
 export interface Block {
   number: number
@@ -299,7 +299,7 @@ function seed(): TapeItem[] {
 export function tapeItems(l: Live): TapeItem[] {
   const items: TapeItem[] = []
   if (l.stats)
-    for (const v of l.stats.venues.filter((x) => x.key !== 'deepcore')) // DeepCore partnership ended 2026-10-29
+    for (const v of l.stats.venues)
       items.push(
         v.state !== 'ok'
           ? { icon: 'activity', k: NAMES[v.key] || v.key, text: 'could not be read' }

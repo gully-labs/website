@@ -1,7 +1,7 @@
 import { isSecurityHost, securityInternalPath, securityShortPath, SITE_URL } from '../site-host'
 
 /* On gullysecurity.xyz only Gully Security's own pages live on this origin (server/hosts.mjs). The site header, footer
-   and pages link the rest of Gully Labs by path (/pricing, /score, /legal/terms); a click on one of those goes straight
+   and pages link the rest of Gully Labs by path (/pricing, /score, /legal); a click on one of those goes straight
    to the same page on gullylabs.xyz instead of routing here first. (A link opened in a new tab reaches the server,
    which answers it with the same 301.) Runs in the capture phase, before React Router's own click handling.
    The same as src/lib/holderMapsLinks.ts for holdermaps.xyz. */

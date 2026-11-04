@@ -2,11 +2,12 @@
    below 1280), a Menu sheet below 1024, Lucide icon on every item, live pill, pill buttons. */
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { Activity, BookOpen, Box, Briefcase, ChartCandlestick, ChartLine, FileText, Gauge, LayoutGrid, Lock, Mail, Menu, MessageCircle, Send, Sparkles, Tag, X, Zap, ArrowUpRight, ArrowRight, type LucideProps } from 'lucide-react'
+import { Activity, ArrowRight, ArrowUpRight, BookOpen, Box, Briefcase, ChartCandlestick, ChartLine, FileText, Gauge, KeyRound, LayoutGrid, Lock, Mail, Menu, MessageCircle, Scale, Send, Sparkles, Tag, type LucideProps, X, Zap } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { APP_URL, DOCS_URL } from '../site-host'
 import { ic, LivePill } from './ui'
 import { PRODUCTS } from '../terminal/catalog'
+import { PRODUCT_ICON } from './productIcons'
 
 type Icon = ComponentType<LucideProps>
 const BLOG_URL = 'https://blog.gullylabs.xyz'
@@ -40,6 +41,24 @@ function NavLink({ it, className, onClick }: { it: Item; className?: string; onC
   )
 }
 
+const headerItems = (home: boolean): Item[] => [
+  { label: 'Products', icon: LayoutGrid, to: '/products' },
+  { label: 'Services', icon: Briefcase, to: '/services' },
+  { label: 'Live', icon: ChartLine, to: '/#live' },
+  { label: 'Docs', icon: BookOpen, href: DOCS_URL },
+  { label: 'Blog', icon: MessageCircle, href: BLOG_URL },
+  { label: 'Contact', icon: Mail, to: home ? '/#contact' : '/services#contact' },
+]
+// Gully Labs' own pages. The products live on their own domains (the Products list below, and /products).
+const pages: Item[] = [
+  { label: 'All products', icon: LayoutGrid, to: '/products' },
+  { label: 'Tracker', icon: ChartCandlestick, to: '/tracker' },
+  { label: 'Gully Score', icon: Gauge, to: '/score' },
+  { label: 'Pricing', icon: Tag, to: '/pricing' },
+  { label: 'Gully AI', icon: Sparkles, to: '/ask' },
+  { label: 'Status', icon: Activity, to: '/status' },
+]
+
 export function ConsoleHeader() {
   const { pathname } = useLocation()
   const home = pathname === '/'
@@ -53,23 +72,7 @@ export function ConsoleHeader() {
     document.addEventListener('keydown', k)
     return () => document.removeEventListener('keydown', k)
   }, [open])
-  const items: Item[] = [
-    { label: 'Products', icon: LayoutGrid, to: '/products' },
-    { label: 'Services', icon: Briefcase, to: '/services' },
-    { label: 'Live', icon: ChartLine, to: '/#live' },
-    { label: 'Docs', icon: BookOpen, href: DOCS_URL },
-    { label: 'Blog', icon: MessageCircle, href: BLOG_URL },
-    { label: 'Contact', icon: Mail, to: home ? '/#contact' : '/services#contact' },
-  ]
-  // Gully Labs' own pages. The products live on their own domains (the Products list below, and /products).
-  const pages: Item[] = [
-    { label: 'All products', icon: LayoutGrid, to: '/products' },
-    { label: 'Tracker', icon: ChartCandlestick, to: '/tracker' },
-    { label: 'Gully Score', icon: Gauge, to: '/score' },
-    { label: 'Pricing', icon: Tag, to: '/pricing' },
-    { label: 'Gully AI', icon: Sparkles, to: '/ask' },
-    { label: 'Status', icon: Activity, to: '/status' },
-  ]
+  const items = headerItems(home)
   return (
     <>
     <header className="nav">
@@ -103,37 +106,44 @@ export function ConsoleHeader() {
         </div>
       </div>
     </header>
-      {open && (
-        <div id="lc-sheet" className="sheet">
-          <div className="wrap">
-            <ul className="sheet-list">
-              {[...items, ...pages].map((it) => (
-                <li key={`${it.label}${it.to ?? it.href}`}>
-                  <NavLink it={it} onClick={() => setOpen(false)} />
-                </li>
-              ))}
-            </ul>
-            <span className="lab">Products</span>
-            <ul className="sheet-list">
-              {PRODUCTS.map((p) => (
-                <li key={p.slug}>
-                  <Link to={`/products/${p.slug}`} onClick={() => setOpen(false)}>
-                    {ic(ArrowRight)}
-                    <span className="lbl">{p.name}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+      {open && <ConsoleSheet home={home} close={() => setOpen(false)} />}
     </>
+  )
+}
+
+/** The Menu sheet below 1024 px: the header's items, Gully Labs' pages, then every product with its own icon. */
+export function ConsoleSheet({ home, close }: { home: boolean; close: () => void }) {
+  const { pathname } = useLocation()
+  return (
+    <div id="lc-sheet" className="sheet">
+      <div className="wrap">
+        <ul className="sheet-list">
+          {[...headerItems(home), ...pages].map((it) => (
+            <li key={`${it.label}${it.to ?? it.href}`}>
+              <NavLink it={it} onClick={close} />
+            </li>
+          ))}
+        </ul>
+        <span className="lab">Products</span>
+        <ul className="sheet-list">
+          {PRODUCTS.map((p) => (
+            <li key={p.slug}>
+              <Link to={`/products/${p.slug}`} aria-current={pathname === `/products/${p.slug}` ? 'page' : undefined} onClick={close}>
+                {ic(PRODUCT_ICON[p.slug])}
+                <span className="lbl">{p.name}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
   )
 }
 
 export function ConsoleFooter() {
   const home = useLocation().pathname === '/'
   const links: Item[] = [
+    { label: 'Products', icon: LayoutGrid, to: '/products' },
     { label: 'Docs', icon: BookOpen, href: DOCS_URL },
     { label: 'App', icon: Zap, href: APP_URL },
     { label: 'Status', icon: Activity, to: '/status' },
@@ -148,8 +158,13 @@ export function ConsoleFooter() {
     { label: 'Gully Score', icon: Gauge, to: '/score' },
     { label: 'Pricing', icon: Tag, to: '/pricing' },
     { label: 'Gully AI', icon: Sparkles, to: '/ask' },
-    { label: 'Terms', icon: FileText, to: '/legal/terms' },
-    { label: 'Privacy', icon: Lock, to: '/legal/privacy' },
+    { label: 'Gully ID sign-in', icon: KeyRound, to: '/gully-id' },
+  ]
+  // Every page, the home included: the Terms, the Privacy Policy and the index of every Gully product's (2026-11-03).
+  const legal: Item[] = [
+    { label: 'Terms', icon: FileText, to: '/terms' },
+    { label: 'Privacy', icon: Lock, to: '/privacy' },
+    { label: 'Legal', icon: Scale, to: '/legal' },
   ]
   return (
     <footer>
@@ -182,7 +197,10 @@ export function ConsoleFooter() {
               <ul>
                 {PRODUCTS.filter((p) => p.group === g).map((p) => (
                   <li key={p.slug}>
-                    <Link to={`/products/${p.slug}`}>{p.name}</Link>
+                    <Link to={`/products/${p.slug}`}>
+                      {ic(PRODUCT_ICON[p.slug])}
+                      <span className="lbl">{p.name}</span>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -200,8 +218,17 @@ export function ConsoleFooter() {
             </ul>
           </nav>
         )}
+        <nav aria-label="Legal" className="legal" data-testid="footer-legal">
+          <ul>
+            {legal.map((it) => (
+              <li key={it.label}>
+                <NavLink it={it} />
+              </li>
+            ))}
+          </ul>
+        </nav>
         <p className="copy2">
-          © 2026 Gully Labs · Figures are read live from each product's own API and the Gully Chain testnet; a venue that cannot be read is shown as unreadable, never as zero.
+          © 2026 Gully Labs LLC · Figures are read live from each product and the Gully Chain testnet; a source that cannot be read says so.
         </p>
       </div>
     </footer>

@@ -18,6 +18,7 @@
 // by hand: this module never reads another repo at run time.
 
 import { keccak_256 } from './vendor/noble.mjs'
+import { registryInfra } from './gully-chain-registry.mjs'
 import { rpc as payRpc } from './payments.mjs'
 import { bytecodeNotes, tokenControls } from './security/bytecode.mjs'
 
@@ -51,8 +52,7 @@ export const GULLY_CHAIN = {
   v3Factory: '0x1787a3ba8c8d7a2439cfa2efafc683ecac623950',
   swapRouter: '0x1283a251e34296675cc5130a2b02871384c0436a',
   v3Router: '0xf49b65b9912fd017fdb91d21ee9bc9992f8cf05c',
-  /** glUSD is retired (redeem-only through its PSM); kept for holder labels until its supply is 0 */
-  glusd: '0xdbe84be6496fb3d07f601548555ec7acc4ceba8f',
+  /** Retired glUSD PSM (redeem only): it holds USDC.e reserves, so holder maps label it until its reserve is 0 */
   glusdPsm: '0xe1ae51036ede1b244c532a81fac196f19fa5e28e',
   /** USDC.e (Bridged USDC Standard, 6 decimals): the dollar on Gully Chain */
   usdc: '0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76',
@@ -322,7 +322,8 @@ export async function findHolder(tokenIn) {
   try {
     const r = await indexerGet(`/tokens/${lower(tokenIn)}/holders?limit=12`)
     const rows = Array.isArray(r.body?.holders) ? r.body.holders : []
-    const infra = new Set([...LAUNCHPADS.map((l) => l.address), ...LAUNCHPADS.map((l) => l.locker).filter(Boolean), GULLY_CHAIN.positionManager, GULLY_CHAIN.swapRouter, GULLY_CHAIN.v3Router, ZERO, '0x000000000000000000000000000000000000dead'])
+    // Plus every protocol contract of gully-ops' registry (the Gully Core vault, lockers, routers, ...).
+    const infra = new Set([...LAUNCHPADS.map((l) => l.address), ...LAUNCHPADS.map((l) => l.locker).filter(Boolean), GULLY_CHAIN.positionManager, GULLY_CHAIN.swapRouter, GULLY_CHAIN.v3Router, ZERO, '0x000000000000000000000000000000000000dead', ...registryInfra()])
     const h = rows.find((x) => !x.tag && isAddr(x.address) && !infra.has(lower(x.address)) && /^[1-9]\d*$/.test(String(x.balance ?? '')))
     return h ? lower(h.address) : null
   } catch {

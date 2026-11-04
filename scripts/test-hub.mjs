@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { _resetHub, handleHub, readGateway, readQuests, readStatusPage, readX402, SURFACES } from '../server/hub.mjs'
 
-const X402 = { facilitator: 'gullypay', x402Version: 1, supportedSchemes: ['exact'], supportedNetworks: ['base', 'base-sepolia', 'ethereum', 'bsc', 'solana', 'gully-chain-testnet'], supportedAssets: ['USDC', 'USDT', 'GLUSD', 'ETH', 'WETH'], networks: { 'gully-chain-testnet': { chainId: 485590, name: 'Gully Chain Testnet' } } }
+const X402 = { facilitator: 'gullypay', x402Version: 1, supportedSchemes: ['exact'], supportedNetworks: ['base', 'base-sepolia', 'ethereum', 'bsc', 'solana', 'gully-chain-testnet'], supportedAssets: ['USDC', 'USDT', 'ETH', 'WETH'], networks: { 'gully-chain-testnet': { chainId: 485590, name: 'Gully Chain Testnet' } } }
 const GATEWAY = { public: [{ id: 'evm:8453', alias: 'base', blockTimeMs: 2000, state: 'OK' }, { id: 'evm:485590', alias: 'gully-testnet', blockTimeMs: 105299, state: 'OK' }, { id: 'evm:56', alias: 'bsc', state: 'DEGRADED' }] }
 const STATS = {
   quests: 3,
@@ -105,7 +105,7 @@ test('surfaces still being set up read "coming" until they answer 200, never "do
     if (u.includes('safe.gullychain')) throw new TypeError('fetch failed')
     if (u.includes('ai.gullylabs.xyz')) return new Response('', { status: 404 })
     if (u.includes('dev.gullystudio')) return new Response('ok', { status: 200 })
-    if (u.includes('copy.gullychain')) return new Response('', { status: 502 })
+    if (u.includes('copy.kre8.fun')) return new Response('', { status: 502 })
     if (init.method === 'POST') return new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result: '0x1' }), { status: 200 })
     return new Response('ok', { status: 200 })
   })

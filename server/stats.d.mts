@@ -1,6 +1,8 @@
 /** Types for stats.mjs, the cross-venue aggregator. The document shape is `Stats` in src/lib/stats.ts. */
 export interface StatsDocument {
   generatedAt: string
+  /** An older good document answered at once while a new read runs in the background. */
+  stale?: boolean
   totals: {
     volumeAllUsd: number | null
     volume24hUsd: number | null
@@ -15,17 +17,8 @@ export interface StatsDocument {
   venues: unknown[]
 }
 export const VENUES: { key: string; read: () => Promise<unknown> }[]
-export function readStats(): Promise<StatsDocument>
-export const DEEPCORE_HOSTS: string[]
-export function deepcoreExtras(items: unknown[]): {
-  sites: number | null
-  sites24h: number | null
-  launches24h: number | null
-  locks: number | null
-  lockedUsd: number | null
-  unpricedLocks: number
-}
-export function resetStatsForTest(o?: { documentOnly?: boolean }): void
+export function readStats(o?: { fresh?: boolean }): Promise<StatsDocument>
+export function resetStatsForTest(o?: { documentOnly?: boolean; restore?: boolean }): void
 export interface SeriesSource {
   name: string
   url: string | null

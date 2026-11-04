@@ -34,7 +34,7 @@ export const KIND_WORD: Record<KindKey, string> = {
   burn: 'burn',
   lock: 'lock',
   token: 'token',
-  deepcore: 'DeepCore',
+  deepcore: 'launchpad',
   gully: 'Gully',
   router: 'router',
   deployer: 'deployer',

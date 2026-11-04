@@ -418,7 +418,8 @@ try {
   const before2 = umami.received.length
   r = await sendEvent(siteA.id)
   check('over the quota: 402 without reaching Umami, and the tracker is told to stop', r.status === 402 && r.data?.error?.code === 'gully-quota-exceeded' && r.data?.disabled === true && umami.received.length === before2, JSON.stringify(r.data))
-  check('the refusal can be read by the tracker cross-origin', r.headers['access-control-allow-origin'] === 'https://customer.example')
+  check('the refusal can be read by the tracker cross-origin', r.headers['access-control-allow-origin'] === '*')
+  check('the refusal never reflects the Origin with credentials (leak sweep 2026-11-02)', r.headers['access-control-allow-credentials'] === undefined && r.headers['access-control-allow-origin'] !== 'https://customer.example')
   r = await sendEvent(GULLY_SITE)
   check('the Gully Labs site is never blocked', r.status === 200)
   r = await ca.call('/api/developer/analytics')

@@ -40,7 +40,7 @@ export function HmLoading({ progress, label = 'Mapping holders' }: { progress?: 
           <i className="hm-dot" aria-hidden /> LIVE READ
         </span>
         <h2 className="hm-state-h">{label}…</h2>
-        <div className="hm-state-p">{pct === null ? 'Reading the biggest wallets, who sent tokens to whom, and the launch history. Big tokens take a few seconds.' : 'Reading this token’s full transfer history for the first time. The page fills in by itself.'}</div>
+        <div className="hm-state-p">{pct === null ? 'Reading the biggest wallets, who sent tokens to whom, and the launch history. The first read of a big token can take a minute.' : 'Reading this token’s full transfer history for the first time. The page fills in by itself.'}</div>
         <div className={`hm-progress ${pct === null ? 'indet' : ''}`} aria-hidden>
           <i style={pct === null ? undefined : { width: `${pct}%` }} />
         </div>

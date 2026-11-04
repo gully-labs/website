@@ -178,7 +178,7 @@ export function HolderMapIntegrateDocs() {
         <H3>Related routes</H3>
         <List>
           <li>
-            <C>GET /api/holders/launches</C>: the newest DeepCore launches on holder chains. <C>GET /api/holders/top?limit=</C>: the most scanned maps today. <C>GET /api/holders/resolve?q=</C>: find a token by name, ticker or address. <C>GET /api/holders/sources</C>: which chains have maps today.
+            <C>GET /api/holders/launches</C>: the newest launchpad launches on holder chains. <C>GET /api/holders/top?limit=</C>: the most scanned maps today. <C>GET /api/holders/resolve?q=</C>: find a token by name, ticker or address. <C>GET /api/holders/sources</C>: which chains have maps today.
           </li>
         </List>
       </Section>

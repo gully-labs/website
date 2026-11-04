@@ -13,8 +13,10 @@ import { handleDeepcoreLaunches, handleDeepcoreQuote, onLaunches, startDeepcore 
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { handleMiniApp } from './telegram-miniapp.mjs'
 import { handleHolders } from './holders.mjs'
+import { readHero } from './holders-hero.mjs'
 import { handleHolderBadge, handlePartnerLaunch } from './holders-partners.mjs'
 import { handleHolderDeep, startDeepRunner } from './holders-deep-routes.mjs'
+import { handleGullyPayWebhook } from './gullypay.mjs'
 import { handleBadgeRoutes } from './badge-routes.mjs'
 import { startChannel } from './telegram-channel.mjs'
 import { handleBroadcastRedirect, startBroadcasts } from './telegram-broadcast.mjs'
@@ -22,7 +24,7 @@ import { ANONYMOUS, PLANS, publicPlans } from './plans.mjs'
 import { apiAccess, flushUsage, observe } from './access.mjs'
 import { addEnquiry, addToLaunchList } from './store.mjs'
 import { notifyIntake, startIntakeDigest } from './intake-notify.mjs'
-import { clientIp, DATA_DIR, readJson } from './http.mjs'
+import { clientIp, DATA_DIR, publicError, readJson } from './http.mjs'
 import { handleAdmin } from './admin.mjs'
 import { handleGullyAdminRoute } from './admin-auth.mjs'
 import { handleEcosystem } from './ecosystem.mjs'
@@ -38,7 +40,8 @@ import { handleHub } from './hub.mjs'
 import { handleHubProducts } from './hub-products.mjs'
 import { handleHubLive } from './hub-live.mjs'
 import { handleProductStatus } from './product-status.mjs'
-import { API_URL, APP_URL, appTabUrl, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
+import { API_URL, APP_URL, appTabUrl, holderMapsPrimary, holderMapsRoute, holderShortPath, HOLDERMAPS_URL, hostPolicy, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, legalCanonicalPath, MAIN_URL, movedDocsUrl, movedPageUrl, PAY_URL, securityPrimary, securityRoute, SECURITY_URL } from './hosts.mjs'
+import { gullyIdConfig } from './gully-id.mjs'
 import { handleManifest } from './pwa.mjs'
 import { brandRootIcon } from './product-brand.mjs'
 import { handlePay } from './invoices.mjs'
@@ -173,10 +176,14 @@ function securityHeaders(host, pathname = '/') {
   const embed = !strict && !host.startsWith('docs.') && pathname.startsWith('/embed/')
   // pay. and embed. load nothing from third parties: no analytics beacon, no Cloudflare insights.
   const bare = pay || isEmbedHost(host)
+  // Sign in with Gully ID loads the Gully ID SDK (https://gullyid.xyz/sdk/v1.js) on the app host only (connect-src and
+  // img-src already allow https:); the sign-in itself
+  // runs in a popup on that origin (COOP below keeps same-origin-allow-popups, so the popup can answer).
+  const gullyId = (isAppHost(host) || local) && gullyIdConfig().enabled ? ` ${new URL(gullyIdConfig().url).origin}` : ''
   const csp = [
     "default-src 'self'",
     // Cloudflare Web Analytics is enabled on the zone and injects its beacon into every page.
-    bare ? "script-src 'self'" : `script-src 'self' https://static.cloudflareinsights.com https://analytics.gullylabs.xyz${docs ? ' https://gullylabs.xyz https://embed.gullylabs.xyz' : ''}${miniApp ? ` ${TG_SDK_URL}` : ''}`,
+    bare ? "script-src 'self'" : `script-src 'self' https://static.cloudflareinsights.com https://analytics.gullylabs.xyz${docs ? ' https://gullylabs.xyz https://embed.gullylabs.xyz' : ''}${miniApp ? ` ${TG_SDK_URL}` : ''}${gullyId}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
@@ -333,10 +340,11 @@ async function handleRequest(req, res) {
   if (url.pathname === '/security/terms' || url.pathname === '/security/terms/') {
     return send(res, 301, '', { Location: '/legal/scan-terms', 'Cache-Control': 'public, max-age=86400' })
   }
-  // The short addresses people type for the policies.
+  // The policies live at their short addresses (hosts.mjs legalCanonicalPath, 2026-11-03): /legal/terms, /legal/privacy
+  // and a trailing slash answer 301 to /terms and /privacy, on gullylabs.xyz and (for HolderMaps' own) holdermaps.xyz.
   // (Not on gullysecurity.xyz, where /terms is the scan terms page.)
-  const shortLegal = isSecurity ? null : { '/terms': '/legal/terms', '/privacy': '/legal/privacy' }[url.pathname.replace(/(.)\/+$/, '$1')]
-  if (shortLegal) return send(res, 301, '', { Location: shortLegal, 'Cache-Control': 'public, max-age=86400' })
+  const legal = isSecurity ? null : legalCanonicalPath(url.pathname)
+  if (legal && legal !== url.pathname && (req.method === 'GET' || req.method === 'HEAD')) return send(res, 301, '', { Location: legal + url.search, 'Cache-Control': 'public, max-age=86400' })
   if (handleDiscovery(req, res, url)) return
   if (url.pathname === '/robots.txt') return send(res, 200, robotsFor(host), { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
   if (url.pathname === '/sitemap.xml') {
@@ -426,6 +434,8 @@ async function handleRequest(req, res) {
   // Holder Map partners (holders-partners.mjs): launch.created in (own key limits) and the cached-only health badge.
   if (url.pathname === '/api/partners/launch') return void (await handlePartnerLaunch(req, res))
   if (url.pathname.startsWith('/api/holders/') && url.pathname.endsWith('/badge.svg') && (await handleHolderBadge(req, res, url))) return
+  // Gully Pay's signed merchant webhook (gullypay.mjs): checkout.session.* events, the signature is the auth.
+  if (url.pathname === '/api/gullypay/webhook') return void (await handleGullyPayWebhook(req, res))
   // Holder Map Deep check (holders-deep-routes.mjs): paid per token through Gully Pay.
   if (url.pathname === '/api/holders/deep' || url.pathname.startsWith('/api/holders/deep/')) return void (await handleHolderDeep(req, res, url))
   // Badges (badge-routes.mjs): the Holder Map badge and "Built by Gully Labs". Open and cacheable, never metered.
@@ -452,6 +462,12 @@ async function handleRequest(req, res) {
 
   // Holder Map (holders.mjs): who holds a DeepCore launch or a stock token, with the same key limits as the tracker.
   if (url.pathname.startsWith('/api/holders/')) {
+    // The front page's map on holdermaps.xyz, never waiting on a build (holders-hero.mjs).
+    if (url.pathname === '/api/holders/hero') {
+      if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
+      const hero = readHero()
+      return send(res, 200, JSON.stringify(hero), { 'Content-Type': 'application/json', 'Cache-Control': hero.state === 'ok' ? 'public, max-age=60' : 'no-store', 'Access-Control-Allow-Origin': '*' })
+    }
     if (await handleHolders(req, res, url, access)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
@@ -485,14 +501,14 @@ async function handleRequest(req, res) {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return readTracker().then(
       (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' }),
-      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
+      (err) => send(res, 502, JSON.stringify({ error: publicError(err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
     )
   }
   if (url.pathname === '/api/tracker/gap-index') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return readGapIndex().then(
       (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=300' }),
-      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
+      (err) => send(res, 502, JSON.stringify({ error: publicError(err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
     )
   }
   if (url.pathname === '/api/tracker/history') {
@@ -527,7 +543,7 @@ async function handleRequest(req, res) {
     if ((chain !== null && !/^[a-z]{2,12}$/.test(chain)) || (ticker !== null && (!chain || !/^[A-Z.]{1,8}$/.test(ticker)))) return send(res, 400, JSON.stringify({ error: 'chain, and ticker with a chain' }), { 'Content-Type': 'application/json' })
     return readMovers(window).then(
       (full) => send(res, 200, JSON.stringify(shapeMovers(full, { limit, chain, ticker })), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' }),
-      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
+      (err) => send(res, 502, JSON.stringify({ error: publicError(err) }), { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }),
     )
   }
   // The paid tiers: limits and prices from plans.mjs, and whether checkout is open. Public.
@@ -539,14 +555,14 @@ async function handleRequest(req, res) {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return handlePeddlesOnchain().then(
       (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=20' }),
-      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json' }),
+      (err) => send(res, 502, JSON.stringify({ error: publicError(err) }), { 'Content-Type': 'application/json' }),
     )
   }
   if (url.pathname === '/api/stats') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return readStats().then(
       (body) => send(res, 200, JSON.stringify(body), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30', 'Access-Control-Allow-Origin': '*' }),
-      (err) => send(res, 502, JSON.stringify({ error: String(err?.message ?? err) }), { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }),
+      (err) => send(res, 502, JSON.stringify({ error: publicError(err) }), { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }),
     )
   }
   // Whether the stock pages may show the swap here (geo.mjs). Per visitor, so never cached.

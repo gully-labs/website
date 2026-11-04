@@ -93,17 +93,17 @@ export function Footer() {
         <span className="flex flex-none flex-wrap items-center gap-x-4">
           <span>© 2026 GULLY LABS</span>
           <nav aria-label="Legal" className="flex flex-wrap gap-x-4">
-            <Link to="/legal/terms" className={legalLink}>
+            <Link to="/terms" className={legalLink}>
               Terms
             </Link>
-            <Link to="/legal/privacy" className={legalLink}>
+            <Link to="/privacy" className={legalLink}>
               Privacy
             </Link>
-            <Link to="/legal/merchant-terms" className={legalLink}>
-              Merchant terms
+            <Link to="/legal" className={legalLink}>
+              Legal
             </Link>
-            <Link to="/legal/scan-terms" className={legalLink}>
-              Scan terms
+            <Link to="/gully-id" className={legalLink}>
+              Gully ID
             </Link>
           </nav>
         </span>

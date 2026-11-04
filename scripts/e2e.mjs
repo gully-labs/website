@@ -374,7 +374,7 @@ await step('tracker', async () => {
   await page.getByRole('heading', { name: 'Swap NVDA' }).scrollIntoViewIfNeeded()
   await page.getByRole('checkbox', { name: 'I understand' }).check()
   await page.getByText(/≈ 1\.84 NVDA/).first().waitFor({ timeout: 15_000 })
-  check('swap: the DeepCore comparison quote shows', (await page.getByRole('link', { name: 'Swap on DeepCore' }).count()) > 0)
+  check('swap: the launchpad comparison quote shows', (await page.getByRole('link', { name: 'Swap on the launchpad' }).count()) > 0)
   // LI.FI's widget logs its own errors when its (stubbed) API has no routes; those are not our page's.
   await w.verify([/li\.quest|lifi|LI\.FI|wagmi|walletconnect|coinbase|SwapWidget-|Failed to load resource: net::ERR_BLOCKED_BY_CLIENT/i])
   await ctx.close()
@@ -456,21 +456,21 @@ await step('privacy page', async () => {
   const ctx = await newContext()
   const page = await ctx.newPage()
   const w = watch(page, 'privacy page')
-  await page.goto(BASE + '/legal/privacy')
-  await page.getByRole('heading', { level: 1, name: 'Privacy policy' }).waitFor()
+  await page.goto(BASE + '/privacy')
+  await page.getByRole('heading', { level: 1, name: 'Privacy Policy' }).waitFor()
   const ids = await page.evaluate(() => [...document.querySelectorAll('article section[id^="s"]')].map((x) => x.id))
-  check('privacy: fourteen numbered sections, s1 to s14, each linked from the section nav', ids.join() === Array.from({ length: 14 }, (_, i) => `s${i + 1}`).join() && (await page.getByRole('navigation', { name: 'Sections' }).getByRole('link').count()) === 14, ids.join())
-  check('privacy: "Draft: review by counsel" is an HTML comment only, never on screen', (await page.content()).includes('<!-- Draft: review by counsel') && !(await page.getByText('review by counsel').count()))
-  check('privacy: the retention table and the CC BY attribution are there', (await page.getByRole('table').getByRole('rowheader', { name: 'Gully AI questions and ratings' }).isVisible()) && (await page.getByRole('link', { name: 'Basecamp open-source policies' }).isVisible()))
-  const head = await (await fetch(BASE + '/legal/privacy')).text()
-  check('privacy: the server-rendered title and canonical', head.includes('<title>Privacy policy · Gully Labs</title>') && head.includes('https://gullylabs.xyz/legal/privacy'))
-  check('privacy: listed in the sitemap', (await (await fetch(BASE + '/sitemap.xml')).text()).includes('<loc>https://gullylabs.xyz/legal/privacy</loc>'))
+  check('privacy: fifteen numbered sections, s1 to s15, each linked from the contents', ids.join() === Array.from({ length: 15 }, (_, i) => `s${i + 1}`).join() && (await page.getByTestId('legal-toc').getByRole('link').count()) === 15, ids.join())
+  check('privacy: no draft marker anywhere in the page', !/review by counsel|pending legal review|Draft:/i.test(await page.content()))
+  check('privacy: the retention table and the CC BY attribution are there', (await page.getByRole('table').getByRole('rowheader', { name: 'Gully AI questions and ratings' }).isVisible()) && (await page.getByTestId('legal-attribution').getByRole('link', { name: /github\.com\/basecamp\/policies/ }).isVisible()))
+  const head = await (await fetch(BASE + '/privacy')).text()
+  check('privacy: the server-rendered title and canonical', head.includes('<title>Privacy Policy · Gully Labs</title>') && head.includes('https://gullylabs.xyz/privacy'))
+  check('privacy: listed in the sitemap', (await (await fetch(BASE + '/sitemap.xml')).text()).includes('<loc>https://gullylabs.xyz/privacy</loc>'))
   await page.goto(BASE + '/')
   const foot = page.getByRole('contentinfo').getByRole('link', { name: 'Privacy', exact: true })
-  check('privacy: linked from the site footer', (await foot.getAttribute('href')) === '/legal/privacy')
+  check('privacy: linked from the site footer', (await foot.getAttribute('href')) === '/privacy')
   await foot.click()
-  await page.getByRole('heading', { level: 1, name: 'Privacy policy' }).waitFor()
-  check('privacy: the footer link opens the page in place', page.url().endsWith('/legal/privacy'))
+  await page.getByRole('heading', { level: 1, name: 'Privacy Policy' }).waitFor()
+  check('privacy: the footer link opens the page in place', page.url().endsWith('/privacy'))
   await w.verify()
   await ctx.close()
 })
@@ -493,14 +493,14 @@ await step('security terms, sample and engine status', async () => {
     await page.goto(BASE + '/legal/scan-terms')
     await page.getByRole('heading', { level: 1, name: 'Scan terms' }).waitFor()
     const ids = await page.evaluate(() => [...document.querySelectorAll('article section[id^="s"]')].map((x) => x.id))
-    check(`scan terms at ${width}: ten numbered sections, each linked from the section nav`, ids.join() === Array.from({ length: 10 }, (_, i) => `s${i + 1}`).join() && (await page.getByRole('navigation', { name: 'Sections' }).getByRole('link').count()) === 10, ids.join())
+    check(`scan terms at ${width}: ten numbered sections, each linked from the contents`, ids.join() === Array.from({ length: 10 }, (_, i) => `s${i + 1}`).join() && (await page.locator('[data-testid="legal-toc"] a').count()) === 10, ids.join())
     const es = page.getByTestId('engine-status')
     await es.locator('[data-engine]').first().waitFor({ timeout: 10_000 })
     check(`scan terms at ${width}: the live engine status names both engines with a status pill and draws its checks`, (await es.locator('[data-engine]').count()) === 2 && (await es.locator('[data-pill]').count()) >= 3 && (await es.getByTestId('engine-history').locator('i').count()) >= 1 && ['online', 'partial', 'offline'].includes((await es.getAttribute('data-state')) ?? ''))
     await page.locator('[data-testid="free-scans-chart"] [data-chart], [data-testid="free-scans-chart"] [data-ghost]').first().waitFor({ timeout: 10_000 })
     check(`scan terms at ${width}: free scans per plan drawn live from the price list`, (await page.locator('[data-testid="free-scans-chart"] [data-live]').count()) >= 1 || (await page.locator('[data-testid="free-scans-chart"] [data-chart]').count()) >= 1)
     check(`scan terms at ${width}: refunds are re-run credits, and a scan is not an audit`, /re-run credit/.test((await page.locator('#s5').textContent()) ?? '') && /not an audit/.test((await page.locator('#s2').textContent()) ?? ''))
-    check(`scan terms at ${width}: "Draft: review by counsel" is an HTML comment only`, (await page.content()).includes('<!-- Draft: review by counsel') && !(await page.getByText('review by counsel').count()))
+    check(`scan terms at ${width}: no draft marker anywhere in the page`, !/review by counsel|pending legal review|Draft:/i.test(await page.content()))
     if (mobile) await noHorizontalScroll(page, `scan terms at ${width}`)
     await designAudit(page, `scan terms at ${width}`, 'article')
 
@@ -522,9 +522,9 @@ await step('security terms, sample and engine status', async () => {
   {
     const ctx = await newContext()
     const page = await ctx.newPage()
-    await page.goto(BASE + '/')
-    const foot = page.getByRole('contentinfo').getByRole('link', { name: 'Scan terms', exact: true })
-    check('scan terms: linked from the site footer', (await foot.getAttribute('href')) === '/legal/scan-terms')
+    await page.goto(BASE + '/legal')
+    await page.getByTestId('legal-index').waitFor()
+    check('scan terms: listed on /legal, which every footer links', (await page.locator('[data-testid="legal-index"] a[href="/legal/scan-terms"]').count()) === 1 && (await page.getByRole('contentinfo').getByRole('link', { name: 'Legal', exact: true }).count()) === 1)
     await ctx.close()
   }
 })
@@ -534,26 +534,26 @@ await step('terms of service', async () => {
     const ctx = await newContext({ width, height: 900, mobile: width < 600 })
     const page = await ctx.newPage()
     const w = watch(page, `terms ${width}`)
-    await page.goto(BASE + '/legal/terms')
+    await page.goto(BASE + '/terms')
     await page.getByRole('heading', { level: 1, name: 'Terms of Service' }).waitFor()
     if (width === 1440) {
       const ids = await page.evaluate(() => [...document.querySelectorAll('article section[id^="s"]')].map((x) => x.id))
-      check('terms: twenty numbered sections, s1 to s20, each linked from the section nav', ids.join() === Array.from({ length: 20 }, (_, i) => `s${i + 1}`).join() && (await page.getByRole('navigation', { name: 'Sections' }).getByRole('link').count()) === 20, ids.join())
-      const glance = await page.getByTestId('terms-glance').locator('a').evaluateAll((as) => as.map((a) => a.getAttribute('href')))
+      check('terms: twenty numbered sections, s1 to s20, each linked from the contents', ids.join() === Array.from({ length: 20 }, (_, i) => `s${i + 1}`).join() && (await page.getByTestId('legal-toc').getByRole('link').count()) === 20, ids.join())
+      const glance = await page.getByTestId('legal-glance').locator('a').evaluateAll((as) => as.map((a) => a.getAttribute('href')))
       check('terms: six at-a-glance cards, each linking to its section', glance.length === 6 && glance.every((h) => /^#s\d+$/.test(h)), glance.join())
-      check('terms: "Draft: review by counsel" is an HTML comment only, never on screen', (await page.content()).includes('<!-- Draft: review by counsel') && !(await page.getByText('review by counsel').count()))
-      check('terms: links the privacy policy, the merchant terms and the security scan terms', (await page.locator('a[href="/legal/privacy"]').count()) > 0 && (await page.locator('a[href="/legal/merchant-terms"]').count()) > 0 && (await page.locator('a[href="/legal/scan-terms"]').count()) > 0)
+      check('terms: no draft marker anywhere in the page', !/review by counsel|pending legal review|Draft:/i.test(await page.content()))
+      check('terms: links the privacy policy, the merchant terms and the security scan terms', (await page.locator('a[href="/privacy"]').count()) > 0 && (await page.locator('a[href="/legal/merchant-terms"]').count()) > 0 && (await page.locator('a[href="/legal/scan-terms"]').count()) > 0)
       check('terms: contact is team@gullylabs.xyz', (await page.locator('a[href="mailto:team@gullylabs.xyz"]').count()) > 0)
-      const head = await (await fetch(BASE + '/legal/terms')).text()
-      check('terms: the server-rendered title and canonical', head.includes('<title>Terms of Service · Gully Labs</title>') && head.includes('https://gullylabs.xyz/legal/terms'))
-      check('terms: listed in the sitemap', (await (await fetch(BASE + '/sitemap.xml')).text()).includes('<loc>https://gullylabs.xyz/legal/terms</loc>'))
-      for (const [from, to] of [['/terms', '/legal/terms'], ['/privacy', '/legal/privacy'], ['/terms/', '/legal/terms']]) {
+      const head = await (await fetch(BASE + '/terms')).text()
+      check('terms: the server-rendered title and canonical', head.includes('<title>Terms of Service · Gully Labs</title>') && head.includes('https://gullylabs.xyz/terms'))
+      check('terms: listed in the sitemap', (await (await fetch(BASE + '/sitemap.xml')).text()).includes('<loc>https://gullylabs.xyz/terms</loc>'))
+      for (const [from, to] of [['/terms', '/terms'], ['/privacy', '/privacy'], ['/terms/', '/terms']]) {
         const r = await fetch(BASE + from, { redirect: 'manual' })
         check(`${from}: a permanent redirect to ${to}`, r.status === 301 && r.headers.get('location') === to, `${r.status} ${r.headers.get('location')}`)
       }
       await designAudit(page, 'terms 1440')
     }
-    const small = await page.locator('article nav a, [data-testid="terms-glance"] a').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().height < 43.5).map((e) => e.textContent.trim().slice(0, 24)))
+    const small = await page.locator('[data-testid="legal-toc"] a, [data-testid="legal-footer"] nav a, [data-testid="legal-glance"] a').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().height < 43.5).map((e) => e.textContent.trim().slice(0, 24)))
     check(`terms ${width}: section links and glance cards are 44 px taps`, small.length === 0, small.join(' | '))
     await noHorizontalScroll(page, `terms ${width}`)
     await w.verify()
@@ -565,19 +565,19 @@ await step('terms of service', async () => {
   const w = watch(page, 'terms links')
   await page.goto(BASE + '/')
   const foot = page.getByRole('contentinfo').getByRole('link', { name: 'Terms', exact: true })
-  check('terms: linked from the site footer', (await foot.getAttribute('href')) === '/legal/terms')
+  check('terms: linked from the site footer', (await foot.getAttribute('href')) === '/terms')
   await foot.click()
   await page.getByRole('heading', { level: 1, name: 'Terms of Service' }).waitFor()
-  check('terms: the footer link opens the page in place', page.url().endsWith('/legal/terms'))
-  await page.goto(BASE + '/legal/privacy')
-  await page.getByRole('heading', { level: 1, name: 'Privacy policy' }).waitFor()
-  check('privacy: version 2026-10-20, and it links the terms', (await page.getByText('Version 2026-10-20').count()) === 1 && (await page.locator('article a[href="/legal/terms"]').count()) > 0)
+  check('terms: the footer link opens the page in place', page.url().endsWith('/terms'))
+  await page.goto(BASE + '/privacy')
+  await page.getByRole('heading', { level: 1, name: 'Privacy Policy' }).waitFor()
+  check('privacy: last updated November 3, 2026, and it links the terms', (await page.getByText('Last updated November 3, 2026').count()) === 1 && (await page.locator('article a[href="/terms"]').count()) > 0)
   check('privacy: covers the Deep check, the /contact relay and the service hosts', (await page.getByText('Deep checks.', { exact: false }).count()) > 0 && (await page.getByText('Writing to the team (/contact).', { exact: false }).count()) > 0 && (await page.getByText('embed.gullylabs.xyz set no cookies', { exact: false }).count()) > 0)
   check('privacy: the retention table lists the Gully Chains waitlist', await page.getByRole('table').getByRole('rowheader', { name: 'Gully Chains waitlist' }).isVisible())
   await page.goto(BASE + '/app')
   await page.getByTestId('connect-wallet').waitFor()
   const note = page.getByTestId('signin-terms')
-  check('app sign-in: says connecting accepts the Terms and the Privacy policy, both linked in a new tab', (await note.locator('a[href="https://gullylabs.xyz/legal/terms"][target="_blank"]').count()) === 1 && (await note.locator('a[href="https://gullylabs.xyz/legal/privacy"][target="_blank"]').count()) === 1)
+  check('app sign-in: says continuing accepts the Terms and the Privacy Policy, both linked in a new tab', (await note.locator('a[href="https://gullylabs.xyz/terms"][target="_blank"]').count()) === 1 && (await note.locator('a[href="https://gullylabs.xyz/privacy"][target="_blank"]').count()) === 1)
   // Signed out, the app asks /api/developer/session (always 200) first: no 401s in the console (D4-12).
   await w.verify()
   await ctx.close()
@@ -621,7 +621,8 @@ await step('portal', async () => {
   await page.getByText('Key revoked').first().waitFor()
   check('keys: revoke', true)
   // Alerts: create, test, pause.
-  await appNav.getByRole('link', { name: /^Alerts/ }).click()
+  // Alerts has no sidebar entry (a HolderMaps tool, opened from Products): its hash opens it.
+  await page.evaluate(() => (location.hash = 'alerts'))
   await page.getByRole('button', { name: 'New alert' }).first().click()
   const na = page.getByRole('dialog', { name: 'New gap alert' })
   await na.getByLabel('Stock').selectOption('robinhood:NVDA')
@@ -653,7 +654,7 @@ await step('portal', async () => {
   await page.getByTestId('refresh-chip').first().waitFor({ state: 'detached', timeout: 10_000 })
   check('alerts: retry clears the chip once the read answers', true)
   // Gully Analytics tab (sign-up is off on this server: it must say so, not break).
-  await appNav.getByRole('link', { name: /^Analytics/ }).click()
+  await page.evaluate(() => (location.hash = 'analytics'))
   await page.getByText(/sign-up is not open/).first().waitFor()
   check('analytics tab: says self-serve is off here', true)
   check('analytics tab: the traffic placeholder curve draws while there is no account', (await page.getByTestId('ghost-chart').getByText('Your page views and visitors will draw here').count()) === 1)
@@ -840,13 +841,7 @@ await step('chains launch wizard', async () => {
 
 const SERVICES = [
   ['tracker', 'Tracker'],
-  ['pay', 'Gully Pay'],
-  ['chain-kit', 'Chain Kit'],
-  ['chains', 'Chains'],
-  ['ai', 'Gully AI'],
   ['score', 'Gully Score'],
-  ['deepcore', 'DeepCore launches'],
-  ['holders', 'Holder Map'],
   ['widgets', 'Widgets'],
   ['telegram', 'Telegram'],
 ]
@@ -860,11 +855,11 @@ await step('app services', async () => {
   await page.goto(BASE + '/app')
   const appNav = page.getByRole('navigation', { name: 'App pages' })
   await appNav.waitFor()
-  const groups = await appNav.locator('[data-nav-group]').evaluateAll((els) => els.map((e) => e.getAttribute('data-nav-group')))
-  check('sidebar: grouped Workspace, Services, Tools, Account', JSON.stringify(groups) === JSON.stringify(['Workspace', 'Services', 'Tools', 'Account']), JSON.stringify(groups))
+  const navIds = await appNav.locator('a').evaluateAll((as) => as.map((a) => a.getAttribute('href').slice(1)))
+  check('sidebar: exactly the seven pages, in order (owner 2026-11-03)', JSON.stringify(navIds) === JSON.stringify(['overview', 'activity', 'products', 'keys', 'billing', 'team', 'settings']), JSON.stringify(navIds))
   const iconless = await appNav.locator('a').evaluateAll((as) => as.filter((a) => !a.querySelector('svg')).map((a) => a.textContent))
   check('sidebar: every item has an icon', iconless.length === 0, iconless.join(', '))
-  check('sidebar: Merchant sits under Services', (await appNav.locator('[data-nav-group="Services"]').getByRole('link', { name: /^Merchant/ }).count()) === 1)
+  check('sidebar: no product and no tool is listed (Products holds them)', (await appNav.getByRole('link', { name: /Merchant|Tracker|Gully AI|Gully Score|Widgets|Telegram|Alerts|Analytics|Gully Chain|Gully Pay|Gully RPC|HolderMaps|Gully Security|Gully Studio|Gully IPFS/ }).count()) === 0)
   // The Overview of a brand-new workspace: live NETWORK charts first (the stubbed tracker, its seeded
   // history, the launch list and this browser's /healthz round trips), then the workspace's own figures
   // in words ("none yet") with ghosted placeholder curves, never flat zeros.
@@ -876,7 +871,7 @@ await step('app services', async () => {
   check('overview: with no keys the requests chart is a ghosted "Your traffic will draw here"', (await ghost.count()) === 1 && (await ghost.getByText('Your traffic will draw here').count()) === 1 && (await ghost.locator('svg path').count()) >= 2)
   await shot(page, 'app-1440-overview-new')
   for (const [id, label] of SERVICES) {
-    // Gully Score has no sidebar entry of its own (it sits under Security), so it opens by its hash.
+    // The tools have no sidebar entry (Products lists them), so each opens by its hash.
     const navLink = appNav.getByRole('link', { name: label, exact: true })
     if (await navLink.count()) await navLink.click()
     else await page.evaluate((h) => (location.hash = h), id)
@@ -910,7 +905,7 @@ await step('app services', async () => {
     await shot(page, `app-1440-${id}`)
   }
   // Tracker: chain filter and "Alert" from a row.
-  await appNav.getByRole('link', { name: 'Tracker', exact: true }).click()
+  await page.evaluate(() => (location.hash = 'tracker'))
   const rows = page.locator('[data-service="tracker"] tr[data-row]')
   await rows.first().waitFor()
   const all = await rows.count()
@@ -929,10 +924,14 @@ await step('app services', async () => {
   // Gully AI in the app: floating button and Ctrl+K.
   await appNav.getByRole('link', { name: 'Overview', exact: true }).click()
   await launcherWorks(page, 'app')
-  // A deep link opens its service page directly.
-  await page.goto(BASE + '/app#deepcore')
-  await page.locator('[data-service="deepcore"]').getByTestId('service-header').waitFor()
-  check('app: #deepcore deep-links to its page', (await page.locator('main[data-page]').getAttribute('data-page')) === 'deepcore')
+  // A deep link opens its tool page directly; #ai opens the Gully AI drawer over the Overview.
+  await page.goto(BASE + '/app#score')
+  await page.locator('[data-service="score"]').getByTestId('service-header').waitFor()
+  check('app: #score deep-links to its page', (await page.locator('main[data-page]').getAttribute('data-page')) === 'score')
+  await page.goto(BASE + '/app#ai')
+  await page.getByTestId('ask-dialog').waitFor({ timeout: 10_000 })
+  check('app: #ai opens the Gully AI drawer over the Overview', (await page.locator('main[data-page]').getAttribute('data-page')) === 'overview')
+  await page.keyboard.press('Escape')
   await w.verify()
   await ctx.close()
 
@@ -954,26 +953,21 @@ await step('app services', async () => {
   await sp.waitForTimeout(200)
   check('sidebar at 1440x800: still no inner scrollbar', await fits(), await sNav.evaluate((el) => `${el.scrollHeight}/${el.clientHeight}`))
   const rowH = await sNav.getByRole('link', { name: 'Keys' }).evaluate((a) => a.getBoundingClientRect().height)
-  check('sidebar: rows are compact (30-36 px: 30 under 820 px tall so every page fits)', rowH >= 30 && rowH <= 36, String(rowH))
+  check('sidebar: rows are 40 px', rowH >= 39 && rowH <= 41, String(rowH))
   check('sidebar: Docs, Status and home sit in the header, not in a block under the list', (await sp.getByTestId('header-links').locator('a, button').count()) === 3 && (await sp.getByTestId('app-sidebar').getByTestId('status-link').count()) === 0)
   await sp.getByTestId('header-links').getByTestId('status-link').click()
   const st = sp.getByRole('dialog', { name: 'Status' })
   await st.getByTestId('status-view').waitFor()
   await st.locator('[data-chart].opacity-100 svg').first().waitFor({ timeout: 20_000 }).catch(() => {})
-  check('status: the Status button opens a Status view (API uptime and latency, tracker and DeepCore health), not another tab', (await st.getByText('Tracker data').count()) === 1 && (await st.getByText('DeepCore launch poller').count()) === 1 && /checks this session/.test((await st.textContent()) ?? '') && new URL(sp.url()).hash === '')
+  check('status: the Status button opens a Status view (API uptime and latency, tracker and launch poller health), not another tab', (await st.getByText('Tracker data').count()) === 1 && (await st.getByText('Launch poller').count()) === 1 && /checks this session/.test((await st.textContent()) ?? '') && new URL(sp.url()).hash === '')
   await shot(sp, 'app-1440x840-status')
   await sp.keyboard.press('Escape')
   await st.waitFor({ state: 'hidden' })
-  // Below 840 px of height the group labels fold into dividers (so the list fits); the toggles need the labels.
   await sp.setViewportSize({ width: 1440, height: 900 })
-  await sp.getByTestId('navgroup-toggle-tools').click()
-  check('sidebar: a group folds', (await sNav.locator('[data-nav-group="Tools"]').getByRole('link').count()) === 0)
+  check('sidebar: one flat list, no group headings', (await sNav.locator('[data-nav-group]').count()) === 0)
   // Reload on a page without the market band (its history reads count against the anonymous limit).
   await sp.goto(BASE + '/app#keys')
   await sNav.waitFor()
-  check('sidebar: the folded group is remembered', (await sNav.locator('[data-nav-group="Tools"][data-folded]').count()) === 1 && (await sp.getByTestId('navgroup-toggle-tools').getAttribute('aria-expanded')) === 'false')
-  await sp.getByTestId('navgroup-toggle-tools').click()
-  check('sidebar: and unfolds', (await sNav.locator('[data-nav-group="Tools"]').getByRole('link').count()) === 3)
   await sNav.getByRole('link', { name: 'Overview', exact: true }).click()
   const gs = sp.getByTestId('get-started')
   await gs.waitFor()
@@ -999,7 +993,7 @@ await step('app services', async () => {
       return Object.values(counts)
     })
   // The pixel-pass design audit on every app page (signed in): 11 px minimum, token colours only, other hosts in a new tab.
-  for (const id of ['overview', 'products', 'tracker', 'pay', 'merchant', 'security', 'chain-kit', 'chains', 'ai', 'deepcore', 'holders', 'widgets', 'telegram', 'keys', 'alerts', 'analytics', 'billing', 'team', 'activity', 'settings']) {
+  for (const id of ['overview', 'products', 'tracker', 'merchant', 'security', 'score', 'widgets', 'telegram', 'keys', 'alerts', 'analytics', 'billing', 'team', 'activity', 'settings']) {
     await sp.goto(`${BASE}/app#${id}`)
     await sp.locator(`main[data-page="${id}"]`).waitFor({ timeout: 15_000 })
     await sp.waitForLoadState('networkidle').catch(() => {})
@@ -1030,21 +1024,21 @@ await step('app services', async () => {
   await noHorizontalScroll(mp, 'app overview')
   await shot(mp, 'app-390-overview-new')
   const bar = mp.getByTestId('tab-bar')
-  check('app at 390: a bottom tab bar with Overview, Tracker, Keys, Alerts and More', JSON.stringify(await bar.locator('a, button').evaluateAll((els) => els.map((e) => e.textContent.trim()))) === JSON.stringify(['Overview', 'Tracker', 'Keys', 'Alerts', 'More']))
-  await bar.getByRole('link', { name: 'Tracker' }).tap()
-  await mp.locator('[data-service="tracker"]').getByTestId('service-header').waitFor({ timeout: 15_000 })
-  check('app at 390: a tab opens its page', new URL(mp.url()).hash === '#tracker')
+  check('app at 390: a bottom tab bar with Overview, Activity, Products, Keys and More', JSON.stringify(await bar.locator('a, button').evaluateAll((els) => els.map((e) => e.textContent.trim()))) === JSON.stringify(['Overview', 'Activity', 'Products', 'Keys', 'More']))
+  await bar.getByRole('link', { name: 'Products' }).tap()
+  await mp.getByTestId('products').waitFor({ timeout: 15_000 })
+  check('app at 390: a tab opens its page', new URL(mp.url()).hash === '#products')
   await bar.getByRole('link', { name: 'Overview' }).tap()
   await mp.getByTestId('tab-more').tap()
   await mp.getByTestId('app-sheet').waitFor()
-  check('app at 390: More opens the full menu sheet', (await mp.getByTestId('app-sheet').locator('[data-nav-group]').count()) === 4)
+  check('app at 390: More opens the full menu sheet with the seven pages', (await mp.getByTestId('app-sheet').getByRole('navigation', { name: 'App pages' }).getByRole('link').count()) === 7)
   await shot(mp, 'app-390-more')
   await mp.keyboard.press('Escape')
   await mp.getByTestId('app-sheet').waitFor({ state: 'hidden' })
   await mp.getByTestId('menu-button').tap()
   const sheet = mp.getByTestId('app-sheet')
   await sheet.waitFor()
-  check('app at 390: the menu sheet shows the groups', (await sheet.locator('[data-nav-group]').count()) === 4)
+  check('app at 390: the menu sheet shows the seven pages', (await sheet.getByRole('navigation', { name: 'App pages' }).getByRole('link').count()) === 7)
   await shot(mp, 'app-390-menu')
   await sheet.getByRole('link', { name: 'Overview', exact: true }).tap()
   for (const [id] of SERVICES) {
@@ -1057,9 +1051,9 @@ await step('app services', async () => {
   // Design audit 3 (D1, D4, D9, D10, D28): narrow screens read in full, nothing clipped, no empty-count badges.
   for (const w of [390, 320]) {
     await mp.setViewportSize({ width: w, height: 760 })
-    for (const id of ['deepcore', 'overview', 'keys', 'tracker', 'pay', 'chain-kit']) {
+    for (const id of ['overview', 'keys', 'tracker', 'products']) {
       await mp.goto(`${BASE}/app#${id}`)
-      await mp.locator(id === 'overview' ? 'main[data-page="overview"]' : id === 'keys' ? 'main[data-page="keys"]' : `[data-service="${id}"] [data-testid="service-header"]`).first().waitFor({ timeout: 15_000 })
+      await mp.locator(id === 'tracker' ? `[data-service="${id}"] [data-testid="service-header"]` : `main[data-page="${id}"]`).first().waitFor({ timeout: 15_000 })
       await mp.waitForTimeout(700)
       await noHorizontalScroll(mp, `app #${id} at ${w}`)
       const crumb = await mp.locator('[data-testid="breadcrumb"] [aria-current="page"]').evaluate((e) => [e.scrollWidth, e.clientWidth, e.textContent])
@@ -1799,7 +1793,7 @@ await step('security', async () => {
     const w = watch(page, 'security stepper 1440')
     await page.goto(BASE + '/developers#security-new')
     await page.getByTestId('stepper').waitFor({ timeout: 15_000 })
-    check('security: the sidebar has Security with its icon', (await page.getByRole('navigation', { name: 'App pages' }).getByRole('link', { name: /^Security/ }).locator('svg').count()) > 0)
+    check('security: the page opens by its hash (no sidebar entry: Products lists the products)', (await page.locator('main[data-page="security"]').count()) === 1)
     check('security: sub-tabs are a real tablist with icons', (await page.getByRole('tablist', { name: 'Security sections' }).getByRole('tab').count()) === 5 && (await page.getByRole('tab', { name: 'New scan' }).getAttribute('aria-selected')) === 'true')
     check('security: chain choices carry the chain marks', (await page.getByRole('radiogroup', { name: 'Chain' }).locator('img').count()) >= 5)
     await shot(page, 'security-step1-input')
@@ -2237,7 +2231,7 @@ await step('gully score', async () => {
 /* ------------------------------------------------------------- 404s and mobile pages --- */
 
 await step('404s', async () => {
-  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200], ['/legal/merchant-terms', 200], ['/legal/privacy', 200], ['/legal/terms', 200], ['/links', 200], ['/status', 200], ['/docs/status', 200], ['/docs/gully-ai', 200], ['/docs/telegram', 200], ['/docs/chain-kit', 200], ['/docs/swaps', 200], ['/docs/solana', 200]]) {
+  for (const [p, want] of [['/this-page-does-not-exist', 404], ['/tracker/robinhood/ZZZZ', 404], ['/docs/nope', 404], ['/developers', 200], ['/admin', 200], ['/docs/teams', 200], ['/pricing', 200], ['/legal/merchant-terms', 200], ['/privacy', 200], ['/terms', 200], ['/links', 200], ['/status', 200], ['/docs/status', 200], ['/docs/gully-ai', 200], ['/docs/telegram', 200], ['/docs/chain-kit', 200], ['/docs/swaps', 200], ['/docs/solana', 200]]) {
     const r = await fetch(BASE + p)
     const html = await r.text()
     check(`HTTP ${want} for ${p}`, r.status === want && (want === 404 ? /noindex/.test(html) : !/Not found ·/.test(html)), `${r.status}`)
@@ -2722,7 +2716,7 @@ await step('chains page', async () => {
 await step('pages at 390', async () => {
   const ctx = await newContext({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/chains', '/security', '/security/reports', '/score', '/services', '/about', '/projects/deepcore', '/app', '/legal/privacy', '/links', '/status']) {
+  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/chain-kit', '/chains', '/security', '/security/reports', '/score', '/services', '/about', '/projects/deepcore', '/app', '/privacy', '/links', '/status']) {
     const w = watch(page, `${p} at 390`)
     if (p === '/app') w.expect(/\/api\/developer\//)
     await page.goto(BASE + p)
@@ -3537,7 +3531,7 @@ await step('service hosts', async () => {
     check('hosts: pay. page loads no analytics script and has a pay. canonical in the served HTML', (await page.locator('script[src*="analytics"]').count()) === 0 && (await resp.text()).includes(`<link rel="canonical" href="https://pay.gullylabs.xyz/pay/${invId}" />`))
     check('hosts: the pay page does not touch main-site storage', (await page.evaluate(() => Object.keys(localStorage).filter((k) => /gully|session|auth|dev/i.test(k)).length)) === 0)
     check('hosts: checkout footer links name the main site (not pay. paths)', (await page.locator('a[href$="/legal/merchant-terms"]').first().getAttribute('href')) === 'https://gullylabs.xyz/legal/merchant-terms')
-    check('hosts: the checkout footer links the Terms of Service on the main site', (await page.locator('footer a[href="https://gullylabs.xyz/legal/terms"]').count()) === 1)
+    check('hosts: the checkout footer links the Terms of Service on the main site', (await page.locator('footer a[href="https://gullylabs.xyz/terms"]').count()) === 1)
     const lp = await ctx.newPage()
     await lp.goto(at('pay.gullylabs.xyz', `/pay/l/${linkId}`))
     await lp.getByTestId('link-continue').waitFor({ timeout: 30_000 })
@@ -3623,8 +3617,8 @@ await step('service hosts', async () => {
     // A link to a site page leaves for gullylabs.xyz directly.
     await hp.goto(at('holdermaps.xyz', '/'))
     await hp.getByRole('heading', { level: 1, name: 'Who really holds it?' }).waitFor({ timeout: 30_000 })
-    await Promise.all([hp.waitForURL('https://gullylabs.xyz/**', { timeout: 15_000 }), hp.locator('footer a[href="/legal/terms"]').first().click()])
-    check('holdermaps: a site link (Terms) goes to https://gullylabs.xyz/legal/terms', hp.url() === 'https://gullylabs.xyz/legal/terms', hp.url())
+    await Promise.all([hp.waitForURL('https://gullylabs.xyz/**', { timeout: 15_000 }), hp.locator('footer a[href="/terms"]').first().click()])
+    check('holdermaps: a site link (Terms) goes to https://gullylabs.xyz/terms', hp.url() === 'https://gullylabs.xyz/terms', hp.url())
     check('holdermaps: no CSP violations on its pages', cspErrors.length === 0, cspErrors.slice(0, 2).join(' | '))
     const www = await hreq('www.holdermaps.xyz', `/base/${holder}`)
     check('holdermaps: www. is a 301 to the apex', www.status === 301 && www.headers.location === `https://holdermaps.xyz/base/${holder}`)
@@ -3681,8 +3675,8 @@ await step('service hosts', async () => {
     // A link to a site page leaves for gullylabs.xyz directly.
     await sp.goto(at('gullysecurity.xyz', '/'))
     await sp.getByRole('heading', { level: 1, name: /Find the bugs/i }).waitFor({ timeout: 30_000 })
-    await Promise.all([sp.waitForURL('https://gullylabs.xyz/**', { timeout: 15_000 }), sp.locator('footer a[href="/legal/terms"]').first().click()])
-    check('security host: a site link (Terms) goes to https://gullylabs.xyz/legal/terms', sp.url() === 'https://gullylabs.xyz/legal/terms', sp.url())
+    await Promise.all([sp.waitForURL('https://gullylabs.xyz/**', { timeout: 15_000 }), sp.locator('footer a[href="/terms"]').first().click()])
+    check('security host: a site link (Terms) goes to https://gullylabs.xyz/terms', sp.url() === 'https://gullylabs.xyz/terms', sp.url())
     check('security host: no CSP violations on its pages', secCsp.length === 0, secCsp.slice(0, 2).join(' | '))
     const secWww = await hreq('www.gullysecurity.xyz', '/reports')
     check('security host: www. is a 301 to the apex', secWww.status === 301 && secWww.headers.location === 'https://gullysecurity.xyz/reports')

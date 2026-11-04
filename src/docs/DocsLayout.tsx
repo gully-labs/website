@@ -1,4 +1,4 @@
-import { Activity, ArrowLeftRight, BadgeCheck, BellRing, BookOpen, Bot, FileCheck, Network, Server, Gamepad2, CircleDollarSign, ChartCandlestick, ChartNoAxesCombined, Code2, Gauge, HardDrive, HeartPulse, History, Home, KeyRound, Lock, type LucideIcon, Menu, MessageCircleQuestion, Milestone, Newspaper, Orbit, Package, Plug, Puzzle, QrCode, ScanSearch, Search, Send, ShieldCheck, Smartphone, Tags, Users, X } from 'lucide-react'
+import { Activity, ArrowLeftRight, BadgeCheck, BellRing, BookOpen, Bot, FileCheck, Network, Server, Gamepad2, CircleDollarSign, ChartCandlestick, ChartNoAxesCombined, Code2, Gauge, HardDrive, HeartPulse, History, Home, KeyRound, Lock, type LucideIcon, Menu, MessageCircleQuestion, Milestone, Newspaper, Orbit, Package, Plug, Puzzle, QrCode, Scale, ScanSearch, Search, Send, ShieldCheck, Smartphone, Tags, Users, X } from 'lucide-react'
 import { securityPrimary } from '../site-host'
 import { useContext, useEffect, useId, useMemo, useState } from 'react'
 import { NavLink, Outlet, ScrollRestoration, useNavigate, useResolvedPath } from 'react-router'
@@ -54,7 +54,7 @@ const GULLY_LINKS: { label: string; href: string; icon: LucideIcon }[] = [
   { label: 'Status', href: `${SITE}/status`, icon: HeartPulse },
   { label: 'Telegram bot', href: 'https://t.me/GullyLabsBot', icon: Send },
   { label: 'Blog', href: 'https://blog.gullylabs.xyz', icon: Newspaper },
-  { label: 'Privacy', href: `${SITE}/legal/privacy`, icon: Lock },
+  { label: 'Privacy', href: `${SITE}/privacy`, icon: Lock },
   { label: 'App dashboard', href: 'https://app.gullylabs.xyz', icon: KeyRound },
 ]
 /** The products on their own domains, each with its own docs or home (2026-10-26). */
@@ -288,9 +288,11 @@ export function DocsLayout() {
               <ApiPill />
             </span>
             <a href={`${SITE}/tracker`} {...newTab} className="inline-flex min-h-11 items-center gap-1 rounded-sm px-3 text-[14px] text-muted transition-colors hover:text-ink max-[700px]:hidden">
+              <ChartCandlestick aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint" />
               Tracker <NewTabMark size={14} className="flex-none" />
             </a>
             <a href={SITE} {...newTab} className="inline-flex min-h-11 items-center gap-1 rounded-sm border border-line-strong px-3 text-[14px] whitespace-nowrap text-ink transition-colors hover:border-gold hover:text-ink max-[479px]:px-2 max-[479px]:text-[13px]">
+              <Home aria-hidden size={16} strokeWidth={1.75} className="flex-none text-faint max-[359px]:hidden" />
               gullylabs.xyz
               <NewTabMark size={14} className="flex-none" />
             </a>
@@ -322,8 +324,9 @@ export function DocsLayout() {
           <nav aria-label="Gully Labs" className="flex flex-wrap items-center gap-x-5">
             {[
               { label: 'Status', href: `${SITE}/status`, icon: HeartPulse },
-              { label: 'Terms', href: `${SITE}/legal/terms`, icon: FileCheck },
-              { label: 'Privacy', href: `${SITE}/legal/privacy`, icon: Lock },
+              { label: 'Terms', href: `${SITE}/terms`, icon: FileCheck },
+              { label: 'Privacy', href: `${SITE}/privacy`, icon: Lock },
+              { label: 'Legal', href: `${SITE}/legal`, icon: Scale },
               { label: 'Blog', href: 'https://blog.gullylabs.xyz', icon: Newspaper },
               { label: 'gullylabs.xyz', href: SITE, icon: Home },
             ].map((l) => (
