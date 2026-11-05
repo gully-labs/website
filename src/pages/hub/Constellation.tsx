@@ -1,7 +1,8 @@
 /* The gullylabs.xyz landing, "Constellation" (owner pick, 2026-10-27; replaces landing v3). Gully Labs as the studio
-   behind one connected suite: the eight products as a live map around Gully Chain (solid links are live integrations,
+   behind one connected suite: the eight Gully-named products as a live map around Gully Chain (solid links are live integrations,
    dashed ones flagged or planned), a live reading on every node and a drawer per product; right under it the directory
-   (design standard, 2026-11-01): what each product is, its live number and where to go; then one tabbed board (live
+   (design standard, 2026-11-01): what each product is, its live number and where to go, with the Peddle family
+   (PeddleSwap, Peddles, PeddleQuest: Gully Labs projects, 2026-11-05) as cards under it; then one tabbed board (live
    board, what's new, work with us, contact). On a phone the directory comes before the map.
    Every figure is read live (src/pages/hub/hubData.ts adapters): /api/hub, /api/hub/products, /api/stats and
    /api/hub/live. A source that cannot be read says so. Toasts only on real events seen between two polls. */
@@ -17,9 +18,11 @@ import { A, TChart, UptimeGrid, useHubProducts, type ChartTab } from '../../term
 import { ContactForm, Process, ServicesList } from '../../terminal/sections'
 import './constellation.css'
 import { useHubLive } from './useHubLive'
-import { changes, curve, EDGES, fmtNum, HUB_PRODUCTS, kpiText, liveEvents, MAP, NEWS, productOf, readings, seenOf, STATUS_LABEL, suite, ago,  type ProductKey, type Reading, type Seen, type Sources } from './hubData'
+import { PeddleFamily } from './PeddleFamily'
+import { changes, curve, EDGES, fmtNum, HUB_PRODUCTS, kpiText, liveEvents, MAP, NEWS, productOf, readings, seenOf, STATUS_LABEL, suite, ago, LANDING_DESCRIPTION, LANDING_TITLE, PRODUCT_COUNT_WORD, type ProductKey, type Reading, type Seen, type Sources } from './hubData'
 
 const fmtUsd = (v: number | null) => (v == null ? '—' : v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : v >= 1e4 ? `$${(v / 1e3).toFixed(1)}K` : `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}`)
+const COUNT = PRODUCT_COUNT_WORD.charAt(0).toUpperCase() + PRODUCT_COUNT_WORD.slice(1)
 const tagOf = (s: string) => (s === 'live' ? 'live' : s === 'soon' || s === 'rolling out' || s === 'coming soon' ? 'soon' : 'new')
 
 /* ---------------------------------------------------------------- the map ---- */
@@ -404,7 +407,7 @@ function News() {
 
 /** The directory: every product, what it is, its live number and where to go. The domain is the main link (new tab);
     Details opens the drawer on this page. */
-function Directory({ R, open }: { R: Record<ProductKey, Reading>; open: (k: ProductKey, from: Element) => void }) {
+function Directory({ R, open, stats }: { R: Record<ProductKey, Reading>; open: (k: ProductKey, from: Element) => void; stats: Sources['stats'] }) {
   return (
     <section className="cst-dir" id="products" aria-labelledby="cst-dir-h">
       <div className="gt-wrap">
@@ -452,6 +455,8 @@ function Directory({ R, open }: { R: Record<ProductKey, Reading>; open: (k: Prod
             )
           })}
         </ul>
+        {/* PeddleSwap, Peddles and PeddleQuest: Gully Labs projects, with their live figures from /api/stats */}
+        <PeddleFamily stats={stats} headingId="cst-pdl-h" />
       </div>
     </section>
   )
@@ -596,8 +601,8 @@ export function Constellation() {
   return (
     <div className="lcp gt cst">
       <Seo
-        title="Eight connected products: identity, payments, chain, data, games"
-        description="Gully Labs builds a connected product suite: sign in with Gully ID, pay with Gully Pay, build on Gully Chain, see it with HolderMaps and Gully Security, play with Gully Studio. Live status and metrics from every product."
+        title={LANDING_TITLE}
+        description={LANDING_DESCRIPTION}
       />
       <section className="cst-hero" aria-labelledby="cst-h1">
         <div className="gt-wrap cst-hero-in">
@@ -609,9 +614,9 @@ export function Constellation() {
             <h1 id="cst-h1">
               One studio.
               <br />
-              <em>Eight products</em> that work as one.
+              <em>{COUNT} products</em> that work as one.
             </h1>
-            <p className="cst-lede">We build the whole path a user takes on chain, and every piece plugs into the next.</p>
+            <p className="cst-lede">We build the whole path a user takes on chain, from sign-in and payments to trading on PeddleSwap and launching on Peddles, and every piece plugs into the next.</p>
             <div className="cst-kpis" aria-live="polite">
               <div>
                 <span className="gt-k">Services up</span>
@@ -644,7 +649,7 @@ export function Constellation() {
         </div>
       </section>
 
-      <Directory R={R} open={openDrawer} />
+      <Directory R={R} open={openDrawer} stats={src.stats} />
 
       {stacked && (
         <section className="cst-mapsec" aria-label="How the products connect">

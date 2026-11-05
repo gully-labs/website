@@ -216,7 +216,7 @@ export interface Sources {
   live: HubLive | null
   liveState: Load
   /** /api/stats totals (venues we built) */
-  stats?: { totals: { tvlUsd: number | null; volumeAllUsd: number | null; feesAllUsd: number | null }; venues?: { key: string; state: string }[]; daily?: { t: number; v: number }[] } | null
+  stats?: { totals: { tvlUsd: number | null; volumeAllUsd: number | null; feesAllUsd: number | null }; venues?: StatsVenue[]; daily?: { t: number; v: number }[] } | null
 }
 export interface Row {
   v: number
@@ -419,3 +419,97 @@ export function changes(prev: Seen | null, next: Seen, src: Sources): { title: s
 
 export const fmtNum = (v: number | null | undefined) => (v == null || !Number.isFinite(v) ? '–' : Math.round(v).toLocaleString('en-US'))
 export const kpiText = (k: Reading['kpi']) => (!k ? '–' : k.of != null ? `${k.v}/${k.of}` : fmtNum(k.v))
+
+/* ---------------------------------------------------------------- the Peddle family ----
+   PeddleSwap, Peddles and PeddleQuest are Gully Labs projects (owner, 2026-11-05): trading and DeFi beside the eight
+   Gully-named products. Each runs on its own site; the figures come from /api/stats (server/stats.mjs), the same
+   document the venue charts read. Logos are the projects' own files in public/venues (SOURCES.json), unchanged. */
+export type PeddleKey = 'peddleswap' | 'peddles' | 'peddlequest'
+export interface PeddleProduct {
+  key: PeddleKey
+  name: string
+  kind: string
+  domain: string
+  url: string
+  /** this site's page about it, /projects/<slug> */
+  page: string
+  status: Status
+  color: string
+  logo: string
+  line: string
+}
+export const PEDDLE_FAMILY: PeddleProduct[] = [
+  { key: 'peddleswap', name: 'PeddleSwap', kind: 'DEX', domain: 'peddleswap.xyz', url: 'https://peddleswap.xyz/', page: 'peddleswap', status: 'live', color: '#B8F03C', logo: '/venues/peddleswap.png', line: 'Swap tokens, earn fees from liquidity, lock tokens or LP, and bridge.' },
+  { key: 'peddles', name: 'Peddles', kind: 'Launchpad', domain: 'peddles.xyz', url: 'https://peddles.xyz/', page: 'peddles', status: 'live', color: '#27B6FF', logo: '/venues/peddles.svg', line: 'Launch memecoins paired to tokenised stocks; holders are paid in that stock.' },
+  { key: 'peddlequest', name: 'PeddleQuest', kind: 'Quests', domain: 'peddlequest.xyz', url: 'https://peddlequest.xyz/', page: 'peddlequest', status: 'live', color: '#FFD60A', logo: '/venues/peddlequest.png', line: 'Verified on-chain quests with XP, badges and reward pools escrowed first.' },
+]
+/** Every product the landing presents: the eight Gully-named ones and the Peddle family. */
+export const PRODUCT_COUNT = HUB_PRODUCTS.length + PEDDLE_FAMILY.length
+const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen']
+export const PRODUCT_COUNT_WORD = COUNT_WORDS[PRODUCT_COUNT] ?? String(PRODUCT_COUNT)
+/** The landing's title and description. server/seo.mjs MAIN['/'] carries the same strings for crawlers
+    (scripts/test-hub-landing.mjs checks the two against each other and against PRODUCT_COUNT). */
+export const LANDING_TITLE = 'Eleven products: identity, payments, chain, trading, data, games'
+export const LANDING_DESCRIPTION = 'Gully Labs builds a connected product suite: sign in with Gully ID, pay with Gully Pay, build on Gully Chain, trade on PeddleSwap and launch on Peddles, see it with HolderMaps and Gully Security, play with Gully Studio. Live status and metrics from every product.'
+
+/** One venue of the /api/stats document, as much of it as the family cards read. */
+export interface StatsVenue {
+  key: string
+  state: string
+  tvlUsd?: number | null
+  volumeAllUsd?: number | null
+  volume30dUsd?: number | null
+  volume24hUsd?: number | null
+  feesAllUsd?: number | null
+  fees24hUsd?: number | null
+  daily?: { t: number; v: number }[]
+  series?: { volume?: { t: number; v: number }[]; fees?: { t: number; v: number }[]; tvl?: { t: number; v: number }[] }
+}
+export interface PeddleFigure {
+  label: string
+  v: number
+}
+export interface PeddleReading {
+  state: 'loading' | 'ok' | 'error'
+  /** Value locked, volume and fees, each only when the venue publishes it (never a zero in place of a missing figure). */
+  tvl: PeddleFigure | null
+  volume: PeddleFigure | null
+  fees: PeddleFigure | null
+  /** Up to 30 daily points for the sparkline: volume when the venue has a volume history, else value locked. */
+  spark: number[]
+  sparkOf: 'volume' | 'tvl' | null
+  why?: string
+}
+const fig = (label: string, v: unknown): PeddleFigure | null => (typeof v === 'number' && Number.isFinite(v) ? { label, v } : null)
+
+/** The family's live readings from /api/stats. No document yet: loading. A venue the server could not read: error. */
+export function peddleReadings(stats: { venues?: StatsVenue[] } | null | undefined): Record<PeddleKey, PeddleReading> {
+  const out = {} as Record<PeddleKey, PeddleReading>
+  for (const p of PEDDLE_FAMILY) {
+    const none = { tvl: null, volume: null, fees: null, spark: [], sparkOf: null }
+    if (!stats) {
+      out[p.key] = { state: 'loading', ...none, why: 'Reading the live figures…' }
+      continue
+    }
+    const v = (stats.venues ?? []).find((x) => x.key === p.key)
+    if (!v || v.state !== 'ok') {
+      out[p.key] = { state: 'error', ...none, why: `${p.name} figures unreadable right now` }
+      continue
+    }
+    const vol = (v.series?.volume?.length ? v.series.volume : v.daily) ?? []
+    const tvl = v.series?.tvl ?? []
+    const useVol = vol.filter((d) => d.v > 0).length >= 2
+    const pts = (useVol ? vol : tvl).slice(-30).map((d) => d.v)
+    out[p.key] = {
+      state: 'ok',
+      tvl: fig('value locked', v.tvlUsd),
+      volume: fig('volume, all time', v.volumeAllUsd) ?? fig('volume, 30 d', v.volume30dUsd) ?? fig('volume, 24 h', v.volume24hUsd),
+      fees: fig('fees, all time', v.feesAllUsd) ?? fig('fees, 24 h', v.fees24hUsd),
+      spark: pts.length >= 2 ? pts : [],
+      sparkOf: pts.length >= 2 ? (useVol ? 'volume' : 'tvl') : null,
+    }
+    const r = out[p.key]
+    if (!r.tvl && !r.volume && !r.fees) r.why = `${p.name} publishes no dollar figure yet`
+  }
+  return out
+}

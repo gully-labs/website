@@ -25,12 +25,15 @@ export interface Project {
   telegram?: string
   chains: string[]
   built: string[]
+  /** The product family it belongs to: PeddleSwap, Peddles and PeddleQuest are the Peddle family (owner, 2026-11-05). */
+  family?: 'Peddle'
 }
 
 export const projects: Project[] = [
   {
     slug: 'peddleswap',
     key: 'peddleswap',
+    family: 'Peddle',
     name: 'PeddleSwap',
     tag: 'DEX',
     status: 'Live',
@@ -50,6 +53,7 @@ export const projects: Project[] = [
   {
     slug: 'peddles',
     key: 'peddles',
+    family: 'Peddle',
     name: 'Peddles',
     tag: 'Launchpad',
     status: 'Live',
@@ -70,6 +74,7 @@ export const projects: Project[] = [
   {
     slug: 'peddlequest',
     key: 'peddlequest',
+    family: 'Peddle',
     name: 'PeddleQuest',
     tag: 'Quest to earn',
     status: 'Live',

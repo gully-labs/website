@@ -46,12 +46,12 @@ export async function build() {
   const head = [
     '# Gully Labs',
     '',
-    '> Gully Labs builds onchain tools: a tracker of tokenised stocks against their fair price, the Holder Map, Gully Pay, Gully Security, Gully AI and a Telegram bot, plus the projects the team has shipped. Everything below is public.',
+    '> Gully Labs builds onchain tools: a tracker of tokenised stocks against their fair price, the Holder Map, Gully Pay, Gully Security, Gully AI and a Telegram bot, plus the projects the team has shipped: the Peddle family for trading and DeFi (PeddleSwap, a DEX at https://peddleswap.xyz; Peddles, a launchpad at https://peddles.xyz; PeddleQuest, quests at https://peddlequest.xyz) and Gully Chain. Everything below is public.',
     '',
     `Site: ${SITE}. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram news: https://t.me/GullyLabsNews. Bot: https://t.me/GullyLabsBot.`,
     '',
   ]
-  const projLines = projects.map((p) => `- [${p.name}](${p.url}): ${p.tagline}. ${p.description} (${p.status}; ${p.chains.join(', ')})`)
+  const projLines = projects.map((p) => `- [${p.name}](${p.url}): ${p.family ? `A Gully Labs project (${p.family} family, ${p.tag}). ` : ''}${p.tagline}. ${p.description} (${p.status}; ${p.chains.join(', ')})`)
   const contractsNote = `- [Contracts registry](${SITE}/.well-known/contracts.json): ${contracts.length} addresses on ${new Set(contracts.map((c) => c.chainId)).size} chains, JSON, open CORS. Docs: ${DOCS}/contracts`
 
   const llms = [

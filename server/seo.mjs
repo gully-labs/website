@@ -29,16 +29,16 @@ const PROJECTS = {
 const KIT_OG = 'https://gullylabs.xyz/brand/social/og-image-1200x630.png'
 /** The landing's own share image ("Constellation", 2026-10-27): the eight products around the Gully Labs mark. */
 const HUB_OG = 'https://gullylabs.xyz/og/hub-constellation-1200x630.png'
-/** The landing's product list for crawlers (src/pages/hub/hubData.ts HUB_PRODUCTS, in story order). */
+/** The landing's product list for crawlers (src/pages/hub/hubData.ts HUB_PRODUCTS in story order, then PEDDLE_FAMILY). */
 const HUB_LD = {
   '@context': 'https://schema.org',
   '@type': 'ItemList',
   name: 'Gully Labs products',
-  itemListElement: [['Gully ID', 'https://gullyid.xyz'], ['Gully Pay', 'https://gullypay.xyz'], ['Gully Chain', 'https://gullychain.xyz'], ['Gully RPC', 'https://gullyrpc.xyz'], ['HolderMaps', 'https://holdermaps.xyz'], ['Gully Security', 'https://gullysecurity.xyz'], ['Gully Studio', 'https://gullystudio.xyz'], ['Gully AI', 'https://gullyai.xyz']].map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, url })),
+  itemListElement: [['Gully ID', 'https://gullyid.xyz'], ['Gully Pay', 'https://gullypay.xyz'], ['Gully Chain', 'https://gullychain.xyz'], ['Gully RPC', 'https://gullyrpc.xyz'], ['HolderMaps', 'https://holdermaps.xyz'], ['Gully Security', 'https://gullysecurity.xyz'], ['Gully Studio', 'https://gullystudio.xyz'], ['Gully AI', 'https://gullyai.xyz'], ['PeddleSwap', 'https://peddleswap.xyz/'], ['Peddles', 'https://peddles.xyz/'], ['PeddleQuest', 'https://peddlequest.xyz/']].map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, url })),
 }
 const MAIN = {
-  '/': ['Gully Labs · Eight connected products: identity, payments, chain, data, games', 'Gully Labs builds a connected product suite: sign in with Gully ID, pay with Gully Pay, build on Gully Chain, see it with HolderMaps and Gully Security, play with Gully Studio. Live status and metrics from every product.'],
-  '/products': ['Products · Gully Labs', 'Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Sentry, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests, Gully Offerwall, Gully Social, Copy Trading and Gully Core. Each supports Gully Chain.'],
+  '/': ['Gully Labs · Eleven products: identity, payments, chain, trading, data, games', 'Gully Labs builds a connected product suite: sign in with Gully ID, pay with Gully Pay, build on Gully Chain, trade on PeddleSwap and launch on Peddles, see it with HolderMaps and Gully Security, play with Gully Studio. Live status and metrics from every product.'],
+  '/products': ['Products · Gully Labs', 'Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Sentry, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests, Gully Offerwall, Gully Social, Copy Trading and Gully Core, each supporting Gully Chain; plus the Peddle family for trading and DeFi: PeddleSwap (DEX), Peddles (launchpad) and PeddleQuest.'],
   '/tracker': ['Stock token tracker: tokenised stocks vs fair price · Gully Labs', 'Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price (Chainlink, or for some Solana xStocks the issuer’s quote), with the gap, pool depth and feed time.'],
   // The chain list is filled in per request from what checkout offers now (pricingDescription below).
   '/pricing': ['Pricing: tracker API and Gully Analytics plans · Gully Labs', 'Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain\'s own coin from your own wallet, with no custody.'],
