@@ -9,7 +9,9 @@ import { A } from '../../terminal/kit'
 import { PEDDLE_FAMILY, peddleReadings, STATUS_LABEL, type PeddleFigure, type StatsVenue } from './hubData'
 import './peddle-family.css'
 
-const fmtUsd = (v: number) => (v >= 1e9 ? `$${(v / 1e9).toFixed(2)}B` : v >= 1e6 ? `$${(v / 1e6).toFixed(2)}M` : v >= 1e4 ? `$${(v / 1e3).toFixed(1)}K` : `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`)
+// Under $100 the cents are shown, so 26 cents of fees never reads as "$0"; a real zero is "$0".
+const fmtUsd = (v: number) =>
+  v >= 1e9 ? `$${(v / 1e9).toFixed(2)}B` : v >= 1e6 ? `$${(v / 1e6).toFixed(2)}M` : v >= 1e4 ? `$${(v / 1e3).toFixed(1)}K` : v >= 100 || v === 0 ? `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : `$${v.toFixed(2)}`
 
 function Fig({ f, short }: { f: PeddleFigure | null; short: string }) {
   if (!f) return null
@@ -47,7 +49,7 @@ export function PeddleFamily({ stats, headingId = 'pdl-h', level = 3 }: { stats:
                 </div>
                 <span className="pdl-tag">{STATUS_LABEL[p.status]}</span>
               </div>
-              <p className="what">{p.line}</p>
+              <p className="pdl-what">{p.line}</p>
               <div className="read" data-reading={p.key} data-state={r.state}>
                 {has ? (
                   <div className="figs">
