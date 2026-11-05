@@ -82,7 +82,7 @@ export const PRODUCTS: ProductDef[] = [
     ],
     faq: [
       ['Is it free?', 'Free up to 1,000 monthly active users; larger plans are billed through Gully Pay.'],
-      ['Which Gully products use it?', 'The Gully Chain faucet requires it today. Sign in with Gully is built into Gully Pay and Gully RPC and switches on there next.'],
+      ['Which Gully products use it?', 'The Gully Chain faucet offers it as an optional sign-in today (it also funds a brand-new wallet). Sign in with Gully is built into Gully Pay and Gully RPC and switches on there next.'],
       ['Google and X sign-in?', 'Coming: the provider keys are pending.'],
     ],
     pricing: 'on-site',
