@@ -16,7 +16,7 @@ export function ProductsIndex() {
   const ok = live.hub?.services.filter((s) => s.state === 'up').length
   return (
     <div className="lcp gt" ref={ref}>
-      <Seo title="Products" description="Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests and Gully Core, each supporting Gully Chain; plus the Peddle family for trading and DeFi: PeddleSwap (DEX), Peddles (launchpad) and PeddleQuest." />
+      <Seo title="Products" description="Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Multisig, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests and Gully Core, each supporting Gully Chain; plus the Peddle family for trading and DeFi: PeddleSwap (DEX), Peddles (launchpad) and PeddleQuest." />
       <section className="gt-hero gt-phero" aria-labelledby="pi-h">
         <div className="gt-wrap gt-one">
           <div className="gt-hero-copy rise">

@@ -128,7 +128,7 @@ const CHAIN_ORDER: { k: string; name: string; url: string }[] = [
   { k: 'devportal', name: 'Developer portal', url: 'https://dev.gullychain.xyz' },
   { k: 'rpc-public', name: 'Public RPC', url: 'https://testnet-rpc.gullychain.xyz' },
   { k: 'copy', name: 'Copy trading', url: 'https://copy.kre8.fun' },
-  { k: 'safe', name: 'Gully Safe', url: 'https://safe.gullychain.xyz' },
+  { k: 'safe', name: 'Gully Multisig', url: 'https://multisig.gullychain.xyz' },
 ]
 
 /** Every Gully Chain surface, live: kre8.fun with its features, then explorer, faucet, bridge, docs, developer portal, public RPC. */
