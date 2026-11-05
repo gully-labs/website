@@ -70,7 +70,10 @@ function ProjectCard({ p, venue, loading, col }: { p: Project; venue: Venue | un
         <VenueLogo venue={p.key} name={p.name} size={40} />
         <div className="flex min-w-0 flex-1 flex-col">
           <h3 className="m-0 break-words font-display text-[22px] leading-none font-bold uppercase">{p.name}</h3>
-          <span className="font-mono text-[11px] tracking-[1px] text-faint">{p.tag.toUpperCase()}</span>
+          <span className="font-mono text-[11px] tracking-[1px] text-faint">
+            {p.tag.toUpperCase()}
+            {p.family ? ` · ${p.family.toUpperCase()} FAMILY` : ''}
+          </span>
         </div>
         <span className={`flex-none rounded-full border px-2.5 py-0.5 font-mono text-[11px] ${!loading && !ok ? 'border-error-line text-error' : 'border-line-strong text-ink-2'}`}>{!loading && !ok ? 'UNREADABLE' : p.status}</span>
       </div>
@@ -211,13 +214,13 @@ export function Ecosystem() {
     <div className="flex flex-col gap-14 px-page pt-10 pb-24">
       <Seo
         title="Ecosystem: our projects and what we integrate with"
-        description="Every Gully Labs project with its own live numbers, the third-party services the code integrates with, and the launchpads on the Holder Map."
+        description="Every Gully Labs project with its own live numbers: PeddleSwap (DEX), Peddles (launchpad) and PeddleQuest of the Peddle family, and Gully Chain. Plus the third-party services the code integrates with, and the launchpads on the Holder Map."
       />
       <section className="flex flex-col gap-4">
         <span className={eyebrow}>ECOSYSTEM · GULLY LABS</span>
         <h1 className="heading-1">What we build, what we use</h1>
         <p className="m-0 max-w-[720px] text-[18px] leading-[1.6] text-muted">
-          Every project below is Gully Labs’ own. Each shows what its own API reports, on its own line, never added together. The services further down are ones our code calls today; none of them is a partner.
+          Every project below is Gully Labs’ own: the Peddle family (PeddleSwap, Peddles, PeddleQuest) for trading and DeFi, and Gully Chain. Each shows what its own API reports, on its own line, never added together. The services further down are ones our code calls today; none of them is a partner.
         </p>
         <nav aria-label="On this page" className="flex flex-wrap gap-2">
           {[

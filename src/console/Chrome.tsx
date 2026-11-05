@@ -2,14 +2,16 @@
    below 1280), a Menu sheet below 1024, Lucide icon on every item, live pill, pill buttons. */
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { Activity, ArrowRight, ArrowUpRight, BookOpen, Box, Briefcase, ChartCandlestick, ChartLine, FileText, Gauge, KeyRound, LayoutGrid, Lock, Mail, Menu, MessageCircle, Scale, Send, Sparkles, Tag, type LucideProps, X, Zap } from 'lucide-react'
+import { Activity, ArrowLeftRight, ArrowRight, ArrowUpRight, BookOpen, Box, Briefcase, ChartCandlestick, ChartLine, FileText, Gauge, KeyRound, LayoutGrid, Lock, Mail, Menu, MessageCircle, Rocket, Scale, Send, Sparkles, Tag, Trophy, type LucideProps, X, Zap } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { APP_URL, DOCS_URL } from '../site-host'
 import { ic, LivePill } from './ui'
 import { PRODUCTS } from '../terminal/catalog'
 import { PRODUCT_ICON } from './productIcons'
+import { PEDDLE_FAMILY, type PeddleKey } from '../pages/hub/hubData'
 
 type Icon = ComponentType<LucideProps>
+const PEDDLE_ICON: Record<PeddleKey, Icon> = { peddleswap: ArrowLeftRight, peddles: Rocket, peddlequest: Trophy }
 const BLOG_URL = 'https://blog.gullylabs.xyz'
 interface Item {
   label: string
@@ -17,6 +19,8 @@ interface Item {
   to?: string
   href?: string
 }
+
+const PEDDLE_LINKS: Item[] = PEDDLE_FAMILY.map((p) => ({ label: p.name, icon: PEDDLE_ICON[p.key], href: p.url }))
 
 function NavLink({ it, className, onClick }: { it: Item; className?: string; onClick?: () => void }) {
   const { pathname, hash } = useLocation()
@@ -206,6 +210,17 @@ export function ConsoleFooter() {
               </ul>
             </div>
           ))}
+          {/* The Peddle family: Gully Labs projects on their own sites (owner, 2026-11-05). New tab, like every other host. */}
+          <div className="fgrp" data-testid="footer-peddle">
+            <span className="lab">Peddle</span>
+            <ul>
+              {PEDDLE_LINKS.map((it) => (
+                <li key={it.label}>
+                  <NavLink it={it} />
+                </li>
+              ))}
+            </ul>
+          </div>
         </nav>
         {!home && (
           <nav aria-label="Site pages" className="more">

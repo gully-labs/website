@@ -1,6 +1,6 @@
 # Gully Labs
 
-> Gully Labs builds onchain tools: a tracker of tokenised stocks against their fair price, the Holder Map, Gully Pay, Gully Security, Gully AI and a Telegram bot, plus the projects the team has shipped. Everything below is public.
+> Gully Labs builds onchain tools: a tracker of tokenised stocks against their fair price, the Holder Map, Gully Pay, Gully Security, Gully AI and a Telegram bot, plus the projects the team has shipped: the Peddle family for trading and DeFi (PeddleSwap, a DEX at https://peddleswap.xyz; Peddles, a launchpad at https://peddles.xyz; PeddleQuest, quests at https://peddlequest.xyz) and Gully Chain. Everything below is public.
 
 Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram news: https://t.me/GullyLabsNews. Bot: https://t.me/GullyLabsBot.
 
@@ -924,9 +924,9 @@ URL: https://gullylabs.xyz/products
 ## Projects
 
 - [DeepCore](https://deepcore.fun/): Launch on one core. A launchpad, hosted Launchpads and DEXes, and a best-price router on one shared liquidity core, at the same addresses on four chains. (Live; Base, BNB Chain, HyperEVM, Robinhood)
-- [PeddleSwap](https://peddleswap.xyz/): Swap. Lock. Launch.. Swap tokens, earn fees from liquidity, lock tokens or LP and bridge networks. (Live; Robinhood, Base, Arc)
-- [Peddles](https://peddles.xyz/): Launch, trade and play. Memecoins paired to tokenised stocks. Holders are paid in that stock. (Live; Base, Robinhood, BNB Chain, Arc)
-- [PeddleQuest](https://peddlequest.xyz/): Quest on-chain, earn the proof. Verified quests on four chains. XP, soulbound badges, reward pools escrowed first. (Live; Base, Robinhood, BNB Chain, Arc)
+- [PeddleSwap](https://peddleswap.xyz/): A Gully Labs project (Peddle family, DEX). Swap. Lock. Launch.. Swap tokens, earn fees from liquidity, lock tokens or LP and bridge networks. (Live; Robinhood, Base, Arc)
+- [Peddles](https://peddles.xyz/): A Gully Labs project (Peddle family, Launchpad). Launch, trade and play. Memecoins paired to tokenised stocks. Holders are paid in that stock. (Live; Base, Robinhood, BNB Chain, Arc)
+- [PeddleQuest](https://peddlequest.xyz/): A Gully Labs project (Peddle family, Quest to earn). Quest on-chain, earn the proof. Verified quests on four chains. XP, soulbound badges, reward pools escrowed first. (Live; Base, Robinhood, BNB Chain, Arc)
 - [Gully Chain](https://gullychain.xyz/): Our own chain, with a launchpad built in. Gully Labs’ L3 testnet: the Gully Launchpad (bonding curve, graduation into a locked Gully Swap pool), .gully names and USDC.e. Figures are in test ETH and read from our own indexer. (Beta; Gully Chain Testnet)
 
 ## Docs

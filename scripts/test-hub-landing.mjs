@@ -16,7 +16,7 @@ const full = { hub, products, live, liveState: 'ok', stats: { totals: { tvlUsd: 
 const none = { hub: null, products: null, live: null, liveState: 'error', stats: null }
 const NOW = Date.parse('2026-10-28T02:10:00Z')
 
-test('catalog: eight products in story order, every link and news item points at a real product', () => {
+test('catalog: eight Gully-named products in story order, every link and news item points at a real product', () => {
   assert.deepEqual(H.HUB_PRODUCTS.map((p) => p.key), ['id', 'pay', 'chain', 'rpc', 'holdermaps', 'security', 'studio', 'ai'])
   const keys = new Set(H.HUB_PRODUCTS.map((p) => p.key))
   for (const [a, b] of H.EDGES) assert.ok(keys.has(a) && keys.has(b), `${a}-${b}`)
@@ -106,4 +106,95 @@ test('formatting and map geometry', () => {
   assert.match(H.curve([0, 0], [100, 0], [50, 50]), /^M0 0 Q50\.0 -18\.0 100 0$/)
   assert.equal(H.ago('2026-10-28T02:09:30Z', NOW), 'just now')
   assert.equal(H.ago('2026-10-27T22:10:00Z', NOW), '4 h ago')
+})
+
+/* ---- the Peddle family (owner, 2026-11-05): PeddleSwap, Peddles and PeddleQuest are Gully Labs projects ---- */
+const crypto = await import('node:crypto')
+const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8')
+const sha = (p) => crypto.createHash('sha256').update(fs.readFileSync(new URL(`../${p}`, import.meta.url))).digest('hex')
+
+test('Peddle family: PeddleSwap (DEX), Peddles (launchpad) and PeddleQuest, official logos byte for byte, links to their own sites', () => {
+  assert.deepEqual(H.PEDDLE_FAMILY.map((p) => [p.key, p.kind, p.url]), [
+    ['peddleswap', 'DEX', 'https://peddleswap.xyz/'],
+    ['peddles', 'Launchpad', 'https://peddles.xyz/'],
+    ['peddlequest', 'Quests', 'https://peddlequest.xyz/'],
+  ])
+  // the logo files are the projects' own (public/venues/SOURCES.json): unchanged bytes
+  const want = { peddleswap: '432d71f7c422274db54e4a7ab7e790e8914394105f05d77d28c2c6a16ad1d72a', peddles: '1aa72a4f33334c7f82b42b1a777c67d5473b6220328f0c5381ff0a5a818c1b95', peddlequest: 'acced9dd25adf3a7122a16a3092cbd0f76b257bc00760ad1c728695c9c143945' }
+  const sources = JSON.parse(read('public/venues/SOURCES.json'))
+  for (const p of H.PEDDLE_FAMILY) {
+    assert.equal(p.logo, sources[p.key].file, `${p.key} uses its file in public/venues`)
+    assert.equal(sha(`public${p.logo}`), want[p.key], `${p.key} logo bytes`)
+    assert.equal(p.status, 'live')
+    assert.ok(p.line.length > 20 && p.line.length <= 90, `${p.key} one-line description`)
+  }
+  // each has a page on this site and is a project of the same family in the projects list
+  const projects = read('src/content/projects.ts').replace(/\r\n/g, '\n')
+  for (const p of H.PEDDLE_FAMILY) assert.match(projects, new RegExp(`slug: '${p.page}',\\s+key: '${p.key}',\\s+family: 'Peddle'`), p.key)
+})
+
+test('product count: eight Gully-named products + the Peddle family, the same in the title, the H1, crawlers and JSON-LD', async () => {
+  assert.equal(H.PRODUCT_COUNT, 11)
+  assert.equal(H.PRODUCT_COUNT_WORD, 'eleven')
+  assert.match(H.LANDING_TITLE, /^Eleven products: .*trading/)
+  for (const n of ['PeddleSwap', 'Peddles']) assert.ok(H.LANDING_DESCRIPTION.includes(n), n)
+  const page = read('src/pages/hub/Constellation.tsx')
+  assert.ok(!/Eight (connected )?products/.test(page), 'no stale count on the landing')
+  assert.ok(page.includes('<PeddleFamily stats={stats}'), 'the family is in the product line-up')
+  const seo = read('server/seo.mjs')
+  assert.ok(seo.includes(`'/': ['Gully Labs · ${H.LANDING_TITLE}', '${H.LANDING_DESCRIPTION}']`), 'server title + description equal the page')
+  assert.ok(!/Eight connected/.test(seo))
+  for (const p of H.PEDDLE_FAMILY) assert.ok(seo.includes(`['${p.name}', '${p.url}']`), `${p.name} in the ItemList JSON-LD`)
+  // llms.txt / llms-full.txt name the family and link the two sites
+  for (const f of ['server/data/llms.txt', 'server/data/llms-full.txt']) {
+    const t = read(f)
+    assert.match(t.split('\n').slice(0, 4).join('\n'), /Peddle family for trading and DeFi \(PeddleSwap, a DEX at https:\/\/peddleswap\.xyz; Peddles, a launchpad at https:\/\/peddles\.xyz/, f)
+    assert.ok(t.includes('- [PeddleSwap](https://peddleswap.xyz/): A Gully Labs project (Peddle family, DEX).'), f)
+    assert.ok(t.includes('- [Peddles](https://peddles.xyz/): A Gully Labs project (Peddle family, Launchpad).'), f)
+  }
+  // /products, /ecosystem and the footer present them; the header menus are unchanged (slim nav)
+  assert.ok(read('src/pages/products/ProductsIndex.tsx').includes('<PeddleFamily stats={live.stats}'))
+  assert.ok(read('src/pages/Ecosystem.tsx').includes('FAMILY'))
+  // the site footer lists the family under "Peddle" (external hosts open in a new tab through NavLink's href branch);
+  // the header and the Menu sheet do not change
+  const chrome = read('src/console/Chrome.tsx')
+  const foot = chrome.slice(chrome.indexOf('export function ConsoleFooter'))
+  assert.ok(foot.includes('data-testid="footer-peddle"') && foot.includes('PEDDLE_LINKS.map'), 'Peddle group in the footer')
+  assert.ok(chrome.includes("PEDDLE_FAMILY.map((p) => ({ label: p.name, icon: PEDDLE_ICON[p.key], href: p.url }))"))
+  assert.equal(chrome.slice(0, chrome.indexOf('export function ConsoleFooter')).split('PEDDLE_LINKS').length - 1, 1, 'defined once above, used only in the footer')
+  // the sitemap carries their pages
+  const { sitemapFor } = await import('../server/seo.mjs')
+  const xml = sitemapFor('gullylabs.xyz')
+  for (const p of H.PEDDLE_FAMILY) assert.ok(xml.includes(`https://gullylabs.xyz/projects/${p.page}<`), `/projects/${p.page} in the sitemap`)
+})
+
+test('Peddle family readings: live figures from /api/stats, nothing invented', () => {
+  const day = (i, v) => ({ t: 1793000000 + i * 86400, v })
+  const stats = {
+    venues: [
+      { key: 'peddleswap', state: 'ok', tvlUsd: 52310.5, volumeAllUsd: null, volume30dUsd: 4100.25, volume24hUsd: 90, feesAllUsd: null, fees24hUsd: 0.27, series: { volume: [day(0, 100), day(1, 140), day(2, 90)], fees: [], tvl: [day(0, 50000), day(1, 52000)] } },
+      { key: 'peddles', state: 'ok', tvlUsd: 19090.9, volumeAllUsd: 6373.01, volume24hUsd: 12, feesAllUsd: 431.24, fees24hUsd: 1, daily: [day(0, 10), day(1, 30)] },
+      { key: 'peddlequest', state: 'error' },
+      { key: 'gullychain', state: 'ok', tvlUsd: 1 },
+    ],
+  }
+  const R = H.peddleReadings(stats)
+  assert.deepEqual(R.peddleswap.tvl, { label: 'value locked', v: 52310.5 })
+  assert.deepEqual(R.peddleswap.volume, { label: 'volume, 30 d', v: 4100.25 }, 'no all-time figure: the 30-day one, labelled as such')
+  assert.deepEqual(R.peddleswap.fees, { label: 'fees, 24 h', v: 0.27 })
+  assert.deepEqual([R.peddleswap.spark, R.peddleswap.sparkOf], [[100, 140, 90], 'volume'])
+  assert.deepEqual(R.peddles.volume, { label: 'volume, all time', v: 6373.01 })
+  assert.deepEqual(R.peddles.fees, { label: 'fees, all time', v: 431.24 })
+  assert.deepEqual(R.peddles.spark, [10, 30], 'older documents: the daily volume')
+  assert.equal(R.peddlequest.state, 'error')
+  assert.equal(R.peddlequest.tvl, null)
+  assert.match(R.peddlequest.why, /unreadable/)
+  // a venue with value locked but no volume history draws its value locked
+  const tvlOnly = H.peddleReadings({ venues: [{ key: 'peddlequest', state: 'ok', tvlUsd: 400, volumeAllUsd: null, volume24hUsd: null, series: { volume: [], tvl: [day(0, 380), day(1, 400)] } }] })
+  assert.deepEqual([tvlOnly.peddlequest.spark, tvlOnly.peddlequest.sparkOf, tvlOnly.peddlequest.volume], [[380, 400], 'tvl', null])
+  // a real zero stays a zero; a missing figure stays missing
+  const zero = H.peddleReadings({ venues: [{ key: 'peddles', state: 'ok', tvlUsd: 0, volumeAllUsd: null, volume24hUsd: null }] })
+  assert.deepEqual([zero.peddles.tvl, zero.peddles.volume, zero.peddles.fees], [{ label: 'value locked', v: 0 }, null, null])
+  // before the first answer: loading, no figures
+  for (const k of ['peddleswap', 'peddles', 'peddlequest']) assert.deepEqual([H.peddleReadings(null)[k].state, H.peddleReadings(null)[k].tvl], ['loading', null])
 })
