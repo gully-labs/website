@@ -93,8 +93,7 @@ export function ConsoleHeader() {
     <header className="nav">
       <div className="wrap">
         <Link className="brand" to="/" aria-label="Gully Labs home">
-          <img src="/brand/icon/gully-labs-icon.png" width={30} height={33} alt="" />
-          <img src="/brand/logo/gully-labs-wordmark-horizontal.png" width={170} height={17} alt="Gully Labs" />
+          <img src="/brand/kit/logotype-reversed.svg" width={176} height={32} alt="Gully Labs" />
         </Link>
         <nav aria-label="Main">
           <ul>
@@ -164,10 +163,10 @@ export function ConsoleFooter() {
     <footer>
       <div className="wrap">
         <div>
-          <img src="/brand/logo/gully-labs-logo.png" srcSet="/brand/logo/gully-labs-logo.png 1x, /brand/logo/gully-labs-logo-2x.png 2x" width={160} height={64} alt="Gully Labs — You Think It, We Ship It." />
+          <img src="/brand/kit/wordmark-reversed.svg" width={200} height={56} alt="Gully Labs, Web3 and DeFi development" loading="lazy" />
           <span className="tagline">{FOOTER_TAGLINE}</span>
           <a className="gt-badge" href="/" aria-label="Powered by Gully Labs">
-            <img src="/brand/badges/powered-by-gully-labs-dark.png" srcSet="/brand/badges/powered-by-gully-labs-dark.png 1x, /brand/badges/powered-by-gully-labs-dark-2x.png 2x, /brand/badges/powered-by-gully-labs-dark-3x.png 3x" width={190} height={48} alt="Powered by Gully Labs" />
+            <img src="/brand/kit/powered-by-clear-white.svg" width={160} height={48} alt="Powered by Gully Labs" loading="lazy" />
           </a>
         </div>
         <nav aria-label="Footer">

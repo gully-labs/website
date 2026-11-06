@@ -79,7 +79,7 @@ export function MarkLogo({ label, scale = 1, className = '', decorative = false 
       aria-label={decorative ? undefined : label}
       aria-hidden={decorative || undefined}
     >
-      <img src="/brand/icon/gully-labs-icon.png" width={Math.round(h * 343 / 372)} height={h} alt="" decoding="async" draggable={false} className="block shrink-0" style={{ height: `calc(${h}px * var(--pl, 1))`, width: 'auto' }} />
+      <img src="/brand/kit/mark-reversed.svg" width={Math.round(h * 1.042)} height={h} alt="" decoding="async" draggable={false} className="block shrink-0" style={{ height: `calc(${h}px * var(--pl, 1))`, width: 'auto' }} />
       <span aria-hidden className="font-[Poppins,system-ui,sans-serif] leading-none font-bold tracking-[-.02em] whitespace-nowrap text-white">
         {label}
       </span>

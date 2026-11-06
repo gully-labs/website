@@ -32,10 +32,10 @@ const BUILT_ON = (() => {
   }
 })()
 
-/** The Gully Labs kit's share image (brand-kit social/og-image-1200x630.png), absolute (owner OG rule, 2026-10-25). */
-const KIT_OG = 'https://gullylabs.xyz/brand/social/og-image-1200x630.png'
+/** The Gully Labs share image, derived from the 2026-11 kit's X banner (public/brand/kit), absolute. */
+const KIT_OG = 'https://gullylabs.xyz/brand/kit/og-default-1200x630.png'
 /** The landing's own share image ("Constellation", 2026-10-27): the eight products around the Gully Labs mark. */
-const HUB_OG = 'https://gullylabs.xyz/og/hub-constellation-1200x630.png'
+const HUB_OG = KIT_OG
 /** The landing's product list for crawlers (src/pages/hub/hubData.ts HUB_PRODUCTS in story order, then PEDDLE_FAMILY). */
 const HUB_LD = {
   '@context': 'https://schema.org',
@@ -207,7 +207,7 @@ const ORG = {
   '@type': 'Organization',
   name: 'Gully Labs',
   url: SITE,
-  logo: `${SITE}/brand/icon/app-icon-512.png`,
+  logo: `${SITE}/brand/kit/icon/icon-512.png`,
   sameAs: ['https://x.com/Gully_Labs', 'https://github.com/gully-labs', 'https://t.me/GullyLabsNews', 'https://t.me/GullyLabsBot', 'https://www.youtube.com/@Gully_Labs', 'https://www.tiktok.com/@gully_labs', 'https://www.facebook.com/gullylabsllc', 'https://medium.com/@labsgully'],
 }
 /** The site itself, for search engines' site name. */
@@ -218,7 +218,7 @@ const APP_LD = {
   '@type': 'SoftwareApplication',
   name: 'Gully Labs',
   url: SITE,
-  image: `${SITE}/brand/icon/app-icon-512.png`,
+  image: `${SITE}/brand/kit/icon/icon-512.png`,
   applicationCategory: 'FinanceApplication',
   operatingSystem: 'Web',
   description: MAIN['/'][1],
@@ -247,7 +247,7 @@ const payCanonical = (host, p) => (isLocal(host) ? null : `${PAY_URL}${p}`)
    gullylabs.xyz and holdermaps.xyz carries the Terms / Privacy / Legal links in its pre-render too (shellBody), so a
    crawler (and a plain curl) finds them before scripts run. */
 export const LEGAL_PATHS = ['/terms', '/privacy', '/legal', '/legal/merchant-terms', '/legal/scan-terms']
-const LEGAL_PUBLISHER = { '@type': 'Organization', name: 'Gully Labs LLC', url: SITE, logo: `${SITE}/brand/icon/app-icon-512.png` }
+const LEGAL_PUBLISHER = { '@type': 'Organization', name: 'Gully Labs LLC', url: SITE, logo: `${SITE}/brand/kit/icon/icon-512.png` }
 /** A legal page's JSON-LD: the page itself, published by Gully Labs LLC, last reviewed on the date it shows. */
 export function legalLd(url, name, description, site = { name: 'Gully Labs', url: `${SITE}/` }) {
   return { '@context': 'https://schema.org', '@type': 'WebPage', name, url, description, inLanguage: 'en', dateModified: '2026-11-03', isPartOf: { '@type': 'WebSite', ...site }, publisher: LEGAL_PUBLISHER }

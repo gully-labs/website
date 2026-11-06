@@ -4,13 +4,12 @@ import { SmartLink } from './SmartLink'
 /* The "Powered by Gully Labs" badge (owner rule 2026-10-26, rule 4): the kit's dark PNGs (public/brand/badges, byte-exact
    copies of brand-kit/badges; the kit SVG renders blank), at the kit's own 254 x 64 ratio, 30 px high on desks and 26 px
    on phones, linking to gullylabs.xyz in a new tab. On gullylabs.xyz itself it is not shown (it IS Gully Labs). */
-const SRC = '/brand/badges/powered-by-gully-labs-dark.png'
-const SRCSET = `${SRC} 1x, /brand/badges/powered-by-gully-labs-dark-2x.png 2x, /brand/badges/powered-by-gully-labs-dark-3x.png 3x`
+const SRC = '/brand/kit/powered-by-clear-white.svg'
 
 export function PoweredByBadge({ className = '' }: { className?: string }) {
   return (
     <SmartLink href="https://gullylabs.xyz/" arrow={false} aria-label="Powered by Gully Labs (opens in a new tab)" className={`inline-flex shrink-0 items-center ${className}`} data-testid="powered-by-badge">
-      <img src={SRC} srcSet={SRCSET} width={119} height={30} alt="Powered by Gully Labs" decoding="async" className="block h-[30px] w-auto max-[600px]:h-[26px]" />
+      <img src={SRC} width={119} height={30} alt="Powered by Gully Labs" decoding="async" className="block h-[30px] w-auto max-[600px]:h-[26px]" />
     </SmartLink>
   )
 }
