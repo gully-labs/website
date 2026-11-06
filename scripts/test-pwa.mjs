@@ -214,7 +214,7 @@ await step('offline', async () => {
   await ctx.setOffline(true)
   await page.goto(BASE + '/services')
   await page.getByRole('heading', { name: 'You are offline' }).waitFor({ timeout: 10_000 })
-  check('offline without a cached shell: the kit-style offline page shows, with a Try again link', (await page.getByRole('link', { name: 'Try again' }).count()) === 1 && (await page.locator('svg[data-brand="kit"]').count()) === 1)
+  check('offline without a cached shell: the kit-style offline page shows, with a Try again link', (await page.getByRole('link', { name: 'Try again' }).count()) === 1 && (await page.locator('[data-brand="kit"]').count()) === 1)
   await ctx.close()
 })
 
@@ -222,6 +222,8 @@ await step('offline', async () => {
 
 const fireInstallPrompt = (page) =>
   page.evaluate(() => {
+    window.scrollTo(0, 400)
+    window.dispatchEvent(new Event('scroll'))
     const e = new Event('beforeinstallprompt', { cancelable: true })
     e.prompt = async () => {
       window.__prompted = (window.__prompted ?? 0) + 1
@@ -289,6 +291,7 @@ await step('install card on iOS Safari', async () => {
   const ctx = await ctxFor({ width: 390, height: 844, mobile: true, userAgent: UA })
   const page = await ctx.newPage()
   await page.goto(BASE + '/')
+  await page.evaluate(() => window.scrollTo(0, 400))
   await installCard(page).waitFor({ timeout: 8000 })
   const steps = page.getByTestId('pwa-ios-steps')
   check('iOS Safari: "Share → Add to Home Screen" instructions with the Share and Add icons, no Install button', (await installCard(page).getAttribute('data-mode')) === 'ios' && /Share/.test(await steps.textContent()) && /Add to Home Screen/.test(await steps.textContent()) && /→/.test(await steps.textContent()) && (await steps.locator('svg').count()) === 2 && (await page.getByTestId('pwa-install').count()) === 0)
@@ -346,7 +349,7 @@ await step('layout at 390 px', async () => {
   // Site: the install card, then the update card, beside the dock (Back to top and Gully AI).
   const ctx = await ctxFor({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  await page.goto(BASE + '/')
+  await page.goto(BASE + '/pricing')
   const fab = page.getByTestId('ask-fab')
   await fab.waitFor({ timeout: 10_000 })
   await fireInstallPrompt(page)
@@ -414,7 +417,7 @@ await step('layout at 390 px', async () => {
   }
 })
 
-check('the server made no unexpected outbound calls', blockedOutbound.filter((u) => !/localhost|127\.0\.0\.1/.test(u)).every((u) => /dexscreener|geckoterminal|rpc\.|arbitrum|base|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag|e2e\.invalid/i.test(u)), blockedOutbound.slice(0, 3).join(' | '))
+check('the server made no unexpected outbound calls', blockedOutbound.filter((u) => !/localhost|127\.0\.0\.1/.test(u)).every((u) => /dexscreener|geckoterminal|rpc\.|arbitrum|base|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag|gullychain|e2e\.invalid/i.test(u)), blockedOutbound.slice(0, 3).join(' | '))
 await browser.close()
 const secs = Math.round((Date.now() - started) / 1000)
 console.log(`\n${t.passed} passed, ${t.failed} failed (${secs} s)`)

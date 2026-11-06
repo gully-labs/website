@@ -1412,17 +1412,12 @@ export const features: Feature[] = [
     id: "deepcore-launchpad",
     product: "Gully Core",
     name: "Launchpad",
-    status: "live",
-    summary: "A token, its pool and locked liquidity are created in one transaction, with a decaying anti-snipe fee at the open.",
+    status: "planned",
+    summary: "A token, its pool and locked liquidity created in one transaction, with a decaying anti-snipe fee at the open.",
     facts: [
-      "LaunchpadKitV2 opens a launch on a concentrated-liquidity range or a shaped Bin distribution",
-      "Liquidity is locked forever via the Gully Core LP lockers (CL and Bin)",
-      "Anti-snipe fee: LaunchGuardHook caps the initial fee at 50% (MAX_INITIAL_FEE) and the final fee at 10%; README states 50% at the open, 10% on Bin, decaying over at least 60 seconds",
-      "Optional creator tax is capped at 10% (MAX_TAX_BPS = 1000) and expires by itself, at most 180 days",
-      "LaunchpadKitV2 is recorded in the SDK address book on Base, BNB Chain, HyperEVM and Robinhood Chain at the same address 0x78781DC6...",
-      "Wizard is market-cap-first with a $3.5K-equivalent default per the README"
+      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
     ],
-    url: "https://deepcore.fun",
+    url: "https://gullychain.xyz/core/",
     source: [
       "deepcore:README.md",
       "deepcore:packages/launchpad/src/LaunchpadKitV2.sol",
@@ -1435,15 +1430,12 @@ export const features: Feature[] = [
     id: "deepcore-hosted-pads",
     product: "Gully Core",
     name: "Hosted Launchpads and DEXes",
-    status: "live",
-    summary: "Anyone can open their own Launchpad or DEX on the core in one transaction, with a share of fees going to the site.",
+    status: "planned",
+    summary: "Builders open their own launchpad or DEX on Gully Core.",
     facts: [
-      "The pad factory clones a pad at the same address on every chain (0x7878647B... in the address book)",
-      "Owner, name, brand and terms are stored on chain",
-      "Hosted site can use a deepcore.fun subdomain or the owner's own domain, with a theme pack and its own fee share (README)",
-      "Contracts: the pad and its pad factory in packages/launchpad/src/pad"
+      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
     ],
-    url: "https://deepcore.fun",
+    url: "https://gullychain.xyz/core/",
     source: [
       "deepcore:README.md",
       "deepcore:packages/launchpad/src/pad",
@@ -1455,15 +1447,12 @@ export const features: Feature[] = [
     id: "deepcore-router",
     product: "Gully Core",
     name: "Best-price router",
-    status: "live",
-    summary: "Swaps route across Gully Core pools and other venues. Gully Core pools carry no router fee; fills on other venues pay a small capped fee.",
+    status: "planned",
+    summary: "Swaps routed across Gully Core pools and other venues.",
     facts: [
-      "The fill router charges feeBps() on fills elsewhere; README states 0.15%",
-      "The fee is bounded in the contract by ABSOLUTE_MAX_FEE_BPS = 100 (1%)",
-      "Fee changes use a notice period of up to MAX_FEE_NOTICE_SECONDS = 30 days",
-      "fillRouter is 0x78786244... on all four chains in the SDK address book"
+      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
     ],
-    url: "https://deepcore.fun",
+    url: "https://gullychain.xyz/core/",
     source: [
       "deepcore:README.md",
       "deepcore:packages/routing/src",
@@ -1474,14 +1463,12 @@ export const features: Feature[] = [
     id: "deepcore-locks-airdrops-splits",
     product: "Gully Core",
     name: "Locks, vesting, airdrops, splits and multisend",
-    status: "live",
+    status: "planned",
     summary: "Utility contracts for locking liquidity or tokens, distributing tokens and splitting revenue.",
     facts: [
-      "Contracts: the position lock, token lock, Merkle drop with its drop factory, split with its split factory, and multisend",
-      "positionLock, tokenLock, splitFactory and multisend are recorded at the same address on HyperEVM, BNB Chain, Robinhood Chain and Base",
-      "Airdrops are Merkle-based"
+      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
     ],
-    url: "https://deepcore.fun",
+    url: "https://gullychain.xyz/core/",
     source: [
       "deepcore:README.md",
       "deepcore:packages/launchpad/src/lock",
@@ -1494,14 +1481,12 @@ export const features: Feature[] = [
     id: "deepcore-limit-orders-dca",
     product: "Gully Core",
     name: "Limit orders and DCA",
-    status: "live",
-    summary: "On-chain range (limit) orders and dollar-cost averaging contracts, deployed on three of the four chains.",
+    status: "planned",
+    summary: "On-chain range (limit) orders and dollar-cost averaging contracts.",
     facts: [
-      "Contracts: the range orders and DCA contracts",
-      "In the SDK address book rangeOrders and dca have addresses on HyperEVM, Robinhood Chain and Base, and are null on BNB Chain",
-      "Also in the repo but not in the README feature list: a managed vault and its vault factory (vaultFactory set on HyperEVM, Robinhood Chain and Base) and a liquidity-rewards hook"
+      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
     ],
-    url: "https://deepcore.fun",
+    url: "https://gullychain.xyz/core/",
     source: [
       "deepcore:packages/orders/src",
       "deepcore:packages/sdk/src/deployments/index.ts",
@@ -1511,16 +1496,13 @@ export const features: Feature[] = [
   {
     id: "deepcore-four-chains",
     product: "Gully Core",
-    name: "Same addresses on four chains",
-    status: "live",
-    summary: "The core is deployed at the same contract addresses on HyperEVM, BNB Chain, Robinhood Chain and Base.",
+    name: "Gully Core on more chains",
+    status: "planned",
+    summary: "Gully Core on Anubis Network and other chains, as a service for builders.",
     facts: [
-      "Chain IDs in the SDK address book: 999, 56, 4663, 8453",
-      "Address book is packages/sdk/src/deployments/index.ts; null means not deployed, never zero",
-      "Contracts are owned by a 2-of-3 Safe multisig and renounceOwnership is disabled on Gully Core's own contracts (README)",
-      "Built on the PancakeSwap Infinity architecture (GPL-2.0-or-later forks); SDK, widgets and tooling are MIT"
+      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
     ],
-    url: "https://deepcore.fun",
+    url: "https://gullychain.xyz/core/",
     source: [
       "deepcore:README.md",
       "deepcore:packages/sdk/src/deployments/index.ts",
@@ -1531,14 +1513,12 @@ export const features: Feature[] = [
     id: "deepcore-dev-tools",
     product: "Gully Core",
     name: "SDK, widgets and scaffolders",
-    status: "beta",
-    summary: "An MIT SDK, swap widgets and project scaffolders for builders. The README says npm publication is pending.",
+    status: "planned",
+    summary: "An SDK, swap widgets and project scaffolders for builders.",
     facts: [
-      "Packages in the repo: sdk, widgets, connect, cli, create-deepcore-app, create-deepcore-hook, router-core, tokenlists",
-      "npm scope @deepcoreprotocol; the README says publication is pending",
-      "Dynamic-fee hooks exist for CL and Bin pools (packages/hooks/src/dex)"
+      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
     ],
-    url: "https://deepcore.fun",
+    url: "https://gullychain.xyz/core/",
     source: [
       "deepcore:README.md",
       "deepcore:packages/sdk/src/deployments/index.ts",
