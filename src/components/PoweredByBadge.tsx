@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react'
 import { SmartLink } from './SmartLink'
 
-/* The "Powered by Gully Labs" badge (owner rule 2026-10-26, rule 4): the kit's dark PNGs (public/brand/badges, byte-exact
-   copies of brand-kit/badges; the kit SVG renders blank), at the kit's own 254 x 64 ratio, 30 px high on desks and 26 px
-   on phones, linking to gullylabs.xyz in a new tab. On gullylabs.xyz itself it is not shown (it IS Gully Labs). */
+/* The "Powered by Gully Labs" badge (owner rule 2026-10-26, rule 4): the 2026-11 kit's clear-white SVG, byte-exact
+   (public/brand/kit), 30 px high on desks and 26 px on phones, linking to gullylabs.xyz in a new tab. On gullylabs.xyz itself it is not shown (it IS Gully Labs). */
 const SRC = '/brand/kit/powered-by-clear-white.svg'
 
 export function PoweredByBadge({ className = '' }: { className?: string }) {
