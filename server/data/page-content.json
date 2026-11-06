@@ -330,7 +330,7 @@
   ],
   "/products/safe": [
    "Gully Multisig · Gully Labs",
-   "Multisig wallets on Gully Chain, for treasuries and teams. Live charts, features, how it works, pricing and FAQ for Gully Multisig on this page."
+   "Multisig wallets for teams and treasuries on Anubis Network, built on the unmodified Safe 1.4.1 contracts. Live charts on this page."
   ],
   "/products/gully-sentry": [
    "Gully Sentry · Gully Labs",
@@ -1494,7 +1494,7 @@
   },
   "safe": {
    "name": "Gully Multisig",
-   "line": "Multisig wallets on Gully Chain, for treasuries and teams.",
+   "line": "Multisig wallets for teams and treasuries on Anubis Network, built on the unmodified Safe 1.4.1 contracts.",
    "url": "https://multisig.gullychain.xyz",
    "og": "/brand/web/og/gully-chain.png",
    "category": "FinanceApplication",
@@ -1868,6 +1868,151 @@
    "Unity 3D games with on-chain items and scores, from Gully Studio."
   ]
  ],
+ "landing": {
+  "headline": [
+   "One studio.",
+   "Eleven products",
+   "that work as one."
+  ],
+  "lede": "We build the whole path a user takes on chain, from sign-in and payments to trading on PeddleSwap and launching on Peddles, and every piece plugs into the next.",
+  "productsTitle": "Where to go",
+  "productsSub": "Each product runs on its own site. The numbers are read live.",
+  "products": [
+   {
+    "key": "id",
+    "name": "Gully ID",
+    "line": "Passwordless sign-in for any app.",
+    "icon": "/brand/hub/icons/gully-id.svg",
+    "label": "Live",
+    "href": "/products/gully-id"
+   },
+   {
+    "key": "pay",
+    "name": "Gully Pay",
+    "line": "Checkout, payment links and x402 for merchants and AI agents.",
+    "icon": "/brand/hub/icons/pay.png",
+    "label": "Live",
+    "href": "/products/pay"
+   },
+   {
+    "key": "chain",
+    "name": "Gully Chain",
+    "line": "The social L3 where your profile is your wallet.",
+    "icon": "/brand/web/logos/gc-icon.svg",
+    "label": "Testnet",
+    "href": "/products/chain"
+   },
+   {
+    "key": "rpc",
+    "name": "Gully RPC",
+    "line": "One API key for Gully Chain, Ethereum, Base and more.",
+    "icon": "/brand/hub/icons/rpc.png",
+    "label": "Open beta",
+    "href": "/products/rpc"
+   },
+   {
+    "key": "holdermaps",
+    "name": "HolderMaps",
+    "line": "Who really holds a token? Bubble maps, read live.",
+    "icon": "/brand/hub/icons/holdermaps.png",
+    "label": "Live",
+    "href": "/products/holders"
+   },
+   {
+    "key": "security",
+    "name": "Gully Security",
+    "line": "Review. Validate. Defend.",
+    "icon": "/brand/hub/icons/security.png",
+    "label": "Live",
+    "href": "/products/security"
+   },
+   {
+    "key": "studio",
+    "name": "Gully Studio",
+    "line": "Unity 3D games with Gully ID, Gully Pay and Gully Chain inside.",
+    "icon": "/brand/hub/icons/studio.png",
+    "label": "Live",
+    "href": "/products/studio"
+   },
+   {
+    "key": "ai",
+    "name": "Gully AI",
+    "line": "Open-weight LLM API, coming online.",
+    "icon": "/brand/hub/icons/ai.png",
+    "label": "Coming online",
+    "href": "/products/ai"
+   },
+   {
+    "key": "multisig",
+    "name": "Gully Multisig",
+    "line": "Team and treasury multisigs on Anubis Network.",
+    "icon": "/brand/web/logos/gc-icon.svg",
+    "label": "Live",
+    "href": "/products/safe"
+   },
+   {
+    "key": "core",
+    "name": "Gully Core",
+    "line": "Built-in launchpad on Gully Chain.",
+    "icon": "/brand/web/logos/gc-icon.svg",
+    "label": "Testnet",
+    "href": "/products/gully-core"
+   }
+  ],
+  "peddleTitle": "Peddle family",
+  "peddleSub": "Gully Labs projects, each on its own site. Value locked, volume and fees are read live.",
+  "peddle": [
+   {
+    "key": "peddleswap",
+    "name": "PeddleSwap",
+    "line": "Swap tokens, earn fees from liquidity, lock tokens or LP, and bridge.",
+    "icon": "/venues/peddleswap.png",
+    "kind": "DEX",
+    "href": "/projects/peddleswap"
+   },
+   {
+    "key": "peddles",
+    "name": "Peddles",
+    "line": "Launch memecoins paired to tokenised stocks; holders are paid in that stock.",
+    "icon": "/venues/peddles.svg",
+    "kind": "Launchpad",
+    "href": "/projects/peddles"
+   },
+   {
+    "key": "peddlequest",
+    "name": "PeddleQuest",
+    "line": "Verified on-chain quests with XP, badges and reward pools escrowed first.",
+    "icon": "/venues/peddlequest.png",
+    "kind": "Quests",
+    "href": "/projects/peddlequest"
+   }
+  ],
+  "newsTitle": "What's new",
+  "news": [
+   {
+    "d": "2026-10-28",
+    "t": "USDC.e is the dollar on Gully Chain: checkout and x402 on Gully Chain testnet settle in USDC.e",
+    "href": "https://gullypay.xyz"
+   },
+   {
+    "d": "2026-10-28",
+    "t": "Gully Offerwall on Gully Chain testnet: advertisers fund quests, players earn USDC or points, publishers embed the wall",
+    "href": "https://offers.kre8.fun/"
+   },
+   {
+    "d": "2026-10-28",
+    "t": "Gully Sentry: free testnet Sentry Keys and watchers",
+    "href": "https://sentry.gullychain.xyz/"
+   },
+   {
+    "d": "2026-10-27",
+    "t": "Gully ID moves to gullyid.xyz, with a developer console",
+    "href": "https://gullyid.xyz/developers"
+   }
+  ],
+  "buildTitle": "We build with you, on the same stack we run.",
+  "buildSub": "A short brief is enough. We answer with questions or a first scope, usually within one working day."
+ },
  "body": {
   "/about": {
    "h1": "A lab that ships its own products",
@@ -3043,7 +3188,7 @@
       ],
       [
        "/products/safe",
-       "Gully Multisig: Multisig wallets on Gully Chain, for treasuries and teams."
+       "Gully Multisig: Multisig wallets for teams and treasuries on Anubis Network, built on the unmodified Safe 1.4.1 contracts."
       ],
       [
        "/products/gully-sentry",

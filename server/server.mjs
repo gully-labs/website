@@ -29,7 +29,8 @@ import { handleAdmin } from './admin.mjs'
 import { handleGullyAdminRoute } from './admin-auth.mjs'
 import { handleEcosystem } from './ecosystem.mjs'
 import { handleDiscovery } from './discovery.mjs'
-import { pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
+import { headTags, pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
+import { landingAsset, renderLanding } from './landing.mjs'
 import { handleBlog } from './blog.mjs'
 import { handleOg } from './og.mjs'
 import { handleAnalytics } from './analytics.mjs'
@@ -346,6 +347,12 @@ async function handleRequest(req, res) {
   const legal = isSecurity ? null : legalCanonicalPath(url.pathname)
   if (legal && legal !== url.pathname && (req.method === 'GET' || req.method === 'HEAD')) return send(res, 301, '', { Location: legal + url.search, 'Cache-Control': 'public, max-age=86400' })
   if (handleDiscovery(req, res, url)) return
+  // The new landing, on an unlinked noindex path until the owner approves it, and its two scripts.
+  if (url.pathname === '/landing/live.js' || url.pathname === '/landing/graphs.mjs') return send(res, 200, landingAsset(url.pathname), { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' })
+  if (url.pathname === '/preview/landing') {
+    const meta = pageMeta(host, url.pathname)
+    if (meta.found) return send(res, 200, await renderLanding(headTags(meta)), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Robots-Tag': 'noindex' })
+  }
   if (url.pathname === '/robots.txt') return send(res, 200, robotsFor(host), { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
   if (url.pathname === '/sitemap.xml') {
     const map = sitemapFor(host)
