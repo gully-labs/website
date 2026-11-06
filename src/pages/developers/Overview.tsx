@@ -209,7 +209,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
         <Kpi
           i={0}
           label={`Requests · ${range}`}
-          color="#00d2ff"
+          color="#6f8ddf"
           value={usage ? usage.rangeTotals.total : null}
           none={account.keys.length ? `none in ${range}` : 'none yet'}
           spark={usage ? grouped.map((g) => g.total) : undefined}

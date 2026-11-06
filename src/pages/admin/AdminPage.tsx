@@ -875,7 +875,7 @@ export function AdminPage() {
   const o = data?.overview
   const statusRows = o?.tracker.statuses ? Object.entries(o.tracker.statuses).sort((a, b) => b[1] - a[1]) : []
   const statusTotal = statusRows.reduce((a, [, n]) => a + n, 0)
-  const statusColor: Record<string, string> = { 'in-line': '#a3a8c3', premium: '#20a0c4', discount: '#ff6b81', drifting: '#00d2ff', thin: '#6b7090', 'no-pool': '#34305a', 'pool-unreadable': '#ff8a7a', 'feed-unreadable': '#ff8a7a' }
+  const statusColor: Record<string, string> = { 'in-line': '#a3a8c3', premium: '#20a0c4', discount: '#ff6b81', drifting: '#6f8ddf', thin: '#6b7090', 'no-pool': '#34305a', 'pool-unreadable': '#ff8a7a', 'feed-unreadable': '#ff8a7a' }
 
   return (
     <div className="min-h-screen bg-bg text-ink">
@@ -913,8 +913,8 @@ export function AdminPage() {
             <Sec id="overview" at={sec}>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,170px),1fr))] gap-px overflow-hidden rounded-card border border-line bg-line">
               <Tile k="API REQUESTS TODAY" v={((o.api.days.at(-1)?.anonymous ?? 0) + (o.api.days.at(-1)?.keyed ?? 0)).toLocaleString('en-US')} note={`${o.api.days.at(-1)?.limited ?? 0} rate-limited`} />
-              <Tile k="ACCOUNTS" v={String(o.developers.accounts ?? 0)} note={`wallets · ${o.developers.liveKeys} live keys${o.developers.pending ? ` · ${o.developers.pending} legacy pending` : ''}`} tone={o.developers.pending ? '#00d2ff' : undefined} />
-              <Tile k="ENQUIRIES" v={String(o.enquiries.open)} note={`open of ${o.enquiries.total}`} tone={o.enquiries.open ? '#00d2ff' : undefined} />
+              <Tile k="ACCOUNTS" v={String(o.developers.accounts ?? 0)} note={`wallets · ${o.developers.liveKeys} live keys${o.developers.pending ? ` · ${o.developers.pending} legacy pending` : ''}`} tone={o.developers.pending ? '#6f8ddf' : undefined} />
+              <Tile k="ENQUIRIES" v={String(o.enquiries.open)} note={`open of ${o.enquiries.total}`} tone={o.enquiries.open ? '#6f8ddf' : undefined} />
               <Tile k="LAUNCH LIST" v={String(o.launchList)} note="notify-me sign-ups" />
               <Tile k="TRACKER CACHE" v={o.tracker.cacheAgeSeconds === null ? '—' : `${o.tracker.cacheAgeSeconds}s`} note={`last snapshot ${ago(o.tracker.lastSnapshot)}`} />
               <Tile k="HISTORY" v={o.tracker.history.points.toLocaleString('en-US')} note={`points across ${o.tracker.history.series} series`} />
@@ -941,7 +941,7 @@ export function AdminPage() {
                   days={o.api.days}
                   series={[
                     { key: 'anonymous', label: 'Anonymous', color: '#a3a8c3' },
-                    { key: 'keyed', label: 'With key', color: '#00d2ff' },
+                    { key: 'keyed', label: 'With key', color: '#6f8ddf' },
                     { key: 'limited', label: 'Rate-limited', color: '#ff6b81' },
                   ]}
                 />

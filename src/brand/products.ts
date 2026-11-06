@@ -48,7 +48,7 @@ export const PRODUCT_BRANDS: Record<ProductBrandKey, ProductBrand> = {
 }
 
 /** Marks the whole document as one product's (holdermaps.xyz): the page behind the layout takes its background. */
-export function applyDocumentBrand(key: ProductBrandKey | null) {
+export function applyDocumentBrand(key: ProductBrandKey | 'gullylabs' | null) {
   if (typeof document === 'undefined' || !key) return
   document.documentElement.dataset.productBrand = key
 }

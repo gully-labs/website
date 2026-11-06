@@ -113,7 +113,7 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
         page={{ href: sitePage('/tracker') }}
         tiles={[
           { label: 'STOCKS', value: data ? rows.length : null, unknown: pending, note: `${trusted.length} trusted pools` },
-          { label: 'OFF BY 2%+', value: data ? flagged : null, unknown: pending, tone: flagged ? '#00d2ff' : undefined, note: 'flagged now' },
+          { label: 'OFF BY 2%+', value: data ? flagged : null, unknown: pending, tone: flagged ? '#6f8ddf' : undefined, note: 'flagged now' },
           { label: 'TYPICAL GAP', value: median, format: NF.fixed2, suffix: '%', unknown: st.k === 'ok' ? 'not tracked yet' : pending, note: 'median, trusted pools' },
           { label: 'WIDEST', value: byAbs[0]?.gapPct ?? null, format: NF.signed2, suffix: '%', unknown: st.k === 'ok' ? 'none' : pending, tone: (byAbs[0]?.gapPct ?? 0) >= 0 ? UP : DOWN, note: byAbs[0] ? `${byAbs[0].ticker} · ${CHAIN_SHORT[byAbs[0].chain] ?? byAbs[0].chain}` : '—' },
           { label: 'LIQUIDITY', value: liquidity, format: NF.compactUsd, unknown: data ? 'not tracked yet' : pending, note: data && liqMissing && liqKnown.length ? `partial: ${liqMissing} pool${liqMissing === 1 ? '' : 's'} unreadable` : 'all pools', title: data && liqMissing ? `${liqMissing} of ${rows.length} pools have no readable liquidity; they are left out of this sum.` : undefined },

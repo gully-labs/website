@@ -26,7 +26,7 @@ export function alertState(a: GapAlert): { t: string; c: string } {
   if (!a.coveredByPlan) return { t: 'not in your plan', c: '#ff8a7a' }
   if (!a.enabled) return { t: 'paused', c: '#9398b5' }
   if (a.mutedUntil) return { t: `muted until ${new Date(a.mutedUntil).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`, c: '#9398b5' }
-  if (a.waitingToReArm.length) return { t: `fired ${ago(a.lastFiredAt)} · waits to re-arm`, c: '#00d2ff' }
+  if (a.waitingToReArm.length) return { t: `fired ${ago(a.lastFiredAt)} · waits to re-arm`, c: '#6f8ddf' }
   return { t: 'watching', c: '#3ddc97' }
 }
 

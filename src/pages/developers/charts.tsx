@@ -56,7 +56,7 @@ export function DoubleRing({ outer, inner, size = 132, children, label }: { oute
         ],
       }
     }
-    return { tooltip: { show: false }, series: [ring('outer', outer, C.gold, ['74%', '94%']), ring('inner', inner, '#248bff', ['50%', '66%'])] }
+    return { tooltip: { show: false }, series: [ring('outer', outer, C.gold, ['74%', '94%']), ring('inner', inner, '#6f8ddf', ['50%', '66%'])] }
   }, [outer, inner])
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
@@ -125,7 +125,7 @@ export function GhostSpark({ color, w = 80, h = 28 }: { color: string; w?: numbe
 }
 
 /** A ghosted chart area: two curves drawing in, a scan line, and the label in the middle. */
-export function GhostCurves({ height, title, children, colors = ['#00d2ff', '#248bff'] }: { height: number; title: string; children?: ReactNode; colors?: [string, string] }) {
+export function GhostCurves({ height, title, children, colors = ['#6f8ddf', '#6f8ddf'] }: { height: number; title: string; children?: ReactNode; colors?: [string, string] }) {
   const [c0, c1] = colors
   const option = useMemo(() => ({ ...ghostAxes(Math.round(height * 0.3)), series: [ghostLine('a', GHOST_A, c0, { fill: 0.16 }), ghostLine('b', GHOST_B, c1)] }), [height, c0, c1])
   return (

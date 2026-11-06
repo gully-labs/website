@@ -250,7 +250,7 @@ function PlanPill({ account }: { account: Account }) {
   const soon = left !== null && left <= 7
   return (
     <span className="flex min-h-[30px] shrink-0 items-center gap-2 rounded-full border border-line px-[10px] text-[13px] whitespace-nowrap max-[419px]:px-[9px]" title={account.plan.expiresAt ? `Runs until ${new Date(account.plan.expiresAt).toLocaleString()}` : undefined} data-testid="plan-pill">
-      <span className="size-2 rounded-full" style={{ background: !paid ? '#9398b5' : soon ? '#ff8a7a' : '#00d2ff' }} aria-hidden />
+      <span className="size-2 rounded-full" style={{ background: !paid ? '#9398b5' : soon ? '#ff8a7a' : '#6f8ddf' }} aria-hidden />
       <span className="max-[419px]:sr-only">{account.plan.name} plan</span>
       {left !== null && <span className={`${soon ? 'text-error' : 'text-muted'} max-[520px]:hidden`}>· {left === 0 ? 'ends today' : `${left} day${left === 1 ? '' : 's'} left`}</span>}
     </span>
