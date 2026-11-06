@@ -349,9 +349,10 @@ async function handleRequest(req, res) {
   if (handleDiscovery(req, res, url)) return
   // The new landing, on an unlinked noindex path until the owner approves it, and its two scripts.
   if (url.pathname === '/landing/live.js' || url.pathname === '/landing/graphs.mjs' || url.pathname === '/landing/fx.js') return send(res, 200, landingAsset(url.pathname), { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' })
-  if (url.pathname === '/preview/landing') {
+  // LANDING_HOME=1: the owner approved it; the same page is the home page of gullylabs.xyz, with the home page's head tags.
+  if (url.pathname === '/preview/landing' || (url.pathname === '/' && /^(1|true|on|yes)$/i.test(String(process.env.LANDING_HOME ?? '')) && host === 'gullylabs.xyz' && (req.method === 'GET' || req.method === 'HEAD'))) {
     const meta = pageMeta(host, url.pathname)
-    if (meta.found) return send(res, 200, await renderLanding(headTags(meta)), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Robots-Tag': 'noindex' })
+    if (meta.found) return send(res, 200, await renderLanding(headTags(meta)), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', ...(meta.noindex ? { 'X-Robots-Tag': 'noindex' } : {}) })
   }
   if (url.pathname === '/robots.txt') return send(res, 200, robotsFor(host), { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
   if (url.pathname === '/sitemap.xml') {

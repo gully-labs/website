@@ -66,3 +66,11 @@ test('the Follow on X bar: a plain link in a new tab, a 44 px dismiss, a blockin
   assert.ok(html.indexOf('/landing/fx.js') < html.indexOf('<style>'), 'read before the first paint')
   assert.match(L.landingAsset('/landing/fx.js'), /gl-follow-x-dismissed/)
 })
+
+test('as the home page it carries the head of the home page: title, canonical, JSON-LD, no noindex', () => {
+  const m = pageMeta('gullylabs.xyz', '/')
+  const h = headTags(m)
+  assert.ok(h.includes('<link rel="canonical" href="https://gullylabs.xyz/">'))
+  assert.ok(!/noindex/.test(h))
+  assert.ok(/"@type":"Organization"/.test(h) && /"@type":"WebSite"/.test(h))
+})
