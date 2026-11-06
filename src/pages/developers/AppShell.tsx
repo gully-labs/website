@@ -427,7 +427,7 @@ function HeaderLinks({ health, onStatus }: { health: Health; onStatus: () => voi
 function Brand({ compact, onHome }: { compact: boolean; onHome: () => void }) {
   return (
     <button type="button" onClick={onHome} className={`flex min-h-11 min-w-0 items-center gap-[10px] text-ink ${compact ? 'justify-center' : ''}`} aria-label="Gully Labs App: overview" data-testid="app-brand">
-      <Mascot size={24} decorative />
+      {compact && <Mascot size={24} decorative />}
       {!compact && (
         <span className="flex min-w-0 items-center gap-2">
           <Wordmark height={18} />

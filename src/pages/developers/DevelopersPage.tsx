@@ -1,6 +1,6 @@
 import { AlertTriangle, BookOpen, ChartNoAxesCombined, Loader2, Wallet } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
-import { Mascot, Wordmark } from '../../components/brand'
+import { Wordmark } from '../../components/brand'
 import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
 import { api, ROLE_REFUSED, SESSION_ENDED, type Account, type Me, type Offer, type WorkspaceRef } from './api'
 import { ExtLink } from './ExtLink'
@@ -64,7 +64,6 @@ function SignedOut({ connect, busy, error, gully, gullyBusy, gullyOn = true }: {
       <div aria-hidden className="pointer-events-none absolute top-[-220px] left-[10%] size-[520px] rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.10),transparent_62%)]" />
       <div className="relative flex w-full animate-[gl-rise_.5s_cubic-bezier(.2,.8,.2,1)_both] flex-col gap-4 rounded-card border border-line bg-surface p-5 shadow-[0_24px_64px_rgba(0,0,0,.35)] max-[480px]:p-4 min-[1000px]:sticky min-[1000px]:top-4">
         <div className="flex items-center gap-[10px]">
-          <Mascot size={22} decorative />
           <Wordmark height={18} />
           <span className="font-semibold text-muted">App</span>
         </div>
