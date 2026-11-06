@@ -92,8 +92,14 @@ export function ConsoleHeader() {
     <>
     <header className="nav">
       <div className="wrap">
+<<<<<<< HEAD
         <Link className="brand" to="/" aria-label="Gully Labs home">
           <img src="/brand/kit/logotype-reversed.svg" width={176} height={32} alt="Gully Labs" />
+=======
+        <Link className="brand" to="/" aria-label="Gully Labs home" data-brand="kit">
+          <img src="/brand/icon/gully-labs-icon.png" width={30} height={33} alt="" />
+          <img src="/brand/logo/gully-labs-wordmark-horizontal.png" width={170} height={17} alt="Gully Labs" />
+>>>>>>> feat/seo-every-page
         </Link>
         <nav aria-label="Main">
           <ul>
