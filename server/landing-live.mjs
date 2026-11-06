@@ -93,6 +93,15 @@ for (const [name, [url, every]] of Object.entries(SOURCES)) {
   setInterval(() => poll(name, url), every)
 }
 
+document.querySelector('#fx button')?.addEventListener('click', () => {
+  document.getElementById('fx').remove()
+  try {
+    localStorage.setItem('gl-follow-x-dismissed', '1')
+  } catch {
+    /* private mode */
+  }
+})
+
 /* ---- motion stops off-screen ---- */
 const io = 'IntersectionObserver' in window ? new IntersectionObserver((es) => es.forEach((e) => e.target.classList.toggle('in', e.isIntersecting)), { rootMargin: '80px' }) : null
 document.querySelectorAll('[data-anim]').forEach((el) => (io ? io.observe(el) : el.classList.add('in')))

@@ -30,7 +30,7 @@ body{margin:0;background:var(--ground);color:var(--navy);font:500 16px/1.5 Figtr
 a{color:inherit;text-decoration:none}ul{list-style:none;margin:0;padding:0}h1,h2,h3,p{margin:0}
 .ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .w{max-width:1200px;margin:0 auto;padding:0 20px}
-.top{position:sticky;top:0;z-index:20;background:rgba(241,243,248,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
+.fx-off .fx{display:none}.fx{position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:var(--navy);color:#fff;font-size:14px}.fx a{display:flex;align-items:center;height:44px;padding:0 48px}.fx button{position:absolute;top:0;right:0;width:44px;height:44px;border:0;background:none;color:inherit;font:inherit;font-size:18px;cursor:pointer}.top{position:sticky;top:0;z-index:20;background:rgba(241,243,248,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
 .top .w{display:flex;align-items:center;gap:20px;height:64px}.top img{display:block;height:32px;width:auto}
 .top nav{margin-left:auto}.top ul{display:flex;gap:4px}.top li a{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 10px;border-radius:8px;font-size:15px}
 .top li a:hover,.top li a:focus-visible{background:#fff}
@@ -98,8 +98,8 @@ export async function renderLanding(head, given = null) {
   const N = CONTENT.nav
   const [h1a, h1b, h1c] = L.headline
   const boot = JSON.stringify(slim(data)).replace(/</g, '\\u003c')
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${head}<link rel="preload" href="/fonts/figtree-latin-700.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/brand/kit/owl/owl-presenting-400.webp" as="image"><link rel="modulepreload" href="/landing/graphs.mjs"><style>${CSS}</style></head><body>
-<header class="top"><div class="w"><a href="/" aria-label="Gully Labs home"><img class="logo-l" src="/brand/kit/logotype-color.svg" alt="Gully Labs" width="165" height="32"><img class="logo-d" src="/brand/kit/logotype-reversed.svg" alt="" width="165" height="32"></a><nav aria-label="Main"><ul>${N.headerHome.map(navLink).join('')}</ul></nav><a class="btn" href="https://app.gullylabs.xyz" target="_blank" rel="noopener noreferrer">${icon('zap')}Launch app</a></div></header>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${head}<link rel="preload" href="/fonts/figtree-latin-700.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/brand/kit/owl/owl-presenting-400.webp" as="image"><link rel="modulepreload" href="/landing/graphs.mjs"><script src="/landing/fx.js"></script><style>${CSS}</style></head><body>
+<div class="fx" id="fx"><a href="https://x.com/Gully_Labs" target="_blank" rel="noopener noreferrer">Follow @Gully_Labs on X</a><button type="button" aria-label="Dismiss">×</button></div><header class="top"><div class="w"><a href="/" aria-label="Gully Labs home"><img class="logo-l" src="/brand/kit/logotype-color.svg" alt="Gully Labs" width="165" height="32"><img class="logo-d" src="/brand/kit/logotype-reversed.svg" alt="" width="165" height="32"></a><nav aria-label="Main"><ul>${N.headerHome.map(navLink).join('')}</ul></nav><a class="btn" href="https://app.gullylabs.xyz" target="_blank" rel="noopener noreferrer">${icon('zap')}Launch app</a></div></header>
 <main>
 <section class="hero"><div class="w"><div><h1>${esc(h1a)} <em>${esc(h1b)}</em> ${esc(h1c)}</h1><p class="lede">${esc(L.lede)}</p><div class="cta"><a class="btn" href="#products">${icon('layout-grid')}See the products</a><a class="btn alt" href="/services#contact">${icon('mail')}Start a project</a></div></div>
 <div class="live" id="live" data-anim><h2><i class="pip"></i>Live now</h2><div class="kpis"><div><b data-b="up">${esc(b.up)}</b><small>surfaces up</small></div><div><b data-b="ms">${esc(b.ms)}</b><small>mean response</small></div><div><b data-b="tvl">${esc(b.tvl)}</b><small>value locked</small></div><div><b data-b="block">${esc(b.block)}</b><small>Gully Chain block</small></div></div><div class="cells" data-b="cells" role="img" aria-label="One cell per public surface">${b.cells}</div><small class="capt">Every public surface, checked each minute</small><img class="owl" src="/brand/kit/owl/owl-presenting-400.webp" alt="" width="217" height="400" fetchpriority="low"><div class="pulse" data-b="pulse">${b.pulse}</div></div></div></section>
@@ -115,6 +115,9 @@ export async function renderLanding(head, given = null) {
 
 /** The two script files, from server/ so the server and the browser run the same graph code. */
 export function landingAsset(pathname) {
+  // A blocking one-liner before the first paint, so a dismissed bar never shows or shifts the page (the CSP refuses inline scripts).
+  if (pathname === '/landing/fx.js') return "try{if(localStorage.getItem('gl-follow-x-dismissed')==='1')document.documentElement.classList.add('fx-off')}catch(e){}
+"
   const f = pathname === '/landing/graphs.mjs' ? 'landing-graphs.mjs' : pathname === '/landing/live.js' ? 'landing-live.mjs' : null
   return f ? fs.readFileSync(new URL(`./${f}`, import.meta.url), 'utf8') : null
 }

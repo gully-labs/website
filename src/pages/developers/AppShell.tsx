@@ -5,6 +5,7 @@ import { copyWithToast } from '../../components/ui/toast'
 import { DOCS_URL, SITE_URL } from '../../site-host'
 import { daysLeft, shortAddress, type Account, type Role } from './api'
 import { AskLauncher } from '../../components/ask/AskLauncher'
+import { FollowBar } from '../../components/FollowBar'
 import { PwaCards } from '../../components/pwa/PwaCards'
 import { healthOfStatus, useAppStatus, type Health } from './services/health'
 import { StatusDialog } from './services/StatusDialog'
@@ -594,6 +595,8 @@ export function AppShell<T extends string>({
   const ws = me?.active.name ?? 'Your workspace'
 
   return (
+    <>
+    <FollowBar />
     <div className="flex min-h-dvh" data-testid="app-shell" data-sidebar={narrow ? 'sheet' : compact ? 'icons' : 'open'}>
       {!narrow && (
         <aside aria-label="App" className={`sticky top-0 z-40 flex h-dvh shrink-0 flex-col gap-[6px] border-r border-line bg-bg-alt py-[6px] transition-[width] duration-200 print:hidden ${compact ? 'w-16 px-2' : 'w-[212px] px-[10px]'}`} data-testid="app-sidebar">
@@ -688,5 +691,6 @@ export function AppShell<T extends string>({
         </div>
       </Sheet>
     </div>
+    </>
   )
 }

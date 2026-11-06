@@ -348,7 +348,7 @@ async function handleRequest(req, res) {
   if (legal && legal !== url.pathname && (req.method === 'GET' || req.method === 'HEAD')) return send(res, 301, '', { Location: legal + url.search, 'Cache-Control': 'public, max-age=86400' })
   if (handleDiscovery(req, res, url)) return
   // The new landing, on an unlinked noindex path until the owner approves it, and its two scripts.
-  if (url.pathname === '/landing/live.js' || url.pathname === '/landing/graphs.mjs') return send(res, 200, landingAsset(url.pathname), { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' })
+  if (url.pathname === '/landing/live.js' || url.pathname === '/landing/graphs.mjs' || url.pathname === '/landing/fx.js') return send(res, 200, landingAsset(url.pathname), { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' })
   if (url.pathname === '/preview/landing') {
     const meta = pageMeta(host, url.pathname)
     if (meta.found) return send(res, 200, await renderLanding(headTags(meta)), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Robots-Tag': 'noindex' })
