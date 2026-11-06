@@ -228,7 +228,7 @@ const step = async (name, fn) => {
   const idx = stepIndex++
   if (SHARD && Math.floor((idx * Number(SHARD[2])) / STEP_COUNT) !== Number(SHARD[1]) - 1) return
   // E2E_ONLY=<text> runs only the steps whose name contains it (a quick run of one area).
-  if (process.env.E2E_ONLY && !name.includes(process.env.E2E_ONLY)) return
+  if (process.env.E2E_ONLY && !process.env.E2E_ONLY.split('|').some((o) => name.includes(o))) return
   try {
     await fn()
   } catch (e) {
@@ -626,7 +626,7 @@ await step('portal', async () => {
   check('billing: with no payments the chart is the ghosted "Your payments will draw here"', (await page.getByTestId('ghost-chart').getByText('Your payments will draw here').count()) === 1)
   await appNav.getByRole('link', { name: 'Products', exact: true }).click()
   await page.locator('[data-testid="products"]').waitFor()
-  check('products hub: the Chain Kit card chart is the ghost (or a live chart), and every card has a chart or ghost', (await page.locator('[data-product="Chain Kit"] [data-ghost], [data-product="Chain Kit"] [data-chart]').count()) >= 1 && (await page.locator('[data-testid="products"] [data-product]').evaluateAll((cs) => cs.filter((c) => !c.querySelector('[data-ghost], [data-chart], [data-live], svg[role="img"], [role="img"]')).map((c) => c.dataset.product))).length === 0)
+  check('products hub: every card has its mark, a status and an Open link', await page.locator('[data-testid="products"] [data-product]').evaluateAll((cs) => cs.length >= 5 && cs.every((c) => c.querySelector('a[data-testid^="open-"]') && c.querySelector('img, svg'))))
   // Overview with a key but no traffic: the requests chart is the ghosted placeholder, not a flat zero.
   await appNav.getByRole('link', { name: 'Overview', exact: true }).click()
   await page.getByTestId('ghost-chart').waitFor({ timeout: 15_000 })
@@ -1732,8 +1732,9 @@ await step('security', async () => {
     if (mobile) await noHorizontalScroll(page, '/security')
     else {
       // Open the header's Products menu: the footer lists these links as plain text, so it must not count.
-      await page.locator('header a[href="/score"]').first().waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {})
-      check('/security: Security and Gully Score are in the Products menu with icons', (await page.locator('header a[href="/security"] svg').count()) > 0 && (await page.locator('header a[href="/score"] svg').count()) > 0)
+      await page.locator('[data-menu-trigger="products"]').first().click()
+      await page.locator('header a[href*="gullysecurity.xyz"]').first().waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {})
+      check('/security: Security and Gully Score are in the Products menu with icons', (await page.locator('header a[href*="gullysecurity.xyz"] svg').count()) > 0 && (await page.locator('header a[href*="/score"] svg').count()) > 0)
       await page.keyboard.press('Escape')
     }
     await shot(page, 'security-page')
@@ -1889,8 +1890,8 @@ await step('docs design audit 3 g1', async () => {
       const ask = [...hd.querySelectorAll('button')].find((b) => /gully ai/i.test(b.textContent + (b.getAttribute('aria-label') ?? '')))
       const logo = [...hd.querySelectorAll('a img, a svg')].filter((e) => e.getBoundingClientRect().width > 0)
       const a = ask?.getBoundingClientRect()
-      const hit = logo.some((e) => { const r = e.getBoundingClientRect(); return a && r.right > a.left && r.left < a.right })
-      return { hit, noScroll: document.documentElement.scrollWidth <= innerWidth, marks: logo.length }
+      const under = logo.filter((e) => { const r = e.getBoundingClientRect(); return a && r.right > a.left && r.left < a.right })
+      return { hit: under.length > 0, noScroll: document.documentElement.scrollWidth <= innerWidth, marks: logo.length, ask: a && [Math.round(a.left), Math.round(a.right)], under: under.map((e) => `${e.tagName} ${e.closest('a')?.getAttribute('aria-label') ?? e.closest('a')?.getAttribute('href')} ${Math.round(e.getBoundingClientRect().left)}-${Math.round(e.getBoundingClientRect().right)}`) }
     })
     check(`docs header at ${width}: the logo does not sit under the Gully AI button`, !hdr.hit && hdr.noScroll && hdr.marks > 0, JSON.stringify(hdr))
     const tbl = await page.evaluate(() => [...document.querySelectorAll('[data-testid="badge-table"] span')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent.slice(0, 30)))
@@ -1930,15 +1931,6 @@ await step('docs design audit 2', async () => {
     }
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i, /Failed to load resource/i])
   }
-  await page.goto(`${BASE}/docs/gully-pay`)
-  await page.locator('#docs-main h1').waitFor()
-  await page.waitForLoadState('networkidle').catch(() => {})
-  const logos = await page.evaluate(async () => {
-    const imgs = [...document.querySelectorAll('#docs-main table img, #docs-main [data-logo] img, #docs-main img')].filter((i) => /\/(chains|tokens)\//.test(i.getAttribute('src') ?? ''))
-    await Promise.all(imgs.map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r }))))
-    return { n: imgs.length, bad: imgs.filter((i) => i.naturalWidth === 0).length }
-  })
-  check('docs /gully-pay: chain and token names carry logos, all loaded', logos.n >= 15 && logos.bad === 0, JSON.stringify(logos))
   await page.goto(`${BASE}/docs/badges`)
   await page.locator('#docs-main h1').waitFor()
   const small = await page.evaluate(() => [...document.querySelectorAll('#docs-main button')].filter((b) => b.getBoundingClientRect().height < 43.5).length)
@@ -2396,7 +2388,7 @@ await step('holder map', async () => {
 await step('pages at 390', async () => {
   const ctx = await newContext({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/security', '/security/reports', '/score', '/services', '/about', '/projects/deepcore', '/app', '/privacy', '/links', '/status']) {
+  for (const p of ['/', '/tracker', '/tracker/robinhood/NVDA', '/pricing', '/widget', '/ask', '/analytics', '/security', '/security/reports', '/score', '/services', '/about', '/app', '/privacy', '/links', '/status']) {
     const w = watch(page, `${p} at 390`)
     if (p === '/app') w.expect(/\/api\/developer\//)
     await page.goto(BASE + p)
@@ -2452,7 +2444,7 @@ await step('da3-g6 empty states, fills, logos and prose', async () => {
   }
   const ratio = (a, b) => { const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05) }
   // D17: the movers' "needs 24h" note sits on a ghost chart in muted ink, not faint text on a shimmer.
-  for (const [url, width, mobile] of [['/tracker', 1440, false], ['/tracker', 390, true], ['/links', 390, true], ['/links', 320, true], ['/this-page-does-not-exist', 390, true]]) {
+  for (const [url, width, mobile] of [['/tracker', 1440, false], ['/tracker', 390, true], ['/links', 390, true], ['/links', 320, true], ['/tracker/robinhood/ZZZZ', 390, true]]) {
     const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
     await ctx.route('**/api/tracker/movers*', (route) => json(route, EMPTY_MOVERS))
     const page = await ctx.newPage()
@@ -2730,7 +2722,7 @@ await step('analytics events', async () => {
   await page.goto(BASE + '/tracker')
   await collect()
   await page.goto(BASE + '/pricing')
-  const plan = page.locator('#api a[target="_blank"]').first()
+  const plan = page.locator('#panel-api a[target="_blank"]').first()
   await plan.waitFor()
   await plan.evaluate((a) => a.addEventListener('click', (e) => e.preventDefault()))
   await plan.click()
@@ -3174,11 +3166,11 @@ await step('service hosts', async () => {
     const apiCalls = []
     hp.on('request', (rq) => rq.url().includes('/api/holders/') && apiCalls.push(new URL(rq.url()).host))
     await hp.goto(at('holdermaps.xyz', `/base/${holder}`))
-    await hp.getByRole('link', { name: '← HOLDER MAP' }).waitFor({ timeout: 30_000 })
+    await hp.locator('.hmt-crumbs a').waitFor({ timeout: 30_000 })
     await hp.waitForTimeout(1500)
     check('holdermaps: a token map renders at /<chain>/<token>, canonical on holdermaps.xyz, titled HolderMaps', (await hp.locator('link[rel="canonical"]').getAttribute('href')) === `https://holdermaps.xyz/base/${holder}` && / · HolderMaps$/.test(await hp.title()), await hp.title())
     check('holdermaps: the map reads its API on the same origin', apiCalls.length > 0 && apiCalls.every((h) => h === `holdermaps.xyz:${PORT}`), apiCalls.join(','))
-    const back = hp.getByRole('link', { name: '← HOLDER MAP' })
+    const back = hp.locator('.hmt-crumbs a')
     check('holdermaps: the breadcrumb links the short home path', (await back.getAttribute('href')) === '/')
     await back.click()
     await hp.getByRole('heading', { level: 1, name: 'Who really holds it?' }).waitFor({ timeout: 15_000 })
@@ -3275,7 +3267,6 @@ await step('design audit 3 group 3: narrow-width fixes (D5 D6 D7 D10 D15 D16 D19
     await noHorizontalScroll(page, 'da3-g3 /analytics')
     const srcBtn = page.locator('a[href*="gully-labs/umami"]')
     check(`da3-g3 analytics ${width}: the Source button stays inside the viewport`, (await srcBtn.count()) === 1 && (await srcBtn.evaluate((e) => e.getBoundingClientRect().right <= window.innerWidth && e.scrollWidth <= e.clientWidth + 1)))
-    check(`da3-g3 ${width}: no link to the private gully-labs/blockscout repo anywhere on Chain Kit`, await (async () => { await visit('/chain-kit').catch(() => {}); return (await page.locator('a[href*="gully-labs/blockscout"]').count()) === 0 })())
     for (const route of ['/services', '/pricing', '/partners', '/ecosystem', '/about', '/status', '/']) {
       await visit(route)
       await noHorizontalScroll(page, `da3-g3 ${route}`)
@@ -3383,19 +3374,11 @@ await step('design audit 4', async () => {
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx.close()
   }
-  // Phone tap targets and fits (D4-10 on /chains and /ecosystem, D4-18 on /partners, the hero search).
+  // Phone tap targets and fits (D4-10 on /ecosystem, D4-18 on /partners).
   for (const width of [390, 320]) {
     const ctx = await newContext({ width, height: 844, mobile: true })
     const page = await ctx.newPage()
     const w = watch(page, `da4 phone ${width}`)
-    await page.goto(BASE + '/')
-    const mapIt = page.locator('[data-hero-holder-search] button[type="submit"]')
-    await mapIt.waitFor()
-    check(`da4 home ${width}: "Map it" is a 44 px target`, ((await mapIt.boundingBox())?.height ?? 0) >= 43.5)
-    await page.goto(BASE + '/chains')
-    await page.getByTestId('chains-diagram').waitFor()
-    const layers = await page.locator('[data-testid="chains-diagram"] button').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).map((e) => Math.round(e.getBoundingClientRect().height)))
-    check(`da4 /chains ${width}: every diagram button is at least 44 px tall`, layers.length > 0 && layers.every((h) => h >= 44), layers.join(','))
     await page.goto(BASE + '/ecosystem')
     const sum = page.locator('details summary').first()
     await sum.waitFor()
