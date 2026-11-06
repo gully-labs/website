@@ -57,11 +57,11 @@ section.s{padding:24px 0}.s h2.t{font-size:26px;line-height:1.2;font-weight:700;
 .p p{margin-top:6px;font-size:14px;line-height:1.4;color:var(--grey);min-height:2.8em}
 .capt{display:block;margin-top:6px;font-size:12px;color:var(--soft)}.g{position:relative;margin-top:10px;height:96px;--bar:var(--blue);--ln:var(--blue);--ar:rgba(55,84,160,.1)}
 .k{display:flex;align-items:baseline;gap:6px;min-height:28px;margin-top:auto;padding-top:6px;white-space:nowrap;overflow:hidden}.k b:empty{display:none}.k b{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}.k span{font-size:12px;color:var(--grey)}
-.how{margin-top:2px;font-size:11px;line-height:14px;color:var(--grey)}.g-t{font-size:10px;font-weight:600;fill:var(--grey)}.g-t.inv{fill:#fff}
+.how{margin-top:2px;font-size:11px;line-height:14px;color:var(--grey)}.g-t{font-size:10px;font-weight:600;fill:var(--grey)}.g-t.inv{fill:var(--ground)}
 .g-bar{fill:var(--bar);transform-box:fill-box;transform-origin:bottom}.in .g-bar{animation:grow .5s ease both;animation-delay:calc(var(--i)*12ms)}
 .g-line{fill:none;stroke:var(--ln);stroke-width:2}.in .g-line{stroke-dasharray:1;animation:draw .9s ease both}.g-area{fill:var(--ar)}.g-now{fill:var(--ln);animation:pip 2s ease-in-out infinite}
 .g-axis{stroke:var(--rule)}.g-dot{fill:var(--rule)}.g-dot.on{fill:var(--bar)}.in .g-dot.on{animation:pip 3s ease-in-out infinite;animation-delay:calc(var(--i)*160ms)}
-.g svg{display:block}.g-node{fill:var(--soft)}.g-node.on{fill:var(--blue)}.g-box{fill:var(--soft)}.g-box.on{fill:var(--sky)}.g-link{fill:none;stroke:var(--sky);stroke-width:2;stroke-dasharray:5 5}.in .g-link{animation:dash 1.4s linear infinite}.g-arrow{fill:none;stroke:var(--blue);stroke-width:2}
+.g svg{display:block}.g-node{fill:var(--soft)}.g-node.on{fill:var(--blue)}.g-box{fill:var(--soft)}.g-box.on{fill:var(--blue)}.g-link{fill:none;stroke:var(--sky);stroke-width:2;stroke-dasharray:5 5}.in .g-link{animation:dash 1.4s linear infinite}.g-arrow{fill:none;stroke:var(--blue);stroke-width:2}
 .news li{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--rule);font-size:15px}.news time{flex:none;color:var(--grey);font-variant-numeric:tabular-nums}
 .band{display:flex;flex-wrap:wrap;align-items:center;gap:14px;justify-content:space-between;padding:18px;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 1px var(--rule)}
 footer{margin-top:28px;padding:28px 0;background:var(--navy);color:#fff}footer a:hover{color:var(--sky)}
