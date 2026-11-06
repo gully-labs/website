@@ -20,7 +20,7 @@ function draw() {
     if (!el) continue
     el.dataset.state = v.state
     el.querySelector('[data-v]').textContent = v.value
-    el.querySelector('[data-u]').textContent = v.unit
+    el.querySelector('[data-u]').textContent = v.unit || el.querySelector('[data-fb]').dataset.fb
     set(el.querySelector('[data-g]'), v.graph)
   }
   const b = board(data)

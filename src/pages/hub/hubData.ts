@@ -68,7 +68,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
   {
     key: 'chain', name: 'Gully Chain', domain: 'gullychain.xyz', url: 'https://gullychain.xyz', page: 'chain', layer: 'chain', status: 'testnet', color: '#00B2FA',
     icon: '/brand/web/logos/gc-icon.svg',
-    line: 'The social L3 where your profile is your wallet.',
+    line: 'The Arbitrum Orbit L3 for creators and culture.',
     about: 'An Arbitrum Orbit L3 (testnet, chain 485590): one passkey, one .gully name, sponsored gas. Launch, swap, copy trades, run quests and bridge in a minute.',
     live: ['kre8.fun app and social feed', 'Gully Social: posts, follows and profiles', 'Copy trading with your own limits', 'Quests with on-chain rewards', 'Gully launchpad and Gully Swap', 'Bridge, faucet (any wallet), explorer', 'Gully Multisig and token lists', 'Contract verification (verify.gullychain.xyz)', 'Gully Sentry: free testnet Sentry Keys and watchers', 'Gully Offerwall: funded quests any site can embed (offers.kre8.fun)'],
     next: ['Mainnet'],
@@ -105,7 +105,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
   {
     key: 'studio', name: 'Gully Studio', domain: 'gullystudio.xyz', url: 'https://gullystudio.xyz', page: 'studio', layer: 'play', status: 'live', color: '#1E8BFF',
     icon: I + 'studio.png',
-    line: 'Unity 3D games with Gully ID, Gully Pay and Gully Chain inside.',
+    line: '3D games to play with friends on web and phone.',
     about: 'The Gully Labs game studio: Unity 6 games with Gully ID sign-in, Gully Pay purchases, and scores, quests and prizes on Gully Chain.',
     live: ['Frog Hop (testnet)', 'Open-source Gully Game SDK', 'Developer portal and docs', 'Offerwall contracts on testnet'],
     next: ['More games'],

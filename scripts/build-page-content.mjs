@@ -235,20 +235,22 @@ export async function build() {
 
   // The landing (server/landing.mjs): the same words and marks the current landing uses.
   const statusWord = (p) => H.STATUS_LABEL[p.status]
-  const productCard = (p) => ({ key: p.key, name: p.name, line: p.line, icon: p.icon, label: statusWord(p), href: `/products/${p.page}` })
-  const chainProduct = (slug, key, label) => {
+  // `fact`: the card's fixed line when no live figure is worth showing.
+  const FACT = { id: 'Passkeys, wallets, email', pay: 'Checkout and x402', chain: 'Arbitrum Orbit L3', rpc: 'One key, every network', holdermaps: 'Six chains', security: 'Scan, score, monitor', studio: 'Web and phone', ai: 'API coming online' }
+  const productCard = (p) => ({ key: p.key, name: p.name, line: p.line, icon: p.icon, label: statusWord(p), fact: FACT[p.key], href: `/products/${p.page}` })
+  const chainProduct = (slug, key, label, fact) => {
     const p = C.productBySlug(slug)
-    return { key, name: p.name, line: p.short, icon: '/brand/web/logos/gc-icon.svg', label, href: `/products/${slug}` }
+    return { key, name: p.name, line: p.short, icon: '/brand/web/logos/gc-icon.svg', label, fact, href: `/products/${slug}` }
   }
   const landing = {
     headline: H.LANDING_HEADLINE,
     lede: H.LANDING_LEDE,
     productsTitle: 'Where to go',
     productsSub: dir.p[0],
-    products: [...H.HUB_PRODUCTS.map(productCard), chainProduct('safe', 'multisig', 'Live'), chainProduct('gully-core', 'core', 'Testnet')],
+    products: [...H.HUB_PRODUCTS.map(productCard), chainProduct('safe', 'multisig', 'Live', 'Anubis Network mainnet'), chainProduct('gully-core', 'core', 'Testnet', '0.30% for builders')],
     peddleTitle: 'Peddle family',
-    peddleSub: peddle[1],
-    peddle: H.PEDDLE_FAMILY.map((p) => ({ key: p.key, name: p.name, line: p.line, icon: p.logo, kind: p.kind, href: `/projects/${p.page}` })),
+    peddleSub: 'Gully Labs projects for trading and DeFi, each on its own site.',
+    peddle: H.PEDDLE_FAMILY.map((p) => ({ key: p.key, name: p.name, line: p.line, icon: p.logo, kind: p.kind, fact: P.projects.find((x) => x.slug === p.page).chains.join(', '), href: `/projects/${p.page}` })),
     newsTitle: "What's new",
     news: H.NEWS.slice(0, 4).map((n) => ({ d: n.d, t: n.t, href: n.href })),
     buildTitle: build.h,

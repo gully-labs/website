@@ -3,10 +3,10 @@
 // /landing/graphs.mjs) to redraw them on every poll, so the page never changes shape when it goes live.
 // Every number comes from /api/hub, /api/hub/products, /api/hub/live or /api/stats. A source that cannot be read gives
 // an empty frame and "–", never a zero. A graphic with no data source is a diagram of how the feature works, and says so
-// in its caption (`how`): it carries no figures.
+// in its caption (`how`): it carries no figures, and the real number sits beside it.
 
 const W = 240
-const H = 64
+const H = 96
 const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 export const fmtInt = (v) => (num(v) == null ? '–' : Math.round(v).toLocaleString('en-US'))
 export const fmtUsd = (v) => {
@@ -54,11 +54,51 @@ export function dots(items, label) {
   return svg(items.slice(0, 24).map((it, i) => `<circle class="g-dot ${it.ok ? 'on' : ''}" style="--i:${i}" cx="${(step * (i % per) + step / 2).toFixed(1)}" cy="${items.length > per ? (i < per ? 18 : 46) : 32}" r="7"/>`).join(''), label)
 }
 
-/** Diagrams: how a feature works. No figures in them. */
+const node = (x, y, r, on, t) => `<circle class="g-node${on ? ' on' : ''}" cx="${x}" cy="${y}" r="${r}"/>${t ? `<text class="g-t" x="${x}" y="${y + r + 11}" text-anchor="middle">${t}</text>` : ''}`
+const box = (x, y, w, h, on, t) => `<rect class="g-box${on ? ' on' : ''}" x="${x}" y="${y}" width="${w}" height="${h}" rx="6"/>${t ? `<text class="g-t${on ? ' inv' : ''}" x="${x + w / 2}" y="${y + h / 2 + 3.5}" text-anchor="middle">${t}</text>` : ''}`
+const wire = (d) => `<path class="g-link" d="${d}"/>`
+const head = (x, y) => `<path class="g-arrow" d="M${x - 7} ${y - 6}l8 6-8 6"/>`
+
+/** Diagrams: how a feature works. They carry no figures. */
 export const diagrams = {
-  multisig: () => svg(`<g class="g-flow"><circle class="g-node on" cx="28" cy="16" r="9"/><circle class="g-node on" cx="28" cy="48" r="9"/><circle class="g-node" cx="76" cy="32" r="9"/><path class="g-link" d="M37 16L120 30M37 48L120 34"/><rect class="g-box" x="120" y="16" width="44" height="32" rx="6"/><path class="g-link" d="M164 32H206"/><path class="g-arrow" d="M202 25l10 7-10 7"/></g>`, 'Diagram: owners sign until the threshold is met, then the transaction runs'),
-  holders: () => svg(`<g class="g-flow"><circle class="g-node on" cx="60" cy="30" r="22"/><circle class="g-node" cx="104" cy="16" r="11"/><circle class="g-node" cx="112" cy="46" r="14"/><path class="g-link" d="M82 30L100 44M78 20L94 17"/><circle class="g-node on" cx="178" cy="32" r="17"/><circle class="g-node" cx="214" cy="18" r="8"/><path class="g-link" d="M194 26L207 21"/></g>`, 'Diagram: holders drawn as bubbles, linked when wallets trade with each other'),
-  ai: () => svg(`<g class="g-flow"><rect class="g-box" x="12" y="14" width="96" height="14" rx="7"/><rect class="g-box on" x="60" y="36" width="168" height="14" rx="7"/></g>`, 'Diagram: a question and an answer with its sources'),
+  id: () => svg(`<g>${box(6, 34, 70, 28, true, 'One passkey')}${wire('M76 48L150 15M76 48L150 37M76 48L150 59M76 48L150 81')}${['Pay', 'Chain', 'RPC', 'Studio'].map((t, i) => box(150, 4 + i * 22, 84, 20, false, t)).join('')}</g>`, 'Diagram: one passkey signs in to every Gully app'),
+  pay: () => svg(`<g>${box(4, 34, 58, 28, false, 'Buyer')}${wire('M62 48H91')}${box(92, 26, 64, 44, true, 'Checkout')}${wire('M156 48H176')}${head(184, 48)}${box(186, 34, 50, 28, false, 'You')}<text class="g-t" x="124" y="84" text-anchor="middle">cards, USDC, x402</text></g>`, 'Diagram: a buyer pays through checkout and the money settles to your wallet'),
+  holders: () => svg(`<g>${node(62, 44, 32, true)}${node(120, 22, 15)}${node(128, 66, 20)}${wire('M92 40L108 28M90 56L110 62')}${node(192, 46, 25, true)}${node(226, 20, 10)}${wire('M211 30L219 25')}</g>`, 'Diagram: holders drawn as bubbles, linked when wallets trade with each other'),
+  security: () => svg(`<g>${box(4, 26, 62, 44, false, 'Contract')}${wire('M66 48H88')}${[0, 1, 2].map((i) => `<rect class="g-box${i === 1 ? ' on' : ''}" x="90" y="${22 + i * 19}" width="${[70, 54, 62][i]}" height="12" rx="4"/>`).join('')}${wire('M162 48H180')}${head(188, 48)}${box(190, 26, 46, 44, true, 'Report')}</g>`, 'Diagram: a contract is scanned, checks run, and a report comes out'),
+  studio: () => svg(`<g>${box(84, 20, 72, 56, true, 'Game')}${wire('M84 32H50M84 48H50M84 64H50M156 48H190')}${box(4, 22, 46, 20, false, 'ID')}${box(4, 44, 46, 20, false, 'Pay')}${box(4, 66, 46, 20, false, 'Chain')}${box(190, 34, 46, 28, false, 'Friends')}</g>`, 'Diagram: games with Gully ID, Gully Pay and Gully Chain inside, played with friends'),
+  ai: () => svg(`<g>${box(6, 10, 128, 26, false, 'Your question')}${box(50, 46, 184, 26, true, 'An answer, with sources')}<circle class="g-node on" cx="62" cy="84" r="3"/><circle class="g-node on" cx="74" cy="84" r="3"/><circle class="g-node on" cx="86" cy="84" r="3"/></g>`, 'Diagram: a question and an answer with its sources'),
+  multisig: () => svg(`<g>${node(26, 14, 11, true)}${node(26, 48, 11, true)}${node(26, 82, 11)}${wire('M37 14L104 42M37 48H104M37 82L104 54')}${box(104, 28, 66, 40, true, 'Threshold')}${wire('M170 48H192')}${head(200, 48)}<text class="g-t" x="222" y="52" text-anchor="middle">Sent</text></g>`, 'Diagram: owners sign until the threshold is met, then the transaction runs'),
+  core: () => svg(`<g><path class="g-line" pathLength="1" d="M8 86C60 84 110 72 150 26" vector-effect="non-scaling-stroke"/>${wire('M152 24H190')}${head(198, 24)}${box(200, 10, 36, 28, true, 'Pool')}<text class="g-t" x="66" y="66">Curve</text><text class="g-t" x="150" y="52">Graduates</text></g>`, 'Diagram: a token trades on its curve, then graduates to a pool'),
+  swap: () => svg(`<g>${node(50, 40, 24, false, 'Token')}${node(190, 40, 24, true, 'Token')}<path class="g-link" d="M82 30H158"/>${head(166, 30)}<path class="g-link" d="M158 50H82"/><path class="g-arrow" d="M81 44l-8 6 8 6"/></g>`, 'Diagram: swap one token for another'),
+  launch: () => svg(`<g>${box(6, 34, 62, 28, true, 'Memecoin')}${wire('M68 48H98')}${box(100, 34, 54, 28, false, 'Stock')}${wire('M154 48H176')}${head(184, 48)}${box(186, 34, 50, 28, true, 'Holders')}</g>`, 'Diagram: a memecoin paired to a stock pays its holders in that stock'),
+  quest: () => svg(`<g>${[0, 1, 2].map((i) => `${node(30 + i * 62, 40, 15, i < 2)}${i < 2 ? wire(`M${45 + i * 62} 40H${77 + i * 62}`) : ''}`).join('')}${wire('M169 40H190')}${head(198, 40)}${box(200, 26, 36, 28, true, 'XP')}<text class="g-t" x="92" y="78" text-anchor="middle">Verified quests</text></g>`, 'Diagram: complete verified steps and earn the proof'),
+}
+
+/** The newest blocks as a chain: each block's fill is how many transactions it held. */
+export function blocks(recent, label) {
+  const b = (recent ?? []).slice(-9)
+  if (!b.length) return empty(label)
+  const max = Math.max(1, ...b.map((x) => x.txs ?? 0))
+  const size = 22
+  const gap = (W - b.length * size) / Math.max(1, b.length - 1)
+  return svg(b.map((x, i) => {
+    const px = i * (size + gap)
+    const fill = Math.max(3, ((x.txs ?? 0) / max) * size)
+    return `<rect class="g-box" x="${px.toFixed(1)}" y="30" width="${size}" height="${size}" rx="4"/><rect class="g-bar" style="--i:${i}" x="${px.toFixed(1)}" y="${(52 - fill).toFixed(1)}" width="${size}" height="${fill.toFixed(1)}" rx="4"/>${i < b.length - 1 ? `<path class="g-link" d="M${(px + size).toFixed(1)} 41h${gap.toFixed(1)}"/>` : ''}`
+  }).join('') + `<text class="g-t" x="0" y="72">Newest blocks, filled by transactions</text>`, label)
+}
+
+/** One key in the middle, one spoke per network the gateway serves, filled when it answers. */
+export function spokes(nets, label) {
+  if (!nets.length) return empty(label)
+  const R = 38
+  const cx = W / 2
+  const cy = 48
+  const pts = nets.slice(0, 10).map((n, i, a) => {
+    const t = (i / a.length) * Math.PI * 2 - Math.PI / 2
+    return [cx + Math.cos(t) * R * 2.2, cy + Math.sin(t) * R, n.ok]
+  })
+  return svg(pts.map(([x, y]) => `<path class="g-link" d="M${cx} ${cy}L${x.toFixed(1)} ${y.toFixed(1)}"/>`).join('') + pts.map(([x, y, ok]) => `<circle class="g-node${ok ? ' on' : ''}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7"/>`).join('') + box(cx - 18, cy - 12, 36, 24, true, 'Key'), label)
 }
 
 const history = (hub, key) => (hub?.services ?? []).find((s) => s.key === key)?.history?.map((h) => h.ms) ?? []
@@ -87,31 +127,37 @@ export const KEYS = {
   multisig: ['safe'],
 }
 
-/** One card per product: { state, value, unit, graph, how } */
+/** A figure worth showing: a dash for a source that cannot be read, nothing for a value too small to say anything. */
+const usd = (v, min = 1000) => (num(v) == null || v < min ? '' : fmtUsd(v))
+
+/** One card per product: { state, value, unit, graph, how }. `how` marks a graphic as a diagram, not a metric. An empty
+    value and unit leave the card's own fixed line (data-fb). */
 export function cards({ hub, products, live, stats }) {
-  const chainHours = products?.chain?.hourly ?? []
   const act = products?.activity?.hourly ?? []
   const venue = (k) => (stats?.venues ?? []).find((v) => v.key === k)
   const gw = hub?.gateway
-  const peddle = (k) => {
+  const how = 'How it works'
+  const peddle = (k, g) => {
     const v = venue(k)
-    return { state: v?.state === 'ok' ? 'live' : stats ? 'down' : 'reading', value: fmtUsd(v?.tvlUsd), unit: 'value locked', graph: line((v?.daily ?? []).slice(-30).map((d) => d.v), `${k} daily volume, last 30 days`) }
+    const value = usd(v?.tvlUsd)
+    return { state: v?.state === 'ok' ? 'live' : stats ? 'down' : 'reading', value, unit: value ? 'value locked' : '', graph: g(), how }
   }
+  const launches = act.length ? sum(act.map((x) => x.launches)) : null
+  const maps = (products?.holders?.daily ?? []).length ? sum(products.holders.daily.map((d) => d.maps)) : null
   return {
-    id: { state: stateOf(hub, KEYS.id), value: fmtInt(live?.id?.totals?.users), unit: 'accounts', graph: bars((live?.id?.dailySignins ?? []).map((d) => d.n), 'Gully ID sign-ins per day, last 30 days') },
-    pay: { state: stateOf(hub, KEYS.pay), value: live?.pay ? `${Object.values(live.pay.services).filter((s) => s === 'operational').length}/${Object.keys(live.pay.services).length}` : '–', unit: 'services operational', graph: dots(Object.entries(live?.pay?.services ?? {}).map(([k, s]) => ({ k, ok: s === 'operational' })), 'Gully Pay services operational') },
-    chain: { state: stateOf(hub, KEYS.chain), value: fmtInt(hub?.chain?.head ?? live?.head?.block), unit: 'latest block', graph: bars(chainHours.map((h) => h.txs), 'Gully Chain transactions per hour, last 24 hours') },
-    rpc: { state: stateOf(hub, KEYS.rpc), value: gw ? `${gw.ok}/${gw.total}` : '–', unit: 'networks answering', graph: dots((gw?.networks ?? []).map((n) => ({ k: n.alias, ok: n.state === 'OK' })), 'Gully RPC gateway networks') },
-    holdermaps: { state: stateOf(hub, KEYS.holdermaps), value: fmtInt(sum((products?.holders?.daily ?? []).map((d) => d.maps))), unit: 'maps opened', graph: bars((products?.holders?.daily ?? []).map((d) => d.maps), 'Holder maps opened per day') },
-    // No scans in the window: the site's response time, a real line, rather than an empty frame.
-    security: sum((products?.security?.daily ?? []).map((d) => d.scans)) ? { state: stateOf(hub, KEYS.security), value: fmtInt(products?.security?.total), unit: 'scans run', graph: bars(products.security.daily.map((d) => d.scans), 'Security scans per day, last 14 days') } : { state: stateOf(hub, KEYS.security), value: service(hub, 'security')?.ms != null ? `${service(hub, 'security').ms} ms` : '–', unit: 'site response', graph: line(history(hub, 'security'), 'Gully Security response time, last hour') },
-    studio: { state: stateOf(hub, KEYS.studio), value: service(hub, 'studio')?.ms != null ? `${service(hub, 'studio').ms} ms` : '–', unit: 'site response', graph: line(history(hub, 'studio'), 'Gully Studio response time, last hour') },
-    ai: { state: stateOf(hub, ['ai-api']) === 'live' ? 'live' : 'coming', value: stateOf(hub, ['gullyai']) === 'live' ? 'Site up' : '–', unit: 'API coming online', graph: diagrams.ai(), how: 'How it works' },
-    multisig: { state: stateOf(hub, KEYS.multisig), value: service(hub, 'safe')?.ms != null ? `${service(hub, 'safe').ms} ms` : '–', unit: 'app response', graph: diagrams.multisig(), how: 'How it works' },
-    core: { state: stateOf(hub, ['street', 'indexer']), value: fmtInt(sum(act.map((x) => x.launches))), unit: 'launches, 24 h', graph: bars(act.map((x) => (x.launches ?? 0) + (x.trades ?? 0) + (x.swaps ?? 0)), 'Gully Core launches and trades per hour') },
-    peddleswap: peddle('peddleswap'),
-    peddles: peddle('peddles'),
-    peddlequest: peddle('peddlequest'),
+    id: { state: stateOf(hub, KEYS.id), value: fmtInt(live?.id?.totals?.users), unit: 'accounts', graph: diagrams.id(), how },
+    pay: { state: stateOf(hub, KEYS.pay), value: live?.pay ? `${Object.values(live.pay.services).filter((s) => s === 'operational').length}/${Object.keys(live.pay.services).length}` : '–', unit: 'services operational', graph: diagrams.pay(), how },
+    chain: { state: stateOf(hub, KEYS.chain), value: fmtInt(hub?.chain?.head ?? live?.head?.block), unit: 'latest block', graph: blocks(products?.chain?.recent, 'Newest Gully Chain blocks') },
+    rpc: { state: stateOf(hub, KEYS.rpc), value: gw ? `${gw.ok}/${gw.total}` : '–', unit: 'networks answering', graph: spokes((gw?.networks ?? []).map((n) => ({ ok: n.state === 'OK' })), 'One API key, one spoke per network on the Gully RPC gateway') },
+    holdermaps: { state: stateOf(hub, KEYS.holdermaps), value: fmtInt(maps), unit: 'maps opened', graph: diagrams.holders(), how },
+    security: { state: stateOf(hub, KEYS.security), value: products?.security?.total ? fmtInt(products.security.total) : '', unit: products?.security?.total ? 'scans run' : '', graph: diagrams.security(), how },
+    studio: { state: stateOf(hub, KEYS.studio), value: '', unit: '', graph: diagrams.studio(), how },
+    ai: { state: stateOf(hub, ['ai-api']) === 'live' ? 'live' : 'coming', value: '', unit: '', graph: diagrams.ai(), how },
+    multisig: { state: stateOf(hub, KEYS.multisig), value: '', unit: '', graph: diagrams.multisig(), how },
+    core: { state: stateOf(hub, ['street', 'indexer']), value: launches ? fmtInt(launches) : '', unit: launches ? 'launches, 24 h' : '', graph: diagrams.core(), how },
+    peddleswap: peddle('peddleswap', diagrams.swap),
+    peddles: peddle('peddles', diagrams.launch),
+    peddlequest: peddle('peddlequest', diagrams.quest),
   }
 }
 
