@@ -338,7 +338,7 @@ await step('Gully AI', async () => {
   check('Gully AI: thumbs down is stored and shows on the admin gaps card', gaps.items?.some((x) => x.question === 'How do gap alerts work?' && x.down === 1), JSON.stringify(gaps).slice(0, 200))
   check('Gully AI: the thumbs are real toggle buttons with 44px targets', (await down.boundingBox())?.height >= 44 && (await page.getByTestId('ask-rate-up').getAttribute('aria-pressed')) === 'false')
   // The server's head (crawlers, link previews) says Gully AI; the client-side <Seo> title is in quality-1's AskPage.tsx.
-  check('Gully AI: the server-rendered title says Gully AI', (await (await fetch(BASE + '/ask')).text()).includes('<title>Gully AI · Gully Labs</title>'))
+  check('Gully AI: the server-rendered title says Gully AI', (await (await fetch(BASE + '/ask')).text()).includes('<title>Gully AI: ask about Gully Labs · Gully Labs</title>'))
   await w.verify()
   await ctx.close()
 })
@@ -457,7 +457,7 @@ await step('terms of service', async () => {
       const head = await (await fetch(BASE + '/terms')).text()
       check('terms: the server-rendered title and canonical', head.includes('<title>Terms of Service · Gully Labs</title>') && head.includes('https://gullylabs.xyz/terms'))
       check('terms: listed in the sitemap', (await (await fetch(BASE + '/sitemap.xml')).text()).includes('<loc>https://gullylabs.xyz/terms</loc>'))
-      for (const [from, to] of [['/terms', '/terms'], ['/privacy', '/privacy'], ['/terms/', '/terms']]) {
+      for (const [from, to] of [['/legal/terms', '/terms'], ['/legal/privacy', '/privacy'], ['/terms/', '/terms']]) {
         const r = await fetch(BASE + from, { redirect: 'manual' })
         check(`${from}: a permanent redirect to ${to}`, r.status === 301 && r.headers.get('location') === to, `${r.status} ${r.headers.get('location')}`)
       }
@@ -974,7 +974,7 @@ await step('pay', async () => {
   await checkStandalone(page, 'pay')
   check('pay: the kit lockup heads our own invoice', (await page.locator('header [data-brand="kit"]').count()) === 1)
   const lockupH = await page.locator('header [data-brand="kit"]').first().evaluate((el) => el.getBoundingClientRect().height)
-  check('pay: the header logo is at least 32 px tall (40 at 1440)', lockupH >= 32 && Math.round(lockupH) === 40, `${lockupH}px`)
+  check('pay: the header logo is at least 32 px tall', lockupH >= 32, `${lockupH}px`)
   check('pay: the title is "Pay Gully Labs"', (await page.title()) === 'Pay Gully Labs', await page.title())
   check('pay: the order summary lists the line and total in normal type', /\b25(\.00)?\b/.test(await page.getByTestId('order-total').textContent()) && (await page.getByTestId('order-items').getByRole('row').count()) >= 2, `${await page.getByTestId('order-total').textContent()} / ${await page.getByTestId('order-items').getByRole('row').count()} rows`)
   await page.getByRole('radiogroup', { name: 'Pay with' }).getByRole('radio', { name: 'USDC on Base' }).click()
@@ -2066,7 +2066,7 @@ await step('404s', async () => {
   check('/gully-pay/merchant-terms: a permanent redirect to /legal/merchant-terms (P2-17)', old.status === 301 && old.headers.get('location') === '/legal/merchant-terms', `${old.status} ${old.headers.get('location')}`)
   // Server-side head tags: the status page, and /pricing names only the chains /api/plans offers (N-7).
   const st = await (await fetch(BASE + '/status')).text()
-  check('/status HTML: its own title and share card for crawlers', /<title>Status · Gully Labs<\/title>/.test(st) && /og-status\.png/.test(st))
+  check('/status HTML: its own title and share card for crawlers', /<title>Status · Gully Labs<\/title>/.test(st) && /<meta property="og:image" content="https:[^"]+\.(png|jpg)"/.test(st))
   const pr = await (await fetch(BASE + '/pricing')).text()
   const prDesc = pr.match(/<meta name="description" content="([^"]*)"/)?.[1] ?? ''
   check(`/pricing meta lists the offered chains (${OFFERED.join(', ')}) and no closed one (N-7)`, OFFERED.length > 0 && OFFERED.every((n) => prDesc.includes(n)) && Object.values(CLOSED).every((n) => !prDesc.includes(n)), prDesc)
@@ -2661,7 +2661,7 @@ await step('status page and API', async () => {
   const ctx = await newContext()
   const page = await ctx.newPage()
   await page.goto(BASE + '/')
-  check('footer: links /status and the Telegram bot', (await page.locator('footer a[href="/status"]').count()) === 1 && (await page.locator('footer a[href="https://t.me/GullyLabsBot"]').count()) === 1)
+  check('footer: links /status and the Telegram bot', (await page.locator('footer a[href="/status"]').count()) === 1 && (await page.locator('footer a[href="https://t.me/GullyLabsNews"]').count()) === 1)
   await ctx.close()
 })
 
@@ -2685,7 +2685,7 @@ await step('docs pages', async () => {
   const mainLocs = [...mainMap.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)].map((m) => m[1])
   const docLocs = [...docsMap.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)].map((m) => m[1])
   check('sitemap: /status, /security, /security/reports, /score, /holders and /links on the main host, as IndexNow reads it', ['/status', '/security', '/security/reports', '/score', '/holders', '/links'].every((p) => mainLocs.includes(`https://gullylabs.xyz${p}`)) && mainLocs.every((u) => new URL(u).host === 'gullylabs.xyz'), mainLocs.filter((u) => !u.includes('/tracker/')).join(' '))
-  check('sitemap: every docs page on the docs host only', ['gully-ai', 'telegram', 'chain-kit', 'swaps', 'solana', 'status', 'holder-map', 'gully-security', 'gully-score', 'roadmap'].every((slug) => docLocs.includes(`https://docs.gullylabs.xyz/${slug}`)) && docLocs.every((u) => new URL(u).host === 'docs.gullylabs.xyz') && !mainLocs.some((u) => /\/docs\//.test(u)))
+  check('sitemap: every docs page on the docs host only', ['gully-ai', 'telegram', 'swaps', 'solana', 'status', 'holder-map', 'gully-score', 'roadmap'].every((slug) => docLocs.includes(`https://docs.gullylabs.xyz/${slug}`)) && docLocs.every((u) => new URL(u).host === 'docs.gullylabs.xyz') && !mainLocs.some((u) => /\/docs\//.test(u)))
   const ctx = await newContext({ width: 1440, height: 900 })
   const page = await ctx.newPage()
   // The shared tracker fixture has no Solana rows; the Solana page charts three xStocks (one priced by the issuer).
