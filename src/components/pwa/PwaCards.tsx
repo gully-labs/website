@@ -19,7 +19,8 @@ export function PwaCards({ kind, lift = false }: { kind: 'site' | 'app'; lift?: 
   useEffect(() => {
     if (!mode) return
     let timed = false
-    let scrolled = window.scrollY > 240
+    // The app's pages can be too short to scroll: the wait for a scroll is the site's (it protects the product grid).
+    let scrolled = kind === 'app' || window.scrollY > 240
     const go = () => timed && scrolled && setReady(true)
     const t = window.setTimeout(() => ((timed = true), go()), SHOW_AFTER_MS)
     const onScroll = () => {
@@ -33,7 +34,7 @@ export function PwaCards({ kind, lift = false }: { kind: 'site' | 'app'; lift?: 
       window.clearTimeout(t)
       window.removeEventListener('scroll', onScroll)
     }
-  }, [mode])
+  }, [mode, kind])
 
   // Above the dock: its button is 44 px tall at 20 px (16 on phones); in the app the dock sits above the tab bar.
   const place = `pointer-events-auto fixed right-5 z-40 w-[min(300px,calc(100vw-32px))] max-[600px]:right-4 print:hidden ${lift ? 'bottom-[calc(132px+env(safe-area-inset-bottom))]' : 'bottom-[76px]'}`
