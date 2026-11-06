@@ -59,3 +59,10 @@ test('the preview is noindex, not in the sitemap, and robots does not list it', 
   assert.ok(!sitemapFor('gullylabs.xyz').includes('/preview/'))
   assert.ok(robotsFor('gullylabs.xyz').includes('Sitemap:'))
 })
+
+test('the Follow on X bar: a plain link in a new tab, a 44 px dismiss, a blocking script from this origin', () => {
+  assert.ok(/<a href="https:\/\/x\.com\/Gully_Labs" target="_blank" rel="noopener noreferrer">Follow @Gully_Labs on X<\/a>/.test(html))
+  assert.ok(/\.fx button\{[^}]*width:44px;height:44px/.test(html))
+  assert.ok(html.indexOf('/landing/fx.js') < html.indexOf('<style>'), 'read before the first paint')
+  assert.match(L.landingAsset('/landing/fx.js'), /gl-follow-x-dismissed/)
+})

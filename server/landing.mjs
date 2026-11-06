@@ -116,8 +116,7 @@ export async function renderLanding(head, given = null) {
 /** The two script files, from server/ so the server and the browser run the same graph code. */
 export function landingAsset(pathname) {
   // A blocking one-liner before the first paint, so a dismissed bar never shows or shifts the page (the CSP refuses inline scripts).
-  if (pathname === '/landing/fx.js') return "try{if(localStorage.getItem('gl-follow-x-dismissed')==='1')document.documentElement.classList.add('fx-off')}catch(e){}
-"
+  if (pathname === '/landing/fx.js') return "try{if(localStorage.getItem('gl-follow-x-dismissed')==='1')document.documentElement.classList.add('fx-off')}catch(e){}"
   const f = pathname === '/landing/graphs.mjs' ? 'landing-graphs.mjs' : pathname === '/landing/live.js' ? 'landing-live.mjs' : null
   return f ? fs.readFileSync(new URL(`./${f}`, import.meta.url), 'utf8') : null
 }
