@@ -191,7 +191,7 @@ export const PRODUCTS: ProductDef[] = [
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Multisig' },
     url: 'https://multisig.gullychain.xyz',
     urlLabel: 'multisig.gullychain.xyz',
-    docs: 'https://docs.gullychain.xyz',
+    docs: 'https://docs.gullychain.xyz/multisig/',
     hub: ['safe'],
     og: '/brand/web/og/gully-chain.png',
     category: 'FinanceApplication',
@@ -205,7 +205,7 @@ export const PRODUCTS: ProductDef[] = [
       ['Fund it', 'Send ETH or tokens to the Safe address.'],
       ['Propose and sign', 'Owners sign until the threshold is met, then it executes.'],
     ],
-    faq: [['Is Gully Multisig live?', 'This page shows its real state, checked every minute at multisig.gullychain.xyz. It was called Gully Safe until November 2026.']],
+    faq: [['Is Gully Multisig live?', 'This page shows its real state, checked every minute at multisig.gullychain.xyz, its only address.']],
     pricing: 'free-testnet',
   },
   {

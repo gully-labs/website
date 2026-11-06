@@ -46,7 +46,7 @@ export const SURFACES = [
   { key: 'devportal', group: 'chain', name: 'Developer portal', url: 'https://dev.gullychain.xyz' },
   { key: 'rpc-public', group: 'chain', name: 'Public RPC', url: 'https://testnet-rpc.gullychain.xyz', rpc: true },
   { key: 'indexer', group: 'chain', name: 'Indexer', url: 'https://indexer.gullychain.xyz', probe: 'https://indexer.gullychain.xyz/head' },
-  // Gully Street's social feed reads the indexer's /feed; copy trading has its own engine; Gully Multisig is being deployed.
+  // Gully Street's social feed reads the indexer's /feed; copy trading has its own engine; Gully Multisig counts as live only on a 200.
   { key: 'social', group: 'chain', name: 'Gully Street feed', url: 'https://kre8.fun', probe: 'https://indexer.gullychain.xyz/feed?limit=1' },
   { key: 'copy', group: 'chain', name: 'Copy trading engine', url: 'https://kre8.fun/copy', probe: 'https://copy.kre8.fun/health' },
   // Gully Social (posts, follows, profiles; services/social in gully-street) answers /healthz.

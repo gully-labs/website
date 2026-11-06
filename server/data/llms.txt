@@ -92,6 +92,7 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Promotion slots](https://peddlequest.xyz) (live): Trending and banner placement is sold on chain, so what was bought is publicly recorded.
 - [Task verification and eligibility rules](https://peddlequest.xyz) (live): Off-chain checks for X, Discord and wallet tasks, with eligibility and sybil rules set in the quest wizard.
 - [Live board and product launcher](https://gullylabs.xyz/products) (live): Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve.
+- [Gully Multisig](https://multisig.gullychain.xyz) (live): Multisig wallets for teams and treasuries at multisig.gullychain.xyz: several owners, a confirmation threshold and batched transactions, on Anubis Network (chain 6714) and, for developers, on Gully Chain Testnet (chain 485590).
 
 ## Projects
 

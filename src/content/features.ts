@@ -1886,14 +1886,17 @@ export const features: Feature[] = [
   },
   {
     id: "gully-safe-multisig",
-    product: "Gully Chains",
+    product: "Gully Chain",
     name: "Gully Multisig",
-    status: "building",
-    summary: "Safe{Wallet} multisig wallets for Gully Chain at multisig.gullychain.xyz, run on Gully infrastructure.",
+    status: "live",
+    summary: "Multisig wallets for teams and treasuries at multisig.gullychain.xyz: several owners, a confirmation threshold and batched transactions, on Anubis Network (chain 6714) and, for developers, on Gully Chain Testnet (chain 485590).",
     facts: [
-      "Runs Safe's own reference stack (safe-global/safe-infrastructure, MIT backend releases, GPL-3.0 web app) on the gully box.",
-      "Gully Chain is registered in the Safe config service with its RPC, explorer and the canonical Safe 1.4.1 addresses.",
-      "The site shows Gully Multisig as coming until multisig.gullychain.xyz answers 200 (server/hub.mjs)."
+      "Runs the open-source Safe stack on Gully infrastructure: Gully Labs' build of the Safe{Wallet} web app, a config service, a client gateway and one Safe transaction service per chain. It is run by Gully Labs, not by Safe.",
+      "On Anubis Network (chain 6714, a mainnet) the contracts are the unmodified Safe 1.4.1 contracts at the canonical addresses, deployed through Safe's singleton factory.",
+      "The 16 Safe contracts on Anubis are an exact match on verify.gullychain.xyz, Gully's source verification service.",
+      "On Anubis gasDAI pays gas only and cannot be sent as a value: a Safe there holds and sends ERC-20 tokens.",
+      "On Gully Chain Testnet (chain 485590, test funds only) the same Safe 1.4.1 code is deployed at Gully's own addresses, because Safe's singleton factory is not on that chain.",
+      "The hub shows Gully Multisig as live only while multisig.gullychain.xyz answers 200 (server/hub.mjs); the docs are at docs.gullychain.xyz/multisig/."
     ],
     url: "https://multisig.gullychain.xyz",
     source: [
