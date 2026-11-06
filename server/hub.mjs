@@ -4,7 +4,7 @@
 //   GET /api/hub   public, cached 60 s:
 //     services   every public Gully surface probed once a minute: up, state (up | down | coming), response time and
 //                the last hour's times. Gully Chain: site, Gully Street app and its feed, explorer, faucet, bridge,
-//                docs, developer portal, public RPC, indexer, copy trading, Gully Social, Gully Safe (coming until it answers 200),
+//                docs, developer portal, public RPC, indexer, copy trading, Gully Social, Gully Multisig (coming until it answers 200),
 //                Gully Sentry, Gully Offerwall.
 //                Gully Labs: Gully Pay (and its admin), Gully RPC (site, app, gateway), HolderMaps, Gully Security,
 //                Gully AI (site; the API is coming until the GPU box is up), Gully Studio (and its portals),
@@ -46,12 +46,12 @@ export const SURFACES = [
   { key: 'devportal', group: 'chain', name: 'Developer portal', url: 'https://dev.gullychain.xyz' },
   { key: 'rpc-public', group: 'chain', name: 'Public RPC', url: 'https://testnet-rpc.gullychain.xyz', rpc: true },
   { key: 'indexer', group: 'chain', name: 'Indexer', url: 'https://indexer.gullychain.xyz', probe: 'https://indexer.gullychain.xyz/head' },
-  // Gully Street's social feed reads the indexer's /feed; copy trading has its own engine; Gully Safe is being deployed.
+  // Gully Street's social feed reads the indexer's /feed; copy trading has its own engine; Gully Multisig counts as live only on a 200.
   { key: 'social', group: 'chain', name: 'Gully Street feed', url: 'https://kre8.fun', probe: 'https://indexer.gullychain.xyz/feed?limit=1' },
   { key: 'copy', group: 'chain', name: 'Copy trading engine', url: 'https://kre8.fun/copy', probe: 'https://copy.kre8.fun/health' },
   // Gully Social (posts, follows, profiles; services/social in gully-street) answers /healthz.
   { key: 'social-api', group: 'chain', name: 'Gully Social service', url: 'https://kre8.fun', probe: 'https://social.kre8.fun/healthz' },
-  { key: 'safe', group: 'chain', name: 'Gully Safe', url: 'https://safe.gullychain.xyz', soon: true },
+  { key: 'safe', group: 'chain', name: 'Gully Multisig', url: 'https://multisig.gullychain.xyz', soon: true },
   // Gully Sentry: free testnet Sentry Keys and the watchers that check Gully Chain's assertions (2026-10-28).
   { key: 'sentry', group: 'chain', name: 'Gully Sentry', url: 'https://sentry.gullychain.xyz', probe: 'https://sentry.gullychain.xyz/api/healthz' },
   // Gully Offerwall (OfferwallManager on chain 485590, built on Gully Quests): its public stats answer JSON.

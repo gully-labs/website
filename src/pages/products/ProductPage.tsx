@@ -647,7 +647,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
       }
     }
     default:
-      // Gully Safe and Gully AI: their surfaces' uptime and response time, from /api/hub.
+      // Gully Multisig and Gully AI: their surfaces' uptime and response time, from /api/hub.
       return { kpis: surfaceKpis(live, p.hub), main: lat, side: <Panel label="Surfaces · last hour">{<UptimeGrid hub={hub} keys={p.hub} compact />}</Panel> }
   }
 }

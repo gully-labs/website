@@ -4868,21 +4868,21 @@
    "title": "Live board and product launcher (Gully Labs)",
    "url": "https://gullylabs.xyz/products",
    "section": "Live board and product launcher",
-   "text": "Live board and product launcher is part of Gully Labs. Status: live now. Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve. GET /api/hub probes every public Gully surface once a minute from the server and caches the answer for 60 seconds (server/hub.mjs). New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.kre8.fun), Gully Safe (safe.gullychain.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals. A surface still being set up reads \"coming\" until it answers 200; it is never shown as up or down before that. The same launcher and board appear on gullylabs.xyz, /products and the Gully Labs App (app.gullylabs.xyz).",
+   "text": "Live board and product launcher is part of Gully Labs. Status: live now. Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve. GET /api/hub probes every public Gully surface once a minute from the server and caches the answer for 60 seconds (server/hub.mjs). New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.kre8.fun), Gully Multisig (multisig.gullychain.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals. A surface still being set up reads \"coming\" until it answers 200; it is never shown as up or down before that. The same launcher and board appear on gullylabs.xyz, /products and the Gully Labs App (app.gullylabs.xyz).",
    "updatedAt": "2026-10-29T20:58:52.399Z",
    "feature": "gully-labs-live-board",
    "status": "live"
   },
   {
-   "id": "e65a2c8a399a",
-   "source": "Roadmap",
-   "title": "Roadmap: Gully Safe multisig (Gully Chains), not available yet",
-   "url": "https://gullylabs.xyz/chain-kit",
-   "section": "Gully Safe multisig (building)",
-   "text": "Gully Safe multisig (Gully Chains) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Safe{Wallet} multisig wallets for Gully Chain at safe.gullychain.xyz, run on Gully infrastructure. Runs Safe's own reference stack (safe-global/safe-infrastructure, MIT backend releases, GPL-3.0 web app) on the gully box. Gully Chain is registered in the Safe config service with its RPC, explorer and the canonical Safe 1.4.1 addresses. The site shows Gully Safe as coming until safe.gullychain.xyz answers 200 (server/hub.mjs).",
-   "updatedAt": "2026-10-26T22:38:57.233Z",
+   "id": "4f95386b2bc2",
+   "source": "Features",
+   "title": "Gully Multisig (Gully Chain)",
+   "url": "https://multisig.gullychain.xyz",
+   "section": "Gully Multisig",
+   "text": "Gully Multisig is part of Gully Chain. Status: live now. Multisig wallets for teams and treasuries at multisig.gullychain.xyz: several owners, a confirmation threshold and batched transactions, on Anubis Network (chain 6714) and, for developers, on Gully Chain Testnet (chain 485590). Runs the open-source Safe stack on Gully infrastructure: Gully Labs' build of the Safe{Wallet} web app, a config service, a client gateway and one Safe transaction service per chain. It is run by Gully Labs, not by Safe. On Anubis Network (chain 6714, a mainnet) the contracts are the unmodified Safe 1.4.1 contracts at the canonical addresses, deployed through Safe's singleton factory. The 16 Safe contracts on Anubis are an exact match on verify.gullychain.xyz, Gully's source verification service. On Anubis gasDAI pays gas only and cannot be sent as a value: a Safe there holds and sends ERC-20 tokens. On Gully Chain Testnet (chain 485590, test funds only) the same Safe 1.4.1 code is deployed at Gully's own addresses, because Safe's singleton factory is not on that chain. The hub shows Gully Multisig as live only while multisig.gullychain.xyz answers 200 (server/hub.mjs); the docs are at docs.gullychain.xyz/multisig/.",
+   "updatedAt": "2026-11-06T02:40:10.709Z",
    "feature": "gully-safe-multisig",
-   "status": "building"
+   "status": "live"
   },
   {
    "id": "2378a3a08ddd",

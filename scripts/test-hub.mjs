@@ -102,7 +102,7 @@ test('every surface links to https and Gully Chain pieces are all listed', () =>
 test('surfaces still being set up read "coming" until they answer 200, never "down"', async () => {
   _resetHub(async (url, init = {}) => {
     const u = String(url)
-    if (u.includes('safe.gullychain')) throw new TypeError('fetch failed')
+    if (u.includes('multisig.gullychain')) throw new TypeError('fetch failed')
     if (u.includes('ai.gullylabs.xyz')) return new Response('', { status: 404 })
     if (u.includes('dev.gullystudio')) return new Response('ok', { status: 200 })
     if (u.includes('copy.kre8.fun')) return new Response('', { status: 502 })

@@ -154,11 +154,13 @@ const findPost = async (id) => (await A('/api/admin/channel')).data.posts.find((
 const row = (o) => ({ chain: 'robinhood', ticker: 'NVDA', name: 'NVIDIA', status: 'premium', gapPct: 3.1, fair: 180, onchain: 185.58, poolStale: false, sessionOpen: true, pool: { liquidityUsd: 50_000 }, ...o })
 const ROWS = [row({}), row({ ticker: 'TSLA', status: 'discount', gapPct: -2.5 }), row({ ticker: 'META', status: 'in-line', gapPct: 0.4 }), row({ ticker: 'AMZN', status: 'thin', gapPct: 9 }), row({ ticker: 'GOOGL', status: 'unverified', gapPct: null }), row({ ticker: 'MSFT', chain: 'bsc', status: 'drifting', gapPct: 1.5 }), row({ ticker: 'AAPL', status: 'premium', gapPct: 2.2 }), row({ ticker: 'AMD', status: 'premium', gapPct: 4.4 })]
 let rowsOk = true
+/** The clock the history below is dated from: the real one until the auto-post tests install their own. */
+let historyNow = () => Date.now()
 const changelog = [{ key: 'https://docs.gullylabs.xyz/changelog#2026-10-16', date: '16 October 2026', url: 'https://docs.gullylabs.xyz/changelog#2026-10-16', text: 'Older release.' }]
 ch.setChannelSourcesForTest({
   rows: async () => (rowsOk ? ROWS : null),
   history: (c, tk) => {
-    const s = Math.floor(Date.now() / 1000)
+    const s = Math.floor(historyNow() / 1000)
     const base = tk === 'NVDA' ? 100 : tk === 'TSLA' ? 200 : 50
     return [[s - 6 * 86_400, 1, base, base], [s - 60, 1, tk === 'NVDA' ? 110 : tk === 'TSLA' ? 190 : 50.5, base]]
   },
@@ -313,6 +315,8 @@ try {
   const at = (hhmm, day = 17) => Date.parse(`2026-10-${day}T${hhmm}:00Z`)
   let clock = at('09:00')
   ch.setNowForTest(() => clock)
+  // The 7 days of history end at the test's clock, not at the day the test happens to run.
+  historyNow = () => clock
   await A('/api/admin/channel/auto', { timezone: 'UTC', minGapMinutes: 0, quietHours: { enabled: false } })
 
   // DeepCore launches: off by default.

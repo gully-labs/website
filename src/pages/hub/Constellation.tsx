@@ -319,12 +319,12 @@ function LiveBoard({ src, R }: { src: Sources; R: Record<ProductKey, Reading> })
     { id: 'volume', label: 'Venue volume', title: 'Daily volume on the venues we built, USD', series: [{ name: 'Volume', color: '#00D2FF', values: volRows.map((r) => r.v) }], labels: volRows.map((r) => new Date(r.t * 1000).toISOString().slice(5, 10)), fmt: (v) => fmtUsd(v), state: src.stats ? 'ok' : 'loading', empty: 'venue figures unreadable right now', sub: 'source: /api/stats (each venue’s own API, DefiLlama as fallback)', legendTotal: volRows.length ? `${volRows.length} days total` : undefined },
   )
   // The tab with something to show comes first; decided once, so a poll never moves the tabs under the reader.
-  const order = useRef<string[] | null>(null)
-  if (!order.current && src.products && src.stats) {
+  const [order, setOrder] = useState<string[] | null>(null)
+  if (!order && src.products && src.stats) {
     const moving = (t: ChartTab) => t.series[0].values.some((v) => (v ?? 0) > 0)
-    order.current = [...tabs.filter(moving), ...tabs.filter((t) => !moving(t))].map((t) => t.id)
+    setOrder([...tabs.filter(moving), ...tabs.filter((t) => !moving(t))].map((t) => t.id))
   }
-  const shown = order.current ? order.current.map((id) => tabs.find((t) => t.id === id) as ChartTab) : tabs
+  const shown = order ? order.map((id) => tabs.find((t) => t.id === id) as ChartTab) : tabs
   const s = suite(src)
   return (
     <div className="cst-live">
