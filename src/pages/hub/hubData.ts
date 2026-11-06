@@ -9,6 +9,7 @@
    page (/products/gully-sentry) and its numbers come through /api/hub/live (sentryNet, sentrySale, sentryChain). */
 import type { HubBody } from '../../console/live'
 import type { HubProducts } from '../../terminal/kit'
+import { SEO_PAGES } from '../../content/seoPages.ts'
 
 export type LayerKey = 'identity' | 'payments' | 'chain' | 'data' | 'play'
 export type ProductKey = 'id' | 'pay' | 'chain' | 'rpc' | 'holdermaps' | 'security' | 'studio' | 'ai'
@@ -447,10 +448,14 @@ export const PEDDLE_FAMILY: PeddleProduct[] = [
 export const PRODUCT_COUNT = HUB_PRODUCTS.length + PEDDLE_FAMILY.length
 const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen']
 export const PRODUCT_COUNT_WORD = COUNT_WORDS[PRODUCT_COUNT] ?? String(PRODUCT_COUNT)
-/** The landing's title and description. server/seo.mjs MAIN['/'] carries the same strings for crawlers
-    (scripts/test-hub-landing.mjs checks the two against each other and against PRODUCT_COUNT). */
-export const LANDING_TITLE = 'Eleven products: identity, payments, chain, trading, data, games'
-export const LANDING_DESCRIPTION = 'Gully Labs builds a connected product suite: sign in with Gully ID, pay with Gully Pay, build on Gully Chain, trade on PeddleSwap and launch on Peddles, see it with HolderMaps and Gully Security, play with Gully Studio. Live status and metrics from every product.'
+/** The landing's title and description: the '/' entry of src/content/seoPages.ts, the table the server's head tags are
+    written from too (scripts/test-hub-landing.mjs checks them against PRODUCT_COUNT). */
+export const LANDING_TITLE = SEO_PAGES['/'].title
+export const LANDING_DESCRIPTION = SEO_PAGES['/'].description
+/** The landing's headline, in the three parts the page sets it in: "One studio. Eleven products that work as one." */
+export const LANDING_HEADLINE: [string, string, string] = ['One studio.', `${PRODUCT_COUNT_WORD[0].toUpperCase()}${PRODUCT_COUNT_WORD.slice(1)} products`, 'that work as one.']
+/** The landing's opening sentence, under its headline (the server's pre-render opens with it too). */
+export const LANDING_LEDE = 'We build the whole path a user takes on chain, from sign-in and payments to trading on PeddleSwap and launching on Peddles, and every piece plugs into the next.'
 
 /** One venue of the /api/stats document, as much of it as the family cards read. */
 export interface StatsVenue {

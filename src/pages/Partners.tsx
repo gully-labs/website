@@ -73,10 +73,7 @@ export function Partners() {
 
   return (
     <div className="flex flex-col gap-14 px-page pt-10 pb-24">
-      <Seo
-        title="Partners: Holder Map, SDK and webhooks for launchpads, wallets, explorers and chains"
-        description="What launchpads, wallets, explorers and chains get from Gully Labs: the embeddable Holder Map, the Gully Score badge, the SDK, launch webhooks, Gully Pay and Chain Kit, with copy-paste setup and a form to list your launchpad."
-      />
+      <Seo page="/partners" />
       <section className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-start gap-8">
         <div className="flex min-w-0 flex-col gap-4">
           <span className={eyebrow}>PARTNERS · GULLY LABS</span>

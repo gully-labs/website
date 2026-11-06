@@ -66,7 +66,7 @@ const select =
 export function WidgetPage() {
   return (
     <>
-      <Seo title="Tracker widget" description="Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps, read from Chainlink and the pools themselves." />
+      <Seo page="/widget" />
 
       <section className="flex flex-col gap-5 px-page pt-[72px] pb-10">
         <span className={eyebrow} style={rise(0)}>

@@ -52,7 +52,7 @@ const GLANCE = [
 export function TermsPage() {
   return (
     <>
-      <Seo title="Terms of Service" description="The terms for using Gully Labs: the site, the app, the API and widgets, Gully AI, the Holder Map, Gully Score, Gully Security, Gully Pay checkouts and the Telegram bot. Self-custody, information not advice, final on-chain payments." />
+      <Seo page="/terms" />
       <LegalPage
         kicker="Legal · Terms"
         title="Terms of Service"

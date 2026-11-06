@@ -45,10 +45,7 @@ export function About() {
   const T = st.k === 'ok' ? st.data.totals : null
   return (
     <>
-      <Seo
-        title="About"
-        description="Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name."
-      />
+      <Seo page="/about" />
 
       <section className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,440px),1fr))] items-center gap-[clamp(40px,5cqw,72px)] px-page pt-[72px] pb-24">
         <div className="flex flex-col gap-6">

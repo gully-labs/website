@@ -1,7 +1,10 @@
 // Per-page head tags for crawlers and link previews. The app is client-rendered, so without this
 // every URL on every host served index.html's one title, and every page (docs included) named the
 // homepage as its canonical address, which tells search engines to drop it as a duplicate.
-// The <Seo> component keeps matching titles in the browser; keep the two in step.
+// gullylabs.xyz's own pages take their title, description and body from server/data/page-content.json, which
+// scripts/build-page-content.mjs writes from the files the browser draws each page from (src/content/seoPages.ts is
+// the table <Seo> reads too), so the served HTML and the page cannot drift. Each indexed page is served with one h1,
+// its copy, headings and links, the header and footer links, and JSON-LD of its own type.
 
 import fs from 'node:fs'
 import { APP_HOST, APP_URL, holderInternalPath, holderMapsPrimary, holderShortPath, HOLDERMAPS_URL, isApiHost, isAppHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost, movedDocsUrl, movedPageUrl, PAY_URL, securityInternalPath, securityPrimary, securityShortPath, SECURITY_URL } from './hosts.mjs'
@@ -18,12 +21,16 @@ const SITE = 'https://gullylabs.xyz'
 const DOCS = 'https://docs.gullylabs.xyz'
 const APP = APP_URL
 
-// Project copy, restated from src/content/projects.ts (the server cannot import TypeScript).
-const PROJECTS = {
-  peddleswap: ['PeddleSwap', 'Swap. Lock. Launch. Swap tokens, earn fees from liquidity, lock tokens or LP and bridge networks.'],
-  peddles: ['Peddles', 'Launch, trade and play. Memecoins paired to tokenised stocks; holders are paid in that stock.'],
-  peddlequest: ['PeddleQuest', 'Quest on-chain, earn the proof.'],
-}
+/** What the build wrote for every indexed gullylabs.xyz page (scripts/build-page-content.mjs). */
+const CONTENT = JSON.parse(fs.readFileSync(new URL('./data/page-content.json', import.meta.url), 'utf8'))
+/** When that file was built: the lastmod of the pages whose content only changes with a release. */
+const BUILT_ON = (() => {
+  try {
+    return fs.statSync(new URL('./data/page-content.json', import.meta.url)).mtime.toISOString().slice(0, 10)
+  } catch {
+    return new Date().toISOString().slice(0, 10)
+  }
+})()
 
 /** The Gully Labs kit's share image (brand-kit social/og-image-1200x630.png), absolute (owner OG rule, 2026-10-25). */
 const KIT_OG = 'https://gullylabs.xyz/brand/social/og-image-1200x630.png'
@@ -34,100 +41,77 @@ const HUB_LD = {
   '@context': 'https://schema.org',
   '@type': 'ItemList',
   name: 'Gully Labs products',
-  itemListElement: [['Gully ID', 'https://gullyid.xyz'], ['Gully Pay', 'https://gullypay.xyz'], ['Gully Chain', 'https://gullychain.xyz'], ['Gully RPC', 'https://gullyrpc.xyz'], ['HolderMaps', 'https://holdermaps.xyz'], ['Gully Security', 'https://gullysecurity.xyz'], ['Gully Studio', 'https://gullystudio.xyz'], ['Gully AI', 'https://gullyai.xyz'], ['PeddleSwap', 'https://peddleswap.xyz/'], ['Peddles', 'https://peddles.xyz/'], ['PeddleQuest', 'https://peddlequest.xyz/']].map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, url })),
+  itemListElement: CONTENT.hub.map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, url })),
 }
+/* Titles and descriptions. gullylabs.xyz's own pages (the home page, /products and one page per product, the Peddle
+   projects, the tracker and one page per stock token, pricing, status, legal, …) come from the build; the Holder Map
+   and Gully Security pages below are served on holdermaps.xyz and gullysecurity.xyz under those brands' names. */
 const MAIN = {
-  '/': ['Gully Labs · Eleven products: identity, payments, chain, trading, data, games', 'Gully Labs builds a connected product suite: sign in with Gully ID, pay with Gully Pay, build on Gully Chain, trade on PeddleSwap and launch on Peddles, see it with HolderMaps and Gully Security, play with Gully Studio. Live status and metrics from every product.'],
-  '/products': ['Products · Gully Labs', 'Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Multisig, Gully Sentry, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests, Gully Offerwall, Gully Social, Copy Trading and Gully Core, each supporting Gully Chain; plus the Peddle family for trading and DeFi: PeddleSwap (DEX), Peddles (launchpad) and PeddleQuest.'],
-  '/tracker': ['Stock token tracker: tokenised stocks vs fair price · Gully Labs', 'Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price (Chainlink, or for some Solana xStocks the issuer’s quote), with the gap, pool depth and feed time.'],
-  // The chain list is filled in per request from what checkout offers now (pricingDescription below).
-  '/pricing': ['Pricing: tracker API and Gully Analytics plans · Gully Labs', 'Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain\'s own coin from your own wallet, with no custody.'],
-  '/status': ['Status · Gully Labs', 'Live status of Gully Labs: the API, tracker freshness per chain, the launch poller, the Telegram bot, Gully Pay RPCs, Gully AI, the security scan engine, monitors and Holder Map sources, with 24 h uptime and incidents.'],
-  '/widget': ['Tracker widget · Gully Labs', 'Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps.'],
-  '/services': ['Services: web3 development · Gully Labs', 'Gully Labs builds for other teams: L2/L3 chain launch, smart contracts, security reviews and monitoring, dApp/web/mobile apps, payments, RPC and infrastructure, token launch and quests, AI integration and Unity game development.'],
-  '/analytics': ['Gully Analytics: web analytics that see the wallet · Gully Labs', 'Privacy-friendly analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel. Start a free trial with your wallet.'],
+  ...Object.fromEntries(Object.entries(CONTENT.meta).map(([p, m]) => [p, [...m]])),
   '/security': ['Gully Security: AI Security Scan and Security Review · Gully Labs', 'Scan a deployed contract or a repository with the automated AI Security Scan, or ask people to review your code. What each tier checks, what it cannot, and the price.'],
   '/security/reports': ['Published security scan reports · Gully Labs', 'AI Security Scan reports their owners chose to publish: the findings, the tools that ran and the limits of an automated scan.'],
   '/security/sample': ['Sample AI Security Scan report · Gully Labs', 'What an AI Security Scan report looks like, on a fictional contract: findings by severity with file and line, a draft proof of concept, the tools that ran and the limits. A sample, not a scan of real code.'],
   '/holders': ['Holder Map: who really holds a token · Gully Labs', 'See who holds any token: the biggest wallets, the ones that trade with each other, bundled launch buys, the deployer’s record and a health score you can check part by part. Tokenised stocks follow chain by chain.'],
-  '/ask': ['Gully AI: ask about Gully Labs · Gully Labs', 'Ask Gully AI about Gully Labs: its products, the tracker and API, plans and docs. Every answer cites its sources and quotes live figures where they matter.'],
-  '/legal/merchant-terms': ['Gully Pay merchant terms · Gully Labs', 'The terms for running a Gully Pay store: a transaction fee only, non-custodial payments to your own wallets, weekly statements and the pause policy.'],
-  '/legal/scan-terms': ['AI Security Scan terms · Gully Labs', 'The terms for the AI Security Scan: what an automated scan is and is not, free scans and prices, re-run credits instead of refunds, how long your code is kept, and the limits of our liability.'],
-  // The policies at their canonical short addresses (2026-11-03; /legal/terms and /legal/privacy 301 to them).
-  '/terms': ['Terms of Service · Gully Labs', 'The terms for using Gully Labs: the site, the app, the API and widgets, Gully AI, the Holder Map, Gully Score, Gully Security, Gully Pay checkouts and the Telegram bot. Self-custody, information not advice, final on-chain payments.'],
-  '/privacy': ['Privacy Policy · Gully Labs', 'What Gully Labs collects across the site, the app, Gully Analytics, Gully AI, Gully Security, the Holder Map, the Telegram bot and Gully Pay checkouts, why, who else sees it, where it is stored and how long it is kept.'],
-  '/legal': ['Legal: Terms and Privacy for every Gully product · Gully Labs', 'The Terms of Service and Privacy Policy of every Gully Labs product in one place: Gully Labs, HolderMaps, Gully Chain, kre8.fun, Gully Pay, Gully ID, Gully RPC, Gully AI, Gully Security and Gully Studio.'],
-  '/links': ['Links · Gully Labs', 'Every Gully Labs link in one place: the site, the app, the stock tracker, Gully AI, Gully Analytics, Gully Pay, Chain Kit, docs, the Telegram bot and the news channel.'],
-  '/score': ['Gully Score: transparent contract scores · Gully Labs', 'The Gully Score rates a contract 0 to 100 from public evidence only: verified code, who controls it, upgrades, delays, recent privileged changes, locks and holders. Nobody can pay to change a score.'],
-  '/ecosystem': ['Ecosystem: our projects and what we integrate with · Gully Labs', 'Every Gully Labs project with its own live numbers, the third-party services the code integrates with, and the launchpads on the Holder Map.'],
-  '/partners': ['Partners: Holder Map, SDK and webhooks for launchpads, wallets, explorers and chains · Gully Labs', 'What launchpads, wallets, explorers and chains get from Gully Labs: the embeddable Holder Map, the Gully Score badge, the SDK, launch webhooks, Gully Pay and Chain Kit, with copy-paste setup and a form to list your launchpad.'],
-  '/gully-id': ['Gully ID: the official sign-in service of Gully Labs · Gully Labs', 'Gully ID (gullyid.xyz) is the sign-in and wallet service built and operated by Gully Labs: one passkey for every Gully app. It never asks for a seed phrase or a private key.'],
-  '/about': ['About · Gully Labs', 'Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.'],
 }
-for (const [slug, [name, text]] of Object.entries(PROJECTS)) MAIN[`/projects/${slug}`] = [`${name} · Gully Labs`, text]
-// The product pages (src/pages/products, landing v3; copy restated from src/terminal/catalog.ts): [name, one line,
-// kit OG image under public/brand/web/og, schema.org applicationCategory]. Each product also lives on its own domain.
-export const PRODUCT_PAGES = {
-  'gully-id': ['Gully ID', 'Passwordless sign-in for any app: passkeys, wallets and email over OpenID Connect, with per-app consent.', 'gully-labs', 'SecurityApplication'],
-  chain: ['Gully Chain', 'An Arbitrum Orbit L3 for launches and trading, with Gully Core built in as its launchpad and DEX core.', 'gully-chain', 'BlockchainNetwork'],
-  street: ['Gully Street', 'The Gully Chain app: a social feed, five wallets per passkey, copy trading, Quests and the launchpad.', 'gully-chain', 'FinanceApplication'],
-  bridge: ['Gully Bridge', 'Move ETH between Arbitrum Sepolia and Gully Chain: a Hyperlane fast lane (gETH) and the canonical bridge.', 'gully-chain', 'FinanceApplication'],
-  safe: ['Gully Multisig', 'Multisig wallets on Gully Chain, for treasuries and teams.', 'gully-chain', 'FinanceApplication'],
-  'gully-sentry': ['Gully Sentry', 'Free testnet Sentry Keys and light watchers that check every Gully Chain assertion against their own node.', 'gully-chain', 'SecurityApplication'],
-  pay: ['Gully Pay', 'x402 payments, hosted checkout and a merchant OS, settled on chain to your own wallet.', 'gully-pay', 'FinanceApplication'],
-  rpc: ['Gully RPC', 'One key for every network: the node control plane and RPC gateway behind every Gully chain.', 'gully-rpc', 'DeveloperApplication'],
-  holders: ['HolderMaps', 'Who really holds a token: bubble maps, wallet clusters and deep checks, Gully Chain tokens included.', 'holdermaps', 'FinanceApplication'],
-  security: ['Gully Security', 'AI security scans, contract monitors and the Gully Score for any contract, Gully Chain contracts included.', 'gully-security', 'SecurityApplication'],
-  ai: ['Gully AI', 'Answers about Gully with sources and live figures; the Gully AI API opens when its GPU box is up.', 'gully-ai', 'DeveloperApplication'],
-  studio: ['Gully Studio', 'Our game studio: Unity 3D titles on Gully Chain with the Gully Game SDK, paid through Gully Pay.', 'gully-studio', 'GameApplication'],
-  ipfs: ['Gully IPFS', 'Our IPFS node and read-only gateway for Gully content: token art, metadata, NFT art and .gully sites.', 'gully-labs', 'DeveloperApplication'],
-  quests: ['Gully Quests', 'On-chain quests on Gully Chain: tasks verified by contract, rewards paid from ETH pools.', 'gully-chain', 'GameApplication'],
-  offerwall: ['Gully Offerwall', 'Advertisers fund quests through Gully Pay; players complete them on Gully Chain and earn USDC or points; publishers embed the wall and earn a share.', 'gully-chain', 'GameApplication'],
-  'gully-social': ['Gully Social', 'The social layer of Gully Chain: posts, follows, replies and profiles tied to your wallet and .gully name, in the Gully Street app.', 'gully-chain', 'SocialNetworkingApplication'],
-  'copy-trading': ['Copy Trading', 'Follow a Gully Chain trader and mirror their trades from your own passkey wallet, with your own limits and an on-chain fee capped at 1%.', 'gully-chain', 'FinanceApplication'],
-  'gully-core': ['Gully Core', 'Gully Chain’s own launchpad and DEX core: a token and its pool in one step, graduating to Gully Swap.', 'gully-chain', 'FinanceApplication'],
-}
-for (const [key, [name, text]] of Object.entries(PRODUCT_PAGES)) MAIN[`/products/${key}`] = [`${name} · Gully Labs`, `${text} Live charts on this page.`]
 
-/** A product page's share image (its kit OG) and JSON-LD (SoftwareApplication, or the chain as a Product). */
+const PUBLISHER = { '@type': 'Organization', name: 'Gully Labs', url: SITE }
+/** A breadcrumb trail: [[name, url | null], …], the page itself last. */
+const crumbsLd = (items) => ({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: items.map(([name, item], i) => ({ '@type': 'ListItem', position: i + 1, name, ...(item ? { item } : {}) })) })
+/** A page of this site, as schema.org sees it (WebPage, AboutPage, CollectionPage). */
+const webPageLd = (type, url, name, description) => ({ '@context': 'https://schema.org', '@type': type, name, url, description, inLanguage: 'en', isPartOf: { '@type': 'WebSite', name: 'Gully Labs', url: `${SITE}/` }, publisher: PUBLISHER })
+const HOME_CRUMB = ['Gully Labs', `${SITE}/`]
+
+/** A product page: its share image (its kit's card, a file under public/brand/web/og) and its JSON-LD: the product as
+    software (or the chain as a Product), its breadcrumb and the questions the page answers. */
 function productExtras(p) {
   const m = /^\/products\/([a-z-]+)$/.exec(p)
-  const d = m && PRODUCT_PAGES[m[1]]
+  const d = m && CONTENT.product[m[1]]
   if (!d) return null
   const url = `${SITE}${p}`
-  const image = `${SITE}/brand/web/og/${d[2]}.jpg`
+  const image = `${SITE}${d.og}`
+  const description = MAIN[p][1]
   const ld =
-    d[3] === 'BlockchainNetwork'
-      ? { '@context': 'https://schema.org', '@type': 'Product', name: d[0], description: d[1], url, image, brand: { '@type': 'Brand', name: 'Gully Labs' } }
-      : { '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: d[0], description: d[1], url, image, applicationCategory: d[3], operatingSystem: 'Web', publisher: { '@type': 'Organization', name: 'Gully Labs', url: SITE } }
-  const crumbs = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Gully Labs', item: `${SITE}/` }, { '@type': 'ListItem', position: 2, name: 'Products', item: `${SITE}/products` }, { '@type': 'ListItem', position: 3, name: d[0], item: url }] }
-  return { image, ld: [ld, crumbs] }
+    d.category === 'BlockchainNetwork'
+      ? { '@context': 'https://schema.org', '@type': 'Product', name: d.name, description, url, image, brand: { '@type': 'Brand', name: 'Gully Labs' } }
+      : { '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: d.name, description, url, image, applicationCategory: d.category, operatingSystem: 'Web', sameAs: d.url, publisher: PUBLISHER }
+  const faq = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: d.faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) }
+  return { image, ld: [ld, crumbsLd([HOME_CRUMB, ['Products', `${SITE}/products`], [d.name, url]]), faq] }
 }
 /** The services, as schema.org Services offered by Gully Labs (the /services page). */
 const SERVICES_LD = {
   '@context': 'https://schema.org',
   '@type': 'ItemList',
   name: 'Gully Labs services',
-  itemListElement: ['L2/L3 chain launch', 'Smart contract development', 'Security reviews and monitoring', 'dApp, web and mobile development', 'Payments integration', 'RPC and infrastructure', 'Token launch, quests and growth', 'AI integration', 'Game development'].map((name, i) => ({ '@type': 'ListItem', position: i + 1, item: { '@type': 'Service', name, provider: { '@type': 'Organization', name: 'Gully Labs', url: SITE }, areaServed: 'Worldwide' } })),
+  itemListElement: CONTENT.services.map(([name, description], i) => ({ '@type': 'ListItem', position: i + 1, item: { '@type': 'Service', name, description, provider: PUBLISHER, areaServed: 'Worldwide' } })),
 }
 
-// One page per tracked stock token, from the same tables the tracker reads (server/data next to this file).
+// One Holder Map page per tracked stock token (pageMeta answers these paths itself; listed in the sitemap only while
+// that chain has holder data). The stock pages themselves (/tracker/<chain>/<ticker>) are in CONTENT.meta.
 const HOLDER_PAGES = {}
-const CHAIN_NAMES = { robinhood: 'Robinhood Chain', bsc: 'BNB Chain', solana: 'Solana' }
-for (const key of Object.keys(CHAIN_NAMES)) {
-  let stocks = []
-  try {
-    stocks = JSON.parse(fs.readFileSync(new URL(`./data/${key}-stocks.json`, import.meta.url), 'utf8')).stocks
-  } catch {
-    /* no table: no pages for this chain */
+for (const [key, c] of Object.entries(CONTENT.stocks)) for (const [ticker] of c.rows) HOLDER_PAGES[`/holders/${key}/${ticker}`] = key
+
+/** A stock token page's body: the page's fixed copy (src/content/stockCopy.ts) filled in for this token, its contract
+    addresses from the tracker's own table, and the other tokens on its chain. Live figures are drawn by the page. */
+function stockBody(chainKey, ticker) {
+  const c = CONTENT.stocks[chainKey]
+  const row = c?.rows.find((r) => r[0] === ticker)
+  if (!row) return null
+  const [, , token, feed] = row
+  const K = CONTENT.stockCopy
+  const fill = (t) => t.replace(/\{(\w+)\}/g, (_, k) => ({ ticker, chain: c.name })[k] ?? '')
+  const elsewhere = Object.entries(CONTENT.stocks).filter(([k, x]) => k !== chainKey && x.rows.some((r) => r[0] === ticker)).map(([k, x]) => [`/tracker/${k}/${ticker}`, `${ticker} on ${x.name}`])
+  const sec = (h, o) => ({ h, level: 2, p: [], list: [], links: [], qa: [], ...o })
+  return {
+    // The page's own headline: the ticker and the company's name.
+    h1: `${ticker} ${row[1]}`,
+    crumbs: [['/tracker', pageHeading(MAIN['/tracker'][0])]],
+    sections: [
+      sec(K.headings.contracts, { list: [`${K.labels.token}: ${token}`, ...(feed ? [`${K.labels.feed}: ${feed}`] : [])] }),
+      sec(fill(K.headings.swaps), { qa: K.faq.map((f) => [f.q, fill(f.a)]) }),
+      sec(fill(K.headings.more), { links: [...c.rows.filter((r) => r[0] !== ticker).map((r) => [`/tracker/${chainKey}/${r[0]}`, r[0]]), ...elsewhere] }),
+      sec(null, { p: [K.disclaimer] }),
+    ],
   }
-  for (const s of stocks)
-    MAIN[`/tracker/${key}/${s.ticker}`] = [
-      `${s.ticker} token price vs fair price (${CHAIN_NAMES[key]}) · Gully Labs`,
-      `${s.name} (${s.ticker}) token on ${CHAIN_NAMES[key]}: its price in its deepest pool against its ${key === 'solana' ? 'Chainlink (or issuer)' : 'Chainlink'} fair price, the gap, pool depth and history, read live.`,
-    ]
-  // Its Holder Map (pageMeta answers these paths itself; listed for the sitemap only while that chain has holder data).
-  for (const s of stocks) HOLDER_PAGES[`/holders/${key}/${s.ticker}`] = key
 }
 
 /** The Holder Map pages worth listing: the most-scanned maps of the day (holders-intel's cached scan counts), at most
@@ -184,11 +168,6 @@ export function pricingChains() {
   return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0]
 }
 
-function pricingDescription() {
-  const list = pricingChains()
-  return `Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain's own coin ${list ? `on ${list} today; more chains as the treasury is deployed` : 'on the chains the treasury is deployed on'}, with no custody.`
-}
-
 const DOCS_PAGES = {
   '/': ['Gully Labs docs', 'Docs for Gully Labs: the stock token tracker on Robinhood Chain, BNB Chain and Solana, its public API, the widget and API keys, plus the Holder Map, Gully Score, Gully AI, the Telegram bot, swaps and status. Gully Chain, Gully Pay, Gully RPC and Gully Security have their own docs on their own domains.'],
   '/methodology': ['Methodology · Gully Labs docs', 'How fair prices, onchain prices, gaps and staleness are read and computed for every tokenised stock.'],
@@ -231,6 +210,8 @@ const ORG = {
   logo: `${SITE}/brand/icon/app-icon-512.png`,
   sameAs: ['https://x.com/Gully_Labs', 'https://github.com/gully-labs', 'https://t.me/GullyLabsNews', 'https://t.me/GullyLabsBot', 'https://www.youtube.com/@Gully_Labs', 'https://www.tiktok.com/@gully_labs', 'https://www.facebook.com/gullylabsllc', 'https://medium.com/@labsgully'],
 }
+/** The site itself, for search engines' site name. */
+const WEBSITE_LD = { '@context': 'https://schema.org', '@type': 'WebSite', name: 'Gully Labs', url: `${SITE}/`, description: MAIN['/'][1], inLanguage: 'en', publisher: PUBLISHER }
 /** The product as software: the web app and its public API, free to start (plans are listed on /pricing). */
 const APP_LD = {
   '@context': 'https://schema.org',
@@ -390,7 +371,8 @@ export function pageMeta(host, pathname) {
   const m = pageMetaFor(host, pathname)
   const h = String(host ?? '').split(':')[0].toLowerCase()
   const kind = isHolderMapsHost(h) ? 'holdermaps' : h === 'gullylabs.xyz' || isLocal(h) ? 'main' : null
-  return kind ? { ...m, shellLegal: SHELL_LEGAL[kind] } : m
+  // gullylabs.xyz pages are served with the site's header and footer links too (CONTENT.nav), like the page draws them.
+  return kind ? { ...m, shellLegal: SHELL_LEGAL[kind], ...(kind === 'main' ? { shellNav: pathname === '/' ? 'home' : 'page' } : {}) } : m
 }
 
 function pageMetaFor(host, pathname) {
@@ -458,11 +440,33 @@ function pageMetaFor(host, pathname) {
   // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), its pages name it as canonical.
   const secShort = securityPrimary() && p.startsWith('/security') ? securityShortPath(p) : null
   const prod = productExtras(p)
-  const links = p === '/' || p === '/products' ? [...Object.entries(PRODUCT_PAGES).map(([k, d]) => [`/products/${k}`, d[0]]), ...(p === '/' ? [['/products', 'All products'], ['/services', 'Services'], ['/tracker', 'Stock token tracker'], ['/about', 'About']] : [])] : p === '/legal' ? LEGAL_INDEX_LINKS : null
+  const url = SITE + (p === '/' ? '/' : p)
+  const name = pageHeading(m[0])
+  const stock = /^\/tracker\/([a-z]+)\/([^/]+)$/.exec(p)
+  const body = CONTENT.body[p] ?? (stock ? stockBody(stock[1], stock[2]) : null)
+  const links = p === '/legal' ? LEGAL_INDEX_LINKS : null
   const legalPage = LEGAL_PATHS.includes(p)
-  if (legalPage) return { links, title: m[0], description: m[1], canonical: SITE + p, found: true, image: KIT_OG, legal: 'main', ld: legalLd(SITE + p, pageHeading(m[0]), m[1]) }
+  if (legalPage) return { links, body, title: m[0], description: m[1], canonical: SITE + p, found: true, image: KIT_OG, legal: 'main', ld: [legalLd(SITE + p, name, m[1]), crumbsLd(p === '/legal' ? [HOME_CRUMB, [name, url]] : [HOME_CRUMB, [pageHeading(MAIN['/legal'][0]), `${SITE}/legal`], [name, url]])] }
+  const project = /^\/projects\/([a-z-]+)$/.exec(p)
+  const ld = prod
+    ? prod.ld
+    : p === '/'
+      ? [ORG, WEBSITE_LD, APP_LD, HUB_LD]
+      : p === '/products'
+        ? [{ '@context': 'https://schema.org', '@type': 'ItemList', name: 'Gully Labs products', itemListElement: Object.entries(CONTENT.product).map(([slug, d], i) => ({ '@type': 'ListItem', position: i + 1, name: d.name, url: `${SITE}/products/${slug}` })) }, crumbsLd([HOME_CRUMB, [name, url]])]
+        : p === '/services'
+          ? [ORG, SERVICES_LD, crumbsLd([HOME_CRUMB, [name, url]])]
+          : p === '/tracker'
+            ? [TRACKER_LD, crumbsLd([HOME_CRUMB, [name, url]])]
+            : stock
+              ? [webPageLd('WebPage', url, name, m[1]), crumbsLd([HOME_CRUMB, [pageHeading(MAIN['/tracker'][0]), `${SITE}/tracker`], [`${stock[2]} on ${CONTENT.stocks[stock[1]]?.name ?? stock[1]}`, url]])]
+              : project && CONTENT.project[project[1]]
+                ? [{ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: CONTENT.project[project[1]].name, description: m[1], url, sameAs: CONTENT.project[project[1]].url, applicationCategory: 'FinanceApplication', operatingSystem: 'Web', publisher: PUBLISHER }, crumbsLd([HOME_CRUMB, [name, url]])]
+                : secShort
+                  ? null
+                  : [webPageLd(p === '/about' ? 'AboutPage' : p === '/links' || p === '/ecosystem' ? 'CollectionPage' : 'WebPage', url, name, m[1]), crumbsLd([HOME_CRUMB, [name, url]])]
   return {
-    links, title: m[0], description: p === '/pricing' ? pricingDescription() : m[1], canonical: secShort ? SECURITY_URL + secShort : SITE + (p === '/' ? '/' : p), found: true, image: prod ? prod.image : p.startsWith('/security') ? `${SITE}/social/og-security.png` : p === '/ask' ? GULLYAI_OG : p === '/' ? HUB_OG : KIT_OG, ld: prod ? prod.ld : p === '/' ? [ORG, APP_LD, HUB_LD] : p === '/services' ? [ORG, SERVICES_LD] : p === '/tracker' ? TRACKER_LD : null, ...(p === '/ask' ? { brand: GULLYAI_BRAND } : {}) }
+    links, body, title: m[0], description: m[1], canonical: secShort ? SECURITY_URL + secShort : url, found: true, image: prod ? prod.image : p.startsWith('/security') ? `${SITE}/social/og-security.png` : p === '/ask' ? GULLYAI_OG : p === '/' ? HUB_OG : KIT_OG, ld, ...(p === '/ask' ? { brand: GULLYAI_BRAND } : {}) }
 }
 
 /** A report's subject in a title: the contract or the repository. */
@@ -478,13 +482,42 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').repl
 /** The page's name for its h1: its title without the " · Brand" suffix. */
 const pageHeading = (title) => String(title).replace(/ · [^·]+$/, '')
 
-/** The pre-render body: an h1, the description and (when the page has them) its key links. */
+/** A link in the pre-render: another site opens in a new tab, as every link on the page does (owner rule). */
+function shellLink(href, text) {
+  const ext = /^https?:\/\//.test(href) && !href.startsWith(`${SITE}/`) && href !== SITE
+  return `<a href="${esc(href)}"${ext ? ' target="_blank" rel="noopener noreferrer"' : ''}>${esc(text)}</a>`
+}
+const shellList = (links) => `<ul>${links.map(([href, text]) => `<li>${shellLink(href, text)}</li>`).join('')}</ul>`
+
+/** One section of a page's body: its heading (h2 or h3, never an h1), sentences, list, questions and links. */
+function shellSection(s) {
+  const h = s.h ? `<h${s.level === 3 ? 3 : 2}>${esc(s.h)}</h${s.level === 3 ? 3 : 2}>` : ''
+  const p = (s.p ?? []).map((t) => `<p>${esc(t)}</p>`).join('')
+  const list = s.list?.length ? `<ul>${s.list.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''
+  const qa = s.qa?.length ? `<dl>${s.qa.map(([q, a]) => `<dt>${esc(q)}</dt><dd>${esc(a)}</dd>`).join('')}</dl>` : ''
+  const links = s.links?.length ? shellList(s.links) : ''
+  return `<section>${h}${p}${list}${qa}${links}</section>`
+}
+
+/** The pre-render body, replaced by the app on its first render: the page's one h1, its description, its own copy,
+    headings and links (meta.body, from page-content.json) and, on gullylabs.xyz, the header's and footer's links as
+    the page draws them. A page with no body yet (other hosts) keeps the short form: h1, description, key links. */
 function shellBody(meta) {
+  const N = CONTENT.nav
+  const body = meta.body
   const links = (meta.links ?? []).filter(([href, text]) => href && text).slice(0, 40)
-  const nav = links.length ? `<nav aria-label="Pages"><ul>${links.map(([href, text]) => `<li><a href="${esc(href)}">${esc(text)}</a></li>`).join('')}</ul></nav>` : ''
+  const nav = links.length ? `<nav aria-label="Pages">${shellList(links)}</nav>` : ''
+  const crumbs = body?.crumbs?.length ? `<nav aria-label="Breadcrumb">${[['/', 'Gully Labs'], ...body.crumbs].map(([href, text]) => shellLink(href, text)).join(' / ')}</nav>` : ''
+  const main = `<main>${crumbs}<h1>${esc(body?.h1 ?? pageHeading(meta.title))}</h1><p>${esc(meta.description)}</p>${(body?.sections ?? []).map(shellSection).join('')}${nav}</main>`
   // The Terms / Privacy / Legal links every footer carries (gullylabs.xyz and holdermaps.xyz pages; set by pageMeta).
-  const legal = meta.shellLegal ? `<footer><nav aria-label="Legal">${meta.shellLegal.map(([href, text]) => `<a href="${esc(href)}">${esc(text)}</a>`).join(' · ')}</nav></footer>` : ''
-  return `<main data-shell style="max-width:720px;margin:48px auto;padding:0 16px;font:16px/1.5 system-ui,sans-serif"><h1>${esc(pageHeading(meta.title))}</h1><p>${esc(meta.description)}</p>${nav}${legal}</main>`
+  const legal = meta.shellLegal ? `<nav aria-label="Legal">${meta.shellLegal.map(([href, text]) => shellLink(href, text)).join(' · ')}</nav>` : ''
+  const style = 'max-width:720px;margin:48px auto;padding:0 16px;font:16px/1.5 system-ui,sans-serif'
+  if (!meta.shellNav) return `<div data-shell style="${style}">${main}${legal ? `<footer>${legal}</footer>` : ''}</div>`
+  const home = meta.shellNav === 'home'
+  const header = `<header><a href="/">Gully Labs</a><nav aria-label="Main">${shellList(home ? N.headerHome : N.header)}</nav></header>`
+  const products = `<nav aria-label="Gully products">${N.products.map((g) => `<p>${esc(g.group)}</p>${shellList(g.links)}`).join('')}</nav>`
+  const footer = `<footer><p>${esc(N.tagline)}</p><nav aria-label="Footer">${shellList(N.footer)}</nav>${products}${home ? '' : `<nav aria-label="Site pages">${shellList(N.more)}</nav>`}${legal}<p>${esc(N.copy)}</p></footer>`
+  return `<div data-shell style="${style}">${header}${main}${footer}</div>`
 }
 
 /** Rewrites index.html's head for one page. */
@@ -580,6 +613,8 @@ export function sitemapFor(host) {
   if (!host.startsWith('docs.') && !isAppHost(host) && !isHolderMapsHost(host) && !isSecurityHost(host)) for (const p of scoreSitemapPaths()) urls.push([SITE + p, '0.5', 'daily'])
   // Every <loc> is a real absolute address: nothing built from a missing (null/undefined) path gets listed.
   urls = urls.filter(([u]) => validSitemapUrl(u))
-  const rows = urls.map(([u, pr, f]) => `  <url><loc>${u}</loc><lastmod>${today}</lastmod><changefreq>${f}</changefreq><priority>${pr}</priority></url>`)
+  // lastmod: a page whose figures change by the hour or day (changefreq hourly or daily) changed today; a page whose
+  // content only changes with a release carries the date this build's content was written.
+  const rows = urls.map(([u, pr, f]) => `  <url><loc>${u}</loc><lastmod>${f === 'hourly' || f === 'daily' ? today : BUILT_ON < today ? BUILT_ON : today}</lastmod><changefreq>${f}</changefreq><priority>${pr}</priority></url>`)
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${rows.join('\n')}\n</urlset>\n`
 }

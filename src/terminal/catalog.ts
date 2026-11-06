@@ -587,6 +587,15 @@ export const PRODUCTS: ProductDef[] = [
 
 export const productBySlug = (s: string | undefined) => PRODUCTS.find((p) => p.slug === s) ?? null
 
+/** The product page's section headings (src/pages/products/ProductPage.tsx), also drawn in the page the server
+    sends before scripts run (scripts/build-page-content.mjs). */
+export const PRODUCT_SECTIONS = { features: 'What it does', how: 'Three steps', pricing: 'Prices in USD', faq: 'Questions', links: 'Go further' }
+/** What the page says about price for a product with no published price table. */
+export const pricingNote = (p: Pick<ProductDef, 'pricing' | 'urlLabel'>) =>
+  p.pricing === 'free-testnet' ? 'Free on testnet. Mainnet pricing is published when mainnet opens.' : p.pricing === 'quoted' ? 'Quoted per project. Tell us what you need below.' : `Plans and fees are published on ${p.urlLabel}, in USD.`
+/** Every question on a product's page: its own, then the one every product answers. */
+export const productFaq = (p: Pick<ProductDef, 'name' | 'faq'>): [string, string][] => [...p.faq, [`Does ${p.name} support Gully Chain?`, 'Yes. Every Gully product supports Gully Chain (chain 485590 on testnet today).']]
+
 /* ---------------------------------------------------------------- services ---- */
 export type ServiceKey = 'chain' | 'contracts' | 'security' | 'apps' | 'payments' | 'infra' | 'launch' | 'ai' | 'games'
 export interface ServiceDef {
@@ -609,5 +618,8 @@ export const SERVICES: ServiceDef[] = [
   { key: 'ai', title: 'AI integration', desc: 'Assistants that cite their sources and read live on-chain data, like Gully AI.', deliverables: ['Retrieval over your docs', 'Live data tools', 'Chat on web and Telegram', 'Evaluation and logs'], timeline: '2–6 weeks', proof: 'ai' },
   { key: 'games', title: 'Game development', desc: 'Unity 3D games with on-chain items and scores, from Gully Studio.', deliverables: ['Unity 3D game', 'Gully Game SDK integration', 'On-chain scores and items', 'In-game payments'], timeline: '8–24 weeks', proof: 'studio' },
 ]
+
+/** The service a product page offers to build "one like it" (its Start a project link and its Links section). */
+export const SERVICE_FOR: Partial<Record<Slug, ServiceKey>> = { 'gully-sentry': 'security', chain: 'chain', street: 'apps', bridge: 'chain', safe: 'contracts', pay: 'payments', rpc: 'infra', holders: 'apps', security: 'security', ai: 'ai', studio: 'games', ipfs: 'infra', quests: 'launch', offerwall: 'launch', 'gully-social': 'apps', 'copy-trading': 'apps', 'gully-core': 'launch' }
 
 export const BUDGETS = ['Under $10k', '$10k–$25k', '$25k–$50k', '$50k–$100k', '$100k+', 'Not sure yet']

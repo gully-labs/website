@@ -19,10 +19,9 @@ import { ContactForm, Process, ServicesList } from '../../terminal/sections'
 import './constellation.css'
 import { useHubLive } from './useHubLive'
 import { PeddleFamily } from './PeddleFamily'
-import { changes, curve, EDGES, fmtNum, HUB_PRODUCTS, kpiText, liveEvents, MAP, NEWS, productOf, readings, seenOf, STATUS_LABEL, suite, ago, LANDING_DESCRIPTION, LANDING_TITLE, PRODUCT_COUNT_WORD, type ProductKey, type Reading, type Seen, type Sources } from './hubData'
+import { changes, curve, EDGES, fmtNum, HUB_PRODUCTS, kpiText, liveEvents, MAP, NEWS, productOf, readings, seenOf, STATUS_LABEL, suite, ago, LANDING_HEADLINE, LANDING_LEDE, type ProductKey, type Reading, type Seen, type Sources } from './hubData'
 
 const fmtUsd = (v: number | null) => (v == null ? '—' : v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : v >= 1e4 ? `$${(v / 1e3).toFixed(1)}K` : `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}`)
-const COUNT = PRODUCT_COUNT_WORD.charAt(0).toUpperCase() + PRODUCT_COUNT_WORD.slice(1)
 const tagOf = (s: string) => (s === 'live' ? 'live' : s === 'soon' || s === 'rolling out' || s === 'coming soon' ? 'soon' : 'new')
 
 /* ---------------------------------------------------------------- the map ---- */
@@ -600,10 +599,7 @@ export function Constellation() {
 
   return (
     <div className="lcp gt cst">
-      <Seo
-        title={LANDING_TITLE}
-        description={LANDING_DESCRIPTION}
-      />
+      <Seo page="/" />
       <section className="cst-hero" aria-labelledby="cst-h1">
         <div className="gt-wrap cst-hero-in">
           <div className="cst-copy">
@@ -612,11 +608,11 @@ export function Constellation() {
               Gully Labs · product studio
             </p>
             <h1 id="cst-h1">
-              One studio.
+              {LANDING_HEADLINE[0]}
               <br />
-              <em>{COUNT} products</em> that work as one.
+              <em>{LANDING_HEADLINE[1]}</em> {LANDING_HEADLINE[2]}
             </h1>
-            <p className="cst-lede">We build the whole path a user takes on chain, from sign-in and payments to trading on PeddleSwap and launching on Peddles, and every piece plugs into the next.</p>
+            <p className="cst-lede">{LANDING_LEDE}</p>
             <div className="cst-kpis" aria-live="polite">
               <div>
                 <span className="gt-k">Services up</span>

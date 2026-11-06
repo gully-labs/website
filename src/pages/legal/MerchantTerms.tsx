@@ -48,7 +48,7 @@ export function MerchantTermsPage() {
   const days = cfg?.pauseAfterDays ?? 7
   return (
     <>
-      <Seo title="Gully Pay merchant terms" description="The terms for businesses that take crypto payments with Gully Pay: non-custodial, a fee per payment only, weekly fee statements, and what happens when a statement is unpaid." />
+      <Seo page="/legal/merchant-terms" />
       <LegalPage
         kicker="Legal · Gully Pay stores"
         title="Merchant terms"

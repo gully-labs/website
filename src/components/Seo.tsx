@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { SITE_URL } from '../content/site'
+import { fullTitle, SEO_PAGES } from '../content/seoPages'
 import { holderMapsPrimary, holderShortPath, HOLDERMAPS_URL, isHolderMapsHost, isSecurityHost, securityInternalPath, securityPrimary, securityShortPath, SECURITY_URL } from '../site-host'
 
 /** A page's canonical address: holdermaps.xyz for the Holder Map's pages once it is their home, gullysecurity.xyz for
@@ -26,8 +27,15 @@ function setMeta(attr: 'name' | 'property', key: string, content: string) {
   el.content = content
 }
 
-/** Updates the page title and description tags that index.html ships with. */
-export function Seo({ title, description, noindex = false, bare = false }: { title: string; description: string; noindex?: boolean; bare?: boolean }) {
+type SeoProps = ({ page: string; title?: undefined; description?: undefined } | { page?: undefined; title: string; description: string }) & { noindex?: boolean; bare?: boolean }
+
+/** Updates the page title and description tags that index.html ships with. `page` names an entry of
+    src/content/seoPages.ts (the table the server's head tags are written from), so the two are one text. */
+export function Seo(props: SeoProps) {
+  const { noindex = false, bare = false, page } = props
+  const entry = page ? SEO_PAGES[page] : undefined
+  const title = entry?.title ?? props.title ?? ''
+  const description = entry?.description ?? props.description ?? ''
   // A page that is not one (the 404): keep it out of search results while it is shown.
   useEffect(() => {
     if (!noindex) return
@@ -37,14 +45,14 @@ export function Seo({ title, description, noindex = false, bare = false }: { tit
   useEffect(() => {
     // `bare`: the title as given (the checkout is "Pay <store>", not a Gully Labs page). On holdermaps.xyz every
     // page is a HolderMaps page, and on gullysecurity.xyz a Gully Security page.
-    const full = bare ? title : isHolderMapsHost() ? `${title.replace(/ · Holder Map$/, '')} · HolderMaps` : isSecurityHost() ? securityTitle(title) : `${title} · Gully Labs`
+    const full = bare ? title : isHolderMapsHost() ? `${title.replace(/ · Holder Map$/, '')} · HolderMaps` : isSecurityHost() ? securityTitle(title) : fullTitle(page ?? '', title)
     document.title = full
     setMeta('name', 'description', description)
     setMeta('property', 'og:title', full)
     setMeta('property', 'og:description', description)
     setMeta('name', 'twitter:title', full)
     setMeta('name', 'twitter:description', description)
-  }, [title, description, bare])
+  }, [title, description, bare, page])
   // The canonical address and og:url follow the page (the server writes them for the first load; a client-side
   // navigation must not leave the previous page's). Pages that are not indexed (the 404, checkouts) have none.
   useEffect(() => {

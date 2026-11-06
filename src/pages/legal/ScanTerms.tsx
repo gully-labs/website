@@ -61,7 +61,7 @@ export function ScanTermsPage() {
   const maxMb = offer ? Math.round(offer.scan.maxUploadBytes / 1_000_000) : 2
   return (
     <>
-      <Seo title="AI Security Scan terms" description="The terms for the AI Security Scan: what an automated scan is and is not, free scans and prices, re-run credits instead of refunds, how long your code is kept, and the limits of our liability." />
+      <Seo page="/legal/scan-terms" />
       <LegalPage
         kicker="Legal · Gully Security"
         title="Scan terms"
