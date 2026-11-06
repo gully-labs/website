@@ -1442,7 +1442,7 @@
     ],
     [
      "Where do I get an RPC key?",
-     "From Gully RPC. The public endpoint stays free and rate-limited."
+     "From Gully RPC: Free, Developer or Business plans at gullyrpc.xyz/pricing. The public endpoint stays free and rate-limited."
     ],
     [
      "Does Gully Chain support Gully Chain?",
@@ -1752,13 +1752,17 @@
   "gully-core": {
    "name": "Gully Core",
    "line": "Gully Chain’s own launchpad and DEX core: a token and its pool in one step, graduating to Gully Swap.",
-   "url": "https://kre8.fun/launch",
+   "url": "https://gullychain.xyz/core/",
    "og": "/brand/web/og/gully-chain.png",
    "category": "FinanceApplication",
    "faq": [
     [
      "Who builds Gully Core?",
      "Gully Labs. It is our own launchpad and DEX core for Gully Chain, run as part of the chain."
+    ],
+    [
+     "Where is it live?",
+     "On testnet: the app is at gullychain.xyz/core. Nothing is on any mainnet yet."
     ],
     [
      "Does Gully Core support Gully Chain?",
@@ -3327,6 +3331,7 @@
       "Store plugins: WooCommerce, Magento 2, OpenCart 4, PrestaShop; Shopify connector (beta)",
       "x402 facilitator, Gully Chain among its networks",
       "USDC.e on Gully Chain testnet",
+      "Direct payouts to your own wallet (testnet)",
       "Merchant review: KYB checks and Stripe Connect verification",
       "Creator tip pages at pay.gullypay.xyz (rolling out)"
      ],
@@ -3382,6 +3387,7 @@
      ],
      "list": [
       "API keys (open sign-up, free tier)",
+      "Plans per 30 days: Free 5M, Developer $49 50M, Business $199 300M weighted requests",
       "Usage metering (beta)",
       "Gully Chain on the gateway, keyless endpoint too"
      ],
@@ -3407,7 +3413,8 @@
      "list": [
       "Any-token holder maps on six chains",
       "Gully Chain maps",
-      "Replay, live updates, CSV export"
+      "Replay, live updates, CSV export",
+      "Deep check: $9 per token"
      ],
      "links": [
       [
@@ -3566,6 +3573,9 @@
       "Every item is live or shipped this week. Dates are UTC."
      ],
      "list": [
+      "2026-11-05 · Gully Chain: Gully Multisig on Anubis Network: the unmodified Safe 1.4.1 contracts at the canonical addresses (live)",
+      "2026-11-05 · Gully RPC: Gully RPC plans: Free, Developer and Business (live)",
+      "2026-11-05 · Gully Pay: Direct payouts on Gully Pay: paid to your own wallet (testnet)",
       "2026-10-28 · Gully Pay: USDC.e is the dollar on Gully Chain: checkout and x402 on Gully Chain testnet settle in USDC.e (testnet)",
       "2026-10-28 · Gully Chain: Gully Offerwall on Gully Chain testnet: advertisers fund quests, players earn USDC or points, publishers embed the wall (testnet)",
       "2026-10-28 · Gully Chain: Gully Sentry: free testnet Sentry Keys and watchers (testnet)",
@@ -4569,7 +4579,7 @@
       ],
       [
        "Where do I get an RPC key?",
-       "From Gully RPC. The public endpoint stays free and rate-limited."
+       "From Gully RPC: Free, Developer or Business plans at gullyrpc.xyz/pricing. The public endpoint stays free and rate-limited."
       ],
       [
        "Does Gully Chain support Gully Chain?",
@@ -6324,8 +6334,12 @@
      "list": [],
      "links": [
       [
+       "https://gullychain.xyz/core/",
+       "Open gullychain.xyz/core"
+      ],
+      [
        "https://kre8.fun/launch",
-       "Open kre8.fun/launch"
+       "Launch on kre8.fun"
       ],
       [
        "https://docs.gullychain.xyz/gully-core/",
@@ -6341,7 +6355,9 @@
      "list": [
       "One-step launch: Token, bonding curve and pool in a single transaction.",
       "Graduation: Completed curves graduate to a Gully Swap pool.",
-      "Checked by HolderMaps: Every launch can be mapped and health-checked."
+      "Checked by HolderMaps: Every launch can be mapped and health-checked.",
+      "For outside builders: A flat 0.30% of every trade on pools you create, and nothing else.",
+      "Its lineage: Built on PancakeSwap Infinity’s audited core."
      ],
      "links": [],
      "qa": []
@@ -6378,6 +6394,10 @@
       [
        "Who builds Gully Core?",
        "Gully Labs. It is our own launchpad and DEX core for Gully Chain, run as part of the chain."
+      ],
+      [
+       "Where is it live?",
+       "On testnet: the app is at gullychain.xyz/core. Nothing is on any mainnet yet."
       ],
       [
        "Does Gully Core support Gully Chain?",
