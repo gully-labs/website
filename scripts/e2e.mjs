@@ -463,7 +463,7 @@ await step('terms of service', async () => {
       }
       await designAudit(page, 'terms 1440')
     }
-    const small = await page.locator('[data-testid="legal-toc"] a, [data-testid="legal-footer"] nav a, [data-testid="legal-glance"] a').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().height < 43.5).map((e) => e.textContent.trim().slice(0, 24)))
+    const small = await page.locator('[data-testid="legal-toc"] a, [data-testid="legal-footer"] nav a, [data-testid="legal-glance"] a').evaluateAll((els) => els.filter((e) => { const r = e.getBoundingClientRect(); return r.height > 0 && r.height < 43.5 }).map((e) => e.textContent.trim().slice(0, 24)))
     check(`terms ${width}: section links and glance cards are 44 px taps`, small.length === 0, small.join(' | '))
     await noHorizontalScroll(page, `terms ${width}`)
     await w.verify()
@@ -1902,7 +1902,7 @@ await step('docs design audit 3 g1', async () => {
     const caps = await page.evaluate(() => [...document.querySelectorAll('#docs-main figure > div > span')].filter((e) => e.scrollWidth > e.clientWidth + 1 || getComputedStyle(e).textOverflow === 'ellipsis').map((e) => e.textContent.slice(0, 40)))
     check(`docs api at ${width}: no truncated code caption`, caps.length === 0, caps.join(' | '))
     await page.goto(`${BASE}/`)
-    const foot = await page.evaluate(() => [...document.querySelectorAll('footer nav a, footer nav button')].map((e) => { const r = e.getBoundingClientRect(); return [e.textContent.trim().slice(0, 20), Math.round(r.width), Math.round(r.height)] }).filter(([, w, h]) => w < 44 || h < 44))
+    const foot = await page.evaluate(() => [...document.querySelectorAll('footer nav a, footer nav button')].filter((e) => e.getBoundingClientRect().width > 0).map((e) => { const r = e.getBoundingClientRect(); return [e.textContent.trim().slice(0, 20), Math.round(r.width), Math.round(r.height)] }).filter(([, w, h]) => w < 44 || h < 44))
     check(`footer at ${width}: every link is a 44 px tap`, foot.length === 0, JSON.stringify(foot))
     const tg = page.locator('footer a[href="https://t.me/GullyLabsBot?start=contact"]')
     check(`footer at ${width}: Chat on Telegram link`, (await tg.count()) === 1 && /Chat on Telegram/.test(await tg.innerText()))
