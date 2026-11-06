@@ -151,9 +151,9 @@ import { fileURLToPath } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 export const KIT_FILES = {
-  icon: { file: 'icon/gully-labs-icon.png', width: 343, height: 372 },
-  wordmark: { file: 'logo/gully-labs-wordmark-horizontal.png', width: 1171, height: 116 },
-  wordmarkOnLight: { file: 'logo/gully-labs-wordmark-horizontal-on-light.png', width: 1171, height: 116 },
+  icon: { file: 'kit/icon/icon-512.png', width: 512, height: 512 },
+  wordmark: { file: 'kit/logotype-reversed.svg', width: 533, height: 97 },
+  wordmarkOnLight: { file: 'kit/logotype-color.svg', width: 533, height: 97 },
 }
 const uris = new Map()
 /** A kit file as a data URI (dist/brand in production, public/brand in dev), or null when missing. */
@@ -161,7 +161,7 @@ export function kitDataUri(key) {
   if (uris.has(key)) return uris.get(key)
   const rel = KIT_FILES[key].file
   const p = [process.env.DIST_DIR && path.join(process.env.DIST_DIR, 'brand', rel), path.join(HERE, 'dist', 'brand', rel), path.join(HERE, '..', 'dist', 'brand', rel), path.join(HERE, '..', 'public', 'brand', rel)].find((c) => c && fs.existsSync(c))
-  const uri = p ? `data:image/png;base64,${fs.readFileSync(p).toString('base64')}` : null
+  const uri = p ? `data:image/${rel.endsWith('.svg') ? 'svg+xml' : 'png'};base64,${fs.readFileSync(p).toString('base64')}` : null
   uris.set(key, uri)
   return uri
 }
@@ -169,14 +169,9 @@ export function kitDataUri(key) {
 /** The kit's compact logo (flask icon + horizontal wordmark) for server-rendered HTML; `height` is the icon's. */
 export function wordmarkSvg({ height = 28, theme = 'dark', attrs = '', title = 'Gully Labs' } = {}) {
   const r = (n) => Math.round(n * 100) / 100
-  const iw = r((height * 343) / 372)
-  const wh = r((height * 17) / 33)
-  const ww = r((wh * 1171) / 116)
-  const gap = r((height * 10) / 33)
-  const wm = theme === 'light' ? 'gully-labs-wordmark-horizontal-on-light.png' : 'gully-labs-wordmark-horizontal.png'
+  const w = r((height * 533) / 97)
+  const f = theme === 'light' ? 'logotype-color.svg' : 'logotype-reversed.svg'
   return (
-    `<span role="img" aria-label="${title}" data-brand="kit" style="display:inline-flex;align-items:center;gap:${gap}px;height:${height}px" ${attrs}>` +
-    `<img src="https://gullylabs.xyz/brand/icon/gully-labs-icon.png" width="${iw}" height="${height}" alt="">` +
-    `<img src="https://gullylabs.xyz/brand/logo/${wm}" width="${ww}" height="${wh}" alt=""></span>`
+    `<img src="https://gullylabs.xyz/brand/kit/${f}" width="${w}" height="${height}" alt="${title}" data-brand="kit" ${attrs}>`
   )
 }

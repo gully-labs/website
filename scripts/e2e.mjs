@@ -2845,7 +2845,7 @@ await step('brand kit everywhere', async () => {
     const html = await (await fetch(BASE + f)).text()
     check(`${f}: inlines the kit wordmark (outlined paths), no typed SVG text`, html.includes('data-brand="kit"') && !/<text[\s>]/.test(html))
   }
-  check('widget.js: the credit carries the kit mark', WIDGET_JS.toString().includes('/brand/icon/favicon-32.png'))
+  check('widget.js: the credit carries the kit mark', WIDGET_JS.toString().includes('/brand/kit/icon/icon-32.png'))
   for (const f of ['/favicon.ico', '/favicon-32.png', '/apple-touch-icon.png', '/icon-192.png', '/icon-512.png', '/brand/icon/gully-labs-icon.png', '/brand/logo/gully-labs-wordmark-horizontal.png']) {
     check(`${f} is served`, (await fetch(BASE + f)).status === 200)
   }

@@ -18,8 +18,8 @@
 //     icon) is precached at install under a versioned cache; older versions' caches are deleted on activate.
 /* ------------------------------------------------------------------ manifests --- */
 
-// Kit tokens (public/brand/tokens/tokens.json): lab-night for the background and the browser chrome.
-const LAB_NIGHT = '#06050D'
+// The 2026-11 kit's navy for the background and the browser chrome.
+const KIT_NAVY = '#0E1C38'
 const ICONS = [
   { src: '/brand/kit/icon/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
   { src: '/brand/kit/icon/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
@@ -35,8 +35,8 @@ export const SITE_MANIFEST = {
   scope: '/',
   display: 'standalone',
   orientation: 'any',
-  background_color: LAB_NIGHT,
-  theme_color: LAB_NIGHT,
+  background_color: KIT_NAVY,
+  theme_color: KIT_NAVY,
   icons: ICONS,
 }
 
