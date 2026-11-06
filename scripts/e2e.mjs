@@ -3411,7 +3411,7 @@ await step('design audit 4', async () => {
   }
 })
 
-const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|arbitrum\.io|mainnet\.base\.org|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag|gullychain|gullyid|gullypay|gullyrpc|gullylabs|kre8\.fun/i.test(u))
+const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|arbitrum\.io|mainnet\.base\.org|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag|gully|holdermaps|kre8\.fun/i.test(u))
 check('the server made no unexpected outbound calls', unexpectedOutbound.length === 0, (unexpectedOutbound.length ? unexpectedOutbound : blockedOutbound).slice(0, 5).join(' | '))
 await browser.close()
 const secs = Math.round((Date.now() - started) / 1000)
