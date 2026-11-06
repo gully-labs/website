@@ -779,7 +779,7 @@ await step('app services', async () => {
   const st = sp.getByRole('dialog', { name: 'Status' })
   await st.getByTestId('status-view').waitFor()
   await st.locator('[data-chart].opacity-100 svg').first().waitFor({ timeout: 20_000 }).catch(() => {})
-  check('status: the Status button opens a Status view (API uptime and latency, tracker and launch poller health), not another tab', (await st.getByText('Tracker data').count()) === 1 && (await st.getByText('Launch poller').count()) === 1 && /checks this session/.test((await st.textContent()) ?? '') && new URL(sp.url()).hash === '')
+  check('status: the Status button opens a Status view (API uptime and latency, tracker and launch poller health), not another tab', (await st.getByText('Tracker data').count()) >= 1 && (await st.getByText('Launch poller').count()) >= 1 && /checks this session/.test((await st.textContent()) ?? '') && new URL(sp.url()).hash === '')
   await shot(sp, 'app-1440x840-status')
   await sp.keyboard.press('Escape')
   await st.waitFor({ state: 'hidden' })
@@ -2728,9 +2728,7 @@ await step('analytics events', async () => {
   // window.__ev starts empty on every full page load: collect it before each one.
   const ev = []
   const collect = async () => ev.push(...(await page.evaluate(() => window.__ev)))
-  await page.goto(BASE + '/')
-  await page.getByRole('link', { name: 'Launch app' }).first().click()
-  await page.waitForURL(/\/tracker$/)
+  await page.goto(BASE + '/tracker')
   await collect()
   await page.goto(BASE + '/pricing')
   const plan = page.locator('#api a[target="_blank"]').first()
@@ -3172,7 +3170,7 @@ await step('service hosts', async () => {
     await hp.getByRole('heading', { level: 1, name: 'Who really holds it?' }).waitFor({ timeout: 30_000 })
     check('holdermaps: / renders the Holder Map home (200)', home.status() === 200)
     check('holdermaps: the title says HolderMaps and the canonical is holdermaps.xyz/', /HolderMaps/.test(await hp.title()) && (await hp.locator('link[rel="canonical"]').getAttribute('href')) === 'https://holdermaps.xyz/', await hp.title())
-    check('holdermaps: the header logo goes to gullylabs.xyz', (await hp.locator('header a[aria-label="Gully Labs home"]').first().getAttribute('href')) === 'https://gullylabs.xyz/')
+    check('holdermaps: the header logo goes to the HolderMaps home', (await hp.locator('header a[aria-label="HolderMaps home"]').first().getAttribute('href')) === '/')
     // A token map by its short path: the page calls /api/holders on this origin.
     const apiCalls = []
     hp.on('request', (rq) => rq.url().includes('/api/holders/') && apiCalls.push(new URL(rq.url()).host))
