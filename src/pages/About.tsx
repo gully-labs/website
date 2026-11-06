@@ -79,7 +79,7 @@ export function About() {
           ].map((s, i) => (
             <div key={s.label} className="group relative flex flex-col gap-2 overflow-hidden bg-surface p-7" style={rise(i)}>
               <dt className="font-mono text-[11px] tracking-[1px] text-faint">{s.label}</dt>
-              <dd className={`m-0 font-display text-[56px] leading-none font-extrabold ${s.gold ? 'text-gold' : 'text-ink'}`}>{s.value}</dd>
+              <dd className={`m-0 font-display text-[length:clamp(34px,10.5vw,56px)] leading-none font-extrabold ${s.gold ? 'text-gold' : 'text-ink'}`}>{s.value}</dd>
               {s.note && <span className="min-w-0 text-[13px] break-words text-muted">{s.note}</span>}
               <span aria-hidden className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-gold transition-transform duration-300 group-hover:scale-x-100" />
             </div>

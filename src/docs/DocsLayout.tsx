@@ -266,16 +266,16 @@ export function DocsLayout() {
             >
               {open ? <X size={18} aria-hidden /> : <Menu size={18} aria-hidden />}
             </button>
-            <NavLink to={home} end className="flex min-h-11 min-w-0 items-center gap-3 text-ink no-underline max-[359px]:min-w-11 max-[359px]:justify-center" aria-label="Gully Labs Docs, home">
+            <NavLink to={home} end className="flex min-h-11 min-w-0 items-center gap-3 text-ink no-underline max-[419px]:min-w-11 max-[419px]:justify-center" aria-label="Gully Labs Docs, home">
               {/* A smaller wordmark on narrow phones, so the menu, Gully AI and site buttons fit at 390 px. */}
               <span className="flex max-[479px]:hidden">
                 <Wordmark height={24} decorative />
               </span>
-              <span className="hidden max-[479px]:flex max-[359px]:hidden">
+              <span className="hidden max-[479px]:flex max-[419px]:hidden">
                 <Wordmark height={20} decorative />
               </span>
-              {/* Under 360px the wordmark would sit under the Gully AI button: the round mark stands in. */}
-              <span className="hidden max-[359px]:flex" data-testid="docs-header-mark">
+              {/* Under 420px the wordmark would sit under the Gully AI button: the round mark stands in. */}
+              <span className="hidden max-[419px]:flex" data-testid="docs-header-mark">
                 <Mascot size={32} decorative />
               </span>
               {/* Below 440px the header has no room for the pill beside the menu, Ask and site buttons. */}
