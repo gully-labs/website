@@ -1,9 +1,7 @@
-/* The Gully Labs mark from the brand kit (Desktop\GULLY LABS GRAPHICS\Gully Labs\brand-kit, copied byte-exact
-   to public/brand/): the flask icon, `icon/gully-labs-icon.png` (343 x 372, transparent). It is drawn at its
-   intrinsic 0.922:1 ratio inside a `size` x `size` box, never cropped or recoloured. The retired frog mascot
-   (gully-mark-*.png, the mascot bust) is no longer used anywhere. `variant` is kept for old call sites:
-   both variants render the kit icon. */
-const ICON = { src: '/brand/icon/gully-labs-icon.png', width: 343, height: 372 }
+/* The Gully Labs mark from the 2026-11 kit (brand/gully-labs-kit-2026-11, served byte-exact from public/brand/kit), the
+   reversed version: every place this draws is on a navy ground. Drawn at its own ratio, never cropped or recoloured.
+   `variant` is kept for old call sites. */
+const ICON = { src: '/brand/kit/mark-reversed.svg', width: 1.042, height: 1 }
 
 export function Mascot({ size = 32, className = '', label = 'Gully Labs', decorative = false }: { size?: number; variant?: 'mark' | 'bust'; className?: string; label?: string; decorative?: boolean }) {
   const height = size
