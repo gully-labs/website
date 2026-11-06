@@ -617,7 +617,17 @@ try {
 const prevById = new Map((previous?.chunks ?? []).map((c) => [c.id, c]))
 const now = new Date().toISOString()
 const seen = new Map()
-const chunks = [...docsChunks(), ...siteChunks(), ...legalChunks(), ...repoDocChunks(), ...telegramChunks(), ...miniAppChunks(), ...readmeChunks(previous?.chunks ?? []), ...featureChunks(await loadFeatures())].map((c0) => {
+// The READMEs of repos that are not cloned next to this one stay as the committed index has them, wherever this build
+// writes (--out to a temp file in the tests and on a build box has no previous index of its own).
+let committed = previous
+if (!committed) {
+  try {
+    committed = JSON.parse(fs.readFileSync(path.join(ROOT, 'server', 'data', 'ask-index.json'), 'utf8'))
+  } catch {
+    /* no committed index either: those READMEs are skipped, with a warning */
+  }
+}
+const chunks = [...docsChunks(), ...siteChunks(), ...legalChunks(), ...repoDocChunks(), ...telegramChunks(), ...miniAppChunks(), ...readmeChunks(committed?.chunks ?? []), ...featureChunks(await loadFeatures())].map((c0) => {
   // Two blocks of one page under the same heading (a page's own "Questions" and its FAQ data) share a seed.
   const k = seen.get(c0.id) ?? 0
   seen.set(c0.id, k + 1)

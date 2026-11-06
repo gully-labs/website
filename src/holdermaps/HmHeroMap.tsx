@@ -3,7 +3,7 @@
    labelled as an example with the time it was read; when a token has been scanned today its map replaces it as soon as
    it answers (?peek=1, so reading it here never counts as a scan). Under it: what the map found, in the server's own
    words, and the clusters as chips that light their wallets. */
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowRight, CircleCheck } from 'lucide-react'
 import { ChainLogo } from '../components/logos/ChainLogo'
@@ -203,9 +203,8 @@ export function HmHeroMap({ top }: { top: TopScanned['items'][number] | null }) 
   const hero = useLiveSeries<Hero>((signal) => getJson<Hero>('/api/holders/hero', signal), waiting ? 8_000 : 300_000)
   const scanned = useLiveSeries<HolderMap>((signal) => getJson<HolderMap>(`/api/holders/${encodeURIComponent(top?.chain ?? '')}/${encodeURIComponent(top?.token ?? '')}?peek=1`, signal), 300_000, { enabled: !!top })
   const example = hero.data && hero.data.state === 'ok' ? hero.data : null
-  useEffect(() => {
-    if (example) setWaiting(false)
-  }, [example])
+  // The example has arrived: poll slowly from now on (set while rendering, once, instead of in an effect).
+  if (example && waiting) setWaiting(false)
   const best = top && scanned.data && scanned.data.state === 'ok' && scanned.data.nodes.length >= MIN_WALLETS ? scanned.data : null
   if (best && top) return <Loaded key={`${top.chain}:${top.token}`} m={best} pick={{ chain: top.chain, token: top.token, symbol: top.symbol, path: top.path, note: 'Most scanned today' }} />
   if (example) {
