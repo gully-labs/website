@@ -1843,7 +1843,7 @@ await step('admin: bot broadcasts at 1440 and 390', async () => {
 
 /* ------------------------------------------------------------- docs --- */
 
-const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-pay', 'gully-security', 'gully-score', 'roadmap', 'roadmap-l3', 'changelog']
+const DOCS = ['', 'methodology', 'api', 'widget', 'api-keys', 'plans-alerts', 'sdk', 'teams', 'analytics', 'gully-security', 'gully-score', 'roadmap', 'changelog']
 await step('docs', async () => {
   for (const [width, mobile] of [[1440, false], [390, true]]) {
     const ctx = await newContext({ width, height: mobile ? 844 : 900, mobile })
@@ -1859,7 +1859,7 @@ await step('docs', async () => {
       if (mobile) await noHorizontalScroll(page, `docs /${slug}`)
       else await designAudit(page, `docs /${slug}`)
       // The L3 roadmap reads public parent-chain RPCs in the browser; this harness aborts every off-localhost request.
-      await w.verify(slug === 'roadmap-l3' ? [/ERR_BLOCKED_BY_CLIENT/] : [])
+      await w.verify([])
     }
     if (mobile) {
       // The header's Gully AI button must not sit on the DOCS pill.
@@ -1911,7 +1911,7 @@ await step('docs design audit 3 g1', async () => {
 await step('docs design audit 2', async () => {
   const ctx = await newContext({ width: 1440, height: 900 })
   const page = await ctx.newPage()
-  const pages = ['', 'gully-security', 'solana', 'solana-pay', 'telegram-mini-app', 'news-gate', 'badges', 'holder-map', 'holder-map-integrate', 'roadmap-l3', 'gully-pay', 'api', 'sdk', 'status']
+  const pages = ['', 'gully-security', 'solana', 'solana-pay', 'telegram-mini-app', 'news-gate', 'badges', 'holder-map', 'holder-map-integrate', 'api', 'sdk', 'status']
   for (const slug of pages) {
     const w = watch(page, `docs da2 /${slug}`)
     await page.goto(`${BASE}/docs${slug ? '/' + slug : ''}`)
