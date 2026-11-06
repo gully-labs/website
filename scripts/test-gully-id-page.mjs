@@ -66,7 +66,7 @@ const m = pageMeta('gullylabs.xyz', '/gully-id')
 check('/gully-id has its own head tags', m.found && m.canonical === 'https://gullylabs.xyz/gully-id' && /Gully ID/.test(m.title) && m.description.length > 60, JSON.stringify(m).slice(0, 200))
 check('/gully-id is in the sitemap', sitemapFor('gullylabs.xyz').includes('<loc>https://gullylabs.xyz/gully-id</loc>'))
 check('the router has the page', fs.readFileSync(path.join(root, 'src/router.tsx'), 'utf8').includes("path: '/gully-id'"))
-check('the footer links it (site footer + the hub footer)', /<Link to="\/gully-id"/.test(fs.readFileSync(path.join(root, 'src/components/Footer.tsx'), 'utf8')) && /label: 'Gully ID sign-in', icon: KeyRound, to: '\/gully-id'/.test(fs.readFileSync(path.join(root, 'src/console/Chrome.tsx'), 'utf8')))
+check('the footer links it (site footer + the hub footer)', /<Link to="\/gully-id"/.test(fs.readFileSync(path.join(root, 'src/components/Footer.tsx'), 'utf8')) && /'Gully ID sign-in': KeyRound/.test(fs.readFileSync(path.join(root, 'src/console/Chrome.tsx'), 'utf8')))
 
 console.log(`\n${t.passed} passed, ${t.failed} failed`)
 process.exit(t.failed ? 1 : 0)

@@ -35,7 +35,7 @@ export const SEO_PAGES: Record<string, SeoEntry> = {
   },
   '/pricing': {
     title: 'Pricing: tracker API and Gully Analytics',
-    description: "Plans for the Gully Labs tracker API and Gully Analytics, paid from your own wallet in USDC, USDT or the chain's own coin, with no custody.",
+    description: "Plans for the Gully Labs tracker API and Gully Analytics, paid in USDC, USDT or the chain's own coin on Base, Ethereum, BNB Chain and Arbitrum, with no custody.",
   },
   '/status': {
     title: 'Status',
