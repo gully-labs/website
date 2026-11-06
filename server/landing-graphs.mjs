@@ -71,7 +71,8 @@ function stateOf(hub, keys) {
   if (!real.length) return svcs.length ? 'coming' : 'reading'
   return real.every((s) => s.state === 'up') ? 'live' : 'down'
 }
-const sum = (xs) => xs.reduce((a, b) => a + (num(b) ?? 0), 0)
+/** Null when there is nothing to add: an unreadable source is a dash, not a zero. */
+const sum = (xs) => (xs.length ? xs.reduce((a, b) => a + (num(b) ?? 0), 0) : null)
 
 /** The surfaces that make up each product's state (as src/pages/hub/hubData.ts SERVICE_KEYS). */
 export const KEYS = {
