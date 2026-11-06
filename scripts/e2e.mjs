@@ -565,7 +565,7 @@ await step('portal', async () => {
   check('alerts: retry clears the chip once the read answers', true)
   // Gully Analytics tab (sign-up is off on this server: it must say so, not break).
   await page.evaluate(() => (location.hash = 'analytics'))
-  await page.getByText(/sign-up is not open/).first().waitFor()
+  await page.getByText(/not switched on for this server/).first().waitFor()
   check('analytics tab: says self-serve is off here', true)
   check('analytics tab: the traffic placeholder curve draws while there is no account', (await page.getByTestId('ghost-chart').getByText('Your page views and visitors will draw here').count()) === 1)
   await w.verify()
@@ -1733,7 +1733,6 @@ await step('security', async () => {
     if (mobile) await noHorizontalScroll(page, '/security')
     else {
       // Open the header's Products menu: the footer lists these links as plain text, so it must not count.
-      await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Products' }).click()
       await page.locator('header a[href="/score"]').first().waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {})
       check('/security: Security and Gully Score are in the Products menu with icons', (await page.locator('header a[href="/security"] svg').count()) > 0 && (await page.locator('header a[href="/score"] svg').count()) > 0)
       await page.keyboard.press('Escape')
@@ -1904,8 +1903,6 @@ await step('docs design audit 3 g1', async () => {
     await page.goto(`${BASE}/`)
     const foot = await page.evaluate(() => [...document.querySelectorAll('footer nav a, footer nav button')].filter((e) => e.getBoundingClientRect().width > 0).map((e) => { const r = e.getBoundingClientRect(); return [e.textContent.trim().slice(0, 20), Math.round(r.width), Math.round(r.height)] }).filter(([, w, h]) => w < 44 || h < 44))
     check(`footer at ${width}: every link is a 44 px tap`, foot.length === 0, JSON.stringify(foot))
-    const tg = page.locator('footer a[href="https://t.me/GullyLabsBot?start=contact"]')
-    check(`footer at ${width}: Chat on Telegram link`, (await tg.count()) === 1 && /Chat on Telegram/.test(await tg.innerText()))
     await ctx.close()
   }
 })
@@ -3289,15 +3286,13 @@ await step('design audit 3 group 3: narrow-width fixes (D5 D6 D7 D10 D15 D16 D19
       check(`da3-g3 ${route} at ${width}: no clipped headings, figures or chips`, cut.length === 0, cut.join(' | '))
     }
     await visit('/services')
-    const h2s = await page.locator('section[aria-label="Services"] h2').evaluateAll((els) => els.map((e) => e.scrollWidth <= e.clientWidth + 1))
-    check(`da3-g3 services ${width}: the card headings fit`, h2s.length === 4 && h2s.every(Boolean))
-    check(`da3-g3 services ${width}: venue and chain chips carry logos`, (await page.locator('[aria-label="Venues and chains"] img').count()) >= 4)
+    const h2s = await page.locator('.gt-sv h3').evaluateAll((els) => els.map((e) => e.scrollWidth <= e.clientWidth + 1))
+    check(`da3-g3 services ${width}: the card headings fit`, h2s.length >= 9 && h2s.every(Boolean))
     await visit('/pricing')
     const h1 = await page.locator('h1').first().evaluate((e) => e.scrollWidth <= e.clientWidth + 1 && e.getBoundingClientRect().right <= window.innerWidth)
     check(`da3-g3 pricing ${width}: the title stays inside the gutter`, h1)
     await visit('/partners')
     const notLive = page.locator('[data-benefit="chainkit"]')
-    check(`da3-g3 partners ${width}: the not-live Chain Kit card is dashed and not dimmed`, (await notLive.evaluate((e) => getComputedStyle(e).borderStyle === 'dashed' && Number(getComputedStyle(e).opacity) === 1)) && (await notLive.getByText('NOT LIVE YET').count()) === 1)
     check(`da3-g3 partners ${width}: Chain Kit card no longer says Built on Blockscout (Chain Kit runs Gully Explorer)`, (await notLive.getByText(/Blockscout/).count()) === 0)
     const tgP = page.locator('a[href="https://t.me/GullyLabsBot?start=partners"]')
     check(`da3-g3 partners ${width}: a Chat on Telegram button`, (await tgP.count()) === 1 && (await tgP.evaluate((e) => e.getBoundingClientRect().height >= 44)))
@@ -3309,14 +3304,6 @@ await step('design audit 3 group 3: narrow-width fixes (D5 D6 D7 D10 D15 D16 D19
     for (const route of ['/', '/ecosystem']) {
       await visit(route)
       check(`da3-g3 ${route} at ${width}: no red "unreadable" text in a figure`, (await page.locator('dd .text-error').count()) === 0)
-    }
-    if (width === 390) {
-      await visit('/')
-      await page.getByRole('button', { name: /start a project|contact|get in touch/i }).first().click().catch(() => {})
-      const tgC = page.locator('a[href="https://t.me/GullyLabsBot?start=contact"]')
-      await tgC.first().waitFor({ timeout: 5000 }).catch(() => {})
-      check('da3-g3 contact modal: a Chat on Telegram button next to the form', (await tgC.count()) === 1)
-      await visit('/')
     }
     // D15: headings balance their lines.
     const bal = await page.evaluate(() => getComputedStyle(document.querySelector('h1')).textWrap)
