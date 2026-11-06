@@ -406,7 +406,7 @@ await step('layout at 390 px', async () => {
   for (const [w, h] of [[1440, 900], [768, 1024]]) {
     const dctx = await ctxFor({ width: w, height: h })
     const dp = await dctx.newPage()
-    await dp.goto(BASE + '/')
+    await dp.goto(BASE + '/pricing')
     await dp.getByTestId('ask-fab').waitFor({ timeout: 10_000 })
     await fireInstallPrompt(dp)
     await installCard(dp).waitFor({ timeout: 8000 })
