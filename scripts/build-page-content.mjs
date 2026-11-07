@@ -233,10 +233,34 @@ export async function build() {
   }
   for (const p of Object.keys(meta)) if (!body[p] && !p.startsWith('/tracker/')) throw new Error(`${p}: a title with no page body`)
 
+  // The landing (server/landing.mjs): the same words and marks the current landing uses.
+  const statusWord = (p) => H.STATUS_LABEL[p.status]
+  // `fact`: the card's fixed line when no live figure is worth showing.
+  const FACT = { id: 'Passkeys, wallets, email', pay: 'Checkout and x402', chain: 'Arbitrum Orbit L3', rpc: 'One key, every network', holdermaps: 'Six chains', security: 'Scan, score, monitor', studio: 'Web and phone', ai: 'API coming online' }
+  const productCard = (p) => ({ key: p.key, name: p.name, line: p.line, icon: p.icon, label: statusWord(p), fact: FACT[p.key], href: `/products/${p.page}` })
+  const chainProduct = (slug, key, label, fact) => {
+    const p = C.productBySlug(slug)
+    return { key, name: p.name, line: p.short, icon: '/brand/web/logos/gc-icon.svg', label, fact, href: `/products/${slug}` }
+  }
+  const landing = {
+    headline: H.LANDING_HEADLINE,
+    lede: H.LANDING_LEDE,
+    productsTitle: 'Where to go',
+    productsSub: dir.p[0],
+    products: [...H.HUB_PRODUCTS.map(productCard), chainProduct('safe', 'multisig', 'Live', 'Anubis Network mainnet'), chainProduct('gully-core', 'core', 'Testnet', '0.30% for builders')],
+    peddleTitle: 'Peddle family',
+    peddleSub: 'Gully Labs projects for trading and DeFi, each on its own site.',
+    peddle: H.PEDDLE_FAMILY.map((p) => ({ key: p.key, name: p.name, line: p.line, icon: p.logo, kind: p.kind, fact: P.projects.find((x) => x.slug === p.page).chains.join(', '), href: `/projects/${p.page}` })),
+    newsTitle: "What's new",
+    news: H.NEWS.slice(0, 4).map((n) => ({ d: n.d, t: n.t, href: n.href })),
+    buildTitle: build.h,
+    buildSub: contact.p[0],
+  }
+
   // For JSON-LD: the landing's product list (name, own site) and the services (name, one line).
   const hub = [...H.HUB_PRODUCTS, ...H.PEDDLE_FAMILY].map((p) => [p.name, p.url])
   const services = C.SERVICES.map((s) => [s.title, s.desc])
-  return { version: 1, nav, meta, stocks, stockCopy: K.STOCK_COPY, product, project, hub, services, body }
+  return { version: 1, nav, meta, stocks, stockCopy: K.STOCK_COPY, product, project, hub, services, landing, body }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -1,3 +1,4 @@
+import { TZ } from '../lib/time'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { CircleDashed, Radar, Search } from 'lucide-react'
@@ -47,7 +48,7 @@ function recencyOf(list: CheckedLaunch[], now: number) {
   const hours: number[] = []
   for (let h = start; h <= end; h += HOUR) hours.push(h)
   const counts = STATES.map((st) => hours.map((h) => list.filter((l) => l.state === st.id && Date.parse(l.createdAt) >= h && Date.parse(l.createdAt) < h + HOUR).length))
-  return { hours, counts, labels: hours.map((h) => new Date(h).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) }
+  return { hours, counts, labels: hours.map((h) => new Date(h).toLocaleTimeString([], { timeZone: TZ, hour: '2-digit', minute: '2-digit' })) }
 }
 
 function useNow(ms = 15_000) {

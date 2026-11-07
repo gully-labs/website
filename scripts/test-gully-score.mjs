@@ -373,7 +373,7 @@ try {
   check('badge: served as SVG, cacheable, open to any origin', badge.status === 200 && /image\/svg\+xml/.test(badge.headers.get('content-type')) && /max-age=3600/.test(badge.headers.get('cache-control')) && badge.headers.get('access-control-allow-origin') === '*')
   check('badge: well-formed XML', wellFormed(svg), svg.slice(0, 120))
   const stored = (await anon.call(`/api/score/base/${A}`)).data
-  const date = new Date(stored.computedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+  const date = new Date(stored.computedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Los_Angeles' })
   // The badge is the shared kit badge (server/badges.mjs): every letter is a path, so the score, grade and date are
   // read from its <title> and aria-label; the geometry and colour checks live in scripts/test-badges.mjs.
   check('badge: the title says the score, the grade and the date it was read', svg.includes(`<title>Gully Score ${stored.score} out of 100 (${stored.grade}), ${date}</title>`) && svg.includes(`aria-label="Gully Score ${stored.score} out of 100 (${stored.grade}), ${date}"`), date)

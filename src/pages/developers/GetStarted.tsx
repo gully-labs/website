@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { BellRing, ChartNoAxesCombined, KeyRound, Send, Terminal } from 'lucide-react'
 import { Stepper } from './ui'
 import type { ReactNode } from 'react'
@@ -42,7 +43,7 @@ export function GetStarted({ account, alerts, analytics, go, createKey, createAl
     {
       id: 'call',
       title: 'Call the API with it',
-      note: called ? `last call ${new Date(account.keys.map((k) => k.lastUsed ?? '').sort().at(-1)!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'send it as Authorization: Bearer',
+      note: called ? `last call ${new Date(account.keys.map((k) => k.lastUsed ?? '').sort().at(-1)!).toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric' })}` : 'send it as Authorization: Bearer',
       state: called ? 'done' : 'todo',
       action: !called && (
         <a href="#quickstart" className={actionCls}>

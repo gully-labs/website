@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Activity, Database, Tag } from 'lucide-react'
@@ -66,7 +67,7 @@ export function AskPage() {
               </span>
               <span className="font-mono text-[11px] text-faint">
                 {st?.updatedAt
-                  ? `Index built ${new Date(st.updatedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })} UTC`
+                  ? `Index built ${new Date(st.updatedAt).toLocaleString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })} PT`
                   : status === 'loading'
                     ? 'Reading the index…'
                     : 'Index time not published'}

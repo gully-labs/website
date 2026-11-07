@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { track } from '../../lib/track'
 import { AlertTriangle, BellRing, Check, ChevronDown, ExternalLink, History, Link2Off, Pause, Play, Plus, RotateCw, Send, Trash2, Users } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
@@ -63,7 +64,7 @@ function DirectionControl({ value, onChange, pct }: { value: GapDirection; onCha
 const fieldLabel = 'flex flex-col gap-2 text-[14px] text-ink-2'
 /** A compact row action (36px on desktop, 44px touch targets on narrow screens). */
 const rowBtn = 'inline-flex min-h-11 items-center gap-[6px] rounded-full border border-line-strong px-3 text-[12px] text-ink-2 transition-colors hover:border-gold hover:text-ink disabled:cursor-not-allowed disabled:opacity-50 max-[859px]:min-h-11'
-const TG_BLUE = '#248bff'
+const TG_BLUE = '#6f8ddf'
 
 /**
  * The per-alert channel chips. Telegram is a toggle (aria-pressed): on when the alert sends there; it
@@ -89,7 +90,7 @@ export function ChannelChips({ a, telegram, act, busy }: { a: GapAlert; telegram
           aria-label={`Telegram for ${alertName(a)}: ${on ? 'on' : 'off'}. ${why}`}
           onClick={() => act(a, 'telegram', { on: !on })}
           className="inline-flex min-h-11 items-center gap-[6px] rounded-full border px-3 text-[12px] transition-colors disabled:cursor-not-allowed max-[480px]:px-[10px]"
-          style={{ borderColor: broken ? 'var(--color-error-line)' : on ? TG_BLUE : '#242140', color: broken ? '#ff8a7a' : on ? '#248bff' : '#9398b5', opacity: disabled && !on ? 0.6 : 1 }}
+          style={{ borderColor: broken ? 'var(--color-error-line)' : on ? TG_BLUE : '#242140', color: broken ? '#ff8a7a' : on ? '#6f8ddf' : '#9398b5', opacity: disabled && !on ? 0.6 : 1 }}
         >
           {on && <Check size={12} aria-hidden />}
           Telegram{broken ? ': no chat' : ''}
@@ -272,7 +273,7 @@ function CreateDialog({ open, onClose, view, onCreated, initialTarget = null, in
         </label>
         {view.telegram.enabled && view.telegram.linked ? (
           <label className="flex min-h-11 items-center gap-3 text-[14px] text-ink-2">
-            <input type="checkbox" className="size-4 accent-[#00d2ff]" checked={toTelegram} onChange={(e) => setToTelegram(e.target.checked)} />
+            <input type="checkbox" className="size-4 accent-[#6f8ddf]" checked={toTelegram} onChange={(e) => setToTelegram(e.target.checked)} />
             <span>
               Also send to Telegram <span className="text-faint">({view.telegram.linked.chatTitle})</span>
             </span>
@@ -443,7 +444,7 @@ export function TelegramCard({ info, reload, compact = false, from = 'alerts' }:
       : link && !live
         ? 'That link has expired. Make a new one.'
         : link
-          ? `Open the bot and press Start. The link works once, until ${new Date(link.expiresAt).toLocaleTimeString()}.`
+          ? `Open the bot and press Start. The link works once, until ${new Date(link.expiresAt).toLocaleTimeString('en-US', { timeZone: TZ })}.`
           : 'One-time code, no chat id to copy. Works in groups.'
 
   return (
@@ -664,7 +665,7 @@ export function Alerts({ goBilling, creating, onCreateDone, prefill = null, pref
               Gap alerts
             </h2>
             {!view.alerts.length ? (
-              <GhostChart height={150} label="Your alerts will list here" colors={['#00d2ff', '#3ddc97']}>
+              <GhostChart height={150} label="Your alerts will list here" colors={['#6f8ddf', '#3ddc97']}>
                 <BellRing size={20} className="text-gold" aria-hidden />
                 <span className="max-w-[440px] text-[13px] text-muted">Get a webhook{view.telegram.enabled ? ' or a Telegram message' : ''} when a stock token&apos;s gap to its fair price crosses your line.</span>
               </GhostChart>

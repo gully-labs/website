@@ -31,7 +31,7 @@ export const chip = (on: boolean, monoFont = false) =>
   `inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-3 text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${monoFont ? 'font-mono text-[12px]' : ''} ${on ? 'border-gold bg-gold text-bg' : 'border-line-strong bg-transparent text-ink-2 hover:border-gold hover:text-ink'}`
 
 /** Series colours for API keys, in account order; 429s are always the error red. */
-export const KEY_COLORS = ['#00d2ff', '#248bff', '#3ddc97', '#9578e8', '#20a0c4', '#ff6b81', '#a3a8c3']
+export const KEY_COLORS = ['#6f8ddf', '#6f8ddf', '#3ddc97', '#9578e8', '#20a0c4', '#ff6b81', '#a3a8c3']
 export const LIMITED_COLOR = '#ff8a7a'
-export const BLUE = '#248bff'
+export const BLUE = '#6f8ddf'
 export const keyColor = (i: number) => KEY_COLORS[Math.max(0, i) % KEY_COLORS.length]

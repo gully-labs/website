@@ -16,7 +16,7 @@ const sections = [
   { id: 'stats', title: 'GET /api/stats' },
   { id: 'status', title: 'GET /api/status' },
   { id: 'geo', title: 'GET /api/geo' },
-  { id: 'deepcore', title: 'Launchpad' },
+  { id: 'launchpad', title: 'Launchpad' },
   { id: 'solana', title: 'Solana' },
   { id: 'ask', title: 'Gully AI' },
   { id: 'plans', title: 'Plans and alert channels' },
@@ -247,7 +247,7 @@ export function ApiReference() {
           variant="routes"
           rows={[
             ['GET /api/holders/launches', <>The newest launchpad launches on holder chains (12): <C>{'{ state, asOf, launches[] }'}</C>, each with <C>chainKey</C>, <C>chainName</C>, <C>token</C>, <C>symbol</C>, <C>createdAt</C>, <C>path</C>, <C>state</C> (<C>checked</C>, <C>unavailable</C>, or <C>checking</C> while its map is built), <C>health</C> (<C>score</C> 0–100 or empty, <C>level</C>, <C>verdict</C>) and <C>riskLine</C>.</>, 'public, max-age=15'],
-            ['GET /api/holders/top?limit=', <>The most scanned maps today (UTC): <C>{'{ day, items[] }'}</C>, each <C>chain</C>, <C>token</C>, <C>symbol</C>, <C>kind</C>, <C>scans</C> (unique visitors), <C>path</C>. <C>limit</C> 1–20, default 10.</>, 'public, max-age=60'],
+            ['GET /api/holders/top?limit=', <>The most scanned maps today (Los Angeles day): <C>{'{ day, items[] }'}</C>, each <C>chain</C>, <C>token</C>, <C>symbol</C>, <C>kind</C>, <C>scans</C> (unique visitors), <C>path</C>. <C>limit</C> 1–20, default 10.</>, 'public, max-age=60'],
             ['GET /api/holders/resolve?q=', <>Search: a ticker, a launch symbol, an EVM address or a Solana mint (64 characters at most, a leading <C>$</C> ignored). <C>{'{ matches[] }'}</C>, each <C>chain</C>, <C>chainName</C>, <C>token</C>, <C>symbol</C>, <C>name</C>, <C>kind</C>, <C>path</C>. Anything else matches nothing.</>, 'public, max-age=60'],
             ['GET /api/holders/:chain/:token', <>The map, below.</>, <>public, max-age=60 when <C>state</C> is ok; no-store otherwise</>],
             ['GET /api/holders/:chain/:token.csv', <>The holder list: <C>rank,address,label,balance,percent_of_supply,cluster,flags</C> (<C>percent_of_listed</C> when the supply is unknown). UTF-8, as a download.</>, 'private, no-store'],
@@ -404,7 +404,7 @@ export function ApiReference() {
         </P>
       </Section>
 
-      <Section id="deepcore" title="Launchpad: /api/deepcore">
+      <Section id="launchpad" title="Launchpad: /api/deepcore">
         <Fields
           head={['Path', 'Answers', 'Limits and cache']}
           variant="routes"

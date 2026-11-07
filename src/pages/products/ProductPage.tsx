@@ -3,6 +3,7 @@
    product; features, how it works, pricing (read live from /api/plans where we publish prices), FAQ and links.
    Every figure is read live: GET /api/hub, /api/hub/products, /api/stats, /api/products/status, /api/ipfs/stats and the
    Gully Chain RPC. A source that cannot be read says so; nothing is invented. */
+import { timePT } from '../../lib/time'
 import { useMemo, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { ArrowRight, ArrowUpRight, BookOpen, Check } from 'lucide-react'
@@ -128,7 +129,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
         label: 'Watchers',
         title: 'Sentry Keys heard per 10-minute slot, last 24 h (UTC)',
         series: [{ name: 'Keys heard', color: '#00B2FA', values: slots.map((x) => x.keys) }],
-        labels: slots.map((x) => `${new Date(x.t * 1000).toISOString().slice(11, 16)} UTC`),
+        labels: slots.map((x) => timePT(x.t * 1000)),
         fmt: (v) => fmtInt(v),
         integer: true,
         state: netSt,

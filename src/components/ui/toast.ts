@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { createElement, type ReactNode } from 'react'
 
 /* Site-wide toasts. The toast library (sonner) is loaded on the first toast, and its host
@@ -27,7 +28,7 @@ let lib: Promise<typeof import('sonner')> | null = null
 export const loadToasts = () => (lib ??= import('sonner'))
 
 // UTC, like every other time on the site.
-const clock = () => `${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'UTC' })} UTC`
+const clock = () => `${new Date().toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })} PT`
 
 function body(detail: ReactNode | undefined) {
   return createElement(

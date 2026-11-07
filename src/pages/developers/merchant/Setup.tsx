@@ -1,3 +1,4 @@
+import { TZ } from '../../../lib/time'
 import { CheckCircle2, Loader2, RefreshCw, ShieldAlert, ShieldCheck, ShieldPlus, Store, Trash2 } from 'lucide-react'
 import { lazy, Suspense, useRef, useState, type FormEvent } from 'react'
 import { GULLY_MARK_SRC } from '../../../components/pay/SecuredBy'
@@ -53,7 +54,7 @@ export function ProfileForm({ view, onChange }: { view: MerchantView; onChange: 
   const p = view.profile
   const [name, setName] = useState(p.name ?? '')
   const [logo, setLogo] = useState(p.logoSource ?? '')
-  const [accent, setAccent] = useState(p.accent ?? '#00d2ff')
+  const [accent, setAccent] = useState(p.accent ?? '#6f8ddf')
   const [email, setEmail] = useState(p.supportEmail ?? '')
   const [site, setSite] = useState(p.website ?? '')
   const [busy, setBusy] = useState(false)
@@ -88,7 +89,7 @@ export function ProfileForm({ view, onChange }: { view: MerchantView; onChange: 
         </Field>
         <Field label="Accent colour">
           <span className="flex items-center gap-2">
-            <input type="color" value={hexOk(accent) ? accent : '#00d2ff'} onChange={(e) => setAccent(e.target.value)} className="h-11 w-14 cursor-pointer rounded-input border border-line-strong bg-bg p-1" aria-label="Pick the accent colour" />
+            <input type="color" value={hexOk(accent) ? accent : '#6f8ddf'} onChange={(e) => setAccent(e.target.value)} className="h-11 w-14 cursor-pointer rounded-input border border-line-strong bg-bg p-1" aria-label="Pick the accent colour" />
             <input className={input} value={accent} onChange={(e) => setAccent(e.target.value)} maxLength={7} aria-label="Accent colour, hex" />
           </span>
         </Field>
@@ -107,7 +108,7 @@ export function ProfileForm({ view, onChange }: { view: MerchantView; onChange: 
       {/* Live preview of the checkout header. */}
       <div className="flex flex-col gap-2" aria-label="Checkout preview">
         <span className="text-[12px] text-dim">Checkout preview</span>
-        <div className="flex flex-col gap-2 rounded-[12px] border border-line bg-bg p-3" style={{ borderTop: `3px solid ${hexOk(accent) ? accent : '#00d2ff'}` }}>
+        <div className="flex flex-col gap-2 rounded-[12px] border border-line bg-bg p-3" style={{ borderTop: `3px solid ${hexOk(accent) ? accent : '#6f8ddf'}` }}>
           <span className="flex items-center gap-3">
             {/* The checkout's own marks: the logo, else the neutral store glyph (never a letter tile). */}
             {view.profile.logoUrl ? (
@@ -165,7 +166,7 @@ function WalletRow({ w, can, onChange }: { w: MerchantWallet; can: boolean; onCh
           <span className="font-mono text-[12px] break-all text-ink-2">{w.address}</span>
         )}
         <span className="text-[12px] text-dim">
-          {KIND_TEXT[w.kind]} · checked {new Date(w.checkedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+          {KIND_TEXT[w.kind]} · checked {new Date(w.checkedAt).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
           {w.status === 'not-deployed' && ` · Deploy your contract on ${w.chain} at this address; we check every hour and it switches on by itself.`}
         </span>
       </div>
@@ -391,7 +392,7 @@ export function WalletForm({ view, onChange }: { view: MerchantView; onChange: (
       </InfoTip>
       {needTerms ? (
         <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-input border border-gold-line bg-[rgba(0,210,255,.06)] px-3 py-2 text-[13px] leading-[1.5] text-ink-2 lg:col-span-2">
-          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-[3px] size-4 shrink-0 accent-[#00d2ff]" required />
+          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-[3px] size-4 shrink-0 accent-[#6f8ddf]" required />
           <span>
             I agree to the{' '}
             <ExtLink href={`${siteOrigin()}${view.terms.path}`} className="text-gold underline underline-offset-4 hover:text-gold-hover">
@@ -402,7 +403,7 @@ export function WalletForm({ view, onChange }: { view: MerchantView; onChange: (
         </label>
       ) : (
         <span className="font-mono text-[11px] text-faint lg:col-span-2">
-          Merchant terms {view.terms.accepted?.version} accepted {new Date(view.terms.accepted!.acceptedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} ·{' '}
+          Merchant terms {view.terms.accepted?.version} accepted {new Date(view.terms.accepted!.acceptedAt).toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', year: 'numeric' })} ·{' '}
           <ExtLink href={`${siteOrigin()}${view.terms.path}`} className="underline underline-offset-4 hover:text-gold">
             read them ↗
           </ExtLink>

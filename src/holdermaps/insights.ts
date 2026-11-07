@@ -1,3 +1,4 @@
+import { TZ } from '../lib/time'
 import { INFRA_KINDS, type HolderMapOk, type HolderNode } from '../lib/holders'
 
 /* What the HolderMaps charts show, read from one map (GET /api/holders/:chain/:token). Only arithmetic on the server's
@@ -118,7 +119,7 @@ export function timelineSeries(m: HolderMapOk) {
   const frames = m.timeline?.frames ?? []
   const holders = frames.map((f) => (typeof f.holders === 'number' ? f.holders : null))
   const top10 = frames.map((f) => (typeof f.top10Pct === 'number' ? f.top10Pct : null))
-  const labels = frames.map((f) => (f.at ? new Date(f.at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : `Block ${f.block.toLocaleString('en-US')}`))
+  const labels = frames.map((f) => (f.at ? new Date(f.at).toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric' }) : `Block ${f.block.toLocaleString('en-US')}`))
   const enough = (xs: (number | null)[]) => xs.filter((x) => x !== null).length >= 2
   return {
     holders: enough(holders) ? holders : null,

@@ -26,7 +26,7 @@ const dist = path.join(tmp, 'dist')
 fs.mkdirSync(path.join(dist, 'assets'), { recursive: true })
 fs.writeFileSync(
   path.join(dist, 'index.html'),
-  '<!doctype html><html><head><meta name="theme-color" content="#06050D" />\n<title>Gully Labs</title><meta name="description" content="x" />\n<meta property="og:site_name" content="Gully Labs" />\n<meta property="og:image" content="https://gullylabs.xyz/brand/social/og-image-1200x630.png" />\n<link rel="canonical" href="https://gullylabs.xyz/" /></head><body><div id="root"></div></body></html>',
+  '<!doctype html><html><head><meta name="theme-color" content="#0E1C38" />\n<title>Gully Labs</title><meta name="description" content="x" />\n<meta property="og:site_name" content="Gully Labs" />\n<meta property="og:image" content="https://gullylabs.xyz/brand/kit/og-default-1200x630.png" />\n<link rel="canonical" href="https://gullylabs.xyz/" /></head><body><div id="root"></div></body></html>',
 )
 Object.assign(process.env, {
   PORT: String(PORT),
@@ -78,7 +78,7 @@ try {
     const ld = ldOf(res.text)
     check(`gullylabs.xyz${p}: 200, title, canonical, indexable`, res.status === 200 && res.text.includes(`<title>${title}</title>`) && res.text.includes(`<link rel="canonical" href="https://${MAIN}${p}" />`) && !/noindex/.test(res.text) && !res.headers['x-robots-tag'], `${res.status} ${res.text.match(/<title>[^<]*<\/title>/)?.[0]}`)
     check(`gullylabs.xyz${p}: pre-rendered h1, Terms / Privacy / Legal footer links, no draft marker`, res.text.includes(`<h1>${h1}</h1>`) && shellLegal(res.text) && !DRAFT.test(res.text))
-    check(`gullylabs.xyz${p}: OG + Twitter tags with the kit image, JSON-LD WebPage published by Gully Labs LLC`, res.text.includes('<meta property="og:image" content="https://gullylabs.xyz/brand/social/og-image-1200x630.png" />') && res.text.includes(`<meta property="og:title" content="${title}" />`) && ld.some((l) => l['@type'] === 'WebPage' && l.url === `https://${MAIN}${p}` && l.publisher?.name === 'Gully Labs LLC'))
+    check(`gullylabs.xyz${p}: OG + Twitter tags with the kit image, JSON-LD WebPage published by Gully Labs LLC`, res.text.includes('<meta property="og:image" content="https://gullylabs.xyz/brand/kit/og-default-1200x630.png" />') && res.text.includes(`<meta property="og:title" content="${title}" />`) && ld.some((l) => l['@type'] === 'WebPage' && l.url === `https://${MAIN}${p}` && l.publisher?.name === 'Gully Labs LLC'))
   }
   const idx = await get(MAIN, '/legal')
   const want = ['holdermaps.xyz', 'gullychain.xyz', 'kre8.fun', 'gullypay.xyz', 'gullyid.xyz', 'gullyrpc.xyz', 'gullyai.xyz', 'gullysecurity.xyz', 'gullystudio.xyz'].flatMap((d) => [`https://${d}/terms`, `https://${d}/privacy`])

@@ -115,7 +115,7 @@ const OLD_TEMPLATES = {
 export const DEFAULT_TEMPLATES_FOR_TEST = DEFAULT_TEMPLATES
 const DEFAULT_BUTTONS = { launches: 'View on DeepCore', dailyGaps: 'See every stock', weeklyMovers: 'See every stock', blog: 'Read the post', releases: 'Read the changelog' }
 const defaultAuto = () => ({
-  timezone: 'UTC',
+  timezone: 'America/Los_Angeles',
   quietHours: { enabled: false, start: '23:00', end: '07:00' },
   minGapMinutes: 60,
   launches: { enabled: false, template: DEFAULT_TEMPLATES.launches },

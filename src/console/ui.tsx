@@ -329,7 +329,7 @@ export function TrustBand({ mascot = true }: { mascot?: boolean }) {
           </span>
         </div>
       </div>
-      {mascot && <img className="mascot" src="/brand/mascots/mascot-4-deploying-feathered.png" width={110} height={175} alt="" />}
+      {mascot && <img className="mascot" src="/brand/kit/owl/owl-laptop-400.webp" width={110} height={256} loading="lazy" alt="" />}
     </div>
   )
 }

@@ -15,7 +15,7 @@ function Row({ k, v, mono = false, href }: { k: string; v: string; mono?: boolea
   return (
     <div className="grid grid-cols-[180px_minmax(0,1fr)] gap-4 border-b border-[#d6d8e6] py-[10px] last:border-b-0 max-[600px]:grid-cols-1 max-[600px]:gap-1 print:break-inside-avoid">
       <dt className="font-mono text-[11px] tracking-[1px] text-[#6b7090]">{k}</dt>
-      <dd className={`m-0 break-all text-[#06050d] ${mono ? 'font-mono text-[13px]' : 'text-[15px]'}`}>
+      <dd className={`m-0 break-all text-[#0b1730] ${mono ? 'font-mono text-[13px]' : 'text-[15px]'}`}>
         {href ? (
           <ExtLink href={href} arrow={false} className="underline decoration-[#8f94b0] underline-offset-2 print:no-underline">
             {v}
@@ -56,14 +56,14 @@ export function PortalReceipt({ id, onBack }: { id: string; onBack: () => void }
 
   const c = me?.company
   return (
-    <div className="min-h-screen bg-[#fff] px-4 py-10 text-[#06050d] print:min-h-0 print:p-0" data-testid="portal-receipt">
+    <div className="min-h-screen bg-[#fff] px-4 py-10 text-[#0b1730] print:min-h-0 print:p-0" data-testid="portal-receipt">
       <div className="mx-auto flex max-w-[760px] flex-col gap-8">
         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
           <button type="button" onClick={onBack} className="inline-flex min-h-11 items-center gap-2 font-mono text-[13px] text-[#34305a] hover:underline">
             <ArrowLeft size={14} aria-hidden /> Back to billing
           </button>
           {s.k === 'ok' && (
-            <button type="button" onClick={() => window.print()} className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-[#06050d] px-4 text-[14px] font-semibold hover:bg-[#06050d] hover:text-[#fff]">
+            <button type="button" onClick={() => window.print()} className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-[#0b1730] px-4 text-[14px] font-semibold hover:bg-[#0b1730] hover:text-[#fff]">
               <Printer size={15} aria-hidden /> Print or save as PDF
             </button>
           )}
@@ -100,7 +100,7 @@ export function PortalReceipt({ id, onBack }: { id: string; onBack: () => void }
                 <span className="text-[14px] text-[#34305a]">Tracker API plans</span>
               </div>
             </div>
-            <div className="flex flex-wrap items-end justify-between gap-4 border-y border-[#06050d] py-5">
+            <div className="flex flex-wrap items-end justify-between gap-4 border-y border-[#0b1730] py-5">
               <div className="flex min-w-0 flex-col gap-1">
                 <span className="font-mono text-[11px] tracking-[1px] text-[#6b7090]">FOR</span>
                 <span className="text-[20px] font-semibold break-words capitalize">{s.p.plan ?? s.p.kind} plan</span>

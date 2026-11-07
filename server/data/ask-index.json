@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-06T16:08:58.341Z",
+ "updatedAt": "2026-11-07T04:10:26.149Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -224,8 +224,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#holders",
    "section": "Holder Map: /api/holders",
-   "text": "The Holder Map: who holds a launchpad launch or a tracked stock token, which of the biggest wallets sent tokens to each other (clusters), what known addresses they are, and a plain-English summary. Every path below passes the same gate as the tracker: CORS *, an optional key, and the same per-minute limit (a holder request counts against the tracker’s budget).:chain is robinhood, bsc, base, hyperevm or solana (or the numeric chain id);:token is the token address, a Solana mint, or a tracked stock’s ticker. GET /api/holders/launches (The newest launchpad launches on holder chains (12): { state, asOf, launches[] }, each with chainKey, chainName, token, symbol, createdAt, path, state (checked, unavailable, or checking while its map is built), health (score 0–100 or empty, level, verdict) and riskLine.): public, max-age=15 GET /api/holders/top?limit= (The most scanned maps today (UTC): { day, items[] }, each chain, token, symbol, kind, scans (unique visitors), path. limit 1–20, default 10.): public, max-age=60 GET /api/holders/resolve?q= (Search: a ticker, a launch symbol, an EVM address or a Solana mint (64 characters at most, a leading $ ignored). { matches[] }, each chain, chainName, token, symbol, name, kind, path. Anything else matches nothing.): public, max-age=60 GET /api/holders/:chain/:token (The map, below.): public, max-age=60 when state is ok; no-store otherwise GET /api/holders/:chain/:token.csv (The holder list: rank,address,label,balance,percent_of_supply,cluster,flags (percent_of_listed when the supply is unknown). UTF-8, as a download.): private, no-store GET /api/holders/:chain/:token/card.png (A 1200 × 630 share card of the map. Free for everyone.): public, max-age=300",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "text": "The Holder Map: who holds a launchpad launch or a tracked stock token, which of the biggest wallets sent tokens to each other (clusters), what known addresses they are, and a plain-English summary. Every path below passes the same gate as the tracker: CORS *, an optional key, and the same per-minute limit (a holder request counts against the tracker’s budget).:chain is robinhood, bsc, base, hyperevm or solana (or the numeric chain id);:token is the token address, a Solana mint, or a tracked stock’s ticker. GET /api/holders/launches (The newest launchpad launches on holder chains (12): { state, asOf, launches[] }, each with chainKey, chainName, token, symbol, createdAt, path, state (checked, unavailable, or checking while its map is built), health (score 0–100 or empty, level, verdict) and riskLine.): public, max-age=15 GET /api/holders/top?limit= (The most scanned maps today (Los Angeles day): { day, items[] }, each chain, token, symbol, kind, scans (unique visitors), path. limit 1–20, default 10.): public, max-age=60 GET /api/holders/resolve?q= (Search: a ticker, a launch symbol, an EVM address or a Solana mint (64 characters at most, a leading $ ignored). { matches[] }, each chain, chainName, token, symbol, name, kind, path. Anything else matches nothing.): public, max-age=60 GET /api/holders/:chain/:token (The map, below.): public, max-age=60 when state is ok; no-store otherwise GET /api/holders/:chain/:token.csv (The holder list: rank,address,label,balance,percent_of_supply,cluster,flags (percent_of_listed when the supply is unknown). UTF-8, as a download.): private, no-store GET /api/holders/:chain/:token/card.png (A 1200 × 630 share card of the map. Free for everyone.): public, max-age=300",
+   "updatedAt": "2026-11-07T04:10:26.149Z"
   },
   {
    "id": "b781ffc9c5f0",
@@ -291,13 +291,13 @@
    "updatedAt": "2026-10-19T08:04:51.615Z"
   },
   {
-   "id": "66465c6be681",
+   "id": "4fff1428f04e",
    "source": "Docs",
    "title": "API reference",
-   "url": "https://docs.gullylabs.xyz/api#deepcore",
+   "url": "https://docs.gullylabs.xyz/api#launchpad",
    "section": "Launchpad: /api/deepcore",
    "text": "GET /api/deepcore/launches?chain=&limit= (The launchpad’s newest launches from the server’s poller: { state (ok, stale, unreadable), launches[], asOf, chains[], error, pollSeconds }. Each launch: key, chainId, chainName, token, symbol, createdAt, creator, totalSupply, legs[] (pools, lock), links, locked. chain is 56, 999, 4663 or 8453; limit 1–50, default 50.): public, max-age=30; no key GET /api/deepcore/quote?chain=&token=&amount= (A launchpad router quote for buying a stock token with the native coin, for comparison only (nothing is signed): { quote } with pay, out (amount, minimum), priceImpactPct, fee, route (venues, hops), alternatives, expiresAt, links. chain is robinhood or bsc; token a tracked stock token; amount up to 1000 of the native coin.): 10 a minute per address (429, RATE_LIMITED); answers cached 20 s (cached: true). Region-gated (451). Quote errors carry a code: BAD_CHAIN, BAD_TOKEN, BAD_AMOUNT (400), NO_ROUTE (404), BUSY (429, the launchpad’s own limit), UNREADABLE (502).",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "updatedAt": "2026-11-07T01:38:40.876Z"
   },
   {
    "id": "146aab6f6202",
@@ -651,22 +651,22 @@
    "updatedAt": "2026-10-18T23:19:51.457Z"
   },
   {
-   "id": "488851d19cf3",
+   "id": "c2814325515b",
    "source": "Docs",
    "title": "Plans & alerts",
-   "url": "https://docs.gullylabs.xyz/plans-alerts#deepcore-launches",
+   "url": "https://docs.gullylabs.xyz/plans-alerts#launch-alerts",
    "section": "New launch alerts",
    "text": "A second kind of alert watches the launchpad for new token launches. It has no stock: it watches one launchpad chain, or every chain when chainId is left empty. deepcore-launch ({ type: \"deepcore-launch\", chainId }): A token launches on the launchpad on that chain: 56 BNB Chain, 999 HyperEVM, 4663 Robinhood Chain or 8453 Base; empty for any of them. The launchpad’s public API (GET /v1/launches) is read every 90 seconds. Each launch fires once, the first time it is seen; after a restart nothing already seen is sent again. Only launches made after the alert was created count (with an hour of slack for indexer lag), so a new alert does not replay the backlog. One delivery at most every 5 minutes per alert: launches seen in the meantime wait and go out together, up to the 20 most recent. A paused, muted or over-the-plan alert neither sends nor queues: launches it missed are not sent later. It counts against your plan’s alerts like a gap alert, and delivers the same way: webhook, Telegram or both, signed the same way (see below). When the launchpad cannot be read, nothing fires and nothing is invented; the next good read catches up on launches it has not seen.",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "updatedAt": "2026-11-07T01:38:40.876Z"
   },
   {
-   "id": "d08ca66959f0",
+   "id": "f1a512c660b5",
    "source": "Docs",
    "title": "Plans & alerts",
-   "url": "https://docs.gullylabs.xyz/plans-alerts#deepcore-launches",
+   "url": "https://docs.gullylabs.xyz/plans-alerts#launch-alerts",
    "section": "New launch alerts",
    "text": "signed the same way (see below). When the launchpad cannot be read, nothing fires and nothing is invented; the next good read catches up on launches it has not seen. In Telegram, anyone can ask the bot /launches for the five latest launchpad launches on every chain, or /launches base (also bsc, robinhood, hyperevm, or a chain id) for one chain. It reads the same 90-second cache as the alerts, says when the list is older because the launchpad could not be read, and names any chain the launchpad itself could not read. Launch information is not advice.",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "updatedAt": "2026-11-07T01:38:40.876Z"
   },
   {
    "id": "034735424bbd",
@@ -1286,8 +1286,8 @@
    "title": "Gully AI",
    "url": "https://docs.gullylabs.xyz/gully-ai#limits",
    "section": "Limits",
-   "text": "Question length (500 characters): Longer questions are refused with a 400 Request body (16 KB): Larger requests get a 413 Conversation history (last 4 turns): Each turn trimmed to 600 characters Per visitor (6 a minute, 60 a day): Counted per IP address; a 429 says when to try again Per Telegram chat (5 a minute, 60 a day): Counted per chat Whole service (2,000 answers a day): Across every surface; the spending cap The owner can change these on the server. When Gully AI is not configured on a server, every surface says it is not available (the API answers 503 with configured: false).",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "Question length (500 characters): Longer questions are refused with a 400 Request body (16 KB): Larger requests get a 413 Conversation history (last 4 turns): Each turn trimmed to 600 characters Per visitor (6 a minute, 60 a day): Counted per IP address; a 429 says when to try again Per Telegram chat (5 a minute, 60 a day): Counted per chat Whole service (2,000 answers a day): Across every surface; the spending cap Gully Labs can change these on the server. When Gully AI is not configured on a server, every surface says it is not available (the API answers 503 with configured: false).",
+   "updatedAt": "2026-11-07T01:38:40.876Z"
   },
   {
    "id": "7d0f40dc252f",
@@ -1655,8 +1655,8 @@
    "title": "Swaps",
    "url": "https://docs.gullylabs.xyz/swaps#evm",
    "section": "EVM chains: LI.FI",
-   "text": "On and the card is the widget, locked to the token’s chain and connected to the site’s own wallet connection. For comparison it also shows what the router would give for the same payment (read through our cached GET /api/deepcore/quote); “Swap on the launchpad” opens the site (deepcore.fun), nothing is executed from here.",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "text": "On and the card is the widget, locked to the token’s chain and connected to the site’s own wallet connection. For comparison it also shows what the router would give for the same payment (read through our cached GET /api/deepcore/quote); “Swap on the launchpad” opens the site, nothing is executed from here.",
+   "updatedAt": "2026-11-07T01:38:40.876Z"
   },
   {
    "id": "302950459016",
@@ -1673,8 +1673,8 @@
    "title": "Swaps",
    "url": "https://docs.gullylabs.xyz/swaps#fees",
    "section": "Fees",
-   "text": "Any fee Gully Labs adds is set by the owner on the server and stated in the quote before you confirm. Exchanges and networks charge their own fees and slippage on top. What this build of the site says: ,: On Solana the fee and its recipient come from the same server-side record for the quote and the swap, so a page cannot ask for a different fee or recipient. A swap with no usable fee account carries no fee, and the quote says so.",
-   "updatedAt": "2026-10-21T01:30:05.761Z"
+   "text": "Any fee Gully Labs adds is set by Gully Labs on the server and stated in the quote before you confirm. Exchanges and networks charge their own fees and slippage on top. What this build of the site says: ,: On Solana the fee and its recipient come from the same server-side record for the quote and the swap, so a page cannot ask for a different fee or recipient. A swap with no usable fee account carries no fee, and the quote says so.",
+   "updatedAt": "2026-11-07T01:38:40.876Z"
   },
   {
    "id": "677d9202055e",
@@ -1745,8 +1745,8 @@
    "title": "Solana",
    "url": "https://docs.gullylabs.xyz/solana#pay",
    "section": "Solana Pay in Gully Pay",
-   "text": "Gully Pay accepts SOL, USDC and USDT on Solana, with the same quotes, ledger and reuse rule as the EVM chains. Each quote is a Solana Pay transfer request with its own reference key, so a wallet that follows the spec lets us find the payment without you pasting a signature. A payment counts once its transaction is finalized and did not fail. SOL: the treasury’s own balance rose by the amount. USDC or USDT: the treasury’s associated token account for that mint rose by the amount, in that mint. SOL is priced by Chainlink’s SOL / USD feed (read on Arbitrum); an answer older than two hours gives no SOL quote. A signature can be used for one payment only, across every chain. Solana checkout is on only when the owner has set the Solana treasury wallet. Unset, Solana assets are not offered and every page says so. There is never a fallback address. The full flow is on the Solana Pay page.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "Gully Pay accepts SOL, USDC and USDT on Solana, with the same quotes, ledger and reuse rule as the EVM chains. Each quote is a Solana Pay transfer request with its own reference key, so a wallet that follows the spec lets us find the payment without you pasting a signature. A payment counts once its transaction is finalized and did not fail. SOL: the treasury’s own balance rose by the amount. USDC or USDT: the treasury’s associated token account for that mint rose by the amount, in that mint. SOL is priced by Chainlink’s SOL / USD feed (read on Arbitrum); an answer older than two hours gives no SOL quote. A signature can be used for one payment only, across every chain. Solana checkout is on only when the Solana treasury wallet is set. Unset, Solana assets are not offered and every page says so. There is never a fallback address. The full flow is on the Solana Pay page.",
+   "updatedAt": "2026-11-07T01:38:40.876Z"
   },
   {
    "id": "ffb2e4bd24e2",
@@ -1844,8 +1844,8 @@
    "title": "Solana Pay",
    "url": "https://docs.gullylabs.xyz/solana-pay#off",
    "section": "When it is off",
-   "text": "Solana checkout is on only while the owner has set the Solana treasury wallet. Unset, Solana assets are not offered, and a quote on Solana is refused with “Payments on Solana cannot be taken yet”. There is never a fallback address.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "Solana checkout is on only while the Solana treasury wallet is set. Unset, Solana assets are not offered, and a quote on Solana is refused with “Payments on Solana cannot be taken yet”. There is never a fallback address.",
+   "updatedAt": "2026-11-07T01:38:40.876Z"
   },
   {
    "id": "1dc14defd2b3",
@@ -2123,8 +2123,8 @@
    "title": "Changelog",
    "url": "https://docs.gullylabs.xyz/changelog#2026-10-17",
    "section": "17 October 2026",
-   "text": "A page for every stock token, such as NVDA on Robinhood Chain: live price against fair, gap history, the pool, contracts, alerts and an embed snippet. Plans and gap alerts: higher limits, signed webhook alerts and up to a year of history, paid in USDC, USDT or the chain's own coin on ( followed on 18 October), straight to the Gully Labs treasury. Gully Analytics: web analytics that also see wallet connects, chains and transactions. Chain Kit: a branded Blockscout explorer for your chain, operated by Gully Labs. The widget links each stock to its page. The landing page describes the launchpad as it is today (launchpad, hosted Launchpads and DEXes, router) and shows its hosted sites, launches in the last 24 hours and dollars in locks, read from api.deepcore.fun. A preview of Gully Chains, managed Arbitrum Orbit L3s, starting with Gully Devnet. In development; nothing is live yet. Roadmap: Gully L3: the consolidated spec (settlement, data availability, gas token, Chain Kit, Gully Pay, Hyperlane as the interop layer at launch), with its status: spec written, devnet prepared, nothing running. The tracker reads Gully Core pools through the core's own pool manager, never as Uniswap v4 pools.",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "text": "A page for every stock token, such as NVDA on Robinhood Chain: live price against fair, gap history, the pool, contracts, alerts and an embed snippet. Plans and gap alerts: higher limits, signed webhook alerts and up to a year of history, paid in USDC, USDT or the chain's own coin on ( followed on 18 October), straight to the Gully Labs treasury. Gully Analytics: web analytics that also see wallet connects, chains and transactions. Chain Kit: a branded Blockscout explorer for your chain, operated by Gully Labs. The widget links each stock to its page. The landing page describes the launchpad as it is today (launchpad, hosted Launchpads and DEXes, router) and shows its hosted sites, launches in the last 24 hours and dollars in locks, read from the launchpad's API. A preview of Gully Chains, managed Arbitrum Orbit L3s, starting with Gully Devnet. In development; nothing is live yet. Roadmap: Gully L3: the consolidated spec (settlement, data availability, gas token, Chain Kit, Gully Pay, Hyperlane as the interop layer at launch), with its status: spec written, devnet prepared, nothing running. The tracker reads Gully Core pools through the core's own pool manager, never as Uniswap v4 pools.",
+   "updatedAt": "2026-11-07T01:38:40.876Z"
   },
   {
    "id": "41a073887bfa",
@@ -2141,8 +2141,8 @@
    "title": "Gully Analytics",
    "url": "https://gullylabs.xyz/analytics",
    "section": null,
-   "text": "Analytics that see the wallet. Page views alone don’t tell a dapp what worked. Gully Analytics adds what happens next: which visits connected a wallet, on which chain, with which wallet app, and which went on to send a transaction. Free trial. Built on Umami, MIT licensed. Our changes are MIT too. Start free trial Wallet connects. Detected through EIP-6963 and window.ethereum, by observing the wallet, never by prompting it. Chains and switches. Every connect, chain switch and transaction carries its chain, named for Ethereum, Base, BNB Chain, Robinhood Chain, Arc and more. Visit → wallet → transaction. A funnel from session to connected wallet to sent transaction, plus top pages by connects and wallet apps used. Addresses hashed by default. Unique wallets are counted from a one-way hash of the address. Full addresses or none are one attribute away. Everything Umami does. Page views, referrers, countries, devices, events and goals, cookie-free, on a dashboard you own. Opt-in, small, open. Web3 tracking turns on with one attribute; the whole script stays a few kilobytes. The source is public. Sign in and add your site. Connect a wallet in the app dashboard, start the free trial and add your domain. Add the script. One tag on your dapp, with data-web3=\"true\". Use your dapp as usual. Connects, chain switches and transactions are recorded as they happen. Read the Web3 tab. Wallets, connect rate, transactions, chains and the funnel for any date range. Gully Analytics. Privacy-friendly web analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
+   "text": "Analytics that see the wallet. Page views alone don’t tell a dapp what worked. Gully Analytics adds what happens next: which visits connected a wallet, on which chain, with which wallet app, and which went on to send a transaction. Free trial. Built on Umami, MIT licensed. Our changes are MIT too. Start free trial Wallet connects. Detected through EIP-6963 and window.ethereum, by observing the wallet, never by prompting it. Chains and switches. Every connect, chain switch and transaction carries its chain, named for Ethereum, Base, BNB Chain, Robinhood Chain, Arc and more. Visit → wallet → transaction. A funnel from session to connected wallet to sent transaction, plus top pages by connects and wallet apps used. Addresses hashed by default. Unique wallets are counted from a one-way hash of the address. Full addresses or none are one attribute away. Everything Umami does. Page views, referrers, countries, devices, events and goals, cookie-free, on a dashboard you own. Opt-in, small, open. Web3 tracking turns on with one attribute; the whole script stays a few kilobytes. The source is public. Sign in and add your site. Connect a wallet in the app dashboard, start the free trial and add your domain. Add the script. One tag on your dapp, with data-web3=\"true\". Use your dapp as usual. Connects, chain switches and transactions are recorded as they happen. Read the Web3 tab. Wallets, connect rate, transactions, chains and the funnel for any date range. Gully Analytics",
+   "updatedAt": "2026-11-07T01:38:40.876Z"
   },
   {
    "id": "faaefd127565",
@@ -2177,8 +2177,8 @@
    "title": "Services",
    "url": "https://gullylabs.xyz/services",
    "section": null,
-   "text": "Gully Labs builds for other teams: L2/L3 chain launch, smart contracts, security reviews and monitoring, dApp/web/mobile apps, payments, RPC and infrastructure, token launch and quests, AI integration and Unity game development. services · practices · one team",
-   "updatedAt": "2026-10-28T13:04:45.052Z"
+   "text": "services · practices · one team",
+   "updatedAt": "2026-11-07T01:38:40.876Z"
   },
   {
    "id": "419841e3812d",
@@ -2188,15 +2188,6 @@
    "section": "Web3 development, shipped.",
    "text": "Chains, contracts, apps, payments, infrastructure, AI and games, built by the team that runs Gully Chain, Gully Pay, Gully RPC and Gully Security in production. Start a project See the proof A short brief is enough. We answer with questions or a first scope.",
    "updatedAt": "2026-10-28T13:04:45.052Z"
-  },
-  {
-   "id": "c25c6a4a4899",
-   "source": "Site",
-   "title": "About Gully Labs",
-   "url": "https://gullylabs.xyz/about",
-   "section": null,
-   "text": "Gully Labs is a blockchain development company that designs, builds and releases Web3 projects under its own name.",
-   "updatedAt": "2026-10-17T16:10:49.167Z"
   },
   {
    "id": "8d81c93ea2a3",
@@ -2271,15 +2262,6 @@
    "updatedAt": "2026-11-06T16:07:55.653Z"
   },
   {
-   "id": "c6c5b2d8d2c6",
-   "source": "Site",
-   "title": "Gully Score",
-   "url": "https://gullylabs.xyz/score",
-   "section": null,
-   "text": "Transparent contract scores from public evidence only: verified code, who controls it, upgrades, delays, recent privileged changes, locks and holders. Nobody can pay to change a score.",
-   "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
    "id": "7a901df4ac37",
    "source": "Site",
    "title": "Gully Score",
@@ -2298,15 +2280,6 @@
    "updatedAt": "2026-10-18T18:07:12.144Z"
   },
   {
-   "id": "73bf54d11874",
-   "source": "Site",
-   "title": "Status",
-   "url": "https://gullylabs.xyz/status",
-   "section": null,
-   "text": "Live status of Gully Labs: the API, tracker freshness per chain, the launch poller, the Telegram bot, Gully Pay RPCs, Gully AI, the security scan engine, monitors and Holder Map sources, with 24 h uptime and incidents.",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
-  },
-  {
    "id": "8ba597100a90",
    "source": "Site",
    "title": "Status",
@@ -2321,26 +2294,8 @@
    "title": "Gully Labs home",
    "url": "https://gullylabs.xyz/",
    "section": null,
-   "text": "Gully Labs · product studio",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
-  },
-  {
-   "id": "7773ae30834d",
-   "source": "Site",
-   "title": "Gully Labs home",
-   "url": "https://gullylabs.xyz/",
-   "section": "One studio. products that work as one.",
-   "text": "We build the whole path a user takes on chain, from sign-in and payments to trading on PeddleSwap and launching on Peddles, and every piece plugs into the next. Services up all Gully sites Gully Chain blocktestnet 485590 See the products Work with us Building something? Send us a brief or browse every product page.",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
-  },
-  {
-   "id": "33b5b79c35a2",
-   "source": "Site",
-   "title": "Stock token tracker",
-   "url": "https://gullylabs.xyz/tracker",
-   "section": null,
-   "text": "Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price, with the gap, pool depth and feed time. Read from Chainlink (or, for some Solana xStocks, the issuer) and the pools themselves.",
-   "updatedAt": "2026-10-18T23:19:51.457Z"
+   "text": "Gully Labs · product studio Services up all Gully sites Gully Chain blocktestnet 485590 See the products Work with us Building something? Send us a brief or browse every product page.",
+   "updatedAt": "2026-11-07T01:38:40.876Z"
   },
   {
    "id": "e386696a4751",
@@ -2349,15 +2304,6 @@
    "url": "https://gullylabs.xyz/tracker",
    "section": "Is your stock token fairly priced?",
    "text": "Every tokenised stock on Robinhood Chain, BNB Chain and Solana: its price in its deepest pool against its fair price from Chainlink (for Solana xStocks without a feed, the issuer's quote).",
-   "updatedAt": "2026-10-18T23:19:51.457Z"
-  },
-  {
-   "id": "f2bf08065367",
-   "source": "Site",
-   "title": "Tracker widget",
-   "url": "https://gullylabs.xyz/widget",
-   "section": null,
-   "text": "Embed the Gully Labs stock token tracker on any page: a live ticker, a one-stock badge or a table of the widest gaps, read from Chainlink and the pools themselves.",
    "updatedAt": "2026-10-18T23:19:51.457Z"
   },
   {
@@ -2377,15 +2323,6 @@
    "section": "What is live, on request and not offered",
    "text": "AI Security Scan Gully Score Monitors Security Review Full Audit",
    "updatedAt": "2026-10-18T18:07:12.144Z"
-  },
-  {
-   "id": "fa3ebb823471",
-   "source": "Site",
-   "title": "Gully Labs ecosystem",
-   "url": "https://gullylabs.xyz/ecosystem",
-   "section": null,
-   "text": "Every Gully Labs project with its own live numbers: PeddleSwap (DEX), Peddles (launchpad) and PeddleQuest of the Peddle family, and Gully Chain. Plus the third-party services the code integrates with, and the launchpads on the Holder Map.",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
   },
   {
    "id": "a688cba5b24c",
@@ -2424,15 +2361,6 @@
    "updatedAt": "2026-10-19T01:11:03.920Z"
   },
   {
-   "id": "855a95ba26e9",
-   "source": "Site",
-   "title": "Gully Id",
-   "url": "https://gullylabs.xyz/gully-id",
-   "section": null,
-   "text": "Gully ID (gullyid.xyz) is the sign-in and wallet service built and operated by Gully Labs: one passkey for every Gully app. It never asks for a seed phrase or a private key.",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
-  },
-  {
    "id": "ff858e3095b1",
    "source": "Site",
    "title": "Gully Id",
@@ -2467,15 +2395,6 @@
    "section": null,
    "text": "A Holder Map Deep check report: funding trace, shared-funder clusters, deployer record, snipers and bundles.",
    "updatedAt": "2026-10-19T06:35:57.249Z"
-  },
-  {
-   "id": "d249d9b2008e",
-   "source": "Site",
-   "title": "Gully Labs partners",
-   "url": "https://gullylabs.xyz/partners",
-   "section": null,
-   "text": "What launchpads, wallets, explorers and chains get from Gully Labs: the embeddable Holder Map, the Gully Score badge, the SDK, launch webhooks, Gully Pay and Chain Kit, with copy-paste setup and a form to list your launchpad.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
   },
   {
    "id": "d7b8a449625f",
@@ -2879,8 +2798,8 @@
    "title": "Privacy Policy",
    "url": "https://gullylabs.xyz/privacy#s11",
    "section": "How long we keep it",
-   "text": "once if a free scan cannot start or you cancel an unpaid scan; a paid scan left unpaid for 24 hours has its uploaded code deleted and its invoice cancelled. Published scan reports: Public until unpublished; after that the copy stays on our server, not shown, and is not deleted automatically. Security Review requests: The newest 5,000 requests. Gully Chains waitlist: The newest 5,000 sign-ups. Ecosystem and launchpad submissions: The newest 1,000 submissions. Holder Map Deep checks and their reports: Cancelled checks are deleted after 30 days; others are not deleted automatically. Partner launches and webhook deliveries: The newest 1,000 launches and the newest 500 deliveries. Telegram /contact relay (which operator message belongs to which chat): 30 days, the newest 5,000; the messages themselves stay in Telegram. Chains launched from the app (testnet): Until you remove them. Security monitors: Until you delete the monitor; each keeps its last 100 events and last 50 alert deliveries. Gully Score results and history: Not deleted automatically (who looked a score up is not recorded). Holder Map view counts: Reset every UTC day; the key that hashes visitors is never written down. Telegram announcements: deliveries and opened links: The newest 200 announcements. Telegram bot records (first and last seen, language, opt-out): Not deleted automatically today. Server and edge logs: As long as needed to run and secure the services, then deleted. Backups of all of the above (on the same server): 7 days. Accounts, workspaces, keys, payments, invoices, stores, Telegram links, waitlists, analytics data: Not deleted automatically today; ask us and we delete what the law lets us.",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "text": "once if a free scan cannot start or you cancel an unpaid scan; a paid scan left unpaid for 24 hours has its uploaded code deleted and its invoice cancelled. Published scan reports: Public until unpublished; after that the copy stays on our server, not shown, and is not deleted automatically. Security Review requests: The newest 5,000 requests. Gully Chains waitlist: The newest 5,000 sign-ups. Ecosystem and launchpad submissions: The newest 1,000 submissions. Holder Map Deep checks and their reports: Cancelled checks are deleted after 30 days; others are not deleted automatically. Partner launches and webhook deliveries: The newest 1,000 launches and the newest 500 deliveries. Telegram /contact relay (which operator message belongs to which chat): 30 days, the newest 5,000; the messages themselves stay in Telegram. Chains launched from the app (testnet): Until you remove them. Security monitors: Until you delete the monitor; each keeps its last 100 events and last 50 alert deliveries. Gully Score results and history: Not deleted automatically (who looked a score up is not recorded). Holder Map view counts: Reset every day, Los Angeles time; the key that hashes visitors is never written down. Telegram announcements: deliveries and opened links: The newest 200 announcements. Telegram bot records (first and last seen, language, opt-out): Not deleted automatically today. Server and edge logs: As long as needed to run and secure the services, then deleted. Backups of all of the above (on the same server): 7 days. Accounts, workspaces, keys, payments, invoices, stores, Telegram links, waitlists, analytics data: Not deleted automatically today; ask us and we delete what the law lets us.",
+   "updatedAt": "2026-11-07T04:10:26.149Z"
   },
   {
    "id": "56a8635bdad0",

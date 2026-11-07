@@ -45,7 +45,7 @@ export const DOC_KEYWORDS: Partial<Record<DocSlug, string[]>> = {
   sdk: ['typescript', 'javascript', 'npm', 'client', 'library'],
   teams: ['workspace', 'members', 'roles', 'invite'],
   badges: ['badge', 'embed', 'readme', 'svg', 'markdown', 'built by', 'shield'],
-  'holder-map': ['holders', 'clusters', 'bubbles', 'whales', 'deepcore', 'health score'],
+  'holder-map': ['holders', 'clusters', 'bubbles', 'whales', 'launchpad', 'health score'],
   'holder-map-integrate': ['launchpad', 'embed', 'iframe', 'bubblemaps', 'partner', 'integration', 'card', 'og image'],
   analytics: ['umami', 'web3', 'wallets', 'funnel', 'events'],
   'gully-security': ['scan', 'audit', 'contract', 'monitor', 'vulnerability'],

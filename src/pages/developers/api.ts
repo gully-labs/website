@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 /* The app dashboard's client for /api/developer/*. The session is an HttpOnly cookie the browser
    sends by itself; every POST carries X-Requested-With, which the server requires (CSRF guard). */
 
@@ -388,7 +389,7 @@ export interface RecentRequest {
 
 export const shortAddress = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
 
-export const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—')
+export const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', year: 'numeric' }) : '—')
 
 /** Whole days from now until `iso` (0 when it is today or past), or null without a date. */
 export function daysLeft(iso: string | null): number | null {

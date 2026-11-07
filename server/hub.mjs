@@ -224,7 +224,7 @@ export function readGateway(j) {
 export function readStatusPage(html) {
   if (typeof html !== 'string' || !html.includes('class="banner')) return null
   const overall = (html.match(/class="banner\s+(ok|warn|bad)"/) ?? [])[1] ?? null
-  const services = [...html.matchAll(/<span class="nm">([^<]{1,60})<\/span>\s*<span class="pill\s+(up|down|degraded)">/g)].map((m) => ({ name: m[1].trim(), state: m[2] }))
+  const services = [...html.matchAll(/<span class="nm">([^<]{1,60})<\/span>(?:(?!class="nm")[\s\S]){0,4000}?<span class="pill\s+(up|down|degraded|pending)">/g)].filter((m) => m[2] !== 'pending').map((m) => ({ name: m[1].trim(), state: m[2] }))
   return { overall, services, up: services.filter((s) => s.state === 'up').length, total: services.length }
 }
 

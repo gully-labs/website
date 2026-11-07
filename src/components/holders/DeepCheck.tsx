@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { ArrowRight, CircleCheck, CircleSlash, Gauge, Loader2, ShieldCheck } from 'lucide-react'
@@ -89,7 +90,7 @@ export function DeepCheckCard({ chain, token, symbol }: { chain: string; token: 
           </span>
           {sellable && credits > 0 && <StatusPill tone="ok">{credits} free re-run credit{credits === 1 ? '' : 's'}</StatusPill>}
           {sellable && credits === 0 && quota && quota.freePerMonth > 0 && (
-            <StatusPill tone={quota.left > 0 ? 'ok' : 'neutral'} title={`Resets ${new Date(quota.resetsAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`}>
+            <StatusPill tone={quota.left > 0 ? 'ok' : 'neutral'} title={`Resets ${new Date(quota.resetsAt).toLocaleDateString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short' })}`}>
               {quota.left} of {quota.freePerMonth} free this month · {quota.plan.name}
             </StatusPill>
           )}

@@ -2,7 +2,7 @@
 // launches, from the maps the Holder Map has already built. Measured facts only ("62% held by 3 linked wallets"),
 // never an accusation, always the one-line "signals, not verdicts" note.
 //
-// Draft-only by default. Once a day (UTC, from TELEGRAM_RADAR_TIME, default 15:00) the channel scheduler calls
+// Draft-only by default. Once a day (Los Angeles time, from TELEGRAM_RADAR_TIME, default 15:00) the channel scheduler calls
 // radarTick(), which writes ONE draft per day (autoKey radar:YYYY-MM-DD) through the channel composer's own
 // validation and storage (telegram-channel.mjs channelHooks), with the brand-kit banner. The draft only goes out
 // when the admin posts it (POST /api/admin/channel/radar { action: 'post' }), or when TELEGRAM_RADAR_AUTOPOST=1
@@ -10,7 +10,7 @@
 //
 // Env
 //   TELEGRAM_RADAR_AUTOPOST  1 = post the daily draft by itself (default off: the owner approves)
-//   TELEGRAM_RADAR_TIME      HH:MM UTC when the daily draft is made (default 15:00)
+//   TELEGRAM_RADAR_TIME      HH:MM Los Angeles time when the daily draft is made (default 15:00)
 //   TELEGRAM_RADAR_DRAFTS    0 = no scheduled drafts at all (the admin routes still work)
 //
 // Routes (forwarded by telegram-channel.mjs handleChannelAdmin, admin token already checked):
@@ -18,6 +18,7 @@
 //   POST /api/admin/channel/radar { action }      draft: make or refresh today's draft; post: publish today's draft
 //                                                 (or build and publish when there is none) -> { post } | 409 { skip }
 
+import { dayLA, minuteOfDayLA } from './time-la.mjs'
 import { channelHooks, validatePost } from './telegram-channel.mjs'
 import { peekHolderMap } from './holders.mjs'
 import { readLaunchFeed } from './holders-intel.mjs'
@@ -38,7 +39,7 @@ const radarTime = () => {
   return m ? Number(m[1]) * 60 + Number(m[2]) : 15 * 60
 }
 const hhmm = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
-const dayOf = (t) => new Date(t).toISOString().slice(0, 10)
+const dayOf = (t) => dayLA(t)
 const keyOf = (t) => `radar:${dayOf(t)}`
 
 /* ------------------------------------------------------------------ data --- */
@@ -148,8 +149,7 @@ let busy = false
 export async function radarTick() {
   if (!draftsOn() || busy) return
   const t = channelHooks.now()
-  const d = new Date(t)
-  if (d.getUTCHours() * 60 + d.getUTCMinutes() < radarTime()) return
+  if (minuteOfDayLA(t) < radarTime()) return
   let post = channelHooks.find(keyOf(t))
   if (!post) {
     if (t < nextTryAt) return

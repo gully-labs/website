@@ -1,4 +1,4 @@
-import { AppWindow, BellRing, Bot, Boxes, ChartCandlestick, ChartNoAxesCombined, CircleDollarSign, CreditCard, Gamepad2, Gauge, HardDrive, History, KeyRound, LayoutDashboard, Network, ScanSearch, Send, Server, Settings, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
+import { ArrowLeftRight, ChartNoAxesColumn, Droplets, Download, Layers, LineChart, Lock, Rocket, Share2, Vault, Wallet, AppWindow, BellRing, Bot, Boxes, ChartCandlestick, ChartNoAxesCombined, CircleDollarSign, CreditCard, Gamepad2, Gauge, HardDrive, History, KeyRound, LayoutDashboard, Network, ScanSearch, Send, Server, Settings, ShieldCheck, Users, type LucideIcon } from 'lucide-react'
 import type { ProductKey } from '../../../console/ui'
 
 /* The Gully Labs App's pages (app.gullylabs.xyz), slimmed on the owner's word (2026-11-03: "all services don't need
@@ -31,6 +31,45 @@ export const SIDEBAR: { id: SidebarTab; label: string; icon: LucideIcon }[] = [
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
 export const HUB_NAV_IDS = 'overview,activity,products,keys,billing,team,settings'
+
+/** The Gully Core app. Its routes are the real features behind the sidebar's Trade, Build and Manage groups and the
+    home page's Create tiles (gully-core-app apps/web/src/routes/dapp/data/shell.ts). */
+export const CORE_APP = 'https://gullychain.xyz/core/app'
+export type AppLink = { label: string; href: string; icon: LucideIcon }
+export const APP_GROUPS: { title: string; links: AppLink[] }[] = [
+  {
+    title: 'Trade',
+    links: [
+      { label: 'Swap', href: `${CORE_APP}/swap`, icon: ArrowLeftRight },
+      { label: 'Markets', href: '#tracker', icon: LineChart },
+      { label: 'Launches', href: `${CORE_APP}/launch/v2`, icon: Rocket },
+      { label: 'Pools', href: `${CORE_APP}/pool`, icon: Droplets },
+      { label: 'Hook pools', href: `${CORE_APP}/marketplace`, icon: Layers },
+    ],
+  },
+  {
+    title: 'Build',
+    links: [
+      { label: 'Launch a token', href: `${CORE_APP}/launch/v2/new`, icon: Rocket },
+      { label: 'Launchpad', href: `${CORE_APP}/pads/new`, icon: Layers },
+      { label: 'DEX', href: `${CORE_APP}/dexes/new?kind=dex`, icon: ArrowLeftRight },
+      { label: 'Stock market', href: `${CORE_APP}/pads/new?kind=stocks`, icon: ChartNoAxesColumn },
+      { label: 'Vault', href: `${CORE_APP}/vaults/new`, icon: Vault },
+      { label: 'Create a chain', href: 'https://gullylabs.xyz/services#contact', icon: Network },
+    ],
+  },
+  {
+    title: 'Manage',
+    links: [
+      { label: 'Locks', href: `${CORE_APP}/locks`, icon: Lock },
+      { label: 'Distribute', href: `${CORE_APP}/distribute`, icon: Share2 },
+      { label: 'Claim', href: `${CORE_APP}/claim`, icon: Download },
+      { label: 'Portfolio', href: `${CORE_APP}/portfolio`, icon: Wallet },
+    ],
+  },
+]
+/** The home page's six Create tiles. */
+export const CREATE_TILES: AppLink[] = [...APP_GROUPS[1].links, { label: 'Lock', href: `${CORE_APP}/locks/new`, icon: Lock }]
 
 /** The service pages that are their own lazy chunk (ServiceView.tsx). */
 export type ServiceTab = 'tracker' | 'score' | 'widgets' | 'telegram'

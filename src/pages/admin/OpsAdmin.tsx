@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowUpRight } from 'lucide-react'
 import type { DaySeries } from '../../components/charts/DayBars'
@@ -18,13 +19,11 @@ const th = 'py-2 pr-3 font-medium'
 const short = (a: string | null) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '—')
 const when = (iso: string | null) =>
   iso
-    ? new Date(iso).toLocaleString('en-US', {
-        month: 'short',
+    ? new Date(iso).toLocaleString('en-US', { timeZone: TZ, month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-        hour12: false,
-      })
+        hour12: false })
     : '—'
 
 function usePolled<T>(token: string, path: string) {
@@ -424,7 +423,7 @@ interface KitView {
 
 const KIT_SERIES: DaySeries[] = [
   { key: 'request', label: 'Chain Kit waitlist', color: C.gold },
-  { key: 'waitlist', label: 'Devnet waitlist', color: '#248bff' },
+  { key: 'waitlist', label: 'Devnet waitlist', color: '#6f8ddf' },
 ]
 
 export function ChainKitAdmin({ token }: { token: string }) {

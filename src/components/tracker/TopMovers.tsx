@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { AnimatePresence, motion } from 'motion/react'
@@ -241,7 +242,7 @@ function TopMoversView({ chain, onRetry }: { chain: string; onRetry: () => void 
       )}
       {data?.asOf && list.length > 0 && (
         <span className="font-mono text-[11px] text-faint">
-          Compared {new Date(data.from!).toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric', hour12: false, timeZone: 'UTC' })} → {new Date(data.to!).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })} UTC · {data.eligible} stocks with both points
+          Compared {new Date(data.from!).toLocaleString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric', hour12: false })} → {new Date(data.to!).toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false })} PT · {data.eligible} stocks with both points
         </span>
       )}
     </section>

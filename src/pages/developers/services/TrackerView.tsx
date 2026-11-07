@@ -1,3 +1,4 @@
+import { TZ } from '../../../lib/time'
 import { BarChart3, BellPlus, ChartCandlestick, ChevronLeft, ChevronRight, Rows3, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { NF } from '../../../components/charts/number-formats'
@@ -26,7 +27,7 @@ const TABS = ['stocks', 'chart'] as const
 type Sub = (typeof TABS)[number]
 
 const idOf = (r: { chain: string; ticker: string }) => `${r.chain}:${r.ticker}`
-const hhmm = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
+const hhmm = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false })
 const byGap = (a: TrackerRow, b: TrackerRow) => (b.gapPct === null ? -1 : Math.abs(b.gapPct)) - (a.gapPct === null ? -1 : Math.abs(a.gapPct))
 
 function RowSpark({ m, ticker }: { m: Mover | undefined; ticker: string }) {
@@ -78,7 +79,7 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
   const pages = Math.max(1, Math.ceil(shown.length / PAGE))
   const pg = Math.min(page, pages - 1)
 
-  const status: Status = st.k === 'ok' ? { tone: 'live', text: `live · ${hhmm(st.data.generatedAt)} UTC` } : st.k === 'error' ? { tone: 'down', text: 'unreadable' } : { tone: 'checking', text: 'reading…' }
+  const status: Status = st.k === 'ok' ? { tone: 'live', text: `live · ${hhmm(st.data.generatedAt)} PT` } : st.k === 'error' ? { tone: 'down', text: 'unreadable' } : { tone: 'checking', text: 'reading…' }
   const chains = data?.chains ?? []
   const pending = st.k === 'error' ? 'unreadable' : '…'
   const pickChain = (k: string) => {
@@ -113,7 +114,7 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
         page={{ href: sitePage('/tracker') }}
         tiles={[
           { label: 'STOCKS', value: data ? rows.length : null, unknown: pending, note: `${trusted.length} trusted pools` },
-          { label: 'OFF BY 2%+', value: data ? flagged : null, unknown: pending, tone: flagged ? '#00d2ff' : undefined, note: 'flagged now' },
+          { label: 'OFF BY 2%+', value: data ? flagged : null, unknown: pending, tone: flagged ? '#6f8ddf' : undefined, note: 'flagged now' },
           { label: 'TYPICAL GAP', value: median, format: NF.fixed2, suffix: '%', unknown: st.k === 'ok' ? 'not tracked yet' : pending, note: 'median, trusted pools' },
           { label: 'WIDEST', value: byAbs[0]?.gapPct ?? null, format: NF.signed2, suffix: '%', unknown: st.k === 'ok' ? 'none' : pending, tone: (byAbs[0]?.gapPct ?? 0) >= 0 ? UP : DOWN, note: byAbs[0] ? `${byAbs[0].ticker} · ${CHAIN_SHORT[byAbs[0].chain] ?? byAbs[0].chain}` : '—' },
           { label: 'LIQUIDITY', value: liquidity, format: NF.compactUsd, unknown: data ? 'not tracked yet' : pending, note: data && liqMissing && liqKnown.length ? `partial: ${liqMissing} pool${liqMissing === 1 ? '' : 's'} unreadable` : 'all pools', title: data && liqMissing ? `${liqMissing} of ${rows.length} pools have no readable liquidity; they are left out of this sum.` : undefined },

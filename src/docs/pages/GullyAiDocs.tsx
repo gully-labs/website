@@ -125,7 +125,7 @@ export function GullyAiDocs() {
           ]}
         />
         <P>
-          The owner can change these on the server. When Gully AI is not configured on a server, every surface says it is not available (the API answers <C>503</C> with <C>configured: false</C>).
+          Gully Labs can change these on the server. When Gully AI is not configured on a server, every surface says it is not available (the API answers <C>503</C> with <C>configured: false</C>).
         </P>
       </Section>
 
