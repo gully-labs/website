@@ -7,7 +7,6 @@
    live (admin.gullypay.xyz, gullypay.xyz/setup), sentry.gullychain.xyz is up with the mint not open yet.
    2026-10-28: Gully Sentry's free testnet mint is open (sale/stats deployed, saleMode testnet); it has its own product
    page (/products/gully-sentry) and its numbers come through /api/hub/live (sentryNet, sentrySale, sentryChain). */
-import { timePT } from '../../lib/time'
 import type { HubBody } from '../../console/live'
 import type { HubProducts } from '../../terminal/kit'
 import { SEO_PAGES } from '../../content/seoPages.ts'
@@ -255,7 +254,7 @@ export const SERVICE_KEYS: Record<ProductKey, string[]> = {
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 const hh = (iso: string | number) => {
   const d = new Date(typeof iso === 'number' ? iso * 1000 : iso)
-  return `${String(d.getUTCHours()).padStart(2, '0')}:00`
+  return `${d.toLocaleTimeString('en-GB', { timeZone: 'America/Los_Angeles', hour: '2-digit', hour12: false }).padStart(2, '0')}:00`
 }
 const dd = (day: string) => new Date(`${day}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 
@@ -278,7 +277,7 @@ export function upState(hub: HubBody | null, key: ProductKey): Reading['state'] 
 
 function latency(hub: HubBody | null, key: string): Row[] {
   const s = hub?.services.find((x) => x.key === key)
-  return (s?.history ?? []).filter((h) => num(h.ms) != null).map((h) => ({ v: h.ms as number, x: timePT(h.t) }))
+  return (s?.history ?? []).filter((h) => num(h.ms) != null).map((h) => ({ v: h.ms as number, x: new Date(h.t).toLocaleTimeString('en-GB', { timeZone: 'America/Los_Angeles', hour: '2-digit', minute: '2-digit', hour12: false }) }))
 }
 
 /** One product's live reading. Never invents a figure: missing sources give `why`, not zeros. */
