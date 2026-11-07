@@ -89,7 +89,7 @@ export function Logo({ def, name, scale = 1, decorative = false }: { def: LogoDe
           // GullyChain brand kit v4 icon (gc-icon.svg, byte-identical to the kit; kit v4 is icon-only)
           <img src="/brand/web/logos/gc-icon.svg" width={h} height={h} alt="" decoding="async" draggable={false} />
         ) : (
-          <img src="/brand/icon/gully-labs-icon.png" width={Math.round((h * 343) / 372)} height={h} alt="" decoding="async" draggable={false} />
+          <img src="/brand/kit/mark-reversed.svg" width={Math.round(h * 1.042)} height={h} alt="" decoding="async" draggable={false} />
         )}
         <span aria-hidden>{def.label}</span>
       </span>

@@ -503,7 +503,7 @@ function Composer({ token, ov, reload }: { token: string; ov: Overview; reload: 
         </fieldset>
 
         <label className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start text-[14px] text-ink-2">
-          <input type="checkbox" checked={d.urgent} onChange={(e) => set({ urgent: e.target.checked })} className="size-5 accent-[#00d2ff]" />
+          <input type="checkbox" checked={d.urgent} onChange={(e) => set({ urgent: e.target.checked })} className="size-5 accent-[#6f8ddf]" />
           Urgent (skip the one-broadcast-a-day limit)
         </label>
         {blockedByDay && <span className="text-[13px] text-gold">One broadcast a day: the next can go from {when(ov.nextAllowedAt)}, or tick Urgent.</span>}

@@ -25,19 +25,19 @@
 import GLYPHS from './badge-glyphs.mjs'
 import { KIT } from './brand.mjs'
 
-/** The badge palette: the 2026 Gully Labs kit (bg #06050D, surface #0B0A16, cyan #00D2FF, blue #248BFF, muted #A3A8C3), keyed by the old
+/** The badge palette: the 2026 Gully Labs kit (navy #0E1C38, surface #13233F, light blue #6F8DDF, blue #3754A0, grey #C9D2E8), keyed by the old
     token names so the themes below are unchanged; green and red stay as the good / warning status tones. */
 export const TOKENS = {
-  labNight: '#06050D',
-  midnight: '#0B0A16',
-  slate: '#1A1830',
+  labNight: '#0E1C38',
+  midnight: '#13233F',
+  slate: '#2A3A5C',
   bone: '#FFFFFF',
-  labGold: '#00D2FF',
-  paleGold: '#248BFF',
+  labGold: '#6F8DDF',
+  paleGold: '#3754A0',
   frogGreen: '#2F6B35',
   moss: '#3C553B',
-  textMuted: '#A3A8C3',
-  textDim: '#7D8794',
+  textMuted: '#C9D2E8',
+  textDim: '#5B6478',
   // The site's error red (src/index.css --color-error), added to the badge kit by the owner on 2026-10-19 as the warning tone.
   alertRed: '#FF8A7A',
 }

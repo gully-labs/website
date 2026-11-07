@@ -6,7 +6,7 @@
 
 import { yTicks } from '../components/charts/chartData'
 export const REDUCED = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-export const C = { cyan: '#00D2FF', blue: '#248BFF', violet: '#7B3BFF', magenta: '#C02CFF', muted: '#A3A8C3', surface: '#0B0A16', bg: '#06050D', s: ['#20A0C4', '#1A5FE6', '#9578E8', '#9121B5'], up: '#3DDC97', down: '#FF6B81' }
+export const C = { cyan: '#6f8ddf', blue: '#6f8ddf', violet: '#9db4ee', magenta: '#9db4ee', muted: '#A3A8C3', surface: '#13233f', bg: '#0b1730', s: ['#20A0C4', '#1A5FE6', '#9578E8', '#9121B5'], up: '#3DDC97', down: '#FF6B81' }
 const NS = 'http://www.w3.org/2000/svg'
 
 export const fmtUsd = (v: number | null | undefined) =>

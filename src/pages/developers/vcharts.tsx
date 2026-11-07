@@ -110,7 +110,7 @@ export function RequestsChart({ usage, series, height = 260 }: { usage: UsageV2;
 
 const STATUS = [
   { k: 'ok', name: '2xx–3xx OK', color: '#3ddc97' },
-  { k: 'client', name: '4xx client', color: '#00d2ff' },
+  { k: 'client', name: '4xx client', color: '#6f8ddf' },
   { k: 'limited', name: '429 limited', color: LIMITED_COLOR },
   { k: 'server', name: '5xx server', color: '#9578e8' },
 ] as const

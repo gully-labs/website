@@ -5,6 +5,7 @@ import { copyWithToast } from '../../components/ui/toast'
 import { DOCS_URL, SITE_URL } from '../../site-host'
 import { daysLeft, shortAddress, type Account, type Role } from './api'
 import { AskLauncher } from '../../components/ask/AskLauncher'
+import { FollowBar } from '../../components/FollowBar'
 import { PwaCards } from '../../components/pwa/PwaCards'
 import { healthOfStatus, useAppStatus, type Health } from './services/health'
 import { StatusDialog } from './services/StatusDialog'
@@ -249,7 +250,7 @@ function PlanPill({ account }: { account: Account }) {
   const soon = left !== null && left <= 7
   return (
     <span className="flex min-h-[30px] shrink-0 items-center gap-2 rounded-full border border-line px-[10px] text-[13px] whitespace-nowrap max-[419px]:px-[9px]" title={account.plan.expiresAt ? `Runs until ${new Date(account.plan.expiresAt).toLocaleString()}` : undefined} data-testid="plan-pill">
-      <span className="size-2 rounded-full" style={{ background: !paid ? '#9398b5' : soon ? '#ff8a7a' : '#00d2ff' }} aria-hidden />
+      <span className="size-2 rounded-full" style={{ background: !paid ? '#9398b5' : soon ? '#ff8a7a' : '#6f8ddf' }} aria-hidden />
       <span className="max-[419px]:sr-only">{account.plan.name} plan</span>
       {left !== null && <span className={`${soon ? 'text-error' : 'text-muted'} max-[520px]:hidden`}>· {left === 0 ? 'ends today' : `${left} day${left === 1 ? '' : 's'} left`}</span>}
     </span>
@@ -426,7 +427,7 @@ function HeaderLinks({ health, onStatus }: { health: Health; onStatus: () => voi
 function Brand({ compact, onHome }: { compact: boolean; onHome: () => void }) {
   return (
     <button type="button" onClick={onHome} className={`flex min-h-11 min-w-0 items-center gap-[10px] text-ink ${compact ? 'justify-center' : ''}`} aria-label="Gully Labs App: overview" data-testid="app-brand">
-      <Mascot size={24} decorative />
+      {compact && <Mascot size={24} decorative />}
       {!compact && (
         <span className="flex min-w-0 items-center gap-2">
           <Wordmark height={18} />
@@ -594,6 +595,8 @@ export function AppShell<T extends string>({
   const ws = me?.active.name ?? 'Your workspace'
 
   return (
+    <>
+    <FollowBar />
     <div className="flex min-h-dvh" data-testid="app-shell" data-sidebar={narrow ? 'sheet' : compact ? 'icons' : 'open'}>
       {!narrow && (
         <aside aria-label="App" className={`sticky top-0 z-40 flex h-dvh shrink-0 flex-col gap-[6px] border-r border-line bg-bg-alt py-[6px] transition-[width] duration-200 print:hidden ${compact ? 'w-16 px-2' : 'w-[212px] px-[10px]'}`} data-testid="app-sidebar">
@@ -688,5 +691,6 @@ export function AppShell<T extends string>({
         </div>
       </Sheet>
     </div>
+    </>
   )
 }

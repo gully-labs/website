@@ -190,7 +190,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex max-w-[560px] min-w-0 flex-col gap-1">
                   <span className="flex items-center gap-2 text-[12px] text-dim">
-                    <span className="size-2 rounded-full" style={{ background: cur.id === 'free' ? '#9398b5' : '#00d2ff' }} aria-hidden /> Current plan
+                    <span className="size-2 rounded-full" style={{ background: cur.id === 'free' ? '#9398b5' : '#6f8ddf' }} aria-hidden /> Current plan
                     <RefreshChip error={poll.error} onRetry={load} />
                   </span>
                   <h2 id="plan-title" className="m-0 font-display text-[30px] leading-none font-bold uppercase">
@@ -245,7 +245,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                   <StackedDays
                     height={130}
                     label={`Payments over time: ${known.length} payments with a USD value${known.length < view.payments.length ? ' (partial)' : ''}.`}
-                    kinds={[...new Set(known.map((p) => p.plan ?? p.kind))].map((k, i) => ({ id: String(k), name: `${k} (USD)`, color: ['#00d2ff', '#248bff', '#3ddc97', '#9578e8'][i % 4] }))}
+                    kinds={[...new Set(known.map((p) => p.plan ?? p.kind))].map((k, i) => ({ id: String(k), name: `${k} (USD)`, color: ['#6f8ddf', '#6f8ddf', '#3ddc97', '#9578e8'][i % 4] }))}
                     days={[...known].sort((a, b) => a.at.localeCompare(b.at)).map((p) => ({ label: fmtDate(p.at), values: { [String(p.plan ?? p.kind)]: Math.round((usdOf(p) ?? 0) * 100) / 100 } }))}
                   />
                 </div>

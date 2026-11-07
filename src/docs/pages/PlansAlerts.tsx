@@ -11,7 +11,7 @@ const sections = [
   { id: 'paying', title: 'Paying' },
   { id: 'history', title: 'Longer history' },
   { id: 'alerts', title: 'Gap alerts' },
-  { id: 'deepcore-launches', title: 'New launch alerts' },
+  { id: 'launch-alerts', title: 'New launch alerts' },
   { id: 'payload', title: 'Webhook payload' },
   { id: 'verify', title: 'Verifying the signature' },
   { id: 'telegram', title: 'Telegram' },
@@ -74,7 +74,7 @@ type LaunchDelivery = {
       locked: boolean | null         // true: the launchpad's indexer has a lock record; empty: unknown
       lockId: string | null
     }>
-    links: { token: string; launch: string; swap: string }   // pages on deepcore.fun
+    links: { token: string; launch: string; swap: string }   // the launch's pages on the launchpad
     snapshotAt: string               // the launch poll that saw it
   }>
 }
@@ -228,9 +228,9 @@ export function PlansAlerts() {
         <H3Note />
       </Section>
 
-      <Section id="deepcore-launches" title="New launch alerts">
+      <Section id="launch-alerts" title="New launch alerts">
         <P>
-          A second kind of alert watches the <Ext href="https://deepcore.fun">launchpad</Ext> for new token launches. It has no stock: it watches one launchpad chain, or every chain when <C>chainId</C> is left empty.
+          A second kind of alert watches the launchpad for new token launches. It has no stock: it watches one launchpad chain, or every chain when <C>chainId</C> is left empty.
         </P>
         <Fields
           head={['Condition', 'Body', 'Fires when']}

@@ -35,8 +35,8 @@ const KIT_COLOURS = new Set(
     ...['dark', 'light'].flatMap((v) => [...KIT.wordmark.labsGradient[v], ...KIT.wordmark.barGradient[v]].map((s) => s[1])),
   ].map((c) => c.toUpperCase()),
 )
-const tokensJson = JSON.parse(fs.readFileSync(new URL('../public/brand/tokens/tokens.json', import.meta.url), 'utf8'))
-check('TOKENS are the kit tokens (public/brand/tokens/tokens.json)', Object.values(TOKENS).every((c) => Object.values(tokensJson.color).map((x) => x.toUpperCase()).includes(c)))
+// The 2026-11 kit has no token file: its colours as read from its SVGs, its dark surfaces, and the two status tones.
+check('TOKENS are the 2026-11 kit colours', Object.values(TOKENS).every((c) => ['#0E1C38', '#13233F', '#2A3A5C', '#FFFFFF', '#6F8DDF', '#3754A0', '#2F6B35', '#3C553B', '#C9D2E8', '#5B6478', '#FF8A7A'].includes(c)))
 
 /* The spec, restated here: geometry per size. */
 const SPEC = {

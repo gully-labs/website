@@ -352,7 +352,7 @@ export class SvgContext {
   fillRect(x, y, w, h) {
     this.out.push(`<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(h)}" ${this.paintAttrs(this.st.fillStyle, 'fill')}/>`)
   }
-  /** The Gully Labs kit's horizontal wordmark (brand-kit logo/gully-labs-wordmark-horizontal*.png, embedded) in the
+  /** The Gully Labs kit's logotype (kit/logo/logotype-*.svg, embedded) in the
       box the retired outlined wordmark used: 848 x 176 units at (x, y), scaled by s, centred vertically. */
   kitWordmark(x, y, s, theme = 'dark') {
     const f = KIT_FILES.wordmark

@@ -64,7 +64,7 @@ function KitLogo({ def, name }: { def: LogoDef; name: string }) {
         {def.mark === 'chain' ? (
           <img src="/brand/web/logos/gc-icon.svg" width={h} height={h} alt="" decoding="async" loading="lazy" draggable={false} />
         ) : (
-          <img src="/brand/icon/gully-labs-icon.png" width={Math.round((h * 343) / 372)} height={h} alt="" decoding="async" loading="lazy" draggable={false} />
+          <img src="/brand/kit/mark-reversed.svg" width={Math.round(h * 1.042)} height={h} alt="" decoding="async" loading="lazy" draggable={false} />
         )}
         {def.label}
       </span>
