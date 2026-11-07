@@ -1528,6 +1528,27 @@ export function adminMerchants(now = Date.now()) {
 }
 
 /** /api/admin/merchants*; admin.mjs has checked the token. */
+/** Invoice ids that are fee statements, so the billing ledger's copy of a statement payment is not counted twice. */
+export const merchantStatementInvoiceIds = () => new Set(db.statements.map((s) => s.invoiceId).filter(Boolean))
+
+/** Fees Gully has actually received: on chain at payment time, and statements paid. [{ t, usd, chainId }] for server/revenue.mjs. */
+export function merchantFeeEvents(now = Date.now()) {
+  const chainOf = new Map(db.payments.map((p) => [p.id, p.chainId]))
+  const out = []
+  for (const f of db.fees) {
+    const micros = collectedOf(f)
+    if (micros > 0n) out.push({ t: Math.floor(Date.parse(f.at) / 1000), usd: Number(micros) / 1e6, chainId: chainOf.get(f.paymentId) ?? null })
+  }
+  for (const s of db.statements) {
+    if (statementState(s, now) !== 'paid') continue
+    const inv = ledger().invoices.find((i) => i.id === s.invoiceId)
+    const pay = ledger().payments.find((p) => p.invoiceId === s.invoiceId)
+    const at = s.paidAt ?? inv?.paidAt ?? pay?.at ?? s.issuedAt
+    out.push({ t: Math.floor(Date.parse(at) / 1000), usd: Number(s.usdCents) / 100, chainId: pay?.chainId ?? null })
+  }
+  return out
+}
+
 export function handleMerchantsAdmin(req, res, url) {
   const p = url.pathname
   if (p === '/api/admin/merchants') return req.method === 'GET' ? json(res, 200, adminMerchants()) : json(res, 405, { error: 'GET only' }), true
