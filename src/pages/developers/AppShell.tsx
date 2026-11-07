@@ -676,7 +676,7 @@ export function AppShell<T extends string>({
                 </li>
               </ol>
             </nav>
-            <ChainPicker />
+            {!narrow && <ChainPicker />}
             {!narrow && <HeaderLinks health={health} onStatus={status} />}
             <PlanPill account={account} />
             {narrow && <WalletMenu onSignOut={onSignOut} go={wallet} />}
@@ -716,6 +716,7 @@ export function AppShell<T extends string>({
 
       <Sheet open={sheet} onClose={() => setSheet(false)}>
         <WorkspaceList onDone={() => setSheet(false)} />
+        <ChainPicker />
         <nav aria-label="App pages">
           <NavLinks items={items} current={current} go={pick} compact={false} dense={false} />
         </nav>
