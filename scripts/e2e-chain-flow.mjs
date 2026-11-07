@@ -32,11 +32,9 @@ const SDK = `window.GullyID = { init: () => ({ signIn: async () => ({ accessToke
 async function context(width) {
   const mobile = width < 600
   const ctx = await browser.newContext({ viewport: { width, height: mobile ? 844 : 900 }, ...(mobile ? { isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : {}) })
-  await ctx.route(/^https?:\/\/(?!localhost[:/]|127\.0\.0\.1[:/])/, (route) => {
-    const u = new URL(route.request().url())
-    if (u.hostname === 'gullyid.xyz' && u.pathname.startsWith('/sdk')) return route.fulfill({ status: 200, contentType: 'text/javascript', body: SDK })
-    return route.abort()
-  })
+  // The SDK stub is in the page before it loads: the fake issuer moves the local CSP off gullyid.xyz, so a script from there is refused.
+  await ctx.addInitScript(SDK)
+  await ctx.route(/^https?:\/\/(?!localhost[:/]|127\.0\.0\.1[:/])/, (route) => route.abort())
   return ctx
 }
 
