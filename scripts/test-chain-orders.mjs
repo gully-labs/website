@@ -286,6 +286,10 @@ try {
   delete process.env.MAINNET_ORDERS
   delete process.env.CHAIN_GULLYPAY_MODE
 
+  const { pageMeta } = await import('../server/seo.mjs')
+  check('pages: the wizard is indexable on the app host, an order is not', pageMeta('app.gullylabs.xyz', '/create-chain').found === true && !pageMeta('app.gullylabs.xyz', '/create-chain').noindex && pageMeta('app.gullylabs.xyz', '/create-chain/orders/co_x').noindex === true)
+  check('pages: both answer 200 on localhost too, not a 404 document', pageMeta('localhost', '/create-chain').found === true && pageMeta('localhost', '/create-chain/orders/co_x').found === true)
+
   const page = (await fetch(`${BASE}/api/chains/plans`).then((r) => r.json())).mainnet
   check('/api/chains/plans follows the same config', page.fromUsdPerMonth === 4250 && page.sequencerProfitPct === 4.25)
 } catch (e) {

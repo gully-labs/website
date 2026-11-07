@@ -53,6 +53,7 @@ export function ChainOrdersAdmin({ token }: { token: string }) {
     return rows
   }, [data])
   const move = async (o: Row, status: string) => {
+    if (status === 'cancelled' && !window.confirm(`Cancel ${o.name}? The buyer is told by email.`)) return
     setBusy(o.id)
     const r = await adminCall(token, `/api/admin/chain-orders/${o.id}/status`, { status })
     setBusy('')

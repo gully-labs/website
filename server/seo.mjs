@@ -383,6 +383,7 @@ function pageMetaFor(host, pathname) {
   if (isLocal(host)) {
     if (p === '/developers' || p === '/app') return { ...pageMeta(APP_HOST, '/'), canonical: null, noindex: true }
     if (p === '/admin' || p.startsWith('/admin/')) return pageMeta('admin.gullylabs.xyz', '/')
+    if (p === '/create-chain' || p.startsWith('/create-chain/')) return { ...pageMeta(APP_HOST, p), canonical: null, noindex: true }
     if (p === '/docs' || p.startsWith('/docs/')) {
       const m = pageMeta('docs.gullylabs.xyz', p.slice(5) || '/')
       return { ...m, canonical: null, noindex: true }

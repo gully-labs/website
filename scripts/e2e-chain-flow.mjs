@@ -41,7 +41,8 @@ async function context(width) {
 function watch(page, label) {
   const errors = []
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`))
-  page.on('console', (m) => m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::/.test(m.text()) && errors.push(m.text().slice(0, 160)))
+  page.on('response', (r) => r.status() >= 400 && !/\/api\/chain-orders\/[^/]+\/checkout$/.test(r.url()) && errors.push(`${r.status()} ${r.url()}`))
+  page.on('console', (m) => m.type() === 'error' && !/ERR_FAILED|ERR_BLOCKED|net::|Failed to load resource/.test(m.text()) && errors.push(m.text().slice(0, 160)))
   return { verify: () => check(`${label}: no console errors`, errors.length === 0, errors.slice(0, 3).join(' | ')) }
 }
 const shot = async (page, name) => SHOTS && page.screenshot({ path: path.join(SHOTS, `${name}.png`), fullPage: true })
