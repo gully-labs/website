@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { Fragment, lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { LiveDayBars } from './DailyChart'
@@ -127,7 +128,7 @@ const proxyNote = (v: string) => (isFeeProxy(v.trim()) ? "That is Request Networ
 const card = 'flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6'
 const h2 = 'm-0 font-display text-[22px] font-bold uppercase'
 const small = 'font-mono text-[12px] text-faint'
-const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '—')
+const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '—')
 const ago = (iso: string | null) => {
   if (!iso) return 'never'
   const s = Math.round((Date.now() - Date.parse(iso)) / 1000)
@@ -277,7 +278,7 @@ function TreasuryChains({ t, act }: { t: TreasuryGate; act: (path: string, body?
           {t.pinned ? ` (pinned: GULLY_TREASURY_KIND=${t.pinned})` : ''} · {closed.length ? `${closed.length} chain${closed.length === 1 ? '' : 's'} not offered` : 'offered on every chain'}
         </span>
         <span className="flex items-center gap-3">
-          <span className={small}>checked {t.checkedAt ? new Date(t.checkedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : 'not yet'} · every {Math.round(t.intervalMs / 60_000)} min</span>
+          <span className={small}>checked {t.checkedAt ? new Date(t.checkedAt).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : 'not yet'} · every {Math.round(t.intervalMs / 60_000)} min</span>
           <button
             type="button"
             className="inline-flex min-h-11 items-center gap-2 rounded-btn border border-line-strong px-3 font-mono text-[12px] text-ink-2 transition-colors hover:border-gold hover:text-gold disabled:opacity-50"

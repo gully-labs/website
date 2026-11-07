@@ -1,3 +1,4 @@
+import { TZ, dayPT, lastDaysPT } from '../../lib/time'
 import { BellRing, ChartNoAxesCombined, CreditCard, Gauge, History, KeyRound, Layers, Loader2, Send, UserRound, Users, type LucideIcon } from 'lucide-react'
 import { useMemo, useState, type KeyboardEvent } from 'react'
 import { usePoll } from './poll'
@@ -127,12 +128,10 @@ function describe(e: ActivityEvent): [string, string | null] {
 
 function dayLabel(iso: string) {
   const d = new Date(iso)
-  const today = new Date()
-  const y = new Date(today)
-  y.setDate(today.getDate() - 1)
-  if (d.toDateString() === today.toDateString()) return 'Today'
-  if (d.toDateString() === y.toDateString()) return 'Yesterday'
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const [y, today] = lastDaysPT(2).map((x) => x.key)
+  if (dayPT(d) === today) return 'Today'
+  if (dayPT(d) === y) return 'Yesterday'
+  return d.toLocaleDateString('en-US', { timeZone: TZ, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export function ActivityTab() {
@@ -163,15 +162,13 @@ export function ActivityTab() {
   const perDay = useMemo<DayStack[]>(() => {
     const days: DayStack[] = []
     const index = new Map<string, DayStack>()
-    const today = new Date()
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
-      const row = { label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), values: {} as Record<string, number> }
-      index.set(d.toDateString(), row)
+    for (const { key, label } of lastDaysPT(14)) {
+      const row = { label, values: {} as Record<string, number> }
+      index.set(key, row)
       days.push(row)
     }
     for (const e of shown) {
-      const row = index.get(new Date(e.at).toDateString())
+      const row = index.get(dayPT(e.at))
       if (row) row.values[kindOf(e.action)] = (row.values[kindOf(e.action)] ?? 0) + 1
     }
     return days

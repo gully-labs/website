@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { Activity, ArrowUpRight, Info, LayoutDashboard, BellRing, ChartNoAxesCombined, ChartPie, CreditCard, KeyRound, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { ChannelChips, SecretDialog, TelegramCard } from './Alerts'
@@ -397,7 +398,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
               <h2 id="ov-ep" className={panelTitle}>
                 Requests by endpoint · {range}
               </h2>
-              {shown?.endpointsSince && <span className={mono}>counted since {new Date(shown.endpointsSince).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+              {shown?.endpointsSince && <span className={mono}>counted since {new Date(shown.endpointsSince).toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric' })}</span>}
             </div>
             {usageErr && !shown ? <ErrorLine onRetry={reloadUsage}>Usage could not be read: {usageErr}</ErrorLine> : !shown ? <Skeleton h={120} /> : <EndpointBars byEndpoint={shown.byEndpoint} since={shown.endpointsSince} />}
           </section>

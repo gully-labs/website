@@ -1,6 +1,6 @@
 // The landing's only script (served at /landing/live.js). The page is complete without it: this keeps the figures,
 // graphics and board current from the same-origin APIs, and shows toasts for real events only. No framework.
-import { board, cards, coreBars, METRIC } from '/landing/graphs.mjs'
+import { board, cards, coreBars, mapNodes, METRIC } from '/landing/graphs.mjs'
 
 const data = JSON.parse(document.getElementById('boot')?.textContent ?? '{}')
 const SOURCES = { hub: ['/api/hub', 60_000], products: ['/api/hub/products', 120_000], live: ['/api/hub/live', 60_000], stats: ['/api/stats', 60_000] }
@@ -24,6 +24,17 @@ function draw() {
     const u = el.querySelector('[data-u]')
     u.textContent = v.value ? `${v.value} ${v.unit}` : u.dataset.fb
   }
+  const m = mapNodes(data)
+  document.querySelectorAll('[data-mk]').forEach((g) => {
+    const v = m[g.dataset.mk]
+    if (!v) return
+    const st = g.querySelector('.st')
+    if (st.textContent !== v.tag) st.textContent = v.tag
+    st.setAttribute('class', `st ${v.cls}`)
+    const mt = g.querySelector('.mt')
+    if (mt.textContent !== v.metric) mt.textContent = v.metric
+    g.classList.toggle('is-up', v.up)
+  })
   const b = board(data)
   for (const k of ['up', 'vol', 'tvl']) {
     const el = document.querySelector(`[data-b="${k}"]`)

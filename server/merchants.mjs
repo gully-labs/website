@@ -860,7 +860,7 @@ function warn(st, kind, now = Date.now()) {
   if (st.warned[kind]) return false
   st.warned[kind] = new Date(now).toISOString()
   const usd = fmtUsd(st.usdCents)
-  const due = new Date(st.dueAt).toUTCString().slice(0, 16)
+  const due = new Date(st.dueAt).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
   const text = {
     issue: `Your Gully Pay fee statement ${st.number} is ready: $${usd} for the week. Pay it within ${PAUSE_AFTER_DAYS} days (by ${due}) to keep your checkout running: ${payBase()}/pay/${st.invoiceId}`,
     day5: `Reminder: Gully Pay fee statement ${st.number} ($${usd}) is unpaid. Your checkout pauses on ${due} unless it is paid: ${payBase()}/pay/${st.invoiceId}`,

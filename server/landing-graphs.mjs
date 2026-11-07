@@ -155,11 +155,88 @@ export function cards({ hub, products, live, stats }) {
     ai: { state: stateOf(hub, ['ai-api']) === 'live' ? 'live' : 'coming', value: '', unit: '', graph: diagrams.ai(), how },
     multisig: { state: stateOf(hub, KEYS.multisig), value: '', unit: '', graph: diagrams.multisig(), how },
     kre8: { state: stateOf(hub, ['street']), value: '', unit: '', graph: '', how: '' },
+    bridge: { state: stateOf(hub, ['bridge']), value: '', unit: '', graph: '', how: '' },
+    faucet: { state: stateOf(hub, ['faucet']), value: '', unit: '', graph: '', how: '' },
+    explorer: { state: stateOf(hub, ['explorer']), value: '', unit: '', graph: '', how: '' },
     core: { state: stateOf(hub, ['street', 'indexer']), value: launches ? fmtInt(launches) : '', unit: launches ? 'launches, 24 h' : '', graph: diagrams.core(), how },
     peddleswap: peddle('peddleswap', diagrams.swap),
     peddles: peddle('peddles', diagrams.launch),
     peddlequest: peddle('peddlequest', diagrams.quest),
   }
+}
+
+/* ---- the constellation: the same geometry as src/pages/hub/hubData.ts MAP, with Gully Core, kre8 and Gully Multisig added
+   on the bottom row, where nothing else sits. Rings, tags and metrics redraw from live data; links never move. ---- */
+const MAPS = {
+  wide: { vb: [760, 560], r: 30, rc: 42, cap: 22, at: { id: [128, 118], pay: [380, 64], rpc: [632, 118], holdermaps: [672, 330], security: [530, 488], studio: [230, 488], ai: [88, 330], chain: [380, 282], core: [380, 488], kre8: [92, 488], multisig: [668, 488] } },
+  tall: { vb: [360, 720], r: 24, rc: 32, cap: 16, at: { id: [70, 62], pay: [290, 62], rpc: [62, 236], chain: [180, 226], holdermaps: [298, 236], studio: [70, 402], security: [290, 402], ai: [180, 520], kre8: [60, 560], multisig: [300, 560], core: [180, 656] } },
+}
+const EDGES = [['id', 'chain', 'live'], ['id', 'pay', 'plan'], ['id', 'rpc', 'plan'], ['id', 'studio', 'live'], ['pay', 'chain', 'live'], ['pay', 'rpc', 'plan'], ['pay', 'studio', 'live'], ['rpc', 'chain', 'live'], ['chain', 'holdermaps', 'live'], ['chain', 'security', 'live'], ['chain', 'studio', 'live'], ['ai', 'studio', 'plan'], ['chain', 'core', 'live'], ['chain', 'kre8', 'live'], ['chain', 'multisig', 'live']]
+const COLOR = { id: '#00D2FF', pay: '#3479FD', chain: '#00B2FA', rpc: '#FF7300', holdermaps: '#FFD52E', security: '#F2B232', studio: '#1E8BFF', ai: '#00F0F2', core: '#2DD47A', kre8: '#FFD52E', multisig: '#2DD47A' }
+function curve(a, b, c, k = 18) {
+  const mx = (a[0] + b[0]) / 2
+  const my = (a[1] + b[1]) / 2
+  const dx = mx - c[0]
+  const dy = my - c[1]
+  const d = Math.hypot(dx, dy) || 1
+  return `M${a[0]} ${a[1]} Q${(mx + (dx / d) * k).toFixed(1)} ${(my + (dy / d) * k).toFixed(1)} ${b[0]} ${b[1]}`
+}
+
+/** Tag and one-line metric per node, from the live sources. `stages`: each product's stage (Live, Testnet, Open beta,
+    Coming online); a service that is down says so whatever its stage. An unreadable source is a dash, never a zero. */
+export function mapNodes({ hub, products, live, stages = {} }) {
+  const n = (v, unit) => (num(v) == null ? '–' : `${fmtInt(v)} ${unit}`)
+  const act = products?.activity?.hourly
+  const total = (k) => (act?.length ? sum(act.map((x) => x[k])) : null)
+  const pay = live?.pay?.services
+  const gw = hub?.gateway
+  const q = hub?.quests
+  const frog = (q?.quests ?? []).filter((x) => /frog hop/i.test(x.title ?? ''))
+  const scans = products?.security?.daily
+  const api = (hub?.services ?? []).find((s) => s.key === 'ai-api')
+  const apiUp = !!api && (api.state === 'up' || api.up)
+  const safe = service(hub, 'safe')
+  const metric = {
+    id: n(live?.id?.signins24h, 'sign-ins 24h'),
+    pay: pay ? `${Object.values(pay).filter((s) => s === 'operational').length}/${Object.keys(pay).length} services ok` : '–',
+    chain: num(live?.head?.block ?? hub?.chain?.head) == null ? '–' : `block ${fmtInt(live?.head?.block ?? hub?.chain?.head)}`,
+    rpc: gw ? `${gw.ok}/${gw.total} networks ok` : '–',
+    holdermaps: n(products?.holders?.today, 'maps today'),
+    security: scans ? `${fmtInt(sum(scans.map((d) => d.scans)) ?? 0)} scans ${scans.length} d` : '–',
+    studio: !q ? '–' : frog.length ? `${fmtInt(frog.reduce((a, x) => a + (x.completions || 0), 0))} Frog Hop runs` : 'no Frog Hop runs yet',
+    ai: apiUp ? 'API answering' : 'API coming online',
+    core: n(total('launches'), 'launches 24h'),
+    kre8: n(total('trades'), 'trades 24h'),
+    multisig: num(safe?.ms) == null ? '–' : `${fmtInt(safe.ms)} ms`,
+  }
+  const keys = { ...KEYS, core: ['street', 'indexer'], kre8: ['street'], ai: ['ai-api'] }
+  const out = {}
+  for (const k of Object.keys(metric)) {
+    const st = stateOf(hub, keys[k])
+    const stage = k === 'ai' && apiUp ? 'Live' : stages[k] ?? 'Live'
+    const down = st === 'down' && stage !== 'Coming online'
+    out[k] = { tag: down ? 'Down' : stage, cls: down ? 'down' : /coming/i.test(stage) ? 'soon' : /live/i.test(stage) ? 'live' : 'beta', metric: metric[k], up: st === 'live', soon: /coming/i.test(stage) }
+  }
+  return out
+}
+
+/** The constellation as SVG. `nodes`: [{ key, name, icon, href }]. Pulses are SMIL along the solid links. */
+export function constellation(layout, nodes, data) {
+  const L = MAPS[layout]
+  const c = L.at.chain
+  const live = mapNodes(data)
+  const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+  const lines = EDGES.map(([a, b, kind], i) => `<path id="${layout}-e${i}" class="edge ${kind}" d="${curve(L.at[a], L.at[b], c)}"/>`).join('')
+  const sparks = EDGES.map(([, , kind], i) => (kind === 'live' ? `<circle class="spark" r="2.4"><animateMotion dur="${3 + (i % 4) * 0.7}s" repeatCount="indefinite" begin="-${(i * 0.37).toFixed(2)}s"><mpath href="#${layout}-e${i}"/></animateMotion></circle>` : '')).join('')
+  const clips = nodes.map((p) => `<clipPath id="${layout}-cp-${p.key}"><circle r="${(p.key === 'chain' ? L.rc : L.r) - 5}"/></clipPath>`).join('')
+  const ext = (h) => (/^https?:/.test(h) ? ' target="_blank" rel="noopener noreferrer"' : '')
+  const body = nodes.map((p) => {
+    const r = p.key === 'chain' ? L.rc : L.r
+    const [x, y] = L.at[p.key]
+    const v = live[p.key]
+    return `<a href="${esc(p.href)}"${ext(p.href)} aria-label="${esc(p.name)}"><g class="nd2${v.up ? ' is-up' : ''}${v.soon ? ' is-soon' : ''}" data-mk="${p.key}" style="--c:${COLOR[p.key]}" transform="translate(${x} ${y})"><circle class="ping" r="${r + 2}"/><circle class="halo" r="${r}"/><image href="${esc(p.icon)}" x="${-(r - 5)}" y="${-(r - 5)}" width="${2 * (r - 5)}" height="${2 * (r - 5)}" clip-path="url(#${layout}-cp-${p.key})" preserveAspectRatio="xMidYMid slice"/><text class="st ${v.cls}" y="${-r - 8}" text-anchor="middle">${esc(v.tag)}</text><text class="nm" y="${r + 17}" text-anchor="middle">${esc(p.name)}</text><text class="mt" y="${r + 32}" text-anchor="middle">${esc(v.metric)}</text></g></a>`
+  }).join('')
+  return `<svg class="cmap-${layout}" viewBox="0 0 ${L.vb[0]} ${L.vb[1]}" role="group" aria-label="The Gully products as a connected map, with a live reading on each"><defs>${clips}</defs><g>${lines}${sparks}</g>${body}</svg>`
 }
 
 /** The Build panel's chart: real Gully Chain testnet activity by the hour, never a drawn curve. */

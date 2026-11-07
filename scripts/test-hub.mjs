@@ -58,6 +58,9 @@ test('status page: banner and pills', () => {
   assert.equal(s.total, 2)
   assert.equal(s.up, 1)
   assert.equal(readStatusPage('<html></html>'), null)
+  // The page as it is drawn now: a sparkline between the name and the pill, 90 day bars after it, a pending check.
+  const now = readStatusPage('<span class="banner warn" role="status">x</span><section class="svc"><div class="top"><span class="nm">Website</span><span class="r"><svg><path d="M1 2"/></svg><span class="pill up">Operational</span></span></div><div class="bars"><i class="pill degraded"></i></div></section><section class="svc"><span class="nm">Wallet</span><span class="r"><svg></svg><span class="pill down">Down</span></span></section><section class="svc"><span class="nm">New</span><span class="pill pending">Pending</span></section>')
+  assert.deepEqual([now.up, now.total], [1, 2])
 })
 
 test('GET /api/hub with a stub fetch: down surfaces are down, never zero', async () => {

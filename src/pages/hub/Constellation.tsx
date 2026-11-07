@@ -6,6 +6,7 @@
    board, what's new, work with us, contact). On a phone the directory comes before the map.
    Every figure is read live (src/pages/hub/hubData.ts adapters): /api/hub, /api/hub/products, /api/stats and
    /api/hub/live. A source that cannot be read says so. Toasts only on real events seen between two polls. */
+import { timePT } from '../../lib/time'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Activity, ArrowDown, ArrowRight, ArrowUpRight, Blocks, Briefcase, ChartSpline, ChevronDown, CircleCheck, CircleDot, ExternalLink, FingerprintPattern, Hammer, Info, MessageSquare, Newspaper, Send, Trophy, X, type LucideIcon } from 'lucide-react'
@@ -382,7 +383,7 @@ function News() {
             </button>
           ))}
         </div>
-        <p className="cst-note">Every item is live or shipped this week. Dates are UTC.</p>
+        <p className="cst-note">Every item is live or shipped this week.</p>
       </div>
       <ol className="cst-news-list">
         {NEWS.filter((n) => f === 'all' || n.p === f).map((n) => {
@@ -684,7 +685,7 @@ export function Constellation() {
                 {t.label}
               </button>
             ))}
-            <span className="cst-fresh gt-k">{hl.data ? `live · ${new Date(hl.data.generatedAt).toISOString().slice(11, 19)} UTC` : 'reading live sources…'}</span>
+            <span className="cst-fresh gt-k">{hl.data ? `live · ${timePT(hl.data.generatedAt, true)}` : 'reading live sources…'}</span>
           </div>
           {/* anchors the header links land on */}
           <span id="live" />

@@ -8,7 +8,7 @@ import { hub } from './hub.mjs'
 import { hubProducts } from './hub-products.mjs'
 import { hubLive } from './hub-live.mjs'
 import { readStats } from './stats.mjs'
-import { board, cards, coreBars, METRIC } from './landing-graphs.mjs'
+import { board, cards, constellation, coreBars, METRIC } from './landing-graphs.mjs'
 import { ICONS, NAV_ICON, PRODUCT_ICON } from './landing-icons.mjs'
 
 const CONTENT = JSON.parse(fs.readFileSync(new URL('./data/page-content.json', import.meta.url), 'utf8'))
@@ -31,16 +31,19 @@ const BUILD = [
   { key: 'dex', label: 'DEX', icon: 'arrow-left-right', title: 'Your own DEX', body: 'A swap site on Gully Core pools, ready to host with no contracts to deploy.', steps: ['Pick a chain', 'Choose your pairs', 'Publish your site'], cta: 'Build a DEX', href: `${CORE}/dexes/new?kind=dex`, metric: 'swaps' },
   { key: 'stock', label: 'Stock market', icon: 'chart-candlestick', title: 'Your own stock market', body: 'A market site for tokenised stocks, built on the same core.', steps: ['Pick a chain', 'Choose your stocks', 'Publish your site'], cta: 'Build a stock market', href: `${CORE}/pads/new?kind=stocks`, metric: 'trades' },
   { key: 'vault', label: 'Vault', icon: 'vault', title: 'Managed liquidity', body: 'A vault that follows a pool and manages liquidity for its depositors.', steps: ['Pick a pool', 'Set the strategy', 'Open deposits'], cta: 'Build a vault', href: `${CORE}/vaults/new`, metric: 'swaps' },
+  { key: 'chain', label: 'Create a chain', icon: 'boxes', title: 'Your own chain', body: 'An Arbitrum Orbit chain on the stack Gully Chain runs: explorer, bridge and RPC included. We launch it with you.', steps: ['Tell us what you need', 'We set up the chain', 'You go live'], cta: 'Start a chain', href: '/services#contact', metric: 'trades' },
   { key: 'locks', label: 'Locks + splits', icon: 'lock', title: 'Locks, vesting and splits', body: 'Lock liquidity, vest tokens, run airdrops and split revenue with your team.', steps: ['Pick a position', 'Set the date', 'Lock it'], cta: 'Set up a lock', href: `${CORE}/locks/new`, metric: 'trades' },
 ]
 const NAV = [['#build', 'Build', 'hammer'], ['#products', 'Products', 'layout-grid'], ['#chains', 'Chains', 'link'], ['https://docs.gullylabs.xyz', 'Developers', 'code-xml'], ['/status', 'Status', 'activity']]
 /** Product tiles: the landing's list, kre8 beside its chain, the Gully Core emblem from its own kit. */
+/** Features with their own host and a real probe, so their status is read like any product's. */
+const TOOLS = [{ key: 'bridge', name: 'Gully Bridge', icon: '/brand/web/logos/gc-icon.svg', href: 'https://testnet-bridge.gullychain.xyz', label: 'Testnet' }, { key: 'faucet', name: 'Faucet', icon: '/brand/web/logos/gc-icon.svg', href: 'https://faucet.gullychain.xyz', label: 'Testnet' }, { key: 'explorer', name: 'Explorer', icon: '/brand/web/logos/gc-icon.svg', href: 'https://testnet-explorer.gullychain.xyz', label: 'Testnet' }]
 const KRE8 = { key: 'kre8', name: 'kre8', icon: '/brand/kit/kre8-icon.svg', href: 'https://kre8.fun', label: 'Testnet' }
 const iconOf = (p) => (p.key === 'core' ? '/brand/kit/gully-core-emblem-192.png' : p.icon)
-const ORBIT = ['core', 'chain', 'id', 'pay', 'rpc', 'holdermaps', 'security', 'kre8']
 const cap = (href, label, cls = '') => `<a class="cap ${cls}" href="${esc(href)}"${ext(href) ? ' target="_blank" rel="noopener noreferrer"' : ''}><b></b>${esc(label)}</a>`
 
 const CSS = `@font-face{font-family:Figtree;src:url(/fonts/figtree-latin-500.woff2) format("woff2");font-weight:400 500;font-display:swap}
+@font-face{font-family:'IBM Plex Mono';src:url(/fonts/ibm-plex-mono-latin-500.woff2) format("woff2");font-weight:500;font-display:swap}
 @font-face{font-family:Figtree;src:url(/fonts/figtree-latin-700.woff2) format("woff2");font-weight:600 800;font-display:swap}
 :root{color-scheme:dark;--navy:#0E1C38;--blue:#3754A0;--sky:#6F8DDF;--ground:#F1F3F8;--soft:#C9D2E8;--ok:#5FD49B;--bad:#FF8A7A;--soon:#E8C877}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:16px}
@@ -54,9 +57,13 @@ a{color:inherit;text-decoration:none}ul{list-style:none;margin:0;padding:0}h1,h2
 .cap b{width:9px;height:9px;border-radius:3px;background:var(--sky);transition:width .25s ease}.cap:hover b,.cap:focus-visible b{width:18px}
 .cap.solid{background:#fff;color:var(--navy);border-color:#fff}.cap.solid b{background:var(--blue)}.cap.sm{min-height:44px;font-size:14px}
 :focus-visible{outline:2px solid var(--sky);outline-offset:2px}
-.hero .w{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:center}
+.hero .w{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:center}
 .eye{font-size:14px;font-weight:600;color:var(--sky)}h1{margin-top:12px;font-size:clamp(38px,5.2vw,60px);line-height:1.03;font-weight:800;letter-spacing:-.03em}
 .lede{margin-top:14px;max-width:46ch;font-size:18px;line-height:1.45;color:var(--soft)}.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.hero{padding:10px 0 18px;background:radial-gradient(ellipse at 66% 45%,#0E1C38 0,#081226 58%,#060C1C 100%)}.howl{display:block;height:170px;width:auto;margin-top:14px}
+.cmap{position:relative;min-width:0;aspect-ratio:760/560}.cmap svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.cmap-tall{display:none}.cfield{position:absolute;inset:-6% -10%;width:120%;height:112%;object-fit:cover;pointer-events:none;opacity:.9;-webkit-mask-image:radial-gradient(closest-side,#000 55%,transparent);mask-image:radial-gradient(closest-side,#000 55%,transparent)}
+.edge{fill:none;stroke:#00D2FF;stroke-opacity:.35;stroke-width:1.5}.edge.plan{stroke:var(--soft);stroke-dasharray:4 5}.spark{fill:#00D2FF}.nd2 .halo{fill:#060C1C;stroke:var(--c);stroke-width:2;transition:stroke-width .18s}a:hover .nd2 .halo,a:focus-visible .nd2 .halo{stroke-width:3.5}.nd2 .ping{fill:none;stroke:var(--c);stroke-opacity:.5;transform-box:fill-box;transform-origin:center;opacity:0}.in .nd2.is-up .ping{animation:ping 2.6s ease-out infinite}.nd2.is-soon .halo{stroke-dasharray:3 4}
+.nd2 .nm{font:600 13px Figtree,sans-serif;fill:#F1F3F8}.nd2 .mt{font:500 11px 'IBM Plex Mono',ui-monospace,monospace;fill:var(--soft)}.nd2 .st{font:500 9.5px 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;fill:#00D2FF}.nd2 .st.live{fill:#3DDC97}.nd2 .st.soon{fill:#F5B83D}.nd2 .st.down{fill:var(--bad)}
 .orbit{display:block;width:100%;max-height:460px}.ring{fill:none;stroke:var(--blue)}.tileb{fill:#fff}
 .spin,.spin-r,.un,.un-r{transform-box:view-box;transform-origin:center}.in .spin{animation:turn 160s linear infinite}.in .spin-r{animation:turn 110s linear infinite reverse}
 .node{transform-box:fill-box;transform-origin:center}.in .spin .node{animation:turn 160s linear infinite reverse}.in .spin-r .node{animation:turn 110s linear infinite}
@@ -81,21 +88,28 @@ footer{margin-top:36px;padding:26px 0;border-top:1px solid var(--blue)}footer a:
 #toasts{position:fixed;right:16px;top:16px;z-index:40;display:flex;flex-direction:column;gap:8px;width:min(320px,calc(100vw - 32px))}
 .toast{position:relative;display:flex;flex-direction:column;padding:12px 40px 12px 16px;border-radius:14px;background:#fff;color:var(--navy);font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:rise .3s cubic-bezier(.2,.8,.2,1) both}.toast a,.toast span{font-weight:500}.toast button{position:absolute;top:0;right:0;width:44px;height:44px;border:0;background:none;color:inherit;font:inherit;font-size:18px;cursor:pointer}
 [hidden]{display:none!important}
-@keyframes grow{from{transform:scaleY(.1)}}@keyframes turn{to{transform:rotate(360deg)}}@keyframes rise{from{opacity:0;transform:translateY(-10px)}}
+@keyframes ping{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.45);opacity:0}}@keyframes grow{from{transform:scaleY(.1)}}@keyframes turn{to{transform:rotate(360deg)}}@keyframes rise{from{opacity:0;transform:translateY(-10px)}}
 @media (max-width:1040px){.pick{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.pick .orbit{grid-column:1/-1;grid-row:1;max-height:320px}.f{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:760px){.hero .w,.two,.pick{grid-template-columns:minmax(0,1fr)}.pick .orbit{grid-column:auto}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.top li span{display:none}.top li a{padding:0 8px}.top .w{flex-wrap:wrap;gap:4px 8px;padding-top:6px;padding-bottom:6px}.top nav{order:3;flex-basis:100%}.top ul{justify-content:space-between}.top li a{min-width:44px;justify-content:center}.top .cap{margin-left:auto}.fee b{font-size:32px}.f{grid-template-columns:minmax(0,1fr)}.fb .pb{margin-left:0}}
-@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}`
+@media (max-width:760px){.cmap{aspect-ratio:360/720;max-width:460px;width:100%;margin:0 auto}.cmap-wide{display:none}.cmap-tall{display:block}.howl{display:none}.hero .w,.two,.pick{grid-template-columns:minmax(0,1fr)}.pick .orbit{grid-column:auto}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.top li span{display:none}.top li a{padding:0 8px}.top .w{flex-wrap:wrap;gap:4px 8px;padding-top:6px;padding-bottom:6px}.top nav{order:3;flex-basis:100%}.top ul{justify-content:space-between}.top li a{min-width:44px;justify-content:center}.top .cap{margin-left:auto}.fee b{font-size:32px}.f{grid-template-columns:minmax(0,1fr)}.fb .pb{margin-left:0}}
+@media (prefers-reduced-motion:reduce){.spark{display:none}.nd2 .ping{opacity:.4}*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}`
 
 const tile = (p, v) => `<a class="tile" data-p="${p.key}" data-state="${v.state}" href="${esc(p.href)}"${ext(p.href) ? ' target="_blank" rel="noopener noreferrer"' : ''}><img src="${esc(iconOf(p))}" alt="" width="32" height="32" loading="lazy"><span><b>${esc(p.name)}</b><span class="st" data-fb="${esc(p.kind ?? p.label)}" data-u>${esc(v.value ? `${v.value} ${v.unit}` : p.kind ?? p.label)}</span></span></a>`
 const byKey = Object.fromEntries(L.products.map((p) => [p.key, p]))
-const TILES = [byKey.core, byKey.chain, KRE8, ...L.products.filter((p) => !['core', 'chain'].includes(p.key)), ...L.peddle]
+const TILES = [byKey.core, byKey.chain, KRE8, ...L.products.filter((p) => !['core', 'chain'].includes(p.key)), ...TOOLS, ...L.peddle]
+
+const MAP_ICON = { id: '/brand/hub/icons/gully-id.svg', ai: '/brand/hub/icons/ai.png' }
+const MAP_NODES = ['id', 'pay', 'rpc', 'holdermaps', 'security', 'studio', 'ai', 'chain', 'core', 'kre8', 'multisig'].map((k) => {
+  const p = TILES.find((q) => q.key === k)
+  return { key: k, name: p.name, href: p.href, icon: MAP_ICON[k] ?? iconOf(p) }
+})
+const STAGES = Object.fromEntries(TILES.map((p) => [p.key, p.label]))
 
 /** Only what the graphics read: the first HTML stays small. */
 function slim({ hub: h, products: p, live: l, stats: s }) {
   return {
-    hub: h && { chain: h.chain, gateway: h.gateway, services: h.services?.map((x) => ({ key: x.key, name: x.name, state: x.state, ms: x.ms, history: x.history?.map((y) => ({ ms: y.ms })) })) },
-    products: p && { chain: { recent: p.chain?.recent?.slice(-9).map((x) => ({ txs: x.txs })) }, activity: { hourly: p.activity?.hourly?.map(({ launches, trades, swaps }) => ({ launches, trades, swaps })) }, holders: { daily: p.holders?.daily?.map((x) => ({ maps: x.maps })) }, security: p.security && { daily: p.security.daily?.map((x) => ({ scans: x.scans })), total: p.security.total } },
-    live: l && { id: l.id && { totals: { users: l.id.totals?.users }, dailySignins: l.id.dailySignins?.map((x) => ({ n: x.n })) }, pay: l.pay && { services: l.pay.services }, head: l.head, feed: l.feed && { items: l.feed.items?.map((x) => ({ id: x.id })) } },
+    hub: h && { chain: h.chain, gateway: h.gateway, quests: h.quests && { quests: h.quests.quests?.map(({ title, completions }) => ({ title, completions })) }, services: h.services?.map((x) => ({ key: x.key, name: x.name, state: x.state, ms: x.ms, history: x.history?.map((y) => ({ ms: y.ms })) })) },
+    products: p && { chain: { recent: p.chain?.recent?.slice(-9).map((x) => ({ txs: x.txs })) }, activity: { hourly: p.activity?.hourly?.map(({ launches, trades, swaps }) => ({ launches, trades, swaps })) }, holders: { today: p.holders?.today, daily: p.holders?.daily?.map((x) => ({ maps: x.maps })) }, security: p.security && { daily: p.security.daily?.map((x) => ({ scans: x.scans })), total: p.security.total } },
+    live: l && { id: l.id && { signins24h: l.id.signins24h, totals: { users: l.id.totals?.users }, dailySignins: l.id.dailySignins?.map((x) => ({ n: x.n })) }, pay: l.pay && { services: l.pay.services }, head: l.head, feed: l.feed && { items: l.feed.items?.map((x) => ({ id: x.id })) } },
     stats: s && { totals: { tvlUsd: s.totals?.tvlUsd, volumeAllUsd: s.totals?.volumeAllUsd }, venues: s.venues?.map((v) => ({ key: v.key, state: v.state, tvlUsd: v.tvlUsd, daily: (v.daily ?? []).slice(-30).map((d) => ({ v: d.v })) })) },
   }
 }
@@ -103,16 +117,16 @@ function slim({ hub: h, products: p, live: l, stats: s }) {
 /** The whole page. `meta`: title, description and head tags, already rendered for this path by seo.mjs. */
 export async function renderLanding(head, given = null) {
   const [hubB, products, live, stats] = given ? [given.hub, given.products, given.live, given.stats] : await Promise.all([within(hub(), 250), within(hubProducts(), 250), within(hubLive(), 250), within(readStats(), 250)])
-  const data = { hub: hubB, products, live, stats }
+  const data = { hub: hubB, products, live, stats, stages: STAGES }
   const c = cards(data)
   const b = board(data)
   const N = CONTENT.nav
-  const boot = JSON.stringify(slim(data)).replace(/</g, '\\u003c')
+  const boot = JSON.stringify({ ...slim(data), stages: STAGES }).replace(/</g, '\\u003c')
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${head}<link rel="preload" href="/fonts/figtree-latin-700.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/brand/kit/owl/owl-presenting-400.webp" as="image"><link rel="modulepreload" href="/landing/graphs.mjs"><script src="/landing/fx.js"></script><style>${CSS}</style></head><body>
 <div class="fx" id="fx"><a href="https://x.com/Gully_Labs" target="_blank" rel="noopener noreferrer">Follow @Gully_Labs on X</a><button type="button" aria-label="Dismiss">×</button></div><header class="top"><div class="w"><a href="/" aria-label="Gully Labs home"><img src="/brand/kit/logotype-reversed.svg" alt="Gully Labs" width="154" height="28"></a><nav aria-label="Main"><ul>${NAV.map(([href, label, ic]) => `<li>${a(href, `${icon(ic)}<span>${esc(label)}</span>`)}</li>`).join('')}</ul></nav>${cap('https://app.gullylabs.xyz', 'Open app', 'solid sm')}</div></header>
 <main>
-<section class="hero" data-anim><div class="w"><div><p class="eye">You Think It, We Ship It</p><h1>Launch a token. Run a launchpad. Own a DEX.</h1><p class="lede">Gully Core gives you the whole stack, on the chains your users already use.</p><div class="cta">${cap('#build', 'Start building', 'solid')}${cap('https://app.gullylabs.xyz', 'Open the app')}</div></div>
-<svg class="orbit" viewBox="0 0 480 480" role="img" aria-label="Gully products orbiting the owl"><circle class="ring" cx="240" cy="240" r="210"/><circle class="ring" cx="240" cy="240" r="136"/><image href="/brand/kit/owl/owl-presenting-400.webp" x="165" y="104" width="150" height="276"/>${['spin', 'spin-r'].map((cls, ring) => `<g class="${cls}">${ORBIT.map((k, i) => { if (i % 2 !== ring) return ''; const r = ring ? 136 : 210; const t = (i / ORBIT.length) * Math.PI * 2; const x = (240 + r * Math.cos(t)).toFixed(1); const y = (240 + r * Math.sin(t)).toFixed(1); const p = TILES.find((q) => q.key === k); return `<g transform="translate(${x} ${y})"><g class="node"><rect x="-24" y="-24" width="48" height="48" rx="13" class="tileb"/><image href="${esc(iconOf(p))}" x="-18" y="-18" width="36" height="36"/></g></g>` }).join('')}</g>`).join('')}</svg></div></section>
+<section class="hero"><div class="w"><div><p class="eye">You Think It, We Ship It</p><h1>Launch a token. Run a launchpad. Own a DEX.</h1><p class="lede">Gully Core gives you the whole stack, on the chains your users already use.</p><div class="cta">${cap('#build', 'Start building', 'solid')}${cap('https://app.gullylabs.xyz', 'Open the app')}</div><img class="howl" src="/brand/kit/owl/owl-presenting-400.webp" alt="The Gully Labs owl presenting" width="92" height="170"></div>
+<div class="cmap" data-anim><img class="cfield" src="/brand/hub/art/hero-field.svg" alt="" width="1200" height="760">${constellation('wide', MAP_NODES, data)}${constellation('tall', MAP_NODES, data)}</div></div></section>
 <section class="s" aria-label="Live numbers" style="margin-top:8px"><div class="w"><div class="kpis"><div><small>Value locked</small><b data-b="tvl">${esc(b.tvl)}</b></div><div><small>All-time volume</small><b data-b="vol">${esc(b.vol)}</b></div><div><small>Products</small><b>${TILES.length}</b></div><div><small>Services up</small><b data-b="up">${esc(b.up)}</b></div></div><a class="bar-l" href="/status">${icon('activity')}<span>Every public surface, checked each minute</span></a><div class="cells" data-b="cells">${b.cells}</div></div></section>
 <section class="s" id="build"><div class="w"><div class="hd"><img src="/brand/kit/gully-core-emblem-192.png" alt="" width="34" height="34"><h2 class="t">Build on Gully Core</h2></div><div class="tabs" role="tablist" aria-label="What to build">${BUILD.map((t, i) => `<button type="button" class="tb" role="tab" id="t-${t.key}" aria-controls="p-${t.key}" aria-selected="${i === 0}" data-tab="${t.key}" data-metric="${t.metric}">${icon(t.icon)}${esc(t.label)}</button>`).join('')}</div><div class="two" data-anim><div class="box">${BUILD.map((t, i) => `<div role="tabpanel" id="p-${t.key}" aria-labelledby="t-${t.key}"${i ? ' hidden' : ''}><h3>${esc(t.title)}</h3><p>${esc(t.body)}</p><ol class="steps">${t.steps.map((x, n) => `<li><i>0${n + 1}</i>${esc(x)}</li>`).join('')}</ol>${cap(t.href, t.cta, 'solid')}</div>`).join('')}</div><div class="box"><span class="capt"><b data-b="mname">${esc(METRIC[BUILD[0].metric])}</b> on Gully Chain testnet, last 24 hours</span><div class="g" data-b="core">${coreBars(products, BUILD[0].metric)}</div></div></div></div></section>
 <section class="s" id="chains"><div class="w"><h2 class="t" style="margin-bottom:12px">Chains</h2><div class="pick" data-anim><ul>${CHAINS.map((c, i) => `<li><button type="button" class="ch" data-chain="${c.key}" aria-pressed="${i === 0}"><span>${esc(c.name)}</span><span>${esc(c.state)}</span></button></li>`).join('')}</ul>

@@ -12,6 +12,7 @@
      GET /api/hub/products                    maps per day, Gully Chain per hour
      GET /api/status (LiveProvider)           each holder source's last 24 h
    A source that cannot be read says so; an empty day says so (with the mascot), never a zero. */
+import { TZ } from '../lib/time'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Flame, Layers, Link2, Plug, Radar } from 'lucide-react'
@@ -39,7 +40,7 @@ import './hm-app.css'
 
 const HOUR = 3_600_000
 const Y = '#FFD52E'
-const hh = (t: number) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+const hh = (t: number) => new Date(t).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })
 
 export function HmLanding() {
   const now = useNow()

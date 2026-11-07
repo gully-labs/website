@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { ArrowDown, ArrowUp, ArrowUpDown, BellRing, Layers, Lock, Megaphone, Moon, Search, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
@@ -327,7 +328,7 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
     const end = history.data.at(-1)![0]
     const pts = history.data.filter((p) => p[0] >= end - 24 * 3600 && Number.isFinite(p[1]))
     if (pts.length < 2) return null
-    return { data: pts.map((p) => Math.round(p[1] * 100) / 100), labels: pts.map((p) => new Date(p[0] * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })) }
+    return { data: pts.map((p) => Math.round(p[1] * 100) / 100), labels: pts.map((p) => new Date(p[0] * 1000).toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })) }
   }, [history])
 
   // Telegram's MainButton creates the alert (or, without a linked wallet, opens the app dashboard).

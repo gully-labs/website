@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { Bot, BrainCircuit, Network, Radar, Satellite, ScanSearch } from 'lucide-react'
@@ -120,11 +121,9 @@ const dur = (ms: number | null) => (ms == null ? '—' : ms < 90_000 ? `${Math.r
 const ago = (iso: string | null) => (iso ? `${dur(Date.now() - Date.parse(iso))} ago` : 'never')
 const num = (n: number | null | undefined) => (n == null ? '—' : n.toLocaleString('en-US'))
 const hhmm = (iso: string) =>
-  new Date(iso).toLocaleTimeString('en-US', {
-    hour: '2-digit',
+  new Date(iso).toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit',
     minute: '2-digit',
-    hour12: false,
-  })
+    hour12: false })
 
 function Dot({ tone }: { tone: Tone }) {
   return <i aria-hidden className={`inline-block size-[9px] shrink-0 rounded-full ${TONE[tone].dot}`} style={tone === 'ok' ? { animation: 'gl-pulse-ring 2.4s ease-out infinite' } : undefined} />

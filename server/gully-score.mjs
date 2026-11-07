@@ -602,7 +602,7 @@ export function scorePageMeta(p) {
 /** The embeddable badge (server/badges.mjs, the shared kit badge): mark | GULLY SCORE | the score and its grade. The date it was read is in the title. */
 export function badgeSvg(r, chain, address, style = {}) {
   const score = r?.score ?? null
-  const date = r?.computedAt ? new Date(r.computedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : null
+  const date = r?.computedAt ? new Date(r.computedAt).timeZone: 'America/Los_Angeles' }) : null
   const value = score === null ? (r ? 'N/A' : 'Not scored yet') : `${score} ${grade(score)}`
   const tone = score === null ? 'neutral' : score >= 80 ? 'good' : score >= 40 ? 'brand' : 'warn'
   const title = score === null ? `Gully Score: ${r ? 'not enough data' : 'not scored yet'}` : `Gully Score ${score} out of 100 (${grade(score)}), ${date}`

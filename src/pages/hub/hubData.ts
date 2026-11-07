@@ -7,6 +7,7 @@
    live (admin.gullypay.xyz, gullypay.xyz/setup), sentry.gullychain.xyz is up with the mint not open yet.
    2026-10-28: Gully Sentry's free testnet mint is open (sale/stats deployed, saleMode testnet); it has its own product
    page (/products/gully-sentry) and its numbers come through /api/hub/live (sentryNet, sentrySale, sentryChain). */
+import { timePT } from '../../lib/time'
 import type { HubBody } from '../../console/live'
 import type { HubProducts } from '../../terminal/kit'
 import { SEO_PAGES } from '../../content/seoPages.ts'
@@ -277,7 +278,7 @@ export function upState(hub: HubBody | null, key: ProductKey): Reading['state'] 
 
 function latency(hub: HubBody | null, key: string): Row[] {
   const s = hub?.services.find((x) => x.key === key)
-  return (s?.history ?? []).filter((h) => num(h.ms) != null).map((h) => ({ v: h.ms as number, x: `${new Date(h.t).toISOString().slice(11, 16)} UTC` }))
+  return (s?.history ?? []).filter((h) => num(h.ms) != null).map((h) => ({ v: h.ms as number, x: timePT(h.t) }))
 }
 
 /** One product's live reading. Never invents a figure: missing sources give `why`, not zeros. */

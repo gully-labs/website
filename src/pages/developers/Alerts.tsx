@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { track } from '../../lib/track'
 import { AlertTriangle, BellRing, Check, ChevronDown, ExternalLink, History, Link2Off, Pause, Play, Plus, RotateCw, Send, Trash2, Users } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
@@ -443,7 +444,7 @@ export function TelegramCard({ info, reload, compact = false, from = 'alerts' }:
       : link && !live
         ? 'That link has expired. Make a new one.'
         : link
-          ? `Open the bot and press Start. The link works once, until ${new Date(link.expiresAt).toLocaleTimeString()}.`
+          ? `Open the bot and press Start. The link works once, until ${new Date(link.expiresAt).toLocaleTimeString('en-US', { timeZone: TZ })}.`
           : 'One-time code, no chat id to copy. Works in groups.'
 
   return (

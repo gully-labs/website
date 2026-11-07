@@ -1,3 +1,4 @@
+import { timePT } from '../lib/time'
 import { SmartLink } from '../components/SmartLink'
 import { ConsoleTabs } from '../console/Tabs'
 import { useEffect, useMemo, useState } from 'react'
@@ -180,7 +181,7 @@ function GasCost({ offer }: { offer: Offer }) {
         <span className="inline-flex items-center gap-2 font-mono text-[12px] tracking-[1px] text-faint">
           <Fuel aria-hidden size={14} className="text-gold" /> NETWORK GAS TO PAY A PLAN · LIVE
         </span>
-        <span className="font-mono text-[11px] text-dim">{at ? `read ${new Date(at).toISOString().slice(11, 16)} UTC from each chain` : failed ? 'unreadable' : 'reading…'}</span>
+        <span className="font-mono text-[11px] text-dim">{at ? `read ${timePT(at)} from each chain` : failed ? 'unreadable' : 'reading…'}</span>
       </div>
       <p className="m-0 text-[14px] leading-[1.6] text-muted">Paid by your wallet to the network, not to us: one plain transfer to the treasury, priced with the chain&rsquo;s own gas price and Chainlink coin price right now.</p>
       {rows && !known.length ? (

@@ -3,6 +3,7 @@
 // failed shows as unreachable, an unread value as "not tracked yet", never as 0. ECharts itself loads
 // on demand inside EChart, so a docs page paints before any chart code arrives.
 
+import { dateTimePT, timePT } from '../lib/time'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { PlanLimits } from '../components/charts/PlanLimits'
 import { ChartBox } from '../components/charts/ChartSkeleton'
@@ -84,7 +85,7 @@ function useProbe(path: string, everyMs = 10_000, keep = 30, onBody?: (b: unknow
   return list
 }
 
-const hhmmss = (t: number) => new Date(t).toISOString().slice(11, 19) + ' UTC'
+const hhmmss = (t: number) => timePT(t, true)
 
 /* ---------------------------------------------------- latency sparkline --- */
 
@@ -607,7 +608,7 @@ export function GapHistoryChart({ chain = 'robinhood', ticker = 'NVDA' }: { chai
   const path = `/api/tracker/history?chain=${encodeURIComponent(chain)}&ticker=${encodeURIComponent(ticker)}`
   const { data, failed } = useLive<{ points: HistPoint[] }>(path, 300_000, (b) => Array.isArray((b as { points?: unknown })?.points))
   const pts = useMemo(() => (data?.points ?? []).filter((p) => typeof p[1] === 'number'), [data])
-  const labels = useMemo(() => pts.map((p) => new Date(p[0] * 1000).toISOString().slice(5, 16).replace('T', ' ')), [pts])
+  const labels = useMemo(() => pts.map((p) => dateTimePT(p[0] * 1000).replace(' PT', '')), [pts])
   const option = useMemo(() => {
     const last = pts.length - 1
     const r3 = (v: number) => Math.round(v * 1000) / 1000
@@ -618,7 +619,7 @@ export function GapHistoryChart({ chain = 'robinhood', ticker = 'NVDA' }: { chai
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
         const i = ps[0]?.dataIndex ?? -1
         const p = pts[i]
-        return p ? tipHtml({ title: `${labels[i]} UTC`, rows: [{ name: 'gap', value: signed(p[1]), color: C.gold }, { name: 'onchain', value: typeof p[2] === 'number' ? `$${p[2].toFixed(2)}` : 'unreadable' }, { name: 'fair', value: typeof p[3] === 'number' ? `$${p[3].toFixed(2)}` : 'unreadable' }] }) : ''
+        return p ? tipHtml({ title: `${labels[i]} PT`, rows: [{ name: 'gap', value: signed(p[1]), color: C.gold }, { name: 'onchain', value: typeof p[2] === 'number' ? `$${p[2].toFixed(2)}` : 'unreadable' }, { name: 'fair', value: typeof p[3] === 'number' ? `$${p[3].toFixed(2)}` : 'unreadable' }] }) : ''
       }),
       series: [
         { id: 'gap', ...areaPreset({ color: C.gold, width: 1.75, fill: 0.2 }), data: pts.map((p) => r3(p[1])), markLine: { silent: true, symbol: 'none', lineStyle: { color: C.lineHover, type: 'dashed' }, label: { color: C.faint, fontSize: 11, formatter: 'fair' }, data: [{ yAxis: 0 }] } },
