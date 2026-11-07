@@ -1,8 +1,8 @@
-import { AlertTriangle, BookOpen, ChartNoAxesCombined, Loader2, Wallet } from 'lucide-react'
+import { AlertTriangle, Loader2, Wallet } from 'lucide-react'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Wordmark } from '../../components/brand'
-import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
-import { api, ROLE_REFUSED, SESSION_ENDED, type Account, type Me, type Offer, type WorkspaceRef } from './api'
+import { SITE_URL } from '../../site-host'
+import { api, ROLE_REFUSED, SESSION_ENDED, type Account, type Me, type WorkspaceRef } from './api'
 import { ExtLink } from './ExtLink'
 import { toastError, toastInfo, toastSuccess } from '../../components/ui/toast'
 import { Dashboard } from './Dashboard'
@@ -10,7 +10,6 @@ import { InviteLanding } from './Invite'
 import { APP_DESCRIPTION, APP_TITLE, inviteTokenFromHash, PortalContext, restoreFocusSoon, type Portal } from './portal'
 import { mono, pillGold, pillLine } from './styles'
 import { BadgeFooterRow } from '../../components/PoweredByBadge'
-import { AppLauncher } from '../../console/Launcher'
 import { GullyIdButton, gullyIdAccessToken, gullyIdRedirectToken, isGullyIdReturn } from './gullyId'
 
 /* The Gully Labs App, the app dashboard (app.gullylabs.xyz; /app and /developers on localhost). Signed out: what the
@@ -38,112 +37,36 @@ async function readSession(): Promise<Session> {
   })
 }
 
-type Tiers = { anon: number; free: number; keys: number } | null
-
-/** The public tiers from GET /api/plans, so the sign-in card never states a stale limit. */
-function useTiers(): Tiers {
-  const [t, setT] = useState<Tiers>(null)
-  useEffect(() => {
-    let alive = true
-    api<Offer>('/api/plans').then((r) => {
-      if (!alive || !r.ok) return
-      const free = r.data.plans.find((p) => p.id === 'free')
-      if (free) setT({ anon: r.data.anonymous.perMin, free: free.perMin, keys: free.maxKeys })
-    })
-    return () => {
-      alive = false
-    }
-  }, [])
-  return t
-}
-
-function SignedOut({ connect, busy, error, gully, gullyBusy, gullyOn = true }: { connect: () => void; busy: boolean; error: string | null; gully: () => void; gullyBusy: boolean; gullyOn?: boolean }) {
-  const tiers = useTiers()
+/** The signed-out page: one card and nothing else. Products and live data are on the landing and in the signed-in app. */
+function SignedOut({ connect, busy, gully, gullyBusy, gullyOn = true }: { connect: () => void; busy: boolean; gully: () => void; gullyBusy: boolean; gullyOn?: boolean }) {
+  const link = 'inline-flex min-h-11 items-center text-muted underline underline-offset-2 hover:text-gold'
   return (
-    <section className="relative mx-auto grid w-full max-w-[1240px] grid-cols-[minmax(0,1fr)] items-start gap-4 overflow-x-clip px-4 py-5 min-[1000px]:grid-cols-[380px_minmax(0,1fr)] min-[1000px]:px-6">
-      <div aria-hidden className="pointer-events-none absolute top-[-220px] left-[10%] size-[520px] rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.10),transparent_62%)]" />
-      <div className="relative flex w-full animate-[gl-rise_.5s_cubic-bezier(.2,.8,.2,1)_both] flex-col gap-4 rounded-card border border-line bg-surface p-5 shadow-[0_24px_64px_rgba(0,0,0,.35)] max-[480px]:p-4 min-[1000px]:sticky min-[1000px]:top-4">
-        <div className="flex items-center gap-[10px]">
-          <Wordmark height={18} />
-          <span className="font-semibold text-muted">App</span>
-        </div>
-        <div className="flex flex-col gap-2">
-          <h1 className="m-0 font-display text-[26px] leading-[1] font-bold uppercase">
-            Sign in with <span className="text-gold">your wallet</span>
-          </h1>
-          <p className="m-0 text-[13px] leading-[1.55] text-muted">Your address is your account: no email, no password. Or sign in with Gully ID, the one sign-in for every Gully app. API keys, alerts, analytics and billing in one app; every Gully product one tap away.</p>
-        </div>
-        {tiers ? (
-          <dl className="m-0 grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-line bg-line">
-            <div className="flex flex-col gap-1 bg-surface-deep px-4 py-3">
-              <dt className="text-[11px] text-dim">No key</dt>
-              <dd className="m-0 font-display text-[24px] leading-none font-bold">
-                {tiers.anon.toLocaleString('en-US')}
-                <span className="ml-1 font-mono text-[11px] font-normal text-faint">/min per IP</span>
-              </dd>
-            </div>
-            <div className="flex flex-col gap-1 bg-surface-deep px-4 py-3">
-              <dt className="text-[11px] text-dim">Free key · up to {tiers.keys}</dt>
-              <dd className="m-0 font-display text-[24px] leading-none font-bold text-gold">
-                {tiers.free.toLocaleString('en-US')}
-                <span className="ml-1 font-mono text-[11px] font-normal text-faint">/min per key</span>
-              </dd>
-            </div>
-          </dl>
-        ) : null}
-        {window.location.hash === '#analytics' && (
-          <p className="m-0 flex items-start gap-3 rounded-[10px] border border-gold-line bg-[rgba(0,210,255,.06)] px-4 py-3 text-[14px] leading-[1.55] text-ink-2">
-            <ChartNoAxesCombined size={18} className="mt-[3px] shrink-0 text-gold" aria-hidden />
-            Here for Gully Analytics? Connect your wallet: the Analytics tab of the app starts the free trial.
-          </p>
-        )}
-        <button type="button" onClick={connect} disabled={busy} data-focus-fallback data-testid="connect-wallet" className={`${pillGold} min-h-12 w-full text-[16px] disabled:opacity-70`}>
-          {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Wallet size={18} aria-hidden />}
-          {busy ? 'Opening wallets…' : 'Connect wallet'}
-        </button>
-        {gullyOn && (
-          <>
-            <div className="flex items-center gap-3 text-[11px] text-faint uppercase" aria-hidden>
-              <span className="h-px flex-1 bg-line" />
-              or
-              <span className="h-px flex-1 bg-line" />
-            </div>
-            <GullyIdButton onClick={gully} busy={gullyBusy} disabled={busy} />
-          </>
-        )}
+    <section className="flex min-h-0 flex-1 items-center justify-center px-4 py-4" data-testid="signed-out">
+      <div className="flex w-full max-w-[360px] flex-col items-center gap-3 rounded-card border border-line bg-surface p-6">
+        <Wordmark height={28} />
+        <img src="/brand/kit/owl/owl-thumbs-up-400.webp" alt="" width={46} height={120} decoding="async" className="block h-[120px] w-auto" />
+        <h1 className="m-0 text-[22px] leading-[1.2] font-bold text-ink">Sign in</h1>
+        {gullyOn && <GullyIdButton onClick={gully} busy={gullyBusy} disabled={busy} />}
         {gullyOn && gullyBusy && (
-          <p className="m-0 -mt-2 text-center font-mono text-[12px] text-faint" role="status">
+          <p className="m-0 text-center font-mono text-[12px] text-faint" role="status">
             Waiting for Gully ID…
           </p>
         )}
-        <p className="m-0 text-[12px] leading-[1.5] text-faint" data-testid="signin-terms">
+        <button type="button" onClick={connect} disabled={busy} data-focus-fallback data-testid="connect-wallet" className={`${gullyOn ? pillLine : pillGold} min-h-11 w-full text-[15px] disabled:opacity-70`}>
+          {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Wallet size={18} aria-hidden />}
+          {busy ? 'Opening wallets…' : 'Connect wallet'}
+        </button>
+        <p className="m-0 text-center text-[12px] leading-[1.4] text-faint" data-testid="signin-terms">
           By continuing you agree to the{' '}
-          <ExtLink href={`${SITE_URL}/terms`} arrowSize={11} className="inline-flex min-h-11 items-center gap-[2px] text-muted underline underline-offset-2 hover:text-gold">
+          <ExtLink href={`${SITE_URL}/terms`} arrow={false} className={link}>
             Terms
           </ExtLink>{' '}
           and{' '}
-          <ExtLink href={`${SITE_URL}/privacy`} arrowSize={11} className="inline-flex min-h-11 items-center gap-[2px] text-muted underline underline-offset-2 hover:text-gold">
+          <ExtLink href={`${SITE_URL}/privacy`} arrow={false} className={link}>
             Privacy Policy
           </ExtLink>
           .
         </p>
-        {error && (
-          <p className="m-0 flex items-start gap-2 text-[14px] text-error" role="alert">
-            <AlertTriangle size={16} className="mt-[2px] shrink-0" aria-hidden /> {error}
-          </p>
-        )}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
-          <ExtLink href={`${DOCS_URL}/api`} className="inline-flex min-h-11 items-center gap-2 text-[13px] text-muted hover:text-ink">
-            <BookOpen size={15} aria-hidden /> Read the docs
-          </ExtLink>
-          <ExtLink href={isLocalHost() ? '/widget' : `${SITE_URL}/widget`} className="inline-flex min-h-11 items-center gap-1 text-[13px] text-muted hover:text-gold">
-            No code? Embed the widget
-          </ExtLink>
-        </div>
-      </div>
-      <div className="relative flex min-w-0 flex-col gap-2" aria-label="Gully products, live" role="region">
-        <span className={mono}>GULLY PRODUCTS · LIVE</span>
-        <AppLauncher cols={3} />
       </div>
     </section>
   )
@@ -157,6 +80,10 @@ export function DevelopersPage() {
   const [gullyBusy, setGullyBusy] = useState(() => isGullyIdReturn(window.location.search))
   const [error, setError] = useState<string | null>(null)
 
+  // Sign-in errors are toasts: the card stays the same size.
+  useEffect(() => {
+    if (error) toastError('Could not sign in', { detail: error, id: 'sign-in' })
+  }, [error])
   const loadAccount = useCallback(() => readSession().then(setSession), [])
   const [invite, setInvite] = useState(inviteTokenFromHash)
   useEffect(() => {
@@ -299,7 +226,7 @@ export function DevelopersPage() {
   }
 
   return (
-    <>
+    <div className={session.state === 'in' ? 'contents' : 'flex min-h-[calc(100dvh-1px)] flex-col'}>
       {session.state === 'loading' && (
         <section className="flex min-h-[50vh] items-center justify-center px-4">
           <span className="inline-flex items-center gap-3 font-mono text-[13px] text-faint">
@@ -313,7 +240,7 @@ export function DevelopersPage() {
             <InviteLanding token={invite} signedIn={false} connect={connect} connecting={busy} onDone={() => setInvite(null)} />
           </section>
         ) : (
-          <SignedOut connect={connect} busy={busy} error={error} gully={gully} gullyBusy={gullyBusy} gullyOn={session.gullyId !== false} />
+          <SignedOut connect={connect} busy={busy} gully={gully} gullyBusy={gullyBusy} gullyOn={session.gullyId !== false} />
         ))}
       {(session.state === 'error' || session.state === 'blocked') && (
         <section className="mx-auto flex min-h-[50vh] w-full max-w-[640px] flex-col items-start justify-center gap-4 px-4 py-16">
@@ -366,6 +293,6 @@ export function DevelopersPage() {
           />
         </Suspense>
       )}
-    </>
+    </div>
   )
 }

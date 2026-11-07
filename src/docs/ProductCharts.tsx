@@ -7,6 +7,7 @@
 // they are read through apiOrigin() like the other docs charts. /api/ask/status does not send CORS headers,
 // so it is read from the host the docs are served on (docs.gullylabs.xyz is the same server).
 
+import { dateTimePT, timePT } from '../lib/time'
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatedNumber } from '../components/charts/AnimatedNumber'
 import { GhostChart } from '../components/charts/GhostChart'
@@ -64,8 +65,8 @@ function useJson<T>(path: string, { everyMs = 30_000, keep = 30, sameHost = fals
   return { data, probes, failed }
 }
 
-const hhmm = (t: number) => new Date(t).toISOString().slice(11, 16) + ' UTC'
-const hhmmss = (t: number) => new Date(t).toISOString().slice(11, 19) + ' UTC'
+const hhmm = (t: number) => timePT(t)
+const hhmmss = (t: number) => timePT(t, true)
 const usd0 = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`
 const compactUsd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(n)
 const signed = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)}%`
@@ -176,7 +177,7 @@ export function AskStatusPanel() {
           {data ? data.retrieval === 'hybrid' ? 'Hybrid' : 'BM25' : <Unknown>{failed ? 'unreadable' : 'reading…'}</Unknown>}
         </Stat>
         <Stat label="MODEL">{data?.model ? <span className="font-mono text-[14px] font-normal">{data.model}</span> : <Unknown />}</Stat>
-        <Stat label="INDEX UPDATED">{data?.updatedAt ? <span className="font-mono text-[14px] font-normal">{new Date(data.updatedAt).toISOString().slice(0, 16).replace('T', ' ')} UTC</span> : <Unknown />}</Stat>
+        <Stat label="INDEX UPDATED">{data?.updatedAt ? <span className="font-mono text-[14px] font-normal">{dateTimePT(data.updatedAt)}</span> : <Unknown />}</Stat>
       </div>
       <LatencyLine path="/api/ask/status" probes={probes} />
     </Panel>

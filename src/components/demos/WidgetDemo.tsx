@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useEffect, useState, type JSX } from 'react'
 import { copyWithToast } from '../ui/toast'
 import { Check, Copy } from 'lucide-react'
@@ -45,7 +46,7 @@ function Footer({ data, t }: { data: Tracker; t: Theme }) {
     <div className="flex items-center justify-between gap-2 border-t px-3 py-[7px] text-[11px]" style={{ borderColor: t.ln, color: t.fnt }}>
       <span className="inline-flex items-center gap-[6px]">
         <span className="size-[6px] rounded-full" style={{ background: UP }} />
-        live · {d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        live · {d.toLocaleTimeString([], { timeZone: TZ, hour: '2-digit', minute: '2-digit' })}
       </span>
       <span className="whitespace-nowrap" style={{ color: t.acc }}>
         Gully Labs Stock tracker ↗

@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useMemo } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { areaPreset, axisTooltip, barsPreset, C, itemTooltip, linePreset, ringPreset, sparklinePreset, tipHtml, type TipRow } from '../../components/charts/chartPresets'
@@ -185,7 +186,7 @@ export function EndpointBars({ byEndpoint, since }: { byEndpoint: UsageV2['byEnd
   if (!byEndpoint) return <NotTracked height={120}>Per-endpoint counts are recorded from now on; older traffic has none.</NotTracked>
   if (!rows.length)
     return (
-      <EmptyChart height={120} title={`No requests in this range${since ? ` · counted since ${new Date(since).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`} />
+      <EmptyChart height={120} title={`No requests in this range${since ? ` · counted since ${new Date(since).toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric' })}` : ''}`} />
     )
   return <EChart option={option} height={height} label={`Requests by endpoint: ${rows.map((r) => `${r.endpoint} ${fmt(r.count)}`).join(', ')}.`} />
 }
@@ -222,7 +223,7 @@ export function AlertTimeline({ alerts, nameOf }: { alerts: GapAlert[]; nameOf: 
       })
     const tip = (p: { data: { d: GapAlert['deliveries'][number]; value: [number, number] } }) => {
       const d = p.data.d
-      return tipHtml({ title: new Date(d.at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }), rows: [{ name: names[p.data.value[1]] ?? '', value: d.test ? 'test' : d.ok ? 'delivered' : 'failed', valueColor: d.ok ? '#3ddc97' : LIMITED_COLOR }, { name: 'channel', value: `${d.channel}${d.status ? ` · ${d.status}` : ''}` }], note: d.error ?? (d.events.length ? d.events.map((e) => e.split(':')[1] ?? e).join(', ') : undefined) })
+      return tipHtml({ title: new Date(d.at).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }), rows: [{ name: names[p.data.value[1]] ?? '', value: d.test ? 'test' : d.ok ? 'delivered' : 'failed', valueColor: d.ok ? '#3ddc97' : LIMITED_COLOR }, { name: 'channel', value: `${d.channel}${d.status ? ` · ${d.status}` : ''}` }], note: d.error ?? (d.events.length ? d.events.map((e) => e.split(':')[1] ?? e).join(', ') : undefined) })
     }
     const scatter = (id: string, name: string, color: string, data: unknown[], hollow = false) => ({
       id,

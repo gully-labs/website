@@ -2,6 +2,7 @@
 // DATA_DIR (the gully-web-data volume in production). Writes are atomic (tmp + rename). Secrets
 // are never stored in the clear: API keys and claim codes are kept as SHA-256 hashes.
 
+import { dayLA, lastDaysLA } from './time-la.mjs'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -320,21 +321,20 @@ export function joinChainsWaitlist({ address, workspace, email }) {
   return { row, already: false }
 }
 
-/** Requests and waitlist sign-ups per UTC day over the last `days` days, oldest first. */
+/** Requests and waitlist sign-ups per Los Angeles day over the last `days` days, oldest first. */
 export function chainKitDaily(days = 30, now = Date.now()) {
   const out = []
   const idx = new Map()
-  for (let i = days - 1; i >= 0; i--) {
-    const day = new Date(now - i * 86_400_000).toISOString().slice(0, 10)
+  for (const day of lastDaysLA(days, now)) {
     idx.set(day, out.length)
     out.push({ day, requests: 0, waitlist: 0 })
   }
   for (const r of chainKit.requests) {
-    const i = idx.get(String(r.at).slice(0, 10))
+    const i = idx.get(dayLA(r.at))
     if (i !== undefined) out[i].requests++
   }
   for (const r of chainKit.waitlist) {
-    const i = idx.get(String(r.at).slice(0, 10))
+    const i = idx.get(dayLA(r.at))
     if (i !== undefined) out[i].waitlist++
   }
   return out

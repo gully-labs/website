@@ -30,6 +30,7 @@
 // A trailing "!" opens the route as a new message instead of editing (used on Gully AI answers, so an
 // answer is never overwritten by the next screen).
 
+import { TZ, dayLA, timeLA } from './time-la.mjs'
 import { holderHomeUrl, holderPageUrl, securityUrl } from './hosts.mjs'
 export const SITE = 'https://gullylabs.xyz'
 export const PORTAL = 'https://app.gullylabs.xyz'
@@ -758,13 +759,13 @@ export function aiIntroView() {
 }
 
 /** Gully AI's answer: text plus up to 3 source buttons. */
-/** "2026-10-17T10:01:00Z" -> "10:01 UTC" (today) or "17 Oct 10:01 UTC". */
+/** "2026-10-17T10:01:00Z" -> "03:01 PT" (today) or "17 Oct 03:01 PT". */
 function asOfText(iso) {
   const t = Date.parse(iso ?? '')
   if (!Number.isFinite(t)) return null
   const d = new Date(t)
-  const hm = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`
-  return d.toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10) ? hm : `${d.getUTCDate()} ${d.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' })} ${hm}`
+  const hm = timeLA(d)
+  return dayLA(d) === dayLA() ? hm : `${d.toLocaleDateString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short' })} ${hm}`
 }
 /** A Gully AI card's chart as one line of block characters: the chat's mini chart. */
 function cardChart(ch) {

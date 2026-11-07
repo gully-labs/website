@@ -254,7 +254,7 @@ export const SERVICE_KEYS: Record<ProductKey, string[]> = {
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 const hh = (iso: string | number) => {
   const d = new Date(typeof iso === 'number' ? iso * 1000 : iso)
-  return `${String(d.getUTCHours()).padStart(2, '0')}:00`
+  return `${d.toLocaleTimeString('en-GB', { timeZone: 'America/Los_Angeles', hour: '2-digit', hour12: false }).padStart(2, '0')}:00`
 }
 const dd = (day: string) => new Date(`${day}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 
@@ -277,7 +277,7 @@ export function upState(hub: HubBody | null, key: ProductKey): Reading['state'] 
 
 function latency(hub: HubBody | null, key: string): Row[] {
   const s = hub?.services.find((x) => x.key === key)
-  return (s?.history ?? []).filter((h) => num(h.ms) != null).map((h) => ({ v: h.ms as number, x: `${new Date(h.t).toISOString().slice(11, 16)} UTC` }))
+  return (s?.history ?? []).filter((h) => num(h.ms) != null).map((h) => ({ v: h.ms as number, x: new Date(h.t).toLocaleTimeString('en-GB', { timeZone: 'America/Los_Angeles', hour: '2-digit', minute: '2-digit', hour12: false }) }))
 }
 
 /** One product's live reading. Never invents a figure: missing sources give `why`, not zeros. */
@@ -291,7 +291,7 @@ export function reading(src: Sources, key: ProductKey, now = Date.now()): Readin
     if (!d) r.why = wait ? 'Loading…' : 'Gully ID stats unreadable right now'
     else {
       if (num(d.signins24h) != null) r.kpi = { v: d.signins24h as number, label: 'sign-ins, last 24 h', short: 'sign-ins 24h' }
-      r.series = { name: 'Gully ID sign-ins per hour (UTC)', unit: 'sign-ins', kind: 'bars', rows: d.hourly.map((h) => ({ v: h.n, x: hh(h.hour) })) }
+      r.series = { name: 'Gully ID sign-ins per hour (PT)', unit: 'sign-ins', kind: 'bars', rows: d.hourly.map((h) => ({ v: h.n, x: hh(h.hour) })) }
       r.extra = [['Accounts', d.totals.users], ['Passkeys', d.totals.passkeys], ['Apps signed into, 30 d', d.appsActive30d]]
     }
   } else if (key === 'pay') {
@@ -308,7 +308,7 @@ export function reading(src: Sources, key: ProductKey, now = Date.now()): Readin
     const head = num(live?.head?.block) ?? num(hub?.chain?.head)
     if (head != null) r.kpi = { v: head, label: 'latest block, chain 485590', short: 'block' }
     else r.why = wait || !hub ? 'Loading…' : 'Indexer unreadable right now'
-    if (prod?.chain) r.series = { name: 'Gully Chain transactions per hour (UTC)', unit: 'txs', kind: 'bars', rows: prod.chain.hourly.map((h) => ({ v: h.txs ?? 0, x: hh(h.t) })) }
+    if (prod?.chain) r.series = { name: 'Gully Chain transactions per hour (PT)', unit: 'txs', kind: 'bars', rows: prod.chain.hourly.map((h) => ({ v: h.txs ?? 0, x: hh(h.t) })) }
     if (hub?.quests) r.extra.push(['Quest completions, 24 h', hub.quests.completions24h], ['Active quests', hub.quests.active])
     if (live?.copy) r.extra.push(['Copy trading leaders · active copies', `${fmtNum(live.copy.leaders)} · ${fmtNum(live.copy.activeCopies)}`])
     if (prod?.activity) {

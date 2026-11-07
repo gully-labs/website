@@ -3,6 +3,7 @@
    The report is the scan engine's ScanReport (server/security/schema.d.mts, schema 1.x), restated here for
    the browser build; keep the two in step. */
 
+import { TZ } from '../../lib/time'
 import { C, PALETTE } from '../charts/chartPresets'
 
 export type ScanStatus = 'queued' | 'fetching' | 'analysing' | 'triaging' | 'reporting' | 'done' | 'failed' | 'cancelled'
@@ -266,4 +267,4 @@ export function targetRows(t: Report['target']): [string, string][] {
 
 export const countsOf = (findings: Finding[]): Counts => Object.fromEntries(SEVERITIES.map((s) => [s, findings.filter((f) => f.severity === s).length])) as Counts
 
-export const fmtWhen = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—')
+export const fmtWhen = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—')

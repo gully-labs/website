@@ -1,6 +1,7 @@
 /* The /api/stats document (server/stats.mjs), typed, plus the formatting every surface
    shares. A figure is a number or `null` (not published / not measurable); a venue is
    `ok` or `error`. Nothing here invents a value for a missing one. */
+import { TZ } from './time'
 import { projects } from '../content/projects'
 
 export interface Point {
@@ -108,9 +109,9 @@ export function fmtUsd(v: number | null | undefined): string {
 }
 
 export const fmtTime = (iso: string) =>
-  `${new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })} UTC`
+  `${new Date(iso).toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false })} PT`
 
-export const fmtDay = (t: number) => new Date(t * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+export const fmtDay = (t: number) => new Date(t * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: TZ })
 
 export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 

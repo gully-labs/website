@@ -1,3 +1,4 @@
+import { TZ } from '../../../lib/time'
 import { CheckCircle2, Loader2, RefreshCw, ShieldAlert, ShieldCheck, ShieldPlus, Store, Trash2 } from 'lucide-react'
 import { lazy, Suspense, useRef, useState, type FormEvent } from 'react'
 import { GULLY_MARK_SRC } from '../../../components/pay/SecuredBy'
@@ -165,7 +166,7 @@ function WalletRow({ w, can, onChange }: { w: MerchantWallet; can: boolean; onCh
           <span className="font-mono text-[12px] break-all text-ink-2">{w.address}</span>
         )}
         <span className="text-[12px] text-dim">
-          {KIND_TEXT[w.kind]} · checked {new Date(w.checkedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
+          {KIND_TEXT[w.kind]} · checked {new Date(w.checkedAt).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}
           {w.status === 'not-deployed' && ` · Deploy your contract on ${w.chain} at this address; we check every hour and it switches on by itself.`}
         </span>
       </div>
@@ -402,7 +403,7 @@ export function WalletForm({ view, onChange }: { view: MerchantView; onChange: (
         </label>
       ) : (
         <span className="font-mono text-[11px] text-faint lg:col-span-2">
-          Merchant terms {view.terms.accepted?.version} accepted {new Date(view.terms.accepted!.acceptedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} ·{' '}
+          Merchant terms {view.terms.accepted?.version} accepted {new Date(view.terms.accepted!.acceptedAt).toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', year: 'numeric' })} ·{' '}
           <ExtLink href={`${siteOrigin()}${view.terms.path}`} className="underline underline-offset-4 hover:text-gold">
             read them ↗
           </ExtLink>

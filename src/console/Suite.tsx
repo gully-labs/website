@@ -5,6 +5,7 @@
    - NetworkChips: Gully Pay's x402 networks or Gully RPC's gateway networks, Gully Chain included;
    - LabsBoard: every other Gully Labs surface and the status page's own reading.
    A source that cannot be read says so ("not reachable", "reading"); nothing is drawn as zero that was not read. */
+import { TZ } from '../lib/time'
 import { ArrowUpRight, Blocks, BookOpen, Code2, Coins, Copy, Droplets, Gamepad2, Globe, Repeat, Rocket, ScrollText, Search, Server, Share2, Tag, Trophy, Users, Vault } from 'lucide-react'
 import type { ComponentType } from 'react'
 import type { LucideProps } from 'lucide-react'
@@ -291,7 +292,7 @@ export function LabsBoard() {
     <div className="board card" data-testid="labs-board">
       <div className="qh">
         <span className="lab cy">Live across Gully Labs</span>
-        <span className="lab">{hub ? `checked ${new Date(hub.generatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 'checking…'}</span>
+        <span className="lab">{hub ? `checked ${new Date(hub.generatedAt).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })}` : 'checking…'}</span>
       </div>
       <ul className="rows">
         {LABS.map((r) => {

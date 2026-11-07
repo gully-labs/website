@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { EChartsType } from 'echarts/core'
 import { EChart } from '../charts/EChart'
@@ -10,16 +11,8 @@ type Range = '24h' | '7d'
 type Mode = 'gap' | 'price'
 
 const HEIGHT = 280
-const pad2 = (n: number) => String(n).padStart(2, '0')
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const hhmm = (ms: number) => {
-  const d = new Date(ms)
-  return `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`
-}
-const day = (ms: number) => {
-  const d = new Date(ms)
-  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`
-}
+const hhmm = (ms: number) => new Date(ms).toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false })
+const day = (ms: number) => new Date(ms).toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric' })
 /** The smallest round extent that holds `v`, so the axis ticks land on round numbers. */
 const niceExtent = (v: number) => [0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10, 15, 20, 30, 40, 50, 75, 100, 150, 200].find((n) => n >= v) ?? Math.ceil(v / 100) * 100
 const coarse = () => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
@@ -164,7 +157,7 @@ function GapHistoryView({ chain, ticker, inLinePct, onRetry }: { chain: string; 
         if (!p) return ''
         const c = p[1] >= 0 ? UP : DOWN
         return tipHtml({
-          title: `${day(p[0] * 1000)} · ${hhmm(p[0] * 1000)} UTC`,
+          title: `${day(p[0] * 1000)} · ${hhmm(p[0] * 1000)} PT`,
           rows: [
             { name: 'gap', value: fmtGap(p[1]), valueColor: c },
             { name: 'onchain', value: fmtPrice(p[2]), color: C.gold },

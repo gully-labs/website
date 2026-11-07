@@ -58,7 +58,7 @@ export function LaunchRadar({ token }: { token: string }) {
             <Radar size={20} aria-hidden /> Launch radar
           </h2>
           <span className="font-mono text-[12px] text-faint">
-            {state ? `Daily draft at ${state.time} UTC · ${state.draftsEnabled ? 'drafts on' : 'drafts off'} · ` : ''}
+            {state ? `Daily draft at ${state.time} PT · ${state.draftsEnabled ? 'drafts on' : 'drafts off'} · ` : ''}
             {state?.autopost ? 'auto-post ON' : 'auto-post off: you approve every post'}
           </span>
         </div>

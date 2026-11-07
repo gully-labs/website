@@ -1,3 +1,4 @@
+import { dayPT, lastDaysPT } from '../../lib/time'
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { areaPreset, axisTooltip, C, linePreset, tipHtml } from '../../components/charts/chartPresets'
@@ -21,19 +22,17 @@ const fmt = (n: number) => n.toLocaleString('en-US')
 const OK = '#3ddc97'
 const ERR = '#ff6b81'
 
-/** The last `n` local days as empty stacks, oldest first, with a lookup by day. */
+/** The last `n` Los Angeles days as empty stacks, oldest first, with a lookup by day. */
 function emptyDays(n: number) {
   const days: DayStack[] = []
   const index = new Map<string, DayStack>()
-  const today = new Date()
-  for (let i = n - 1; i >= 0; i--) {
-    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
-    const row = { label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), values: {} as Record<string, number> }
-    index.set(d.toDateString(), row)
+  for (const { key, label } of lastDaysPT(n)) {
+    const row = { label, values: {} as Record<string, number> }
+    index.set(key, row)
     days.push(row)
   }
   const add = (at: string | number, kind: string, by = 1) => {
-    const row = index.get(new Date(at).toDateString())
+    const row = index.get(dayPT(at))
     if (row) row.values[kind] = (row.values[kind] ?? 0) + by
   }
   return { days, add }
