@@ -11,7 +11,6 @@ type Range = '24h' | '7d'
 type Mode = 'gap' | 'price'
 
 const HEIGHT = 280
-const pad2 = (n: number) => String(n).padStart(2, '0')
 const hhmm = (ms: number) => new Date(ms).toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false })
 const day = (ms: number) => new Date(ms).toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric' })
 /** The smallest round extent that holds `v`, so the axis ticks land on round numbers. */

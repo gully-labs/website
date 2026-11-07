@@ -1,4 +1,4 @@
-import { TZ, dayPT, lastDaysPT } from '../../lib/time'
+import { dayPT, lastDaysPT } from '../../lib/time'
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { areaPreset, axisTooltip, C, linePreset, tipHtml } from '../../components/charts/chartPresets'
