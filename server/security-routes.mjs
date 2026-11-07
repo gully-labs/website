@@ -655,7 +655,7 @@ export async function handleSecurityPublic(req, res, url) {
     const job = isJobId(bm[1]) ? published(bm[1]) : null
     if (!job?.snapshot) return json(res, 404, { error: 'No published report has that address. The owner may have taken it down.' }, { 'X-Robots-Tag': 'noindex', 'Access-Control-Allow-Origin': '*' }), true
     const at = new Date(job.publishedAt ?? job.completedAt ?? Date.now())
-    const date = at.timeZone: 'America/Los_Angeles' })
+    const date = at.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Los_Angeles' })
     res.writeHead(200, badgeHeaders(300))
     return res.end(req.method === 'HEAD' ? undefined : renderBadge({ kind: 'security', label: 'Gully Security', value: `Scanned ${date}`, title: `Gully Security: report published ${date}`, href: securityReportUrl(job.id), ...badgeStyleFrom(url.searchParams) })), true
   }
