@@ -195,7 +195,7 @@ function LivePanel({ feed, feedState, items, now }: { feed: CheckedLaunches | nu
       state: hubState === 'ok' ? (hub.data?.holders ? 'ok' : 'offline') : hubState,
       empty: daily.length < 2 ? 'one day recorded so far · the line starts tomorrow' : undefined,
       head: hub.data?.holders ? fmtInt(hub.data.holders.today) : '—',
-      sub: 'maps opened today (UTC)',
+      sub: 'maps opened today (PT)',
     },
     {
       id: 'launches',
@@ -258,7 +258,7 @@ function TopScans({ s }: { s: Poll<TopScanned> }) {
     <div className="gt-panel">
       <header>
         <span className="gt-k">
-          <Flame className="hm-ic" aria-hidden /> Unique visitors per map today (UTC)
+          <Flame className="hm-ic" aria-hidden /> Unique visitors per map today (PT)
         </span>
         <span className="gt-k">{fmtPct((items[0].scans / total) * 100)} to the top one</span>
       </header>

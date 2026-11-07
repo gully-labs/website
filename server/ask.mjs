@@ -44,6 +44,7 @@
 // (DATA_DIR/ask-feedback.jsonl, 90 days) holds the answer id, the rating, the question and the same hash.
 // The "my" tools take no workspace argument: the workspace comes only from the session, never from the model.
 
+import { dayLA, nextDayStartLA } from './time-la.mjs'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -1093,8 +1094,8 @@ export async function answerQuestion({ question, history = [], onStage, ctx = nu
 
 /* ---------------------------------------------------------------- limits --- */
 
-const day = (t = Date.now()) => new Date(t).toISOString().slice(0, 10)
-const toMidnight = () => Math.max(1, Math.ceil((Date.parse(day() + 'T00:00:00Z') + 86_400_000 - Date.now()) / 1000))
+const day = (t = Date.now()) => dayLA(t)
+const toMidnight = () => Math.max(1, Math.ceil((nextDayStartLA() - Date.now()) / 1000))
 const buckets = new Map() // key -> { min: number[], day, n }
 let daily = { day: day(), n: 0 }
 
@@ -1505,7 +1506,7 @@ function logView(days) {
   const asks = entries.filter((e) => e.channel !== 'draft')
   const perDay = new Map()
   for (const e of asks) {
-    const d = e.at.slice(0, 10)
+    const d = dayLA(e.at)
     const x = perDay.get(d) ?? { date: d, count: 0, unanswered: 0, errors: 0, web: 0, telegram: 0 }
     x.count++
     if (e.error) x.errors++

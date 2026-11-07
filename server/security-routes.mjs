@@ -44,6 +44,7 @@
 // started with a credit that fails gives the credit back. The terms page (/legal/scan-terms) says the same.
 // Every engine call goes through security-engine.mjs; the input's shapes through security-contract.mjs.
 
+import { dayLA, lastDaysLA } from './time-la.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { adminCancelInvoice, adminInvoice, createInvoiceRecord, invoicePaidHooks } from './invoices.mjs'
@@ -705,11 +706,10 @@ export function publicEngine(es) {
   }
 }
 
-/** Real counts from the jobs (never invented): per UTC day for `days` days, and totals. */
+/** Real counts from the jobs (never invented): per Los Angeles day for `days` days, and totals. */
 function statsOf(days) {
-  const today = Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate())
-  const rows = Array.from({ length: days }, (_, i) => ({ day: new Date(today - (days - 1 - i) * 86_400_000).toISOString().slice(0, 10), started: 0, done: 0, failed: 0 }))
-  const at = (iso) => rows.find((r) => r.day === String(iso ?? '').slice(0, 10))
+  const rows = lastDaysLA(days).map((day) => ({ day, started: 0, done: 0, failed: 0 }))
+  const at = (iso) => rows.find((r) => r.day === dayLA(iso ?? 0))
   let started = 0
   let done = 0
   let failed = 0

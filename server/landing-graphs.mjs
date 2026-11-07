@@ -172,7 +172,8 @@ const MAPS = {
   tall: { vb: [360, 720], r: 24, rc: 32, cap: 16, at: { id: [70, 62], pay: [290, 62], rpc: [62, 236], chain: [180, 226], holdermaps: [298, 236], studio: [70, 402], security: [290, 402], ai: [180, 520], kre8: [60, 560], multisig: [300, 560], core: [180, 656] } },
 }
 const EDGES = [['id', 'chain', 'live'], ['id', 'pay', 'plan'], ['id', 'rpc', 'plan'], ['id', 'studio', 'live'], ['pay', 'chain', 'live'], ['pay', 'rpc', 'plan'], ['pay', 'studio', 'live'], ['rpc', 'chain', 'live'], ['chain', 'holdermaps', 'live'], ['chain', 'security', 'live'], ['chain', 'studio', 'live'], ['ai', 'studio', 'plan'], ['chain', 'core', 'live'], ['chain', 'kre8', 'live'], ['chain', 'multisig', 'live']]
-const COLOR = { id: '#00D2FF', pay: '#3479FD', chain: '#00B2FA', rpc: '#FF7300', holdermaps: '#FFD52E', security: '#F2B232', studio: '#1E8BFF', ai: '#00F0F2', core: '#2DD47A', kre8: '#FFD52E', multisig: '#2DD47A' }
+/** Rings on the kit palette; the logos carry each product's own colour. */
+const RING = '#6F8DDF'
 function curve(a, b, c, k = 18) {
   const mx = (a[0] + b[0]) / 2
   const my = (a[1] + b[1]) / 2
@@ -234,7 +235,7 @@ export function constellation(layout, nodes, data) {
     const r = p.key === 'chain' ? L.rc : L.r
     const [x, y] = L.at[p.key]
     const v = live[p.key]
-    return `<a href="${esc(p.href)}"${ext(p.href)} aria-label="${esc(p.name)}"><g class="nd2${v.up ? ' is-up' : ''}${v.soon ? ' is-soon' : ''}" data-mk="${p.key}" style="--c:${COLOR[p.key]}" transform="translate(${x} ${y})"><circle class="ping" r="${r + 2}"/><circle class="halo" r="${r}"/><image href="${esc(p.icon)}" x="${-(r - 5)}" y="${-(r - 5)}" width="${2 * (r - 5)}" height="${2 * (r - 5)}" clip-path="url(#${layout}-cp-${p.key})" preserveAspectRatio="xMidYMid slice"/><text class="st ${v.cls}" y="${-r - 8}" text-anchor="middle">${esc(v.tag)}</text><text class="nm" y="${r + 17}" text-anchor="middle">${esc(p.name)}</text><text class="mt" y="${r + 32}" text-anchor="middle">${esc(v.metric)}</text></g></a>`
+    return `<a href="${esc(p.href)}"${ext(p.href)} aria-label="${esc(p.name)}"><g class="nd2${v.up ? ' is-up' : ''}${v.soon ? ' is-soon' : ''}" data-mk="${p.key}" style="--c:${RING}" transform="translate(${x} ${y})"><circle class="ping" r="${r + 2}"/><circle class="halo" r="${r}"/><image href="${esc(p.icon)}" x="${-(r - 5)}" y="${-(r - 5)}" width="${2 * (r - 5)}" height="${2 * (r - 5)}" clip-path="url(#${layout}-cp-${p.key})" preserveAspectRatio="xMidYMid slice"/><text class="st ${v.cls}" y="${-r - 8}" text-anchor="middle">${esc(v.tag)}</text><text class="nm" y="${r + 17}" text-anchor="middle">${esc(p.name)}</text><text class="mt" y="${r + 32}" text-anchor="middle">${esc(v.metric)}</text></g></a>`
   }).join('')
   return `<svg class="cmap-${layout}" viewBox="0 0 ${L.vb[0]} ${L.vb[1]}" role="group" aria-label="The Gully products as a connected map, with a live reading on each"><defs>${clips}</defs><g>${lines}${sparks}</g>${body}</svg>`
 }

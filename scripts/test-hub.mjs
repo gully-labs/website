@@ -179,7 +179,7 @@ test('hub-products: HolderMaps daily series keeps the day high and the chains', 
 
 test('hub-products: security scans per day and states', () => {
   const now = Date.parse('2026-10-27T12:00:00Z')
-  const s = readSecurity([{ createdAt: '2026-10-27T01:00:00Z', status: 'done', published: true }, { createdAt: '2026-10-20T01:00:00Z', state: 'started' }, { createdAt: '2025-01-01T00:00:00Z', state: 'cancelled' }], now)
+  const s = readSecurity([{ createdAt: '2026-10-27T08:00:00Z', status: 'done', published: true }, { createdAt: '2026-10-20T01:00:00Z', state: 'started' }, { createdAt: '2025-01-01T00:00:00Z', state: 'cancelled' }], now)
   assert.equal(s.daily.length, 14)
   assert.equal(s.daily[13].scans, 1)
   assert.equal(s.total, 3)

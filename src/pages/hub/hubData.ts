@@ -292,7 +292,7 @@ export function reading(src: Sources, key: ProductKey, now = Date.now()): Readin
     if (!d) r.why = wait ? 'Loading…' : 'Gully ID stats unreadable right now'
     else {
       if (num(d.signins24h) != null) r.kpi = { v: d.signins24h as number, label: 'sign-ins, last 24 h', short: 'sign-ins 24h' }
-      r.series = { name: 'Gully ID sign-ins per hour (UTC)', unit: 'sign-ins', kind: 'bars', rows: d.hourly.map((h) => ({ v: h.n, x: hh(h.hour) })) }
+      r.series = { name: 'Gully ID sign-ins per hour (PT)', unit: 'sign-ins', kind: 'bars', rows: d.hourly.map((h) => ({ v: h.n, x: hh(h.hour) })) }
       r.extra = [['Accounts', d.totals.users], ['Passkeys', d.totals.passkeys], ['Apps signed into, 30 d', d.appsActive30d]]
     }
   } else if (key === 'pay') {
@@ -309,7 +309,7 @@ export function reading(src: Sources, key: ProductKey, now = Date.now()): Readin
     const head = num(live?.head?.block) ?? num(hub?.chain?.head)
     if (head != null) r.kpi = { v: head, label: 'latest block, chain 485590', short: 'block' }
     else r.why = wait || !hub ? 'Loading…' : 'Indexer unreadable right now'
-    if (prod?.chain) r.series = { name: 'Gully Chain transactions per hour (UTC)', unit: 'txs', kind: 'bars', rows: prod.chain.hourly.map((h) => ({ v: h.txs ?? 0, x: hh(h.t) })) }
+    if (prod?.chain) r.series = { name: 'Gully Chain transactions per hour (PT)', unit: 'txs', kind: 'bars', rows: prod.chain.hourly.map((h) => ({ v: h.txs ?? 0, x: hh(h.t) })) }
     if (hub?.quests) r.extra.push(['Quest completions, 24 h', hub.quests.completions24h], ['Active quests', hub.quests.active])
     if (live?.copy) r.extra.push(['Copy trading leaders · active copies', `${fmtNum(live.copy.leaders)} · ${fmtNum(live.copy.activeCopies)}`])
     if (prod?.activity) {
