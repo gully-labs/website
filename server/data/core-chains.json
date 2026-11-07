@@ -25,19 +25,21 @@
   "name": "Anubis",
   "short": "AN",
   "logo": null,
-  "state": "Multisig live",
-  "open": false,
-  "note": "Gully Multisig is live. Gully Core is next.",
+  "state": "Contracts live",
+  "open": true,
+  "note": "Gully Core contracts are live for builders. No pools yet. Gas is gasDAI, which pays gas only, so pools quote in DAI.",
   "live": [
+   "Launchpads by contract",
+   "DEXes by contract",
    "Gully Multisig"
   ],
   "planned": [
-   "Launchpads",
-   "DEXes"
+   "Gully Core app",
+   "First pools"
   ],
   "cta": {
-   "label": "Open Gully Multisig",
-   "href": "https://multisig.gullychain.xyz"
+   "label": "Read the docs",
+   "href": "https://docs.gullychain.xyz/gully-core/"
   }
  },
  {
