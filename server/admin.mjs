@@ -80,6 +80,7 @@ const PROXY_ACCOUNT = "That address is Request Network's fee proxy contract, not
 import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { checkAdmin, handleAdminAuth } from './admin-auth.mjs'
 import { readStats } from './stats.mjs'
+import { handleRevenueAdmin } from './revenue.mjs'
 import { statsWatchdogHealth } from './stats-watchdog.mjs'
 import { umamiConfigured } from './umami.mjs'
 import { linkedChat, telegramStats } from './telegram.mjs'
@@ -383,6 +384,7 @@ export async function handleAdmin(req, res, url) {
   if (p.startsWith('/api/admin/safe/')) return handleAdminSafe(req, res, url)
   if (p === '/api/admin/broadcasts' || p.startsWith('/api/admin/broadcasts/')) return handleBroadcastAdmin(req, res, url)
   if (p === '/api/admin/ecosystem/submissions') return handleEcosystemAdmin(req, res)
+  if (p === '/api/admin/revenue') return handleRevenueAdmin(req, res, url)
   const db = developers()
 
   // Fee-proxy monitor (fee-proxy-monitor.mjs): read every proxy's balances now. Reads under CACHE_MS are reused, so
