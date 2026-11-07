@@ -212,7 +212,7 @@ export function HmFooter() {
         <div className="hm-foot-bottom">
           <p>© 2026 HolderMaps · read live from the chains; a source that cannot be read says so.</p>
           <a className="hm-badge" href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer" aria-label="Powered by Gully Labs (opens in a new tab)">
-            <img src="/brand/badges/powered-by-gully-labs-dark.png" srcSet="/brand/badges/powered-by-gully-labs-dark.png 1x, /brand/badges/powered-by-gully-labs-dark-2x.png 2x, /brand/badges/powered-by-gully-labs-dark-3x.png 3x" width={127} height={32} alt="Powered by Gully Labs" decoding="async" loading="lazy" />
+            <img src="/brand/kit/powered-by-clear-white.svg" width={93} height={32} alt="Powered by Gully Labs" decoding="async" loading="lazy" />
           </a>
         </div>
       </div>
