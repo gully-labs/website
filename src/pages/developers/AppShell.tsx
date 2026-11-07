@@ -644,7 +644,7 @@ export function AppShell<T extends string>({
           </div>
           {/* The seven pages: one flat list (it fits any window; the icon rail never clips its tooltips). */}
           <nav aria-label="App pages" className={`-mx-1 min-h-0 flex-1 px-1 pt-1 ${compact ? '' : 'overflow-y-auto [scrollbar-width:thin]'}`} data-testid="app-nav" data-nav-ids={HUB_NAV_IDS}>
-            <NavLinks items={items} current={current} go={go} compact={compact} dense />
+            <NavLinks items={compact ? items.filter((i) => !i.href) : items} current={current} go={go} compact={compact} dense />
           </nav>
           <div className="border-t border-line pt-[6px]">
             <WalletMenu onSignOut={onSignOut} go={wallet} compact={compact} placement="up" />
