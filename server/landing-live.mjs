@@ -1,6 +1,6 @@
 // The landing's only script (served at /landing/live.js). The page is complete without it: this keeps the figures,
 // graphics and board current from the same-origin APIs, and shows toasts for real events only. No framework.
-import { board, cards } from '/landing/graphs.mjs'
+import { board, cards, coreBars, METRIC } from '/landing/graphs.mjs'
 
 const data = JSON.parse(document.getElementById('boot')?.textContent ?? '{}')
 const SOURCES = { hub: ['/api/hub', 60_000], products: ['/api/hub/products', 120_000], live: ['/api/hub/live', 60_000], stats: ['/api/stats', 60_000] }
@@ -13,32 +13,32 @@ function set(el, html) {
   drawn.set(el, html)
 }
 
+let metric = document.querySelector('[data-tab][aria-selected="true"]')?.dataset.metric ?? 'launches'
+
 function draw() {
   const c = cards(data)
   for (const [key, v] of Object.entries(c)) {
     const el = document.querySelector(`[data-p="${key}"]`)
     if (!el) continue
     el.dataset.state = v.state
-    el.querySelector('[data-v]').textContent = v.value
-    el.querySelector('[data-u]').textContent = v.unit || el.querySelector('[data-fb]').dataset.fb
-    set(el.querySelector('[data-g]'), v.graph)
+    const u = el.querySelector('[data-u]')
+    u.textContent = v.value ? `${v.value} ${v.unit}` : u.dataset.fb
   }
   const b = board(data)
-  for (const k of ['up', 'ms', 'block', 'tvl']) {
+  for (const k of ['up', 'vol', 'tvl']) {
     const el = document.querySelector(`[data-b="${k}"]`)
     if (el && el.textContent !== b[k]) el.textContent = b[k]
   }
   const cells = document.querySelector('[data-b="cells"]')
   if (cells && b.cells) set(cells, b.cells)
-  const pulse = document.querySelector('[data-b="pulse"]')
-  if (pulse) set(pulse, b.pulse)
+  set(document.querySelector('[data-b="core"]'), coreBars(data.products, metric))
 }
 
 /* ---- toasts: real events, at most one every 20 s, three on screen, dismissible, read out politely ---- */
 const stack = document.getElementById('toasts')
 let lastToast = 0
-function toast(title, text, href) {
-  if (!stack || document.hidden || Date.now() - lastToast < 20_000) return
+function toast(title, text, href, asked = false) {
+  if (!stack || document.hidden || (!asked && Date.now() - lastToast < 20_000)) return
   lastToast = Date.now()
   while (stack.children.length >= 3) stack.firstChild.remove()
   const t = document.createElement('div')
@@ -101,6 +101,41 @@ document.querySelector('#fx button')?.addEventListener('click', () => {
     /* private mode */
   }
 })
+
+/* ---- Build tabs: arrow keys move between them ---- */
+const tabs = [...document.querySelectorAll('[data-tab]')]
+function pickTab(btn) {
+  for (const t of tabs) {
+    const on = t === btn
+    t.setAttribute('aria-selected', String(on))
+    t.tabIndex = on ? 0 : -1
+    document.getElementById(`p-${t.dataset.tab}`).hidden = !on
+  }
+  metric = btn.dataset.metric
+  document.querySelector('[data-b="mname"]').textContent = METRIC[metric]
+  draw()
+}
+tabs.forEach((t, i) => {
+  t.tabIndex = i ? -1 : 0
+  t.addEventListener('click', () => pickTab(t))
+  t.addEventListener('keydown', (e) => {
+    const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
+    if (!d) return
+    const n = tabs[(i + d + tabs.length) % tabs.length]
+    n.focus()
+    pickTab(n)
+  })
+})
+
+/* ---- Chain picker: the orbit highlights the chain, the list beside it changes ---- */
+document.querySelectorAll('[data-chain]').forEach((btn) => btn.addEventListener('click', () => {
+  const key = btn.dataset.chain
+  document.querySelectorAll('[data-chain]').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)))
+  document.querySelectorAll('[data-node]').forEach((n) => n.classList.toggle('on', n.dataset.node === key))
+  document.querySelectorAll('[data-detail]').forEach((d) => (d.hidden = d.dataset.detail !== key))
+  const [name, state] = [...btn.children].map((x) => x.textContent)
+  if (state === 'Coming') toast(name, 'Gully Core is not on this chain yet.', null, true)
+}))
 
 /* ---- motion stops off-screen ---- */
 const io = 'IntersectionObserver' in window ? new IntersectionObserver((es) => es.forEach((e) => e.target.classList.toggle('in', e.isIntersecting)), { rootMargin: '80px' }) : null

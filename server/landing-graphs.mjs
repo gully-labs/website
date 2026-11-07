@@ -154,11 +154,19 @@ export function cards({ hub, products, live, stats }) {
     studio: { state: stateOf(hub, KEYS.studio), value: '', unit: '', graph: diagrams.studio(), how },
     ai: { state: stateOf(hub, ['ai-api']) === 'live' ? 'live' : 'coming', value: '', unit: '', graph: diagrams.ai(), how },
     multisig: { state: stateOf(hub, KEYS.multisig), value: '', unit: '', graph: diagrams.multisig(), how },
+    kre8: { state: stateOf(hub, ['street']), value: '', unit: '', graph: '', how: '' },
     core: { state: stateOf(hub, ['street', 'indexer']), value: launches ? fmtInt(launches) : '', unit: launches ? 'launches, 24 h' : '', graph: diagrams.core(), how },
     peddleswap: peddle('peddleswap', diagrams.swap),
     peddles: peddle('peddles', diagrams.launch),
     peddlequest: peddle('peddlequest', diagrams.quest),
   }
+}
+
+/** The Build panel's chart: real Gully Chain testnet activity by the hour, never a drawn curve. */
+export const METRIC = { launches: 'Launches', swaps: 'Swaps', trades: 'Trades' }
+export const coreBars = (products, metric) => {
+  const hourly = products?.activity?.hourly ?? []
+  return bars(hourly.map((h) => h[metric] ?? 0), `${METRIC[metric]} on Gully Chain testnet, last 24 hours`)
 }
 
 /** The hero's board: one cell per public surface, and the figures across them. */
@@ -178,6 +186,7 @@ export function board({ hub, stats }) {
     ms: ms.length ? `${Math.round(ms.reduce((a, b) => a + b, 0) / ms.length)} ms` : '–',
     block: fmtInt(hub?.chain?.head),
     tvl: fmtUsd(stats?.totals?.tvlUsd),
+    vol: fmtUsd(stats?.totals?.volumeAllUsd),
     cells: svcs.map((s) => `<i class="c ${s.state === 'up' ? 'up' : s.state === 'coming' ? 'soon' : 'off'}" title="${s.name}: ${s.state}"></i>`).join(''),
     pulse: line(series, 'Mean response time across every surface, last hour'),
   }

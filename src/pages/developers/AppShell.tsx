@@ -16,6 +16,8 @@ import { ExtLink } from './ExtLink'
 import { StatusPill as KitPill, type PillTone } from '../../components/ui/StatusPill'
 import { BadgeFooterRow } from '../../components/PoweredByBadge'
 import { HUB_NAV_IDS } from './services/nav'
+import CORE_CHAINS from '../../../server/data/core-chains.json'
+import { toastInfo } from '../../components/ui/toast'
 
 /* The Gully Labs App's frame (app.gullylabs.xyz): a left sidebar and a slim header around the page.
 
@@ -34,7 +36,7 @@ import { HUB_NAV_IDS } from './services/nav'
    wallet menu on narrow screens (wide screens have it at the foot of the sidebar). */
 
 /** One sidebar page. Items with a `group` are drawn under that group's heading, in the order given. */
-export type NavItem<T extends string> = { id: T; label: string; icon: ReactNode; badge?: ReactNode; group?: string }
+export type NavItem<T extends string> = { id: T; label: string; icon: ReactNode; badge?: ReactNode; group?: string; href?: string }
 
 const ICON = 16
 const NARROW = '(max-width: 859.98px)'
@@ -296,11 +298,12 @@ function NavList<T extends string>({ items, current, go, compact, dense }: { ite
         return (
           <li key={t.id}>
             <a
-              href={`#${t.id}`}
-              id={`nav-${t.id}`}
+              href={t.href ?? `#${t.id}`}
+              {...(t.href?.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              id={`nav-${t.id.replace(/\W+/g, '-')}`}
               aria-current={on ? 'page' : undefined}
               onClick={(e) => {
-                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+                if (t.href || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
                 e.preventDefault()
                 go(t.id)
               }}
@@ -345,7 +348,7 @@ function NavLinks<T extends string>({ items, current, go, compact, dense }: { it
         const rows = shut ? g.items.filter((it) => it.id === current) : g.items
         return (
           <div key={g.name || i} role="group" aria-labelledby={id} data-nav-group={g.name} data-folded={shut || undefined} className={dense ? '[@media(max-height:840px)]:not-first:mt-1 [@media(max-height:840px)]:not-first:border-t [@media(max-height:840px)]:not-first:border-line' : undefined}>
-            {compact ? (
+            {!g.name ? null : compact ? (
               <span id={id} className="mx-auto my-[3px] block h-px w-6 bg-line-strong" aria-label={g.name} role="heading" aria-level={2}>
                 <span className="sr-only">{g.name}</span>
               </span>
@@ -497,6 +500,35 @@ function Sheet({ open, onClose, children }: { open: boolean; onClose: () => void
   )
 }
 
+/* ------------------------------------------------------------- chain picker --- */
+
+/** The chain the Gully Core links act on. States come from server/data/core-chains.json, so a chain flips there when
+    Gully Core deploys on it; until then picking it says so and the selection stays where it was. */
+function ChainPicker() {
+  const [key, setKey] = useState(CORE_CHAINS.find((c) => c.open)?.key ?? CORE_CHAINS[0].key)
+  return (
+    <label className="shrink-0" data-testid="chain-picker">
+      <span className="sr-only">Chain</span>
+      <select
+        value={key}
+        onChange={(e) => {
+          const c = CORE_CHAINS.find((x) => x.key === e.target.value)
+          if (!c) return
+          if (c.open) setKey(c.key)
+          else toastInfo(`${c.name}: ${c.state.toLowerCase()}`, { detail: 'Gully Core is not on this chain yet.' })
+        }}
+        className="min-h-11 max-w-[170px] rounded-[10px] border border-line bg-bg-alt px-2 text-[13px] font-semibold text-ink max-[520px]:max-w-[108px]"
+      >
+        {CORE_CHAINS.map((c) => (
+          <option key={c.key} value={c.key}>
+            {c.name} · {c.state}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 /* ------------------------------------------------------------ phone tab bar --- */
 
 const TAB_BAR_IDS = ['overview', 'activity', 'products', 'keys']
@@ -644,6 +676,7 @@ export function AppShell<T extends string>({
                 </li>
               </ol>
             </nav>
+            <ChainPicker />
             {!narrow && <HeaderLinks health={health} onStatus={status} />}
             <PlanPill account={account} />
             {narrow && <WalletMenu onSignOut={onSignOut} go={wallet} />}

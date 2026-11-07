@@ -20,6 +20,7 @@ import { Can } from './RoleGate'
 import { EndpointBars, RequestsChart, StatusDonut, type KeySeries } from './vcharts'
 import { ErrorLine, Skeleton } from './parts'
 import { ExtLink } from './ExtLink'
+import { CREATE_TILES } from './services/nav'
 import { ChainAssetChips } from './PayFlow'
 import { BLUE, chip, LIMITED_COLOR, mono, panel, panelTitle, pillGold, pillGoldLine, pillLine, rise } from './styles'
 import { bucketize, busiestKeyRate, firings, group, RANGE_LABEL } from './usage'
@@ -126,6 +127,23 @@ function Periods({ value, onChange }: { value: Range; onChange: (r: Range) => vo
 
 /* -------------------------------------------------------------------- page --- */
 
+/** F's Create tiles: each opens the real Gully Core builder. */
+function CreateTiles() {
+  return (
+    <section aria-labelledby="ov-create" data-testid="create-tiles" className="flex flex-col gap-2 px-6 pt-3 max-[480px]:px-4">
+      <h2 id="ov-create" className="m-0 text-[14px] font-semibold text-ink">Create</h2>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
+        {CREATE_TILES.map((t) => (
+          <ExtLink key={t.label} href={t.href} arrow={false} className="flex min-h-[76px] flex-col justify-center gap-[6px] rounded-card border border-line bg-surface p-3 text-[14px] font-semibold text-ink transition-colors hover:border-gold">
+            <t.icon size={18} aria-hidden className="text-gold" />
+            {t.label}
+          </ExtLink>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export function Overview({ account, go, createKey, createAlert, checkout }: { account: Account; go: (tab: 'keys' | 'alerts' | 'analytics' | 'billing' | 'tracker') => void; createKey: () => void; createAlert: () => void; checkout: (plan: PlanId, asset: string | null) => void }) {
   const [range, setRange] = useState<Range>('24h')
   const up = usePoll<UsageV2>(`/api/developer/usage?range=${range}`, 60_000)
@@ -196,6 +214,7 @@ export function Overview({ account, go, createKey, createAlert, checkout }: { ac
         </span>
       </ServiceHeader>
       </div>
+      <CreateTiles />
       <PendingInvites />
       <GetStarted account={account} alerts={alerts.view} analytics={gaS.state === 'ok' ? gaS.data : gaS.state === 'error' ? 'error' : null} go={go} createKey={createKey} createAlert={createAlert} />
       {/* Live network data first, so even a brand-new workspace opens on moving charts. */}

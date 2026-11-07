@@ -25,7 +25,7 @@ const html = await L.renderLanding(headTags(meta), data)
 test('the first response is the page: one h1, products, footer and figures, no loader', () => {
   assert.equal((html.match(/<h1[\s>]/g) ?? []).length, 1)
   assert.ok(!/id="root"|class="[^"]*(spinner|loader)[^"]*"|Loading…/.test(html), 'no app shell and no loader')
-  for (const t of ['Gully Multisig', 'Gully Core', 'PeddleSwap', '4,501', '$64.9K', 'Powered by Gully Labs']) assert.ok(html.includes(t), t)
+  for (const t of ['Launch a token. Run a launchpad. Own a DEX.', 'You Think It, We Ship It', 'Build on Gully Core', '0.30%', 'Gully Multisig', 'Gully Core', 'PeddleSwap', '$64.9K', 'Powered by Gully Labs']) assert.ok(html.includes(t), t)
   assert.ok(!/gully safe|safe\.gullychain|deepcore/i.test(html))
 })
 
@@ -73,4 +73,19 @@ test('as the home page it carries the head of the home page: title, canonical, J
   assert.ok(h.includes('<link rel="canonical" href="https://gullylabs.xyz/">'))
   assert.ok(!/noindex/.test(h))
   assert.ok(/"@type":"Organization"/.test(h) && /"@type":"WebSite"/.test(h))
+})
+
+test('chain states come from the config and only an open chain links to the builder', () => {
+  const chains = JSON.parse(fs.readFileSync(new URL('../server/data/core-chains.json', import.meta.url), 'utf8'))
+  for (const c of chains) {
+    assert.ok(html.includes(`data-chain="${c.key}"`), c.key)
+    if (!c.open) assert.ok(!c.cta || !c.cta.href.includes('/core/app'), c.key)
+  }
+  assert.equal(chains.filter((c) => c.open).map((c) => c.key).join(), 'gully', 'Gully Core is only on the Gully Chain testnet today')
+})
+
+test('Build links go to the real Gully Core routes; no simulated motion in the scripts', () => {
+  for (const r of ['launch/v2/new', 'pads/new', 'dexes/new?kind=dex', 'pads/new?kind=stocks', 'vaults/new', 'locks/new']) assert.ok(html.includes(`https://gullychain.xyz/core/app/${r}`), r)
+  const js = L.landingAsset('/landing/live.js') + L.landingAsset('/landing/graphs.mjs')
+  assert.ok(!/Math\.random/.test(js) && !/Math\.sin/.test(L.landingAsset('/landing/live.js')))
 })

@@ -14,7 +14,7 @@ import { Overview } from './Overview'
 import { PortalReceipt } from './PortalReceipt'
 import { APP_NAME, APP_TITLE, inviteTokenFromHash, usePortal } from './portal'
 import { Products } from './Products'
-import { AI_TAB, HANDOFF_TABS, isHandoffTab, isServiceTab, LEGACY_CHAIN_HASHES, redirectFor, SERVICE_TABS, SIDEBAR, type HandoffTab, type ServiceTab, type SidebarTab } from './services/nav'
+import { AI_TAB, APP_GROUPS, HANDOFF_TABS, isHandoffTab, isServiceTab, LEGACY_CHAIN_HASHES, redirectFor, SERVICE_TABS, SIDEBAR, type HandoffTab, type ServiceTab, type SidebarTab } from './services/nav'
 import { ServiceView } from './services/ServiceView'
 import { SecurityTab } from './security/SecurityTab'
 import { SettingsTab } from './Settings'
@@ -184,7 +184,12 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
 
   const liveKeys = account.keys.filter((k) => !k.revokedAt).length
   const items: NavItem<AppTab>[] = useMemo(
-    () => ALL_TABS.filter((t) => SIDEBAR_IDS.has(t.id)).map((t) => (t.id === 'keys' && liveKeys > 0 ? { ...t, badge: <span className="rounded-full bg-surface-deep px-[6px] font-mono text-[11px] text-faint">{liveKeys}</span> } : t)),
+    () => {
+      const [home, ...rest] = ALL_TABS.filter((t) => SIDEBAR_IDS.has(t.id)).map((t) => (t.id === 'keys' && liveKeys > 0 ? { ...t, badge: <span className="rounded-full bg-surface-deep px-[6px] font-mono text-[11px] text-faint">{liveKeys}</span> } : t))
+      // Overview, then Trade, Build and Manage (the Gully Core features), then Account (the hub's own pages).
+      const core = APP_GROUPS.flatMap((g) => g.links.map((l) => ({ id: `core-${g.title}-${l.label}` as AppTab, label: l.label, icon: <l.icon size={ICON} aria-hidden />, href: l.href, group: g.title })))
+      return [home, ...core, ...rest.map((t) => ({ ...t, group: 'Account' }))]
+    },
     [liveKeys],
   )
   const page = ALL_TABS.find((t) => t.id === tab)?.label ?? 'Overview'
