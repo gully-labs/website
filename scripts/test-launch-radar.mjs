@@ -117,7 +117,7 @@ const useFixtures = (list) => {
 }
 useFixtures(FIX)
 
-let clock = Date.UTC(2026, 9, 18, 16, 0, 0)
+let clock = Date.UTC(2026, 9, 18, 23, 0, 0)
 ch.setNowForTest(() => clock)
 
 try {
@@ -151,10 +151,10 @@ try {
   useFixtures(FIX)
 
   /* -------------------------------------------------- draft by default (tick) --- */
-  clock = Date.UTC(2026, 9, 18, 14, 0, 0)
+  clock = Date.UTC(2026, 9, 18, 21, 0, 0)
   await radar.radarTick()
-  check('scheduler: before the daily time (15:00 UTC) nothing is made', (await A('/api/admin/channel')).data.posts.length === 0)
-  clock = Date.UTC(2026, 9, 18, 16, 0, 0)
+  check('scheduler: before the daily time (15:00 PT) nothing is made', (await A('/api/admin/channel')).data.posts.length === 0)
+  clock = Date.UTC(2026, 9, 18, 23, 0, 0)
   await radar.radarTick()
   let posts = (await A('/api/admin/channel')).data.posts
   check('scheduler: the daily job writes ONE DRAFT (autopost is off by default)', posts.length === 1 && posts[0].status === 'draft' && posts[0].autoKey === 'radar:2026-10-18' && posts[0].media?.banner === true)
@@ -177,7 +177,7 @@ try {
   check('admin: a second post the same day is refused (409)', (await A('/api/admin/channel/radar', { action: 'post' })).status === 409 && posted().length === 1)
   check('admin: drafting after it was sent is refused (409)', (await A('/api/admin/channel/radar', { action: 'draft' })).status === 409)
   useFixtures(FIX.map((f) => ({ ...f, state: 'checking' })))
-  clock = Date.UTC(2026, 9, 19, 16, 0, 0)
+  clock = Date.UTC(2026, 9, 19, 23, 0, 0)
   const sk = await A('/api/admin/channel/radar', { action: 'draft' })
   check('admin: not enough measured data is a 409 with the reason, no empty post', sk.status === 409 && /needs at least/.test(sk.data.skip ?? '') && (await A('/api/admin/channel')).data.posts.length === 1)
   const sk2 = await A('/api/admin/channel/radar', { action: 'post' })
@@ -186,7 +186,7 @@ try {
 
   /* ------------------------------------------------- the TELEGRAM_RADAR_AUTOPOST flag --- */
   radar.resetRadarForTest()
-  clock = Date.UTC(2026, 9, 20, 16, 0, 0)
+  clock = Date.UTC(2026, 9, 20, 23, 0, 0)
   process.env.TELEGRAM_RADAR_AUTOPOST = '0'
   await radar.radarTick()
   posts = (await A('/api/admin/channel')).data.posts
@@ -198,13 +198,13 @@ try {
   check('flag: GET reports autopost on', (await A('/api/admin/channel/radar')).data.autopost === true)
   await radar.radarTick()
   check('flag: with TELEGRAM_RADAR_AUTOPOST=1 the day’s draft goes out through the composer', (await A('/api/admin/channel')).data.posts[0].status === 'sent' && posted().length === 2)
-  clock = Date.UTC(2026, 9, 21, 16, 0, 0)
+  clock = Date.UTC(2026, 9, 21, 23, 0, 0)
   await radar.radarTick()
   check('flag: with autopost on the next day makes its own post and sends it', (await A('/api/admin/channel')).data.posts.length === 3 && posted().length === 3)
   delete process.env.TELEGRAM_RADAR_AUTOPOST
 
   process.env.TELEGRAM_RADAR_DRAFTS = '0'
-  clock = Date.UTC(2026, 9, 22, 16, 0, 0)
+  clock = Date.UTC(2026, 9, 22, 23, 0, 0)
   await radar.radarTick()
   check('flag: TELEGRAM_RADAR_DRAFTS=0 stops the scheduled drafts', (await A('/api/admin/channel')).data.posts.length === 3)
   delete process.env.TELEGRAM_RADAR_DRAFTS

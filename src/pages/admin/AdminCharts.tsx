@@ -1,3 +1,4 @@
+import { timePT } from '../../lib/time'
 import { useEffect, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { ChartBox } from '../../components/charts/ChartSkeleton'
@@ -96,7 +97,7 @@ export default function AdminCharts({ token }: { token: string }) {
           <h2 className="m-0 font-display text-[22px] font-bold uppercase">Live charts</h2>
           <span className={small}>
             <i className="mr-2 inline-block size-2 animate-pulse rounded-full bg-green align-middle" />
-            {data ? `read ${new Date(data.generatedAt).toISOString().slice(11, 19)} UTC · refreshes every minute` : 'reading…'}
+            {data ? `read ${timePT(data.generatedAt, true)} · refreshes every minute` : 'reading…'}
           </span>
         </div>
         <Toggle label="Range" value={String(days) as '7' | '30' | '90'} options={RANGES.map((r) => ({ id: String(r) as '7' | '30' | '90', label: `${r}D` }))} onChange={(v) => setDays(Number(v) as (typeof RANGES)[number])} />

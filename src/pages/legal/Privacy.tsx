@@ -58,7 +58,7 @@ const RETENTION: [string, string][] = [
   ['Chains launched from the app (testnet)', 'Until you remove them'],
   ['Security monitors', 'Until you delete the monitor; each keeps its last 100 events and last 50 alert deliveries'],
   ['Gully Score results and history', 'Not deleted automatically (who looked a score up is not recorded)'],
-  ['Holder Map view counts', 'Reset every UTC day; the key that hashes visitors is never written down'],
+  ['Holder Map view counts', 'Reset every day, Los Angeles time; the key that hashes visitors is never written down'],
   ['Telegram announcements: deliveries and opened links', 'The newest 200 announcements'],
   ['Telegram bot records (first and last seen, language, opt-out)', 'Not deleted automatically today'],
   ['Server and edge logs', 'As long as needed to run and secure the services, then deleted'],

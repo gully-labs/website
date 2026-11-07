@@ -1,3 +1,4 @@
+import { TZ, timePT } from '../../lib/time'
 import { useMemo, useRef, useState, type JSX } from 'react'
 import { Link } from 'react-router'
 import { STATUS_LABEL, stockPath, UP, DOWN, CHAIN_SHORT, fmtGap, fmtPrice, gapColor, useHistory, useTracker, type HistoryPoint, type TrackerRow } from '../../lib/tracker'
@@ -19,11 +20,10 @@ const MAX_POINTS = 160
 const TRUSTED = new Set(['premium', 'discount', 'drifting', 'in-line'])
 
 const tone = (r: Pick<TrackerRow, 'gapPct' | 'status'>) => (r.status === 'thin' ? undefined : gapColor(r))
-const pad2 = (n: number) => String(n).padStart(2, '0')
 const when = (t: number, range: Range) => {
   const d = new Date(t * 1000)
-  const hm = `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())} UTC`
-  return range === '7D' ? `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} · ${hm}` : hm
+  const hm = timePT(d)
+  return range === '7D' ? `${d.toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric' })} · ${hm}` : hm
 }
 
 /** Rows: trusted gaps first, widest first; the rest after, by ticker. */

@@ -229,7 +229,7 @@ try {
   check('maskContact never returns the full value', N.maskContact('longname@example.org') === 'lo***@ex***.org' && N.maskContact('@somehandle') === '@so***' && N.maskContact('plain-text') === 'pl***' && N.maskContact('') === '(none)')
 
   // Digest.
-  const day = Date.parse('2026-10-20T09:30:00Z')
+  const day = Date.parse('2026-10-20T16:30:00Z')
   const ago = (h) => new Date(day - h * 3_600_000).toISOString()
   N.setDigestSourcesForTest(async () => ({ 'chains-waitlist': [ago(1), ago(5), ago(30)], 'chain-kit': [ago(40)], 'chains-devnet': [], ecosystem: [ago(2)], contact: [ago(3), ago(4), ago(100)], security: [] }))
   const dg = await N.digestMessage({ now: day })
@@ -247,11 +247,11 @@ try {
   check('INTAKE_DIGEST_TIME parses (and falls back to 09:00)', m1 === 540 && m2 === 465 && m3 === 540)
   N.setDigestSourcesForTest(async () => ({ 'chains-waitlist': [ago(1)], 'chain-kit': [], 'chains-devnet': [], ecosystem: [], contact: [], security: [] }))
   unit.length = 0
-  check('digest clock: before 09:00 UTC nothing is sent', (await N.digestTick({ now: Date.parse('2026-10-20T08:59:00Z') })) === 'not-due' && unit.length === 0)
-  check('digest clock: at 09:00 UTC it is sent', (await N.digestTick({ now: Date.parse('2026-10-20T09:00:30Z') })) === 'sent' && unit.length === 1 && unit[0].includes('Daily intake digest'))
-  check('digest clock: not sent twice the same day', (await N.digestTick({ now: Date.parse('2026-10-20T15:00:00Z') })) === 'not-due' && unit.length === 1)
+  check('digest clock: before 09:00 PT nothing is sent', (await N.digestTick({ now: Date.parse('2026-10-20T15:59:00Z') })) === 'not-due' && unit.length === 0)
+  check('digest clock: at 09:00 PT it is sent', (await N.digestTick({ now: Date.parse('2026-10-20T16:00:30Z') })) === 'sent' && unit.length === 1 && unit[0].includes('Daily intake digest'))
+  check('digest clock: not sent twice the same day', (await N.digestTick({ now: Date.parse('2026-10-20T22:00:00Z') })) === 'not-due' && unit.length === 1)
   N.setDigestSourcesForTest(async () => ({}))
-  check('digest clock: an empty day sends nothing', (await N.digestTick({ now: Date.parse('2026-10-21T09:05:00Z') })) === 'empty' && unit.length === 1)
+  check('digest clock: an empty day sends nothing', (await N.digestTick({ now: Date.parse('2026-10-21T16:05:00Z') })) === 'empty' && unit.length === 1)
   N.setDigestSourcesForTest(null)
   const real = await N.digestMessage({ now: Date.now() })
   check('digest: the real stores are readable (the sign-ups made above are counted)', typeof real === 'string' && /Gully Chains waitlist: <b>\d+<\/b> new/.test(real) && /Security review request: <b>1<\/b>/.test(real), real?.slice(0, 80))

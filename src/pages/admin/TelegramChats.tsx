@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useCallback, useEffect, useState } from 'react'
 import { Ban, Unlink } from 'lucide-react'
 import { toastError, toastSuccess } from '../../components/ui/toast'
@@ -29,7 +30,7 @@ const card = 'flex min-w-0 flex-col gap-4 rounded-card border border-line bg-sur
 const h2 = 'm-0 font-display text-[22px] font-bold uppercase'
 const small = 'font-mono text-[12px] text-faint'
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
-const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '—')
+const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '—')
 
 export function TelegramChats({ token }: { token: string }) {
   const [data, setData] = useState<View | null>(null)
