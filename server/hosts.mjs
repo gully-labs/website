@@ -283,6 +283,8 @@ export function movedPageUrl(pathname) {
   // The DeepCore partnership ended on 2026-10-29: its old pages open Gully Core, Gully Chain's own launchpad and DEX core.
   if (p === '/products/deepcore' || p === '/projects/deepcore') return 'https://gullylabs.xyz/products/gully-core'
   // Gully Chain: the L3 offer, its launch flow and Chain Kit.
+  // The chain logos in public/chains are files, not the old /chains pages.
+  if (/^\/chains\/[a-z0-9-]+\.(?:svg|png)$/.test(p)) return null
   if (p === '/chains/launch') return `${CHAIN_APP_URL}/`
   if (/^\/(chains|chain-kit|gully-chain|gully-chains|l3)(\/|$)/.test(p)) return `${CHAIN_URL}/`
   // /pay alone is not a checkout (those are /pay/<id>, /pay/l/<id>, /pay/m/<id> on pay.gullylabs.xyz): it was Gully

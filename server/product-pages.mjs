@@ -81,7 +81,7 @@ function pageFor(kind, id) {
     const go = (d) => SLUGS[(i + d + SLUGS.length) % SLUGS.length]
     return {
       id, name: p.name, line: p.line, icon: id === 'gully-core' ? CORE_ICON : t?.icon ?? CHAIN_ICON, stage: t?.label ?? '', hub: p.hub, card: CARD[id] ?? null, metric: METRIC[id] ?? null,
-      primary: [p.url, p.cta ?? `Open ${p.urlLabel}`], second: p.cta2, docs: p.docs, features: p.features.map((f) => [f.t, f.d]), how: p.how, price: p.price, faq: p.faq,
+      primary: [p.url, p.cta ?? `Open ${p.urlLabel}`], second: p.cta2, docs: p.docs, features: p.features.map((f) => [f.t, f.d]), how: p.how, price: id === 'gully-core' ? CORE_PRICE : p.price, faq: p.faq,
       prev: [`/preview/products/${go(-1)}`, CONTENT.product[go(-1)].name], next: [`/preview/products/${go(1)}`, CONTENT.product[go(1)].name], crumb: ['/preview/products/gully-core', 'Products'],
       extra: id === 'gully-core' ? coreLinks() : '',
     }
@@ -103,7 +103,7 @@ function pageFor(kind, id) {
 const PCSS = `.ph{padding:14px 0 18px;background:radial-gradient(ellipse at 66% 45%,#0E1C38 0,#081226 58%,#060C1C 100%)}.crumb{display:flex;align-items:center;gap:6px;min-height:32px;font-size:13px;color:var(--soft)}.crumb a:hover{color:#fff}
 .ph-g{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:20px;align-items:center}.ph h1{margin-top:8px}.pm{display:flex;align-items:center;gap:12px}.pm img{width:48px;height:48px;border-radius:12px;background:#fff;object-fit:contain}
 .bg{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 10px;border:1px solid var(--blue);border-radius:9px;font-size:12px;color:var(--soft)}.bg:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--soft)}[data-state=live] .bg:before{background:var(--ok)}[data-state=down] .bg:before{background:var(--bad)}
-.big{display:block;font-size:40px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.g-line{fill:none;stroke:var(--ln);stroke-width:2}.g-area{fill:var(--ar)}.g-box{fill:none;stroke:var(--blue)}.g-box.on{fill:var(--blue);stroke:var(--sky)}.g-node{fill:none;stroke:var(--sky)}.g-node.on{fill:var(--sky)}.g-link{fill:none;stroke:var(--sky);stroke-width:1.5}.g-t{font:500 10px Figtree,sans-serif;fill:var(--soft)}.g-t.inv{fill:#fff}.pl{display:block;font-size:13px;line-height:1.35;color:var(--soft)}
+.big{display:block;font-size:40px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.pl{display:block;font-size:13px;line-height:1.35;color:var(--soft)}
 .prs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}details{border-bottom:1px solid var(--blue)}summary{display:flex;align-items:center;min-height:48px;font-size:15px;font-weight:600;cursor:pointer}details p{padding-bottom:12px;font-size:14px;color:var(--soft)}.lk{margin-top:8px}.lk li a{display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px}.lk .ic{color:var(--sky)}.pn{display:flex;justify-content:space-between;gap:10px;margin-top:20px}.pn a{display:flex;align-items:center;min-height:44px;font-size:14px;color:var(--soft)}.pn a:hover{color:#fff}
 @media (max-width:760px){.ph-g{grid-template-columns:minmax(0,1fr)}.prs{grid-template-columns:repeat(2,minmax(0,1fr))}}`
 
@@ -127,7 +127,7 @@ export async function renderProduct(head, kind, id, given = null) {
   const page = { card: pg.card, hub: pg.hub, metric: pg.metric }
   const v = productView(data, page)
   const boot = JSON.stringify({ ...slim(data), page }).replace(/</g, '\\u003c')
-  const where = pg.card === 'core' ? `<section class="s"><div class="w"><h2 class="t">Where it runs</h2><div class="tiles">${CHAINS.map((c) => `<div class="tile"><span><b>${esc(c.name)}</b><span class="pl">${esc(c.state)}</span></span></div>`).join('')}</div></div></section>` : ''
+  const where = pg.card === 'core' ? `<section class="s"><div class="w"><h2 class="t">Where it runs</h2><div class="tiles">${CHAINS.map((c) => `<div class="tile">${c.logo ? `<img class="pad" src="${esc(c.logo)}" alt="" width="40" height="40" loading="lazy">` : ''}<span><b>${esc(c.name)}</b><span class="pl">${esc(c.state)}</span></span></div>`).join('')}</div></div></section>` : ''
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${head}<link rel="preload" href="/fonts/figtree-latin-700.woff2" as="font" type="font/woff2" crossorigin><link rel="modulepreload" href="/landing/graphs.mjs"><script src="/landing/fx.js"></script><style>${CSS}${PCSS}</style></head><body>
 ${pageTop()}
 <main>

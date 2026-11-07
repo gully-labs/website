@@ -3400,6 +3400,9 @@ await step('preview pages: landing and product template', async () => {
     const ctx = await newContext({ width, height: 844, mobile: width < 600 })
     const page = await ctx.newPage()
     const w = watch(page, `preview ${width}`)
+    const badImages = []
+    page.on('response', (r) => { if (r.request().resourceType() === 'image' && r.status() !== 200 && r.status() !== 304) badImages.push(`${r.status()} ${r.url()}`) })
+    page.on('requestfailed', (r) => { if (r.resourceType() === 'image') badImages.push(`failed ${r.url()}`) })
     await page.goto(BASE + '/preview/landing')
     await page.locator('h1').waitFor()
     check(`preview landing ${width}: a product opens its preview page`, (await page.locator('a[href^="/preview/products/"]').count()) > 5 && (await page.locator('a[href^="/products/"]').count()) === 0)
@@ -3416,6 +3419,7 @@ await step('preview pages: landing and product template', async () => {
     await page.getByRole('button', { name: 'Custom' }).click()
     check(`token launch ${width}: Custom draws no curve`, (await page.locator('[data-curve] svg').count()) === 0)
     await noHorizontalScroll(page, `/preview/build/token ${width}`)
+    check(`preview ${width}: every image loads, none redirected`, badImages.length === 0, badImages.join(' ').slice(0, 300))
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx.close()
   }

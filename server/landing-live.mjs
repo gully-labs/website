@@ -1,6 +1,6 @@
 // The landing's only script (served at /landing/live.js). The page is complete without it: this keeps the figures,
 // graphics and board current from the same-origin APIs, and shows toasts for real events only. No framework.
-import { board, cards, coreBars, mapNodes, METRIC } from '/landing/graphs.mjs'
+import { board, cards, coreBars, mapNodes, METRIC, metricNote } from '/landing/graphs.mjs'
 
 const data = JSON.parse(document.getElementById('boot')?.textContent ?? '{}')
 const SOURCES = { hub: ['/api/hub', 60_000], products: ['/api/hub/products', 120_000], live: ['/api/hub/live', 60_000], stats: ['/api/stats', 60_000] }
@@ -124,6 +124,7 @@ function pickTab(btn) {
   }
   metric = btn.dataset.metric
   document.querySelector('[data-b="mname"]').textContent = METRIC[metric]
+  document.querySelector('[data-b="mnote"]').textContent = metricNote(metric)
   draw()
 }
 tabs.forEach((t, i) => {
