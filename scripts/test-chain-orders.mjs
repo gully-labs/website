@@ -16,13 +16,14 @@ const PORT = Number(process.env.TEST_PORT) || 9183
 const BASE = `http://localhost:${PORT}`
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-chain-orders-'))
 const addr = (c) => '0x' + c.repeat(40)
-const USERS = { 'tok-a': { sub: 'sub-a', address: addr('a') }, 'tok-b': { sub: 'sub-b', address: addr('b') } }
+const USERS = { 'tok-a': { sub: 'sub-a', address: addr('a') }, 'tok-b': { sub: 'sub-b', address: addr('b') }, 'tok-c': { sub: 'sub-c', address: addr('d') } }
 const gid = await fakeGullyId(USERS)
 const pay = await fakeGullyPay()
 const ADMIN = crypto.randomBytes(24).toString('hex')
 
-for (const k of ['TELEGRAM_BOT_TOKEN', 'MAINNET_ORDERS', 'CHAIN_GULLYPAY_MODE', 'CHAIN_MAIL_API_KEY', 'CHAIN_MAIL_FROM']) delete process.env[k]
-Object.assign(process.env, { PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: ADMIN, ADMIN_PASSWORD_LOGIN: 'on', TRACKER_LOOP: 'off', DEEPCORE_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off', CHAINLIST_URL: 'off', GULLY_ID_ISSUER: gid.url, GULLYPAY_API_URL: pay.url, GULLYPAY_CHECKOUT_URL: pay.url, CHAIN_GULLYPAY_MERCHANT_ID: GP.merchantId, CHAIN_GULLYPAY_STORE_ID: GP.storeId, CHAIN_GULLYPAY_API_KEY: GP.apiKey, CHAIN_GULLYPAY_WEBHOOK_SECRET: GP.secret })
+for (const k of ['TELEGRAM_BOT_TOKEN', 'MAINNET_ORDERS', 'MAINNET_PRICE_CONFIRMED', 'CHAIN_GULLYPAY_MODE', 'CHAIN_MAIL_API_KEY', 'CHAIN_MAIL_FROM']) delete process.env[k]
+// The payment path needs a charge, so this file runs with one. The default of $0 has its own section at the end.
+Object.assign(process.env, { CHAIN_TESTNET_TEST_CHARGE_USD: '1', PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: ADMIN, ADMIN_PASSWORD_LOGIN: 'on', TRACKER_LOOP: 'off', DEEPCORE_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off', CHAINLIST_URL: 'off', GULLY_ID_ISSUER: gid.url, GULLYPAY_API_URL: pay.url, GULLYPAY_CHECKOUT_URL: pay.url, CHAIN_GULLYPAY_MERCHANT_ID: GP.merchantId, CHAIN_GULLYPAY_STORE_ID: GP.storeId, CHAIN_GULLYPAY_API_KEY: GP.apiKey, CHAIN_GULLYPAY_WEBHOOK_SECRET: GP.secret })
 
 await import('../server/server.mjs')
 const orders = await import('../server/chain-orders.mjs')
@@ -84,7 +85,8 @@ try {
   check('mainnet: $4,250 a month + 4.25% of sequencer profit, DA at cost', m.monthlyUsd === 4250 && m.dueCents === 425_000 && m.sequencerProfitPct === 4.25 && m.daAtCost === true)
   check('mainnet: a price-on-request add-on says so and adds nothing', m.priceWithUs === true)
   check('mainnet has no faucet; an unknown add-on and an unknown tier are refused', plans.quoteOrder('mainnet', ['faucet']) === null && plans.quoteOrder('testnet', ['nope']) === null && plans.quoteOrder('x') === null)
-  check('every benchmark names a source; an unpublished price stays null', plans.PRICE_BENCHMARKS.sources.every((s) => /^https:/.test(s.url)) && plans.PRICE_BENCHMARKS.sources.filter((s) => s.published === null).length === 2)
+  check('every benchmark names a source; an unpublished price stays null', plans.PRICE_BENCHMARKS.sources.every((s) => /^https:/.test(s.url)) && plans.PRICE_BENCHMARKS.sources.filter((s) => s.published === null).length === 3)
+  check('the unsourced mainnet base is flagged for the owner', /\$4,250/.test(plans.PRICE_BENCHMARKS.ownerToConfirm))
 
   /* ---- step 1: name, chain id check, gas token, logo ---- */
   const offer = (await A.call('/api/chain-orders/offer')).data
@@ -114,9 +116,13 @@ try {
   const off = await A.post('/api/chain-orders', good({ tier: 'mainnet', parentChainId: 42161, addons: [], expect: { dueCents: 425_000 } }))
   check('step 2: MAINNET_ORDERS off answers 403 mainnet-off', off.status === 403 && off.data.code === 'mainnet-off')
   process.env.MAINNET_ORDERS = 'on'
+  const unconfirmed = await A.post('/api/chain-orders', good({ tier: 'mainnet', parentChainId: 42161, addons: [], expect: { dueCents: 425_000 } }))
+  check('step 2: MAINNET_ORDERS alone stays shut: the owner has not confirmed the price', unconfirmed.data?.code === 'mainnet-off' && (await A.call('/api/chain-orders/offer')).data.flags.mainnetOrders === false)
+  process.env.MAINNET_PRICE_CONFIRMED = 'on'
   const noLive = await A.post('/api/chain-orders', good({ tier: 'mainnet', parentChainId: 42161, addons: [], expect: { dueCents: 425_000 } }))
   check('step 2: mainnet with test payments is refused', noLive.status === 403 && noLive.data.code === 'mode-mismatch')
   delete process.env.MAINNET_ORDERS
+  delete process.env.MAINNET_PRICE_CONFIRMED
 
   /* ---- step 3: price ---- */
   const q = await A.call('/api/chain-orders/quote?tier=testnet&addons=explorer,rpc')
@@ -215,7 +221,7 @@ try {
 
   /* ---- five unpaid orders is the limit ---- */
   const sixth = await A.post('/api/chain-orders', good())
-  check('a buyer holds at most five unpaid orders', sixth.status === 429)
+  check('a buyer holds at most five open orders', sixth.status === 429)
   for (const o of [tampered.data.order, held, mains, wrong]) await A.post(`/api/chain-orders/${o.id}/cancel`)
 
   /* ---- double order ---- */
@@ -276,7 +282,7 @@ try {
   const src = fs.readFileSync(new URL('../server/chain-orders.mjs', import.meta.url), 'utf8')
   check('the secrets come from the environment only', !/rk_[a-z0-9]{8,}/i.test(src) && src.includes('CHAIN_GULLYPAY_WEBHOOK_SECRET'))
   /* ---- when the owner opens mainnet: both switches, a real amount, and a real rail counts as paid ---- */
-  Object.assign(process.env, { MAINNET_ORDERS: 'on', CHAIN_GULLYPAY_MODE: 'live' })
+  Object.assign(process.env, { MAINNET_ORDERS: 'on', MAINNET_PRICE_CONFIRMED: 'on', CHAIN_GULLYPAY_MODE: 'live' })
   const mo = await A.post('/api/chain-orders', good({ tier: 'mainnet', parentChainId: 42170, addons: ['explorer'], expect: { dueCents: 425_000 } }))
   check('mainnet on: an order for the first month, settling to Nova', mo.status === 201 && mo.data.order.quote.dueCents === 425_000 && mo.data.order.parent.name === 'Arbitrum Nova')
   await A.post(`/api/chain-orders/${mo.data.order.id}/checkout`)
@@ -284,7 +290,43 @@ try {
   check('mainnet on: a card payment marks a live order paid', (await A.call(`/api/chain-orders/${mo.data.order.id}`)).data.order.status === 'paid')
   check('mainnet on: testnet orders with a test charge pause, they never take real money', (await A.post('/api/chain-orders', good())).data?.code === 'mode-mismatch')
   delete process.env.MAINNET_ORDERS
+  delete process.env.MAINNET_PRICE_CONFIRMED
   delete process.env.CHAIN_GULLYPAY_MODE
+
+  /* ---- the default: no charge, no Gully Pay settings, the order is still recorded ---- */
+  delete process.env.CHAIN_TESTNET_TEST_CHARGE_USD
+  for (const k of ['CHAIN_GULLYPAY_STORE_ID', 'CHAIN_GULLYPAY_MERCHANT_ID', 'CHAIN_GULLYPAY_API_KEY', 'CHAIN_GULLYPAY_WEBHOOK_SECRET']) delete process.env[k]
+  const zero = plans.quoteOrder('testnet', ['explorer'])
+  check('default: a testnet order charges nothing', zero.dueCents === 0 && zero.testCharge === false)
+  for (const v of ['-1', 'abc', '']) {
+    process.env.CHAIN_TESTNET_TEST_CHARGE_USD = v
+    check(`default: a charge of "${v}" is no charge`, plans.quoteOrder('testnet', []).dueCents === 0)
+  }
+  delete process.env.CHAIN_TESTNET_TEST_CHARGE_USD
+  const shut = (await A.call('/api/chain-orders/offer')).data
+  check('default: the offer says checkout is off and mainnet is shut', shut.checkout.enabled === false && shut.flags.mainnetOrders === false)
+  const C = client()
+  await C.signIn('tok-c')
+  const sessionsBefore = pay.sessions.length
+  const fz = await C.post('/api/chain-orders', good({ expect: { dueCents: 0 } }))
+  check('default: the order is recorded, nothing charged, Gully Pay not called', fz.status === 201 && fz.data.order.status === 'paid' && fz.data.order.payment.dueCents === 0 && pay.sessions.length === sessionsBefore)
+  check('default: the buyer sees Received, never Paid', fz.data.order.statusLabel === 'Received')
+  check('default: a free order has no checkout', (await C.post(`/api/chain-orders/${fz.data.order.id}/checkout`)).status === 409 && pay.sessions.length === sessionsBefore)
+  const fzRow = (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === fz.data.order.id)
+  check('default: the admin sees it as Received, ready to set up', fzRow.statusLabel === 'Received' && fzRow.next.includes('setting_up'))
+  const fzGone = await C.post(`/api/chain-orders/${fz.data.order.id}/cancel`)
+  check('default: the buyer can cancel a free order', fzGone.status === 200 && fzGone.data.order.status === 'cancelled')
+  const five = []
+  for (let i = 0; i < 5; i++) five.push(await C.post('/api/chain-orders', good({ expect: { dueCents: 0 } })))
+  check('default: free orders count towards the limit of five', five.every((r) => r.status === 201) && (await C.post('/api/chain-orders', good({ expect: { dueCents: 0 } }))).status === 429)
+  await toStatus(five[0].data.order.id, 'setting_up')
+  check('default: once a person starts, the buyer cannot cancel', (await C.post(`/api/chain-orders/${five[0].data.order.id}/cancel`)).status === 409)
+  const freeMails = []
+  orders.setChainMailFetchForTest(async (u, o) => (freeMails.push(JSON.parse(o.body)), { ok: true, status: 200 }))
+  await toStatus(five[0].data.order.id, 'live')
+  await new Promise((r) => setTimeout(r, 50))
+  check('default: a free order still gets its status mails', freeMails.length === 1 && /is live/.test(freeMails[0].subject))
+  Object.assign(process.env, { CHAIN_GULLYPAY_MERCHANT_ID: GP.merchantId, CHAIN_GULLYPAY_STORE_ID: GP.storeId, CHAIN_GULLYPAY_API_KEY: GP.apiKey, CHAIN_GULLYPAY_WEBHOOK_SECRET: GP.secret, CHAIN_TESTNET_TEST_CHARGE_USD: '1' })
 
   const { pageMeta } = await import('../server/seo.mjs')
   check('pages: the wizard is indexable on the app host, an order is not', pageMeta('app.gullylabs.xyz', '/create-chain').found === true && !pageMeta('app.gullylabs.xyz', '/create-chain').noindex && pageMeta('app.gullylabs.xyz', '/create-chain/orders/co_x').noindex === true)

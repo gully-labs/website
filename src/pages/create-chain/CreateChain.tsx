@@ -9,9 +9,10 @@ import { chip, input, pillGold, pillLine } from '../developers/styles'
 import { checkChainId, getOffer, getQuote, gullyExchange, hasGullySession, startCheckout, TALK_TO_US, type Offer, type Order, type Quote, type Tier } from './chainApi'
 import { ChainShell, PriceSummary } from './parts'
 
-/* Create a chain (app.gullylabs.xyz/create-chain): five steps ending in Gully Pay's hosted checkout. The server prices
-   everything (GET /api/chain-orders/quote); this page only shows it. Our own code, written clean: nothing here comes from
-   the Orbit deployment UI fork, which has no upstream licence. People provision each chain by hand for now. */
+/* Create a chain (app.gullylabs.xyz/create-chain): five steps ending in Gully Pay's hosted checkout, or in a recorded order
+   when nothing is due. The server prices everything (GET /api/chain-orders/quote); this page only shows it. Our own code,
+   written clean: nothing here comes from the Orbit deployment UI fork, which has no upstream licence. People provision
+   each chain by hand for now. */
 
 const STEPS: { label: string; icon: LucideIcon }[] = [
   { label: 'Chain', icon: Network },
@@ -59,7 +60,7 @@ const parentOf = (offer: Offer, d: Draft) => offer.parents[d.tier].find((p) => p
 const field = 'flex min-w-0 flex-col gap-1 text-[13px] text-muted'
 const panel = 'flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-4'
 
-function Stepper({ step, go }: { step: number; go: (n: number) => void }) {
+function Stepper({ step, go, free }: { step: number; go: (n: number) => void; free: boolean }) {
   return (
     <ol className="m-0 grid list-none grid-cols-5 gap-1 p-0" aria-label="Steps">
       {STEPS.map((s, i) => {
@@ -68,7 +69,7 @@ function Stepper({ step, go }: { step: number; go: (n: number) => void }) {
           <li key={s.label}>
             <button type="button" disabled={i >= step} onClick={() => go(i)} aria-current={i === step ? 'step' : undefined} className={`flex min-h-11 w-full flex-col items-center justify-center gap-1 rounded-input border text-[11px] ${i === step ? 'border-gold text-ink' : i < step ? 'border-line text-ink-2' : 'border-line text-faint'}`}>
               <Icon size={16} aria-hidden />
-              {s.label}
+              {free && s.label === 'Pay' ? 'Confirm' : s.label}
             </button>
           </li>
         )
@@ -201,7 +202,7 @@ function PlanStep({ offer, d, set }: { offer: Offer; d: Draft; set: (p: Partial<
   )
 }
 
-function ReviewStep({ offer, d }: { offer: Offer; d: Draft }) {
+function ReviewStep({ offer, d, free }: { offer: Offer; d: Draft; free: boolean }) {
   const rows: [string, string][] = [
     ['Name', d.name],
     ['Chain id', d.chainId],
@@ -222,7 +223,7 @@ function ReviewStep({ offer, d }: { offer: Offer; d: Draft }) {
           </div>
         ))}
       </dl>
-      <p className="m-0 text-[13px] leading-[1.4] text-muted">{offer.billing.note} A person at Gully Labs sets up your chain after payment.</p>
+      <p className="m-0 text-[13px] leading-[1.4] text-muted">{offer.billing.note} A person at Gully Labs sets up your chain {free ? 'once you place the order' : 'after payment'}.</p>
     </section>
   )
 }
@@ -299,6 +300,7 @@ export function CreateChainPage() {
     return true
   }, [d, id.state, quote, signedIn])
 
+  const free = quote?.dueCents === 0
   const pay = async () => {
     if (!offer || !quote) return
     setBusy(true)
@@ -337,12 +339,12 @@ export function CreateChainPage() {
 
   return (
     <ChainShell>
-      <Stepper step={d.step} go={(step) => set({ step })} />
+      <Stepper step={d.step} go={(step) => set({ step })} free={free} />
       <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-4 max-[860px]:grid-cols-1">
         <div className="flex min-w-0 flex-col gap-4">
           {d.step === 0 && <ChainStep offer={offer} d={d} set={set} id={id} />}
           {d.step === 1 && <PlanStep offer={offer} d={d} set={set} />}
-          {d.step === 2 && <ReviewStep offer={offer} d={d} />}
+          {d.step === 2 && <ReviewStep offer={offer} d={d} free={free} />}
           {d.step === 3 && (
             <section className={panel} aria-labelledby="step-signin">
               <h1 id="step-signin" className="m-0 text-[20px] font-semibold text-ink">
@@ -366,9 +368,13 @@ export function CreateChainPage() {
           {d.step === 4 && (
             <section className={panel} aria-labelledby="step-pay">
               <h1 id="step-pay" className="m-0 text-[20px] font-semibold text-ink">
-                Pay with Gully Pay
+                {free ? 'Place your order' : 'Pay with Gully Pay'}
               </h1>
-              {offer.checkout.enabled ? (
+              {free ? (
+                <p className="m-0 text-[14px] text-muted" data-testid="nothing-due">
+                  Nothing to pay today. We record your order and a person at Gully Labs sets up your chain.
+                </p>
+              ) : offer.checkout.enabled ? (
                 <p className="m-0 text-[14px] text-muted">You pay on Gully Pay's secure checkout, then come back here to follow your order.</p>
               ) : (
                 <p className="m-0 text-[14px] text-muted" data-testid="checkout-off">
@@ -378,9 +384,9 @@ export function CreateChainPage() {
                   </ExtLink>
                 </p>
               )}
-              <button type="button" className={pillGold} disabled={busy || !offer.checkout.enabled} onClick={() => void pay()} data-testid="pay">
-                {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <CreditCard size={18} aria-hidden />}
-                {busy ? 'Opening checkout…' : 'Go to checkout'}
+              <button type="button" className={pillGold} disabled={busy || !quote || (!free && !offer.checkout.enabled)} onClick={() => void pay()} data-testid="pay">
+                {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : free ? <Check size={18} aria-hidden /> : <CreditCard size={18} aria-hidden />}
+                {free ? (busy ? 'Placing your order…' : 'Place order') : busy ? 'Opening checkout…' : 'Go to checkout'}
               </button>
             </section>
           )}

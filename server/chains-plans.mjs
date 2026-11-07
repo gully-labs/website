@@ -47,27 +47,37 @@ export const CHAINS = {
 
 /* ---------------------------------------------------------- Create a chain: the order flow's prices --- */
 
+// OWNER TO CONFIRM: the mainnet base below has no public source. Mainnet orders stay shut until MAINNET_PRICE_CONFIRMED is
+// on (chain-orders.mjs), even with MAINNET_ORDERS on, so no customer can be charged an unconfirmed price.
+//
 // HOW THE NUMBERS WERE SET (owner, Nov 2026: "competitive pricing 15% cheaper"). Read 2026-11-07. Internal: never sent to
 // a page, and no page compares us with anyone, because a comparison needs a source and the base fee below has none.
 //   - conduit.xyz/pricing, Trial Testnet "$250 per month"                     -> ours $212.50 a month after the free days
 //   - conduit.xyz/pricing, Growth "Contact for pricing + 5% sequencer profit" -> ours 4.25% of sequencer profit
 //   - Conduit's old Growth base ($60,000 a year, our Oct 2026 note) is NOT published any more. $4,250 a month is that
 //     note less 15%: the owner's target, unsourced, until he confirms it.
-//   - caldera.xyz/pricing is a 404, and neither caldera.xyz nor docs.caldera.xyz shows a price: no Caldera benchmark.
+//   - caldera.xyz/pricing is a 404, and caldera.xyz shows no price or pricing link: no Caldera benchmark.
+//   - alchemy.com/rollups shows no plan or price (sales only). AltLayer and Gelato: no public rollup price found.
 export const PRICE_BENCHMARKS = {
   checkedAt: '2026-11-07',
   discountPct: 15,
+  ownerToConfirm: 'mainnet base $4,250 per month: Conduit no longer publishes the Growth base',
   sources: [
     { name: 'Conduit Trial Testnet', url: 'https://www.conduit.xyz/pricing', published: '$250 per month', ours: '$212.50 per month' },
     { name: 'Conduit Growth share', url: 'https://www.conduit.xyz/pricing', published: '5% sequencer profit', ours: '4.25% sequencer profit' },
     { name: 'Conduit Growth base', url: 'https://www.conduit.xyz/pricing', published: null, ours: '$4,250 per month (owner target, unsourced)' },
     { name: 'Caldera', url: 'https://caldera.xyz', published: null, ours: null },
+    { name: 'Alchemy Rollups', url: 'https://www.alchemy.com/rollups', published: null, ours: null },
   ],
 }
 
 // What a testnet order pays at checkout. A testnet chain is free for its free days, so this is not a price: it proves the
-// payment path, in testnet USDC.e (no value). 0 skips checkout: the order goes straight to Paid.
-export const TESTNET_TEST_CHARGE_USD = 1
+// payment path, in testnet USDC.e (no value). Default 0, because a hosted checkout can still offer real rails and the owner
+// has not approved a charge: the order is recorded, nothing is charged, and Gully Pay is not called.
+export function testChargeUsd(env = process.env) {
+  const n = Number(env.CHAIN_TESTNET_TEST_CHARGE_USD ?? 0)
+  return Number.isFinite(n) && n > 0 ? n : 0
+}
 
 /** Add-ons in the order flow. A number is a monthly price (0: included), null: priced with the customer. `fee`: a usage term. */
 export const ORDER_ADDONS = [
@@ -110,7 +120,7 @@ export function quoteOrder(tier, addonIds = []) {
   const addons = picked.map((a) => ({ id: a.id, name: a.name, usd: usdOf(a), fee: a.fee ?? null }))
   const addonMonthly = addons.reduce((n, a) => n + (a.usd ?? 0), 0)
   if (tier === 'testnet') {
-    const dueCents = Math.round(TESTNET_TEST_CHARGE_USD * 100)
+    const dueCents = Math.round(testChargeUsd() * 100)
     const monthlyUsd = CHAINS.testnet.monthlyUsd + addonMonthly
     return { tier, addons, dueCents, testCharge: dueCents > 0, freeDays: CHAINS.testnet.freeDays, monthlyUsd, sequencerProfitPct: null, daAtCost: false, priceWithUs: false, headline: `Free for ${CHAINS.testnet.freeDays} days`, after: `Then ${money(monthlyUsd)} a month, invoiced` }
   }

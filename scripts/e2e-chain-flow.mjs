@@ -22,8 +22,9 @@ if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true })
 const USER = { sub: 'sub-e2e', address: '0x' + 'a'.repeat(40) }
 const gid = await fakeGullyId({ 'tok-e2e': USER })
 const pay = await fakeGullyPay()
-for (const k of ['MAINNET_ORDERS', 'CHAIN_GULLYPAY_MODE']) delete process.env[k]
-Object.assign(process.env, { GULLY_ID_ISSUER: gid.url, GULLYPAY_API_URL: pay.url, GULLYPAY_CHECKOUT_URL: pay.url, CHAIN_GULLYPAY_MERCHANT_ID: GP.merchantId, CHAIN_GULLYPAY_STORE_ID: GP.storeId, CHAIN_GULLYPAY_API_KEY: GP.apiKey, CHAIN_GULLYPAY_WEBHOOK_SECRET: GP.secret })
+for (const k of ['MAINNET_ORDERS', 'MAINNET_PRICE_CONFIRMED', 'CHAIN_GULLYPAY_MODE']) delete process.env[k]
+// The journey below needs a charge. The default of $0, with no Gully Pay settings, has its own journey at the end.
+Object.assign(process.env, { CHAIN_TESTNET_TEST_CHARGE_USD: '1', GULLY_ID_ISSUER: gid.url, GULLYPAY_API_URL: pay.url, GULLYPAY_CHECKOUT_URL: pay.url, CHAIN_GULLYPAY_MERCHANT_ID: GP.merchantId, CHAIN_GULLYPAY_STORE_ID: GP.storeId, CHAIN_GULLYPAY_API_KEY: GP.apiKey, CHAIN_GULLYPAY_WEBHOOK_SECRET: GP.secret })
 const { admin, base: BASE } = await bootServer({ port: PORT })
 
 const browser = await chromium.launch({ headless: true })
@@ -53,7 +54,7 @@ const status = (page) => page.getByTestId('order-status')
 const next = (page) => page.getByTestId('next').click()
 
 /** Steps 1 to 4: from the empty form to the Pay step. Returns once Pay shows. */
-async function toPay(page, chainId, { width, first = false }) {
+async function toPay(page, chainId, { width, first = false, due = '$1.00', tag = '' }) {
   await page.goto(`${BASE}/create-chain`)
   await page.getByTestId('chain-name').waitFor()
   await page.getByTestId('chain-name').fill('Acme Chain')
@@ -62,7 +63,7 @@ async function toPay(page, chainId, { width, first = false }) {
   check(`${width} step 1: a taken id blocks Next`, await page.getByTestId('next').isDisabled())
   await page.getByTestId('chain-id').fill(String(chainId))
   await page.getByText('This id is free.').waitFor()
-  if (first) await shot(page, `1-chain-${width}`)
+  if (first) await shot(page, `${tag}1-chain-${width}`)
   await next(page)
 
   await page.getByTestId('tier-testnet').waitFor()
@@ -72,29 +73,29 @@ async function toPay(page, chainId, { width, first = false }) {
     check(`${width} step 2: the Nitro licence note shows`, /Arbitrum One, Arbitrum Nova or Arbitrum Sepolia/.test(await page.getByTestId('licence-note').innerText()))
     check(`${width} step 2: no price comparison on the page`, !/conduit|caldera/i.test(await page.locator('main').innerText()))
     check(`${width} live price: starts on the free testnet`, (await page.getByTestId('price-headline').innerText()) === 'Free for 30 days')
-    check(`${width} live price: the test payment is $1.00`, (await page.getByTestId('due-today').innerText()) === '$1.00')
+    check(`${width} live price: due today is ${due}`, (await page.getByTestId('due-today').innerText()) === due)
     const before = await page.getByTestId('price-summary').innerText()
     await page.getByTestId('addon-gully-core').click()
     await page.getByTestId('price-summary').getByText('0.30% of every trade').waitFor()
     check(`${width} live price: an add-on updates the summary`, (await page.getByTestId('price-summary').innerText()) !== before)
-    await shot(page, `2-plan-${width}`)
+    await shot(page, `${tag}2-plan-${width}`)
   }
   await next(page)
   await page.getByRole('heading', { name: 'Check your order' }).waitFor()
-  if (first) await shot(page, `3-price-${width}`)
+  if (first) await shot(page, `${tag}3-price-${width}`)
   await next(page)
 
   await page.getByRole('heading', { name: 'Sign in with Gully ID' }).waitFor()
   if (first) {
     check(`${width} step 4: Next waits for Gully ID`, await page.getByTestId('next').isDisabled())
-    await shot(page, `4-signin-${width}`)
+    await shot(page, `${tag}4-signin-${width}`)
     await page.getByRole('button', { name: 'Sign in with Gully ID' }).click()
   }
   await page.getByTestId('signed-in').waitFor()
   await page.getByTestId('chain-email').fill('team@example.com')
   await next(page)
   await page.getByTestId('pay').waitFor()
-  if (first) await shot(page, `5-pay-${width}`)
+  if (first) await shot(page, `${tag}5-pay-${width}`)
 }
 
 let n = 7_200_000
@@ -178,6 +179,32 @@ for (const width of [390, 1440]) {
   await noScroll(ap, `${width} admin`)
   await actx.close()
 
+  w.verify()
+  await ctx.close()
+}
+
+/* The default on the live site: no charge and no Gully Pay settings. The order is recorded and nothing is charged. */
+delete process.env.CHAIN_TESTNET_TEST_CHARGE_USD
+delete process.env.CHAIN_GULLYPAY_API_KEY
+for (const width of [390, 1440]) {
+  const ctx = await context(width)
+  const page = await ctx.newPage()
+  const w = watch(page, `${width} default`)
+  await toPay(page, ++n, { width, first: true, due: '$0.00', tag: 'free-' })
+  check(`${width} default: the last step says nothing is due`, await page.getByTestId('nothing-due').isVisible())
+  check(`${width} default: it never says pay`, !/Pay with Gully Pay|Go to checkout/.test(await page.locator('main').innerText()))
+  const before = pay.sessions.length
+  await page.getByTestId('pay').click()
+  await page.waitForURL('**/create-chain/orders/**')
+  await status(page).waitFor()
+  check(`${width} default: the order is recorded as Received`, (await status(page).innerText()) === 'Received')
+  check(`${width} default: Gully Pay was never called`, pay.sessions.length === before)
+  check(`${width} default: the page does not call it paid`, !/\bPaid\b/.test(await page.locator('main').innerText()))
+  await shot(page, `free-order-${width}`)
+  await noScroll(page, `${width} default order page`)
+  await page.getByTestId('order-cancel').click()
+  await page.getByText('Order cancelled').waitFor({ timeout: 12_000 })
+  check(`${width} default: the buyer can cancel it`, (await status(page).innerText()) === 'Cancelled')
   w.verify()
   await ctx.close()
 }

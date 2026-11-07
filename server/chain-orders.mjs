@@ -16,18 +16,23 @@
 //     503 { code: 'checkout-off' } Gully Pay is not connected yet
 //   GET  /api/chain-orders/:id                       { order } the buyer's own; anyone else gets 404
 //   POST /api/chain-orders/:id/checkout              { payUrl } opens a hosted checkout, or returns the one still open
-//   POST /api/chain-orders/:id/cancel                { order } before payment only; frees the chain id
+//   POST /api/chain-orders/:id/cancel                { order } before payment, or on an order with nothing to pay; frees the chain id
 // ADMIN (admin.mjs, after its own auth)
 //   GET  /api/admin/chain-orders                     { orders } every order, with internal fields
 //   POST /api/admin/chain-orders/:id/status          { status, note? } paid -> setting_up -> live; any -> cancelled
 //
 // STATUS  awaiting_payment -> paid -> setting_up -> live, and cancelled. ONLY a verified webhook sets paid (or a quote
-// that charges nothing). An admin cannot mark an order paid.
+// that charges nothing). An admin cannot mark an order paid. A quote that charges nothing shows as Received, never Paid.
+//
+// WHAT TAKES MONEY. By default nothing does: a testnet order charges $0 and needs no Gully Pay settings, and mainnet is shut.
+//   CHAIN_TESTNET_TEST_CHARGE_USD   0 (default): a testnet order is recorded with no payment. Above 0: that charge, by checkout.
+//   MAINNET_ORDERS, MAINNET_PRICE_CONFIRMED   both on to open mainnet. The second is the owner confirming the base price
+//                                             (chains-plans.mjs): it has no public source.
 //
 // GULLY PAY. Chain orders use THEIR OWN store, never the HolderMaps store of gullypay.mjs:
 //   CHAIN_GULLYPAY_STORE_ID, CHAIN_GULLYPAY_MERCHANT_ID, CHAIN_GULLYPAY_API_KEY, CHAIN_GULLYPAY_WEBHOOK_SECRET
 //   CHAIN_GULLYPAY_MODE  test (default) | live
-//   MAINNET_ORDERS       off (default) | on: mainnet orders also need CHAIN_GULLYPAY_MODE=live
+//   MAINNET_ORDERS       off (default) | on: mainnet orders also need MAINNET_PRICE_CONFIRMED and CHAIN_GULLYPAY_MODE=live
 // Gully Pay has no sandbox in its code (its docs describe rk_test_ keys; every key is rk_<hex>). "Test mode" here is
 // testnet USDC.e on chain 485590 for that store's key (GULLY_CHAIN_TESTNET_CHECKOUT_MERCHANTS on Gully Pay). A hosted
 // checkout can still offer real rails, so a test order that is paid any other way is NOT marked paid: it is held for a
@@ -59,6 +64,11 @@ export const STATUSES = ['awaiting_payment', 'paid', 'setting_up', 'live', 'canc
 const NEXT = { awaiting_payment: ['cancelled'], paid: ['setting_up', 'cancelled'], setting_up: ['live', 'cancelled'], live: ['cancelled'], cancelled: [] }
 const LABEL = { awaiting_payment: 'Awaiting payment', paid: 'Paid', setting_up: 'Setting up', live: 'Live', cancelled: 'Cancelled' }
 const TAKEN = (o) => o.status !== 'cancelled'
+/** Nothing was charged. It is "paid" to the state machine; the buyer, the admin and the mails say Received. */
+const nothingDue = (o) => o.quote.dueCents === 0
+const labelOf = (o) => (o.status === 'paid' && nothingDue(o) ? 'Received' : LABEL[o.status])
+/** Counts against the limit: waiting to pay, or a free order a person has not finished. */
+const stillOpen = (o) => o.status === 'awaiting_payment' || (nothingDue(o) && (o.status === 'paid' || o.status === 'setting_up'))
 export const MAX_OPEN_PER_BUYER = 5
 const RESERVE_MS = 7 * 86_400_000
 const SESSION_MS = 30 * 60_000
@@ -75,7 +85,7 @@ const RESERVED = new Map([[485590, 'Gully Chain Testnet'], [48559, 'Gully Chain'
 /* ------------------------------------------------------------------ config --- */
 
 const on = (v) => ['on', 'true', '1', 'yes'].includes(String(v ?? '').trim().toLowerCase())
-export const mainnetOrdersOn = (env = process.env) => on(env.MAINNET_ORDERS)
+export const mainnetOrdersOn = (env = process.env) => on(env.MAINNET_ORDERS) && on(env.MAINNET_PRICE_CONFIRMED)
 export const payMode = (env = process.env) => (String(env.CHAIN_GULLYPAY_MODE ?? '').trim().toLowerCase() === 'live' ? 'live' : 'test')
 
 /** Gully Pay settings for chain orders: the shared API address, this product's own store and secret. */
@@ -133,7 +143,7 @@ const paymentView = (o) => {
   const last = o.sessions.at(-1)
   return { mode: o.mode, testCharge: o.quote.testCharge, dueCents: o.quote.dueCents, lastError: o.lastError ?? null, sessionOpen: !!last && last.status === 'open' && Date.parse(last.expiresAt) > Date.now(), onHold: o.review.some((r) => !r.resolved) }
 }
-const buyerView = (o) => ({ id: o.id, status: o.status, statusLabel: LABEL[o.status], tier: o.tier, name: o.name, chainId: o.chainId, gasToken: o.gasToken, gasSymbol: o.gasSymbol, parent: o.parent, quote: o.quote, logo: o.logo, email: o.email, createdAt: o.createdAt, paidAt: o.paidAt, history: o.history, payment: paymentView(o) })
+const buyerView = (o) => ({ id: o.id, status: o.status, statusLabel: labelOf(o), tier: o.tier, name: o.name, chainId: o.chainId, gasToken: o.gasToken, gasSymbol: o.gasSymbol, parent: o.parent, quote: o.quote, logo: o.logo, email: o.email, createdAt: o.createdAt, paidAt: o.paidAt, history: o.history, payment: paymentView(o) })
 const listView = (o) => ({ ...buyerView(o), logo: null })
 const adminView = (o) => ({ ...buyerView(o), address: o.address, gullySub: o.gullySub, review: o.review, sessions: o.sessions.map((s) => ({ id: s.id, status: s.status, createdAt: s.createdAt, expiresAt: s.expiresAt })), next: NEXT[o.status] })
 
@@ -207,7 +217,7 @@ export const setChainMailFetchForTest = (f) => (mailImpl = f ?? ((...a) => fetch
 
 const orderUrl = (o) => `${APP_URL}/create-chain/orders/${o.id}`
 const MAIL = {
-  paid: (o) => [`Payment received for ${o.name}`, `We have your order for ${o.name} (chain ${o.chainId}). A person at Gully Labs sets it up next.`],
+  paid: (o) => [nothingDue(o) ? `Order received for ${o.name}` : `Payment received for ${o.name}`, `We have your order for ${o.name} (chain ${o.chainId}). A person at Gully Labs sets it up next.`],
   setting_up: (o) => [`We are setting up ${o.name}`, `${o.name} (chain ${o.chainId}) is being set up now.`],
   live: (o) => [`${o.name} is live`, `${o.name} (chain ${o.chainId}) is live. Your order page has the details.`],
   cancelled: (o) => [`Your order for ${o.name} is cancelled`, `The order for ${o.name} (chain ${o.chainId}) is cancelled. Write to team@gullylabs.xyz with any questions.`],
@@ -236,7 +246,7 @@ async function sendMail(o, status) {
 }
 
 function tell(o, title, extra = []) {
-  void notifyIntake({ kind: 'chain-order', title: `${title}: ${o.name}`, fields: [['Chain id', String(o.chainId)], ['Tier', o.tier], ['Status', LABEL[o.status]], ...extra] })
+  void notifyIntake({ kind: 'chain-order', title: `${title}: ${o.name}`, fields: [['Chain id', String(o.chainId)], ['Tier', o.tier], ['Status', labelOf(o)], ...extra] })
 }
 
 function hold(o, code, detail) {
@@ -405,7 +415,7 @@ async function createOrder(req, res, who) {
   const d = load()
   const same = d.orders.find((o) => o.chainId === row.chainId && heldBy(o, who.address))
   if (same) return json(res, 200, { order: buyerView(same), duplicate: true })
-  if (d.orders.filter((o) => heldBy(o, who.address) && o.status === 'awaiting_payment').length >= MAX_OPEN_PER_BUYER) return json(res, 429, { error: 'You have five unpaid orders. Pay or cancel one first.' })
+  if (d.orders.filter((o) => heldBy(o, who.address) && stillOpen(o)).length >= MAX_OPEN_PER_BUYER) return json(res, 429, { error: 'You have five open orders. Finish or cancel one first.' })
   const at = nowIso()
   const paidNow = row.quote.dueCents === 0
   const o = { id: `co_${crypto.randomBytes(12).toString('base64url')}`, address: who.address, gullySub: who.sub, ...row, mode, status: 'awaiting_payment', createdAt: at, paidAt: null, paidSession: null, paidBy: null, lastError: null, sessions: [], review: [], history: [{ at, status: 'awaiting_payment', by: 'buyer', note: null }] }
@@ -461,7 +471,8 @@ export async function handleChainOrders(req, res, url) {
   if (!o || o.address !== who.address) return json(res, 404, { error: 'No such order.' }), true
   if (!m[2]) return get ? json(res, 200, { order: buyerView(o) }, noStore) : json(res, 405, { error: 'GET only' }), true
   if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
-  if (o.status !== 'awaiting_payment') return json(res, 409, { error: 'This order is already past payment.', code: 'not-awaiting-payment', order: buyerView(o) }), true
+  const freeCancel = m[2] === 'cancel' && o.status === 'paid' && nothingDue(o)
+  if (o.status !== 'awaiting_payment' && !freeCancel) return json(res, 409, { error: 'This order is already past payment.', code: 'not-awaiting-payment', order: buyerView(o) }), true
 
   if (m[2] === 'cancel') {
     setStatus(o, 'cancelled', { by: 'buyer' })

@@ -396,7 +396,7 @@ function pageMetaFor(host, pathname) {
   }
   // The Gully Labs App.
   if (isAppHost(host) && /^\/create-chain\/orders(\/|$)/.test(p)) return { title: 'Your chain order · Gully Labs', description: 'The status of your chain order.', canonical: null, noindex: true, found: true, image: `${SITE}/social/og-developers.png` }
-  if (isAppHost(host) && p === '/create-chain') return { title: 'Create a chain · Gully Labs', description: 'Order your own Arbitrum Orbit chain: testnet free for 30 days, with explorer, bridge, faucet, RPC, Gully Core and Gully Multisig. Pay with Gully Pay.', canonical: `${APP}/create-chain`, found: true, image: `${SITE}/social/og-developers.png` }
+  if (isAppHost(host) && p === '/create-chain') return { title: 'Create a chain · Gully Labs', description: 'Order your own Arbitrum Orbit chain: testnet free for 30 days, with explorer, bridge, faucet, RPC, Gully Core and Gully Multisig. A person at Gully Labs sets up each chain.', canonical: `${APP}/create-chain`, found: true, image: `${SITE}/social/og-developers.png` }
   if (isAppHost(host))
     return { title: APP_TITLE, description: APP_DESCRIPTION, canonical: `${APP}/`, found: true, image: `${SITE}/social/og-developers.png` }
   // The admin app is one page at the root of its host; any other path is not a page.

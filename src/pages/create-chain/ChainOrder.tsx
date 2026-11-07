@@ -18,15 +18,18 @@ const STAGES: { status: OrderStatus; label: string; icon: LucideIcon }[] = [
 ]
 const RANK: Record<OrderStatus, number> = { awaiting_payment: -1, cancelled: -1, paid: 0, setting_up: 1, live: 2 }
 
-function Progress({ status }: { status: OrderStatus }) {
+/** With nothing to pay, the first stage says Received: this order was never paid. */
+const stagesOf = (order: Order) => (order.quote.dueCents === 0 ? STAGES.map((s) => (s.status === 'paid' ? { ...s, label: 'Received' } : s)) : STAGES)
+
+function Progress({ status, stages }: { status: OrderStatus; stages: typeof STAGES }) {
   const at = RANK[status]
   return (
     <ol className="m-0 flex list-none flex-col gap-3 p-0" aria-label="Order status" data-testid="order-progress">
       <li aria-hidden className="h-1 overflow-hidden rounded-bar bg-line">
-        <div className="h-full bg-gold transition-[width] duration-700 ease-out" style={{ width: `${((at + 1) / STAGES.length) * 100}%` }} />
+        <div className="h-full bg-gold transition-[width] duration-700 ease-out" style={{ width: `${((at + 1) / stages.length) * 100}%` }} />
       </li>
       <li className="grid grid-cols-3 gap-2">
-        {STAGES.map((s, i) => {
+        {stages.map((s, i) => {
           const Icon = i <= at ? Check : s.icon
           return (
             <span key={s.status} aria-current={i === at ? 'step' : undefined} className={`flex flex-col items-center gap-1 text-[13px] ${i <= at ? 'text-ink' : 'text-faint'}`}>
@@ -149,7 +152,7 @@ export function ChainOrderPage() {
             {order.status === 'cancelled' ? (
               <p className="m-0 text-[14px] text-muted">This order is closed and its chain id is free again.</p>
             ) : (
-              <Progress status={order.status} />
+              <Progress status={order.status} stages={stagesOf(order)} />
             )}
             {order.payment.onHold && (
               <p className="m-0 text-[14px] text-muted" data-testid="order-hold">
@@ -157,12 +160,14 @@ export function ChainOrderPage() {
               </p>
             )}
             {order.payment.lastError && <p className="m-0 text-[13px] text-error" data-testid="order-error">{order.payment.lastError}</p>}
-            {awaiting && !order.payment.onHold && (
+            {((awaiting && !order.payment.onHold) || (order.status === 'paid' && order.quote.dueCents === 0)) && (
               <div className="flex flex-wrap gap-2">
-                <button type="button" className={pillGold} disabled={busy} onClick={() => void pay()} data-testid="order-pay">
-                  {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <CreditCard size={18} aria-hidden />}
-                  Pay {usd(order.payment.dueCents)}
-                </button>
+                {awaiting && (
+                  <button type="button" className={pillGold} disabled={busy} onClick={() => void pay()} data-testid="order-pay">
+                    {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <CreditCard size={18} aria-hidden />}
+                    Pay {usd(order.payment.dueCents)}
+                  </button>
+                )}
                 <button type="button" className={pillLine} disabled={busy} onClick={() => void cancel()} data-testid="order-cancel">
                   <X size={16} aria-hidden />
                   Cancel order
@@ -177,7 +182,7 @@ export function ChainOrderPage() {
             <ol className="m-0 flex list-none flex-col gap-2 p-0">
               {[...order.history].reverse().map((h) => (
                 <li key={`${h.at}-${h.status}`} className="flex flex-col">
-                  <span className="text-[13px] text-ink-2">{STAGES.find((s) => s.status === h.status)?.label ?? (h.status === 'cancelled' ? 'Cancelled' : 'Order placed')}</span>
+                  <span className="text-[13px] text-ink-2">{stagesOf(order).find((s) => s.status === h.status)?.label ?? (h.status === 'cancelled' ? 'Cancelled' : 'Order placed')}</span>
                   {h.note && <span className="text-[13px] text-muted">{h.note}</span>}
                   <time dateTime={h.at} className="font-mono text-[11px] text-faint">
                     {dateTimePT(h.at)}
