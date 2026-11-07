@@ -35,6 +35,7 @@ import { EcosystemSubmissions } from './EcosystemSubmissions'
 
 // The live charts (and ECharts with them) load on demand, after the dashboard's own figures.
 const AdminCharts = lazy(() => import('./AdminCharts'))
+const RevenueAdmin = lazy(() => import('./RevenueAdmin'))
 
 /* The private admin dashboard. Everything comes from /api/admin/* behind ADMIN_TOKEN; the token is
    kept in this tab's sessionStorage only. Refreshes every 30 seconds. Not linked from the site.
@@ -926,6 +927,12 @@ export function AdminPage() {
             </Suspense>
 
             <FeeProxyCard s={o.feeProxy} act={act} />
+            </Sec>
+
+            <Sec id="revenue" at={sec}>
+              <Suspense fallback={<ChartBox height={280} state="loading" />}>
+                <RevenueAdmin token={token} />
+              </Suspense>
             </Sec>
 
             <Sec id="traffic" at={sec}>
