@@ -107,7 +107,7 @@ export function Tracker() {
 
   return (
     <>
-      <Seo title="Stock token tracker" description="Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price, with the gap, pool depth and feed time. Read from Chainlink (or, for some Solana xStocks, the issuer) and the pools themselves." />
+      <Seo page="/tracker" />
 
       <section className="flex flex-col gap-4 px-page pt-10 pb-5">
         <div className="flex flex-wrap items-end justify-between gap-4">

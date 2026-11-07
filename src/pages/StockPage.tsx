@@ -25,6 +25,8 @@ import { HolderMap } from '../components/holders/HolderMap'
 import { HoldersChip } from '../components/holders/HoldersChip'
 import { TokenLogo } from '../components/logos/TokenLogo'
 import { feeText, jupiterFeeText } from '../components/swap/swapConfig'
+import { stockSeo } from '../content/seoPages'
+import { fillCopy, STOCK_COPY } from '../content/stockCopy'
 
 /* One stock token on one chain: everything the tracker knows about it, read live. Nothing on this page is
    typed in; a value that could not be read says so. */
@@ -108,10 +110,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
 
   return (
     <>
-      <Seo
-        title={`${row.ticker} token price vs fair price`}
-        description={`${row.name} (${row.ticker}) token on ${CHAIN_NAME[row.chain] ?? row.chain}: its price in its deepest pool against its ${fairSourceLabel(row)} fair price, the gap, pool depth and history, read live.`}
-      />
+      <Seo {...stockSeo(row.chain, row.ticker, row.name)} />
 
       <section className="px-page pt-10 pb-8">
         <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 font-mono text-[12px] text-faint" style={rise(0)}>
@@ -186,7 +185,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
       <section className="grid grid-cols-[2fr_1fr] items-start gap-5 px-page pb-8 max-[1099px]:grid-cols-1">
         <div className="flex min-w-0 flex-col gap-5">
           <div className={card} style={rise(4)}>
-            <h2 className="m-0 font-display text-h4 font-bold uppercase">Gap to fair price</h2>
+            <h2 className="m-0 font-display text-h4 font-bold uppercase">{STOCK_COPY.headings.gap}</h2>
             <GapHistory chain={row.chain} ticker={row.ticker} inLinePct={data.rules.inLinePct} />
             <span className="font-mono text-[11px] leading-[1.5] text-faint">
               {row.pool ? `${row.pool.dex}${row.pool.labels.length ? ` ${row.pool.labels.join('/')}` : ''} · ${row.ticker}/${row.pool.against}` : 'no pool'} · {chain?.fairMethod ?? 'fair from Chainlink'}
@@ -195,7 +194,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
             </span>
           </div>
           <div className={card} style={rise(5)}>
-            <h2 className="m-0 font-display text-h4 font-bold uppercase">Pool depth</h2>
+            <h2 className="m-0 font-display text-h4 font-bold uppercase">{STOCK_COPY.headings.depth}</h2>
             <PoolDepth pool={row.pool} ticker={row.ticker} />
           </div>
         </div>
@@ -206,9 +205,9 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
             <StockSwap row={row} alerts={alerts} />
           </div>
           <div className={card} style={rise(6)}>
-            <h2 className="m-0 font-display text-h4 font-bold uppercase">Contracts</h2>
-            <CopyAddress label="TOKEN" address={row.token} chain={row.chain} />
-            <CopyAddress label={row.fairSource === 'backed' ? 'FAIR PRICE SOURCE' : row.chain === 'solana' ? `CHAINLINK FEED · ${fairSourceLabel(row).replace('Chainlink on ', '').toUpperCase()}` : 'CHAINLINK FEED'} address={row.feed} chain={fairFeedChain(row)} />
+            <h2 className="m-0 font-display text-h4 font-bold uppercase">{STOCK_COPY.headings.contracts}</h2>
+            <CopyAddress label={STOCK_COPY.labels.token} address={row.token} chain={row.chain} />
+            <CopyAddress label={row.fairSource === 'backed' ? 'FAIR PRICE SOURCE' : row.chain === 'solana' ? `CHAINLINK FEED · ${fairSourceLabel(row).replace('Chainlink on ', '').toUpperCase()}` : STOCK_COPY.labels.feed} address={row.feed} chain={fairFeedChain(row)} />
             {row.pool && <CopyAddress label="POOL" address={row.pool.pair} chain={row.chain} />}
           </div>
           <div className={card} style={rise(7)}>
@@ -246,19 +245,19 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
           /holders chips), so this section never shows a map-shaped box that cannot be read. */}
       <section className="px-page pb-8" aria-labelledby="who-holds" id="holders">
         <h2 id="who-holds" className="m-0 mb-4 flex items-center gap-3 font-display text-h4 font-bold uppercase">
-          <TokenLogo symbol={row.ticker} chain={servable(row.chain, row.token) ? row.chain : null} address={servable(row.chain, row.token) ? row.token : null} size={24} decorative /> Who holds {row.ticker}?
+          <TokenLogo symbol={row.ticker} chain={servable(row.chain, row.token) ? row.chain : null} address={servable(row.chain, row.token) ? row.token : null} size={24} decorative /> {fillCopy(STOCK_COPY.headings.holders, { ticker: row.ticker })}
         </h2>
         <HolderMap chain={row.chain} token={row.ticker} tradeHref="#swap" />
       </section>
 
       <section className="px-page pb-8" aria-labelledby="how-swaps-work">
-        <h2 id="how-swaps-work" className="m-0 mb-4 font-display text-h4 font-bold uppercase">How swaps work</h2>
+        <h2 id="how-swaps-work" className="m-0 mb-4 font-display text-h4 font-bold uppercase">{STOCK_COPY.headings.swaps}</h2>
         <dl className="m-0 grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-5">
           {[
             { q: 'Who runs the swap?', a: row.chain === 'solana' ? `The swap card asks Jupiter, Solana's swap aggregator, for the best route among the Solana exchanges that trade ${row.symbol ?? row.ticker} and has it build the transaction; your wallet signs it and those exchanges carry it out.` : `The swap card is LI.FI's widget. LI.FI looks for the best route among the exchanges on ${CHAIN_NAME[row.chain] ?? row.chain} that trade ${row.ticker} and builds the transaction; those exchanges carry it out.` },
-            { q: 'Does Gully Labs hold my funds?', a: 'No. Your wallet signs each transaction and tokens move straight between your wallet and the exchange contracts. Gully Labs never has custody and cannot reverse a swap.' },
+            STOCK_COPY.faq[0],
             { q: 'What does it cost?', a: `The quote shows the network fee, the exchange fees and the expected slippage before you confirm. ${row.chain === 'solana' ? jupiterFeeText() : feeText()}` },
-            { q: 'Who can use it?', a: `Not US persons, and not in sanctioned regions; the card stays closed there. ${row.ticker} is issued by a third party whose own terms apply and who can pause or block the token.` },
+            { q: STOCK_COPY.faq[1].q, a: fillCopy(STOCK_COPY.faq[1].a, { ticker: row.ticker }) },
           ].map((f) => (
             <div key={f.q} className="flex flex-col gap-2 rounded-card border border-line bg-surface p-5">
               <dt className="text-[15px] font-semibold text-ink">{f.q}</dt>
@@ -269,7 +268,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
       </section>
 
       <section className="px-page pb-16">
-        <h2 className="m-0 mb-4 font-display text-h4 font-bold uppercase">More on {CHAIN_NAME[row.chain] ?? row.chain}</h2>
+        <h2 className="m-0 mb-4 font-display text-h4 font-bold uppercase">{fillCopy(STOCK_COPY.headings.more, { chain: CHAIN_NAME[row.chain] ?? row.chain })}</h2>
         <div className="flex flex-wrap gap-2">
           {siblings.map((r) => (
             <Link key={r.ticker} to={stockPath(r)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-surface py-[5px] pr-3 pl-[5px] text-[13px] text-ink-2 transition-colors hover:border-gold hover:text-ink">
@@ -282,7 +281,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
           ))}
         </div>
         <p className="m-0 mt-8 max-w-[760px] text-[13px] leading-[1.6] text-faint">
-          Information only, not investment advice. Gaps can close or widen before a trade lands, and pools carry fees and slippage. Stock tokens are issued by third parties who can pause, block or change them, and may not be available where you live.
+          {STOCK_COPY.disclaimer}
         </p>
       </section>
     </>

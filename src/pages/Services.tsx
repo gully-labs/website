@@ -12,10 +12,7 @@ export function Services() {
   const ref = useReveal<HTMLDivElement>()
   return (
     <div className="lcp gt" ref={ref}>
-      <Seo
-        title="Services: web3 development"
-        description="Gully Labs builds for other teams: L2/L3 chain launch, smart contracts, security reviews and monitoring, dApp/web/mobile apps, payments, RPC and infrastructure, token launch and quests, AI integration and Unity game development."
-      />
+      <Seo page="/services" />
       <section className="gt-hero gt-phero" aria-labelledby="s-h">
         <div className="gt-wrap gt-one">
           <div className="gt-hero-copy rise">

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/build-ask-index.mjs",
+    "prebuild": "node scripts/build-ask-index.mjs && node scripts/build-page-content.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -44,6 +44,8 @@
     "test:legal": "node scripts/test-legal.mjs",
     "test:nav-icons": "node scripts/test-nav-icons.mjs",
     "test:og": "node scripts/test-og.mjs",
+    "test:seo-audit": "node scripts/test-seo-audit.mjs",
+    "seo:content": "node scripts/build-page-content.mjs",
     "test:security": "node scripts/test-security-engine.mjs",
     "test:security-routes": "node scripts/test-security-routes.mjs",
     "ask:index": "node scripts/build-ask-index.mjs",

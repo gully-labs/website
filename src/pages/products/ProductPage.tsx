@@ -10,7 +10,8 @@ import { Seo } from '../../components/Seo'
 import { fmtInt, fmtPct, fmtUsd } from '../../console/charts'
 import { chainHead, useLive, type Live } from '../../console/live'
 import '../../terminal/terminal.css'
-import { PRODUCTS, productBySlug, SERVICES, type ProductDef } from '../../terminal/catalog'
+import { pricingNote, PRODUCT_SECTIONS, productFaq, PRODUCTS, productBySlug, SERVICE_FOR, SERVICES, type ProductDef } from '../../terminal/catalog'
+import { productSeo } from '../../content/seoPages'
 import { A, ACCENT, BlockStrip, Dot, Empty, fmtCompact, fmtEth, fmtMs, HBars, hourLabel, Kpi, latencySeries, Logo, minLabel, Panel, S, SecHead, stateOf, sum, TChart, UptimeGrid, useHubProducts, usePlans, useReveal, type ChartTab, type HubProducts, type Plans } from '../../terminal/kit'
 import { chainTabs } from '../../terminal/liveTabs'
 import type { HubLive } from '../hub/hubData'
@@ -693,11 +694,9 @@ function Pricing({ p, plans }: { p: ProductDef; plans: Plans | null }) {
       </table>
     )
   }
-  const text = p.pricing === 'free-testnet' ? 'Free on testnet. Mainnet pricing is published when mainnet opens.' : p.pricing === 'quoted' ? 'Quoted per project. Tell us what you need below.' : `Plans and fees are published on ${p.urlLabel}, in USD.`
-  return <p className="gt-p">{text}</p>
+  return <p className="gt-p">{pricingNote(p)}</p>
 }
 
-const SERVICE_FOR: Partial<Record<string, string>> = { 'gully-sentry': 'security', chain: 'chain', street: 'apps', bridge: 'chain', safe: 'contracts', pay: 'payments', rpc: 'infra', holders: 'apps', security: 'security', ai: 'ai', studio: 'games', ipfs: 'infra', quests: 'launch', offerwall: 'launch', 'gully-social': 'apps', 'copy-trading': 'apps', 'gully-core': 'launch' }
 
 export function ProductView({ p }: { p: ProductDef }) {
   const live = useLive()
@@ -711,7 +710,7 @@ export function ProductView({ p }: { p: ProductDef }) {
   const idx = PRODUCTS.findIndex((x) => x.slug === p.slug)
   return (
     <div className="lcp gt" ref={ref}>
-      <Seo title={p.name} description={`${p.line} Live charts on this page.`} />
+      <Seo {...productSeo(p)} />
       <section className="gt-hero gt-phero" aria-labelledby="p-h">
         <div className="gt-wrap">
           <div className="gt-hero-copy rise">
@@ -778,7 +777,7 @@ export function ProductView({ p }: { p: ProductDef }) {
 
       <section className="gt-sec" aria-labelledby="feat-h">
         <div className="gt-wrap">
-          <SecHead n="02" label="Features" title="What it does" id="feat-h" />
+          <SecHead n="02" label="Features" title={PRODUCT_SECTIONS.features} id="feat-h" />
           <ul className="gt-feats">
             {p.features.map((f, i) => (
               <li key={f.t} className="rv" style={{ transitionDelay: `${(i % 3) * 50}ms` }}>
@@ -794,7 +793,7 @@ export function ProductView({ p }: { p: ProductDef }) {
       <section className="gt-sec" aria-labelledby="how-h">
         <div className="gt-wrap gt-cols">
           <div>
-            <SecHead n="03" label="How it works" title="Three steps" id="how-h" />
+            <SecHead n="03" label="How it works" title={PRODUCT_SECTIONS.how} id="how-h" />
             <ol className="gt-steps">
               {p.how.map(([t, x], i) => (
                 <li key={t} className="rv">
@@ -808,7 +807,7 @@ export function ProductView({ p }: { p: ProductDef }) {
             </ol>
           </div>
           <div>
-            <SecHead n="04" label="Pricing" title="Prices in USD" />
+            <SecHead n="04" label="Pricing" title={PRODUCT_SECTIONS.pricing} />
             <div className="rv">
               <Pricing p={p} plans={plans} />
             </div>
@@ -819,22 +818,18 @@ export function ProductView({ p }: { p: ProductDef }) {
       <section className="gt-sec" aria-labelledby="faq-h">
         <div className="gt-wrap gt-cols">
           <div>
-            <SecHead n="05" label="FAQ" title="Questions" id="faq-h" />
+            <SecHead n="05" label="FAQ" title={PRODUCT_SECTIONS.faq} id="faq-h" />
             <div className="gt-faq">
-              {p.faq.map(([q, a]) => (
+              {productFaq(p).map(([q, a]) => (
                 <details key={q} className="rv">
                   <summary>{q}</summary>
                   <p>{a}</p>
                 </details>
               ))}
-              <details className="rv">
-                <summary>Does {p.name} support Gully Chain?</summary>
-                <p>Yes. Every Gully product supports Gully Chain (chain 485590 on testnet today).</p>
-              </details>
             </div>
           </div>
           <div>
-            <SecHead n="06" label="Links" title="Go further" />
+            <SecHead n="06" label="Links" title={PRODUCT_SECTIONS.links} />
             <ul className="gt-links rv">
               <li>
                 <A href={p.url}>

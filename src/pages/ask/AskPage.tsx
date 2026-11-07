@@ -33,7 +33,7 @@ export function AskPage() {
   const st = status === 'loading' ? null : status
   return (
     <>
-      <Seo title="Gully AI: ask about Gully Labs" description="Ask Gully AI about Gully Labs: its products, the tracker and API, plans and docs. Every answer cites its sources and quotes live figures where they matter." />
+      <Seo page="/ask" />
       {/* Gully AI's own kit (src/brand/products.ts): its logo and palette for the whole page body. */}
       <GullyAiScope as="section" className="bg-bg px-page pt-[72px] pb-24 max-[600px]:pt-10" data-testid="ask-page">
         <div className="grid w-full grid-cols-[minmax(0,1fr)_400px] items-start gap-10 max-[1099px]:max-w-[760px] max-[1099px]:grid-cols-1">

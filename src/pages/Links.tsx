@@ -174,7 +174,7 @@ export function LinksPage() {
   let n = 0
   return (
     <>
-      <Seo title="Links" description="Every Gully Labs link in one place: the site, the app, the stock tracker, the Holder Map, Gully Security, Gully Score, Gully AI, Gully Analytics, Gully Pay, Chain Kit, docs, the roadmap, the Telegram bot and the news channel." />
+      <Seo page="/links" />
       <section className="relative isolate overflow-hidden bg-kit-lab-night">
         {/* The kit's background treatment: night gradient, 1 px bone grid (drifting), gold glow (pulsing). */}
         <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_70%_40%,#15132a_0%,#0a0914_50%,#08070f_100%)]" />

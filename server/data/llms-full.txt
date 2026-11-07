@@ -639,82 +639,6 @@ A Docker Compose file runs the app with PostgreSQL. The fork is MIT licensed, li
 
 URL: https://analytics.gullylabs.xyz
 
-### Launchpad (Gully Core, live)
-
-A token, its pool and locked liquidity are created in one transaction, with a decaying anti-snipe fee at the open.
-
-- LaunchpadKitV2 opens a launch on a concentrated-liquidity range or a shaped Bin distribution
-- Liquidity is locked forever via the Gully Core LP lockers (CL and Bin)
-- Anti-snipe fee: LaunchGuardHook caps the initial fee at 50% (MAX_INITIAL_FEE) and the final fee at 10%; README states 50% at the open, 10% on Bin, decaying over at least 60 seconds
-- Optional creator tax is capped at 10% (MAX_TAX_BPS = 1000) and expires by itself, at most 180 days
-- LaunchpadKitV2 is recorded in the SDK address book on Base, BNB Chain, HyperEVM and Robinhood Chain at the same address 0x78781DC6...
-- Wizard is market-cap-first with a $3.5K-equivalent default per the README
-
-URL: https://deepcore.fun
-
-### Hosted Launchpads and DEXes (Gully Core, live)
-
-Anyone can open their own Launchpad or DEX on the core in one transaction, with a share of fees going to the site.
-
-- The pad factory clones a pad at the same address on every chain (0x7878647B... in the address book)
-- Owner, name, brand and terms are stored on chain
-- Hosted site can use a deepcore.fun subdomain or the owner's own domain, with a theme pack and its own fee share (README)
-- Contracts: the pad and its pad factory in packages/launchpad/src/pad
-
-URL: https://deepcore.fun
-
-### Best-price router (Gully Core, live)
-
-Swaps route across Gully Core pools and other venues. Gully Core pools carry no router fee; fills on other venues pay a small capped fee.
-
-- The fill router charges feeBps() on fills elsewhere; README states 0.15%
-- The fee is bounded in the contract by ABSOLUTE_MAX_FEE_BPS = 100 (1%)
-- Fee changes use a notice period of up to MAX_FEE_NOTICE_SECONDS = 30 days
-- fillRouter is 0x78786244... on all four chains in the SDK address book
-
-URL: https://deepcore.fun
-
-### Locks, vesting, airdrops, splits and multisend (Gully Core, live)
-
-Utility contracts for locking liquidity or tokens, distributing tokens and splitting revenue.
-
-- Contracts: the position lock, token lock, Merkle drop with its drop factory, split with its split factory, and multisend
-- positionLock, tokenLock, splitFactory and multisend are recorded at the same address on HyperEVM, BNB Chain, Robinhood Chain and Base
-- Airdrops are Merkle-based
-
-URL: https://deepcore.fun
-
-### Limit orders and DCA (Gully Core, live)
-
-On-chain range (limit) orders and dollar-cost averaging contracts, deployed on three of the four chains.
-
-- Contracts: the range orders and DCA contracts
-- In the SDK address book rangeOrders and dca have addresses on HyperEVM, Robinhood Chain and Base, and are null on BNB Chain
-- Also in the repo but not in the README feature list: a managed vault and its vault factory (vaultFactory set on HyperEVM, Robinhood Chain and Base) and a liquidity-rewards hook
-
-URL: https://deepcore.fun
-
-### Same addresses on four chains (Gully Core, live)
-
-The core is deployed at the same contract addresses on HyperEVM, BNB Chain, Robinhood Chain and Base.
-
-- Chain IDs in the SDK address book: 999, 56, 4663, 8453
-- Address book is packages/sdk/src/deployments/index.ts; null means not deployed, never zero
-- Contracts are owned by a 2-of-3 Safe multisig and renounceOwnership is disabled on Gully Core's own contracts (README)
-- Built on the PancakeSwap Infinity architecture (GPL-2.0-or-later forks); SDK, widgets and tooling are MIT
-
-URL: https://deepcore.fun
-
-### SDK, widgets and scaffolders (Gully Core, beta)
-
-An MIT SDK, swap widgets and project scaffolders for builders. The README says npm publication is pending.
-
-- Packages in the repo: sdk, widgets, connect, cli, create-deepcore-app, create-deepcore-hook, router-core, tokenlists
-- npm scope @deepcoreprotocol; the README says publication is pending
-- Dynamic-fee hooks exist for CL and Bin pools (packages/hooks/src/dex)
-
-URL: https://deepcore.fun
-
 ### Swap (PeddleSwap, live)
 
 V2 and V3 liquidity behind one router, with an Auto mode that picks the better venue.
@@ -931,6 +855,13 @@ URL: https://multisig.gullychain.xyz
 - Verified contracts (building): Verified contracts show their source, ABI and compiler settings, with Read and Write tabs, from a self-hosted Sourcify server. A public explorer API is coming soon.
 - Chain launch interface (building): A rebranded Arbitrum Orbit deployment UI. It is not deployed and currently targets Arbitrum Sepolia only.
 - Gully Bridge (building): A fork of the Arbitrum token bridge for moving assets between a Gully chain and its parent chain. Only the README header is changed so far.
+- Launchpad (planned): A token, its pool and locked liquidity created in one transaction, with a decaying anti-snipe fee at the open.
+- Hosted Launchpads and DEXes (planned): Builders open their own launchpad or DEX on Gully Core.
+- Best-price router (planned): Swaps routed across Gully Core pools and other venues.
+- Locks, vesting, airdrops, splits and multisend (planned): Utility contracts for locking liquidity or tokens, distributing tokens and splitting revenue.
+- Limit orders and DCA (planned): On-chain range (limit) orders and dollar-cost averaging contracts.
+- Gully Core on more chains (planned): Gully Core on Anubis Network and other chains, as a service for builders.
+- SDK, widgets and scaffolders (planned): An SDK, swap widgets and project scaffolders for builders.
 - Gully AI API (building): An OpenAI-compatible API for the gully-ai model at ai.gullylabs.xyz/v1, documented at gullyai.xyz/docs; it goes live when the GPU server arrives.
 
 ## Projects

@@ -35,10 +35,7 @@ const extLink = 'inline-flex min-h-11 items-center gap-1 text-[14px] text-ink un
 export function GullyId() {
   return (
     <div className="flex flex-col gap-12 px-page pt-[72px] pb-24">
-      <Seo
-        title="Gully ID: the official sign-in service of Gully Labs"
-        description="Gully ID (gullyid.xyz) is the sign-in and wallet service built and operated by Gully Labs: one passkey for every Gully app. It never asks for a seed phrase or a private key."
-      />
+      <Seo page="/gully-id" />
       <section className="flex max-w-[760px] flex-col gap-5">
         <span className={eyebrow}>GULLY LABS · SIGN-IN SERVICE</span>
         <img src="/brand/gullyid/gullyid-lockup-on-dark.svg" width={176} height={52} alt="Gully ID" className="h-[52px] w-auto self-start" />

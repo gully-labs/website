@@ -92,7 +92,7 @@ const pill = 'inline-flex min-h-11 items-center gap-2 rounded-full border border
 export function LegalIndexPage() {
   return (
     <>
-      <Seo title="Legal: Terms and Privacy for every Gully product" description="The Terms of Service and Privacy Policy of every Gully Labs product in one place: Gully Labs, HolderMaps, Gully Chain, kre8.fun, Gully Pay, Gully ID, Gully RPC, Gully AI, Gully Security and Gully Studio." />
+      <Seo page="/legal" />
       <article className="relative px-page pt-[56px] pb-24 max-[600px]:pt-8" data-legal-page data-testid="legal-index">
         <div className="mx-auto flex max-w-[960px] flex-col gap-8">
           <header className="flex max-w-[70ch] flex-col gap-4" style={{ animation: 'gl-rise .5s ease both' }}>

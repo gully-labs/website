@@ -207,7 +207,7 @@ export function Pricing() {
   const [tab, setTab] = useState('api')
   return (
     <>
-      <Seo title="Pricing" description={`Plans for the Gully Labs tracker API and for Gully Analytics, paid in USDC, USDT or the chain's own coin on ${chainListToday(offer)}, with no custody.`} />
+      <Seo page="/pricing" />
 
       <section className="relative overflow-hidden px-page pt-8 pb-6">
         <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.14),transparent_62%)]" />

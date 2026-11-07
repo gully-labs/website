@@ -212,10 +212,7 @@ export function Ecosystem() {
 
   return (
     <div className="flex flex-col gap-14 px-page pt-10 pb-24">
-      <Seo
-        title="Ecosystem: our projects and what we integrate with"
-        description="Every Gully Labs project with its own live numbers: PeddleSwap (DEX), Peddles (launchpad) and PeddleQuest of the Peddle family, and Gully Chain. Plus the third-party services the code integrates with, and the launchpads on the Holder Map."
-      />
+      <Seo page="/ecosystem" />
       <section className="flex flex-col gap-4">
         <span className={eyebrow}>ECOSYSTEM · GULLY LABS</span>
         <h1 className="heading-1">What we build, what we use</h1>

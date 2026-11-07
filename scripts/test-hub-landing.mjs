@@ -141,10 +141,18 @@ test('product count: eight Gully-named products + the Peddle family, the same in
   const page = read('src/pages/hub/Constellation.tsx')
   assert.ok(!/Eight (connected )?products/.test(page), 'no stale count on the landing')
   assert.ok(page.includes('<PeddleFamily stats={stats}'), 'the family is in the product line-up')
-  const seo = read('server/seo.mjs')
-  assert.ok(seo.includes(`'/': ['Gully Labs · ${H.LANDING_TITLE}', '${H.LANDING_DESCRIPTION}']`), 'server title + description equal the page')
-  assert.ok(!/Eight connected/.test(seo))
-  for (const p of H.PEDDLE_FAMILY) assert.ok(seo.includes(`['${p.name}', '${p.url}']`), `${p.name} in the ItemList JSON-LD`)
+  // The server's head tags come from the same table as the page's (src/content/seoPages.ts, through
+  // server/data/page-content.json), and its product list from hubData: the two are read here as the server serves them.
+  const { pageMeta } = await import('../server/seo.mjs')
+  const served = pageMeta('gullylabs.xyz', '/')
+  assert.equal(served.title, `Gully Labs · ${H.LANDING_TITLE}`, 'server title equals the page')
+  assert.equal(served.description, H.LANDING_DESCRIPTION, 'server description equals the page')
+  assert.ok(H.LANDING_HEADLINE.join(' ').toLowerCase().includes(`${H.PRODUCT_COUNT_WORD} products`), 'the headline counts the products')
+  assert.equal(served.body.h1, H.LANDING_HEADLINE.join(' '), 'the served h1 is the page headline')
+  assert.ok(!/Eight connected/.test(read('server/seo.mjs')))
+  const list = served.ld.find((x) => x['@type'] === 'ItemList')
+  for (const p of H.PEDDLE_FAMILY) assert.ok(list.itemListElement.some((i) => i.name === p.name && i.url === p.url), `${p.name} in the ItemList JSON-LD`)
+  assert.equal(list.itemListElement.length, H.PRODUCT_COUNT, 'the ItemList counts every product')
   // llms.txt / llms-full.txt name the family and link the two sites
   for (const f of ['server/data/llms.txt', 'server/data/llms-full.txt']) {
     const t = read(f)

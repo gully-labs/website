@@ -5,6 +5,7 @@ import { Seo } from '../components/Seo'
 import { ShareMenu } from '../components/Share'
 import { btnOutline, statusPill } from '../components/ui'
 import { projectNumber, projects, TOTAL_SLOTS } from '../content/projects'
+import { projectSeo } from '../content/seoPages'
 import { useStats } from '../hooks/useStats'
 import { ChainLogo } from '../components/logos/ChainLogo'
 import { chainMark } from '../components/logos/registry'
@@ -49,7 +50,7 @@ export function ProjectDetail() {
 
   return (
     <div className="flex flex-col gap-10 px-page pt-10 pb-24">
-      <Seo title={p.name} description={`${p.tagline}. ${p.description}`} />
+      <Seo {...projectSeo(p)} />
 
       <Link
         to="/#projects"

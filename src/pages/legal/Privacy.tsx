@@ -123,7 +123,7 @@ const GLANCE = [
 export function PrivacyPage() {
   return (
     <>
-      <Seo title="Privacy Policy" description="What Gully Labs collects across the site, the app, Gully Analytics, Gully AI, Gully Security, the Holder Map, the Telegram bot and Gully Pay checkouts, why, who else sees it, where it is stored and how long it is kept." />
+      <Seo page="/privacy" />
       <LegalPage
         kicker="Legal · Privacy"
         title="Privacy Policy"

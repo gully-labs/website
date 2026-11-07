@@ -21,7 +21,7 @@ export function StatusPage() {
   }, [])
   return (
     <>
-      <Seo title="Status" description="Live status of Gully Labs: the API, tracker freshness per chain, the launch poller, the Telegram bot, Gully Pay RPCs, Gully AI, the security scan engine, monitors and Holder Map sources, with 24 h uptime and incidents." />
+      <Seo page="/status" />
       {/* A compact hero (D4-14): the live board starts within the first screen, as on /chains. */}
       <section className="relative overflow-hidden px-page pt-10 pb-8 max-[599px]:pt-8">
         <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.12),transparent_62%)]" />

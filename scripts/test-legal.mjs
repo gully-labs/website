@@ -71,7 +71,8 @@ try {
   for (const [p, h1, title] of [
     ['/terms', 'Terms of Service', 'Terms of Service · Gully Labs'],
     ['/privacy', 'Privacy Policy', 'Privacy Policy · Gully Labs'],
-    ['/legal', 'Legal: Terms and Privacy for every Gully product', 'Legal: Terms and Privacy for every Gully product · Gully Labs'],
+    // /legal: the served h1 is the page's own headline; its title fits 60 characters (scripts/test-seo-audit.mjs).
+    ['/legal', 'Terms and Privacy', 'Legal: Terms and Privacy · Gully Labs'],
   ]) {
     const res = await get(MAIN, p)
     const ld = ldOf(res.text)
@@ -150,7 +151,7 @@ try {
 
   /* ------------------------------------------------------ footers + consent --- */
   const chrome = read('src/console/Chrome.tsx')
-  check('gullylabs.xyz footer (every page, the home included): Terms, Privacy, Legal', /const legal: Item\[\] = \[[^\]]*to: '\/terms'[^\]]*to: '\/privacy'[^\]]*to: '\/legal'/.test(chrome) && chrome.includes('data-testid="footer-legal"'))
+  check('gullylabs.xyz footer (every page, the home included): Terms, Privacy, Legal', /export const FOOTER_LEGAL: NavLinkDef\[\] = \[[^\]]*to: '\/terms'[^\]]*to: '\/privacy'[^\]]*to: '\/legal'/.test(read('src/content/nav.ts')) && chrome.includes('withIcons(FOOTER_LEGAL)') && chrome.includes('data-testid="footer-legal"'))
   check('holdermaps.xyz footer: its own /terms and /privacy, and gullylabs.xyz/legal', /label: 'Terms', icon: FileText, to: '\/terms'/.test(read('src/holdermaps/HmChrome.tsx')) && /label: 'Privacy', icon: FileText, to: '\/privacy'/.test(read('src/holdermaps/HmChrome.tsx')) && read('src/holdermaps/HmChrome.tsx').includes("href: 'https://gullylabs.xyz/legal'"))
   check('app.gullylabs.xyz and docs footers: Terms, Privacy, Legal', ['/terms', '/privacy', '/legal'].every((p) => read('src/pages/developers/AppShell.tsx').includes('${SITE_URL}' + p) && read('src/docs/DocsLayout.tsx').includes('${SITE}' + p)))
   check('holdermaps.xyz: clicks on /terms and /privacy stay on holdermaps.xyz', /\(terms\|privacy\)/.test(read('src/lib/holderMapsLinks.ts')))

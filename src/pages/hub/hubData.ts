@@ -9,6 +9,7 @@
    page (/products/gully-sentry) and its numbers come through /api/hub/live (sentryNet, sentrySale, sentryChain). */
 import type { HubBody } from '../../console/live'
 import type { HubProducts } from '../../terminal/kit'
+import { SEO_PAGES } from '../../content/seoPages.ts'
 
 export type LayerKey = 'identity' | 'payments' | 'chain' | 'data' | 'play'
 export type ProductKey = 'id' | 'pay' | 'chain' | 'rpc' | 'holdermaps' | 'security' | 'studio' | 'ai'
@@ -60,7 +61,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
     icon: I + 'pay.png',
     line: 'Checkout, payment links and x402 for merchants and AI agents.',
     about: 'Accept cards, Apple Pay and USDC on Base, Ethereum, BNB Chain, Solana and Gully Chain, and let AI agents pay your API over x402. On Gully Chain it settles in USDC.e.',
-    live: ['Hosted checkout and payment links', 'Store plugins: WooCommerce, Magento 2, OpenCart 4, PrestaShop; Shopify connector (beta)', 'x402 facilitator, Gully Chain among its networks', 'USDC.e on Gully Chain testnet', 'Merchant review: KYB checks and Stripe Connect verification', 'Creator tip pages at pay.gullypay.xyz (rolling out)'],
+    live: ['Hosted checkout and payment links', 'Store plugins: WooCommerce, Magento 2, OpenCart 4, PrestaShop; Shopify connector (beta)', 'x402 facilitator, Gully Chain among its networks', 'USDC.e on Gully Chain testnet', 'Direct payouts to your own wallet (testnet)', 'Merchant review: KYB checks and Stripe Connect verification', 'Creator tip pages at pay.gullypay.xyz (rolling out)'],
     next: ['Agent Wallets', 'One-tap passkey checkout', 'Pay with any token', 'Splits and escrow', 'Tap to pay', 'Non-custodial wallet', 'iOS and Android apps'],
     links: [['Docs', 'https://gullypay.xyz/docs'], ['Merchant setup', 'https://gullypay.xyz/setup']],
   },
@@ -79,8 +80,8 @@ export const HUB_PRODUCTS: HubProduct[] = [
     icon: I + 'rpc.png',
     line: 'One API key for Gully Chain, Ethereum, Base and more.',
     about: 'Multi-chain RPC with failover, live usage per key and a free tier. Gully Chain is served from Gully nodes; other chains through a partner network while Gully nodes are built.',
-    live: ['API keys (open sign-up, free tier)', 'Usage metering (beta)', 'Gully Chain on the gateway, keyless endpoint too'],
-    next: ['Archive and trace', 'Paid plans through Gully Pay', 'HyperEVM, X Layer, Ink, Unichain'],
+    live: ['API keys (open sign-up, free tier)', 'Plans per 30 days: Free 5M, Developer $49 50M, Business $199 300M weighted requests', 'Usage metering (beta)', 'Gully Chain on the gateway, keyless endpoint too'],
+    next: ['Archive and trace', 'HyperEVM, X Layer, Ink, Unichain'],
     links: [['Portal', 'https://app.gullyrpc.xyz'], ['Status', 'https://gullyrpc.xyz/status']],
   },
   {
@@ -88,7 +89,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
     icon: I + 'holdermaps.png',
     line: 'Who really holds a token? Bubble maps, read live.',
     about: 'Map any token’s holders on Gully Chain, Robinhood Chain, BNB Chain, Base, HyperEVM or Solana: top wallets, linked clusters and launch health.',
-    live: ['Any-token holder maps on six chains', 'Gully Chain maps', 'Replay, live updates, CSV export'],
+    live: ['Any-token holder maps on six chains', 'Gully Chain maps', 'Replay, live updates, CSV export', 'Deep check: $9 per token'],
     next: [],
     links: [['Open a map', 'https://holdermaps.xyz']],
   },
@@ -157,6 +158,9 @@ export function curve(a: [number, number], b: [number, number], c: [number, numb
 
 export type NewsState = 'live' | 'new' | 'testnet' | 'beta' | 'rolling out' | 'coming soon'
 export const NEWS: { d: string; p: ProductKey; t: string; s: NewsState; href: string }[] = [
+  { d: '2026-11-05', p: 'chain', t: 'Gully Multisig on Anubis Network: the unmodified Safe 1.4.1 contracts at the canonical addresses', s: 'live', href: 'https://multisig.gullychain.xyz' },
+  { d: '2026-11-05', p: 'rpc', t: 'Gully RPC plans: Free, Developer and Business', s: 'live', href: 'https://gullyrpc.xyz/pricing' },
+  { d: '2026-11-05', p: 'pay', t: 'Direct payouts on Gully Pay: paid to your own wallet', s: 'testnet', href: 'https://gullypay.xyz/docs/payouts' },
   { d: '2026-10-28', p: 'pay', t: 'USDC.e is the dollar on Gully Chain: checkout and x402 on Gully Chain testnet settle in USDC.e', s: 'testnet', href: 'https://gullypay.xyz' },
   { d: '2026-10-28', p: 'chain', t: 'Gully Offerwall on Gully Chain testnet: advertisers fund quests, players earn USDC or points, publishers embed the wall', s: 'testnet', href: 'https://offers.kre8.fun/' },
   { d: '2026-10-28', p: 'chain', t: 'Gully Sentry: free testnet Sentry Keys and watchers', s: 'testnet', href: 'https://sentry.gullychain.xyz/' },
@@ -447,10 +451,14 @@ export const PEDDLE_FAMILY: PeddleProduct[] = [
 export const PRODUCT_COUNT = HUB_PRODUCTS.length + PEDDLE_FAMILY.length
 const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen']
 export const PRODUCT_COUNT_WORD = COUNT_WORDS[PRODUCT_COUNT] ?? String(PRODUCT_COUNT)
-/** The landing's title and description. server/seo.mjs MAIN['/'] carries the same strings for crawlers
-    (scripts/test-hub-landing.mjs checks the two against each other and against PRODUCT_COUNT). */
-export const LANDING_TITLE = 'Eleven products: identity, payments, chain, trading, data, games'
-export const LANDING_DESCRIPTION = 'Gully Labs builds a connected product suite: sign in with Gully ID, pay with Gully Pay, build on Gully Chain, trade on PeddleSwap and launch on Peddles, see it with HolderMaps and Gully Security, play with Gully Studio. Live status and metrics from every product.'
+/** The landing's title and description: the '/' entry of src/content/seoPages.ts, the table the server's head tags are
+    written from too (scripts/test-hub-landing.mjs checks them against PRODUCT_COUNT). */
+export const LANDING_TITLE = SEO_PAGES['/'].title
+export const LANDING_DESCRIPTION = SEO_PAGES['/'].description
+/** The landing's headline, in the three parts the page sets it in: "One studio. Eleven products that work as one." */
+export const LANDING_HEADLINE: [string, string, string] = ['One studio.', `${PRODUCT_COUNT_WORD[0].toUpperCase()}${PRODUCT_COUNT_WORD.slice(1)} products`, 'that work as one.']
+/** The landing's opening sentence, under its headline (the server's pre-render opens with it too). */
+export const LANDING_LEDE = 'We build the whole path a user takes on chain, from sign-in and payments to trading on PeddleSwap and launching on Peddles, and every piece plugs into the next.'
 
 /** One venue of the /api/stats document, as much of it as the family cards read. */
 export interface StatsVenue {

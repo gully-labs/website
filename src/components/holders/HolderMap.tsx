@@ -692,7 +692,7 @@ function MapView({ m: m0, compact, embed, tradeHref, onTrade, page }: { m: Holde
 
   const stats = (
     <div className="flex flex-col gap-3" data-live-stats>
-      <dl className="m-0 grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-line bg-line">
+      <dl className="m-0 grid grid-cols-3 max-[359px]:grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-line bg-line">
         <Stat k="HOLDERS" v={<AnimatedNumber value={m.holders.count} countUp className="font-display text-[26px] leading-none font-bold text-ink" fallback="—" />} />
         <Stat k="TOP 10 HOLD" v={<AnimatedNumber value={top10Pct} countUp format={PCT} suffix="%" className="font-display text-[26px] leading-none font-bold text-ink" fallback="—" />} />
         <Stat
