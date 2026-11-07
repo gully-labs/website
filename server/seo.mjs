@@ -435,8 +435,6 @@ function pageMetaFor(host, pathname) {
   const sm = scorePageMeta(p)
   if (sm) return sm.found ? { title: sm.title, description: sm.description, canonical: sm.canonical, found: true, noindex: sm.noindex, image: `${SITE}/social/og-score.png` } : { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
   const m = MAIN[p]
-  // The new landing's unlinked preview (server/landing.mjs): for the owner's review, never indexed.
-  if (p === '/preview/landing') return { title: MAIN['/'][0], description: MAIN['/'][1], canonical: null, found: true, noindex: true, image: `${SITE}/brand/kit/og-default-1200x630.png` }
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
   // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), its pages name it as canonical.
@@ -522,7 +520,7 @@ function shellBody(meta) {
   return `<div data-shell style="${style}">${header}${main}${footer}</div>`
 }
 
-/** The head tags of a page drawn by the server itself (server/landing.mjs). */
+/** The head tags of a page drawn by the server itself. */
 export function headTags(meta) {
   const t = esc(meta.title)
   const d = esc(meta.description)

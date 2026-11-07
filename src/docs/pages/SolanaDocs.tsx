@@ -97,7 +97,7 @@ export function SolanaDocs() {
           <li>SOL is priced by Chainlink’s SOL / USD feed (read on Arbitrum); an answer older than two hours gives no SOL quote.</li>
           <li>A signature can be used for one payment only, across every chain.</li>
         </List>
-        <Callout label="OFF UNTIL SET">Solana checkout is on only when the owner has set the Solana treasury wallet. Unset, Solana assets are not offered and every page says so. There is never a fallback address.</Callout>
+        <Callout label="OFF UNTIL SET">Solana checkout is on only when the Solana treasury wallet is set. Unset, Solana assets are not offered and every page says so. There is never a fallback address.</Callout>
         <P>
           The full flow is on the <DocLink to="solana-pay">Solana Pay</DocLink> page.
         </P>
