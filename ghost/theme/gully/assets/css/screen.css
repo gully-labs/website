@@ -1,7 +1,6 @@
 /*
- * Gully Labs blog theme, in the 2026 Gully Labs brand kit (Desktop\GULLY LABS GRAPHICS\Gully Labs\brand-kit):
- * tokens #06050D / #0B0A16 / #00D2FF / #248BFF / #7B3BFF / #C02CFF / #A3A8C3, Poppins 500/600/700, the four-stop
- * gradient. Layout grid for Ghost cards (.gh-canvas, .kg-width-wide, .kg-width-full) and the card spacing rules
+ * Gully Labs blog theme, on the 2026-11 Gully Labs kit: navy #0E1C38, blue #3754A0, light blue #6F8DDF, ground #F1F3F8, with
+ * gullylabs.xyz's navy surface steps and Figtree. Layout grid for Ghost cards (.gh-canvas, .kg-width-wide, .kg-width-full) and the card spacing rules
  * adapted from Ghost's Source theme (MIT, Copyright (c) 2013-2026 Ghost Foundation; see LICENSE).
  *
  *  1. Tokens          7. Hairline grid + cards     13. Ghost cards (kg-*)
@@ -14,33 +13,33 @@
 
 /* 1. Tokens ------------------------------------------------------------------------------------- */
 :root {
-    --gl-bg: #06050d;            /* page background (kit) */
-    --gl-bg-alt: #0b0a16;        /* cards, badges (kit surface) */
-    --gl-bg-footer: #06050d;
-    --gl-surface: #0b0a16;
-    --gl-surface-deep: #0b0a16;
-    --gl-surface-hover: #14122a;
-    --gl-line: #1a1830;          /* 1 px lines: the top of the kit's dark range */
-    --gl-line-strong: #262445;
-    --gl-line-hover: #35325e;
-    --gl-ink: #ffffff;           /* text (kit) */
-    --gl-ink-2: #e6e7f2;
-    --gl-muted: #a3a8c3;         /* muted text (kit); 8.6:1 on the background */
-    --gl-dim: #a3a8c3;
-    --gl-cyan: #00d2ff;          /* the accent: primary buttons, links, active states */
-    --gl-cyan-hover: #5fe0ff;
-    --gl-cyan-line: rgba(0, 210, 255, .35);
-    --gl-blue: #248bff;          /* secondary buttons */
-    --gl-blue-hover: #4da2ff;
-    --gl-violet: #7b3bff;
-    --gl-magenta: #c02cff;
-    --gl-gradient: linear-gradient(90deg, #00d2ff 0%, #248bff 33%, #7b3bff 66%, #c02cff 100%);
-    --gl-green: #248bff;
+    --gl-bg: #0e1c38;            /* page background: the kit navy */
+    --gl-bg-alt: #13233f;        /* cards, badges */
+    --gl-bg-footer: #0b1730;
+    --gl-surface: #13233f;
+    --gl-surface-deep: #0b1730;
+    --gl-surface-hover: #1a2c4d;
+    --gl-line: #22345a;          /* 1 px lines */
+    --gl-line-strong: #2f4470;
+    --gl-line-hover: #3f5789;
+    --gl-ink: #f1f3f8;           /* text: the kit ground */
+    --gl-ink-2: #d6dce8;
+    --gl-muted: #c9d2e8;         /* muted text (kit grey) */
+    --gl-dim: #aab6d0;
+    --gl-cyan: #6f8ddf;          /* the accent, kit light blue (name is historical): buttons, links, active states */
+    --gl-cyan-hover: #9db4ee;
+    --gl-cyan-line: rgba(111, 141, 223, .35);
+    --gl-blue: #3754a0;          /* kit blue: secondary buttons */
+    --gl-blue-hover: #4766b8;
+    --gl-violet: #6f8ddf;
+    --gl-magenta: #9db4ee;
+    --gl-gradient: linear-gradient(90deg, #6f8ddf 0%, #9db4ee 100%);
+    --gl-green: #6f8ddf;
     --gl-error: #ff8a7a;
 
     /* Ghost admin's custom fonts (Design > Typography) win when set; the brand font otherwise. */
-    --gl-font-display: var(--gh-font-heading, 'Poppins'), system-ui, sans-serif;
-    --gl-font-sans: var(--gh-font-body, 'Poppins'), system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --gl-font-display: var(--gh-font-heading, 'Figtree'), system-ui, sans-serif;
+    --gl-font-sans: var(--gh-font-body, 'Figtree'), system-ui, -apple-system, 'Segoe UI', sans-serif;
     --gl-font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
     --gl-radius-btn: 999px;      /* the signature pill */
@@ -48,7 +47,7 @@
     --gl-radius-toast: 22px;
     --gl-gutter: clamp(16px, 4.5vw, 64px);
     --gl-max: 1360px;
-    --gl-header-h: 64px;
+    --gl-header-h: 56px;
 
     /* Ghost's content grid (Source). */
     --container-width: 1200px;
@@ -81,7 +80,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 input { font: inherit; }
 h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 :focus-visible { outline: 2px solid var(--gl-cyan); outline-offset: 2px; }
-::selection { background: rgba(0, 210, 255, .3); color: var(--gl-ink); }
+::selection { background: rgba(111, 141, 223, .3); color: var(--gl-ink); }
 [hidden] { display: none !important; }
 
 .gl-viewport { display: flex; flex-direction: column; min-height: 100vh; }
@@ -122,11 +121,10 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 .gl-meta-item .gl-icon { width: 13px; height: 13px; color: var(--gl-dim); }
 
 /* Brand kit images: exact intrinsic ratios, never cropped or recoloured. */
-.gl-lockup { display: inline-flex; align-items: center; gap: 10px; }
-.gl-lockup-icon { width: 30px; height: 33px; }
-.gl-lockup-wordmark { width: 170px; height: 17px; }
-.gl-logo { width: 232px; height: 93px; }
-.gl-mascot { width: 281px; height: 448px; max-width: 100%; }
+.gl-lockup { display: inline-flex; align-items: center; }
+.gl-lockup-logotype { width: 143px; height: 26px; }
+.gl-logo { width: 187px; height: 34px; }
+.gl-mascot { width: auto; height: 448px; max-width: 100%; }
 
 /* 4. Buttons, chips, inputs --------------------------------------------------------------------- */
 /* The signature button: a pill with a left icon, the arrow slides right on hover, a cyan shine sweeps across,
@@ -154,13 +152,13 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 @keyframes gl-shine { 0% { left: -60%; opacity: 1; } 100% { left: 130%; opacity: 0; } }
 .gl-btn--primary { background: var(--gl-cyan); color: var(--gl-bg); }
 .gl-btn--primary:hover { background: var(--gl-cyan-hover); }
-.gl-btn--primary .gl-ext { color: rgba(6, 5, 13, .7); }
+.gl-btn--primary .gl-ext { color: rgba(14, 28, 56, .7); }
 .gl-btn--secondary { background: var(--gl-blue); color: #fff; }
 .gl-btn--secondary:hover { background: var(--gl-blue-hover); }
-.gl-btn--secondary::after { background: linear-gradient(100deg, transparent 0%, rgba(0, 210, 255, .45) 50%, transparent 100%); }
+.gl-btn--secondary::after { background: linear-gradient(100deg, transparent 0%, rgba(111, 141, 223, .45) 50%, transparent 100%); }
 .gl-btn--ghost { border: 1px solid var(--gl-line-strong); color: var(--gl-ink); }
 .gl-btn--ghost:hover { border-color: var(--gl-cyan); color: var(--gl-cyan); }
-.gl-btn--ghost::after { background: linear-gradient(100deg, transparent 0%, rgba(0, 210, 255, .22) 50%, transparent 100%); }
+.gl-btn--ghost::after { background: linear-gradient(100deg, transparent 0%, rgba(111, 141, 223, .22) 50%, transparent 100%); }
 .gl-btn--small { min-height: 36px; padding: 0 14px; font-size: 13px; }
 .gl-btn--block { width: 100%; }
 
@@ -185,7 +183,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 .gl-chip::before { content: ''; position: absolute; inset: -6px -2px; }
 .gl-chip .gl-icon { width: 12px; height: 12px; color: var(--gl-dim); }
 .gl-chip:hover { border-color: var(--gl-cyan); color: var(--gl-ink); }
-.gl-chip.is-current { border-color: var(--gl-cyan-line); background: rgba(0, 210, 255, .08); color: var(--gl-cyan); }
+.gl-chip.is-current { border-color: var(--gl-cyan-line); background: rgba(111, 141, 223, .08); color: var(--gl-cyan); }
 .gl-chip.is-current .gl-icon { color: var(--gl-cyan); }
 .gl-chip-count { color: var(--gl-dim); }
 
@@ -206,7 +204,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 /* 5. Header + menus ----------------------------------------------------------------------------- */
 .gl-header {
     position: sticky; top: 0; z-index: 50;
-    background: rgba(6, 5, 13, .88); border-bottom: 1px solid var(--gl-line);
+    background: rgba(14, 28, 56, .88); border-bottom: 1px solid var(--gl-line);
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
 }
 .gl-bar { display: flex; align-items: center; gap: 24px; min-height: var(--gl-header-h); padding-block: 8px; flex-wrap: nowrap; }
@@ -309,15 +307,11 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
     .gl-nav-trigger, .gl-nav-link { padding: 0 8px; font-size: 13px; }
     .gl-brand-sep, .gl-brand-blog { display: none; }
 }
-/* Under 560: the lockup alone (wordmark at 131x13, still the kit's 10.09:1 and above its 100 px minimum), so the
-   brand and the Menu button fit a 390 px phone with no overflow. */
+/* Under 560: the logotype alone at 121x22, so the brand and the Menu button fit a 390 px phone with no overflow. */
 @media (max-width: 559px) {
     .gl-bar { gap: 12px; }
     .gl-brand-sep, .gl-brand-blog { display: none; }
-    .gl-lockup-wordmark { width: 131px; height: 13px; }
-}
-@media (max-width: 359px) {
-    .gl-lockup-wordmark { display: none; }
+    .gl-lockup-logotype { width: 121px; height: 22px; }
 }
 
 /* 6. Mobile sheet ------------------------------------------------------------------------------- */
@@ -396,7 +390,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 
 .gl-tile {
     position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; min-height: 220px; padding: 24px;
-    background: repeating-linear-gradient(135deg, transparent 0 10px, rgba(26, 24, 48, .7) 10px 11px), var(--gl-bg);
+    background: repeating-linear-gradient(135deg, transparent 0 10px, rgba(34, 52, 90, .7) 10px 11px), var(--gl-bg);
     transition: background-color .2s;
 }
 .gl-tile:hover { background-color: var(--gl-bg-alt); }
@@ -414,8 +408,8 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 .gl-banner-fallback {
     position: absolute; inset: 0;
     background:
-        radial-gradient(ellipse at 75% 20%, rgba(0, 210, 255, .1), transparent 60%),
-        radial-gradient(ellipse at 20% 90%, rgba(192, 44, 255, .08), transparent 60%),
+        radial-gradient(ellipse at 75% 20%, rgba(111, 141, 223, .1), transparent 60%),
+        radial-gradient(ellipse at 20% 90%, rgba(55, 84, 160, .08), transparent 60%),
         linear-gradient(var(--gl-line) 1px, transparent 1px) 0 0 / 40px 40px,
         linear-gradient(90deg, var(--gl-line) 1px, transparent 1px) 0 0 / 40px 40px;
     opacity: .7;
@@ -626,7 +620,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 /* 13. Ghost cards on the dark theme ------------------------------------------------------------- */
 .kg-callout-card.kg-card { border-radius: 12px; }
 .kg-callout-card-grey, .kg-callout-card-white { background: var(--gl-surface) !important; border: 1px solid var(--gl-line); }
-.kg-callout-card-accent { background: rgba(0, 210, 255, .08) !important; border: 1px solid var(--gl-cyan-line); }
+.kg-callout-card-accent { background: rgba(111, 141, 223, .08) !important; border: 1px solid var(--gl-cyan-line); }
 .kg-callout-card-accent, .kg-callout-card-accent .kg-callout-text { color: var(--gl-ink) !important; }
 .kg-callout-card-accent a { text-decoration: underline; }
 .kg-callout-text { font-size: .95em; }
@@ -663,8 +657,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 .gl-footer-main { display: grid; gap: 40px; padding-block: 48px 40px; }
 .gl-footer-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
 .gl-footer-logo { display: inline-flex; border-radius: 8px; }
-/* Clear space = the flask's top bubble (12% of the logo height) on all sides, per the kit. */
-.gl-footer-logo .gl-logo { margin: 11px; }
+.gl-footer-logo .gl-logo { margin: 6px 0; }
 .gl-footer-tagline {
     font-family: var(--gl-font-display); font-weight: 600; font-size: 16px;
     background: var(--gl-gradient); -webkit-background-clip: text; background-clip: text; color: transparent;
@@ -727,7 +720,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 }
 .gl-mascot-box { display: flex; justify-content: center; }
 .gl-empty .gl-mascot-box { order: -1; }
-.gl-empty .gl-mascot, .gl-error-box .gl-mascot { width: 200px; height: 319px; }
+.gl-empty .gl-mascot, .gl-error-box .gl-mascot { width: auto; height: 319px; }
 .gl-empty-copy, .gl-error-copy { display: flex; flex-direction: column; gap: 16px; }
 .gl-empty-title, .gl-error-title {
     font-family: var(--gl-font-display); font-weight: 700;
@@ -740,7 +733,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 @media (min-width: 1024px) {
     .gl-empty, .gl-error-box { grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: 56px; }
     .gl-empty .gl-mascot-box { order: 0; }
-    .gl-empty .gl-mascot, .gl-error-box .gl-mascot { width: 281px; height: 448px; }
+    .gl-empty .gl-mascot, .gl-error-box .gl-mascot { width: auto; height: 448px; }
     .gl-error-box--plain { grid-template-columns: 1fr; }
 }
 
@@ -784,9 +777,9 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 }
 .gl-ticker-live:hover { color: var(--gl-cyan); }
 .gl-ticker-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gl-line-hover); }
-.gl-ticker.is-live .gl-ticker-dot { background: var(--gl-cyan); box-shadow: 0 0 0 0 rgba(0, 210, 255, .6); animation: gl-pulse 1.8s ease-out infinite; }
+.gl-ticker.is-live .gl-ticker-dot { background: var(--gl-cyan); box-shadow: 0 0 0 0 rgba(111, 141, 223, .6); animation: gl-pulse 1.8s ease-out infinite; }
 .gl-ticker.is-stale .gl-ticker-dot { background: var(--gl-line-hover); animation: none; box-shadow: none; }
-@keyframes gl-pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 210, 255, .6); } 100% { box-shadow: 0 0 0 9px rgba(0, 210, 255, 0); } }
+@keyframes gl-pulse { 0% { box-shadow: 0 0 0 0 rgba(111, 141, 223, .6); } 100% { box-shadow: 0 0 0 9px rgba(111, 141, 223, 0); } }
 .gl-ticker-track { position: relative; flex: 1 1 auto; min-width: 0; overflow: hidden; display: flex; }
 .gl-ticker-track::before, .gl-ticker-track::after {
     content: ''; position: absolute; top: 0; bottom: 0; width: 24px; z-index: 1; pointer-events: none;

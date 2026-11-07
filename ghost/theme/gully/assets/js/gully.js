@@ -4,7 +4,7 @@
  *   2. Mobile sheet with accordions (focus trap, Escape, closes at desktop width)
  *   3. Links to other Gully sites in Ghost's navigation: new tab, rel, marker
  *   4. Reading progress hairline on posts
- *   5. Copy link and code blocks, with toasts (bottom-right stack, Lucide icon, cyan progress bar) on each real event
+ *   5. Copy link and code blocks, with toasts (bottom-right stack, Lucide icon, accent progress bar) on each real event
  *   6. Content helpers: responsive embeds, scrollable tables
  *   7. Live Gully stats ticker (gullylabs.xyz/api/stats): count-up numbers, continuous scroll, 30-day sparkline
  *   0. (first) Retires the old Ghost admin code-injection intro, so an empty blog shows the theme's one empty state
@@ -246,7 +246,7 @@
     }
 
     /* ------------------------------------------------------------ 5. copy + toast --- */
-    /* Toasts: one element per event, stacked bottom right (newest at the bottom), a Lucide icon, a cyan progress bar
+    /* Toasts: one element per event, stacked bottom right (newest at the bottom), a Lucide icon, an accent progress bar
        that runs the toast's life (3.2 s; hover pauses it), click to dismiss. Only real events call say(). */
     var toasts = document.querySelector('[data-gl-toasts]');
     var ICON = {

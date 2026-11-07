@@ -11,8 +11,8 @@
             </div>
         </div>
         <div class="gl-mascot-box">
-            {{!-- The kit's "planning" mascot (562x896, shown at half size, never cropped). --}}
-            <img class="gl-mascot" src="{{asset "brand/mascots/mascot-2-planning-feathered.png"}}" width="281" height="448" alt="" decoding="async">
+            {{!-- The kit's owl (notebook pose, the website's derived WebP, at its own ratio). --}}
+            <img class="gl-mascot" src="{{asset "brand/mascots/owl-notebook-800.webp"}}" srcset="{{asset "brand/mascots/owl-notebook-400.webp"}} 148w, {{asset "brand/mascots/owl-notebook-800.webp"}} 295w" sizes="165px" width="165" height="448" alt="" decoding="async">
         </div>
     </section>
     {{#get "posts" limit="3" include="tags,authors" as |latest|}}

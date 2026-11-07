@@ -9,7 +9,7 @@
  *   ticker  rows of the post's own words sliding past in mono, like a tape
  *   graph   blocks joined into a chain graph, pulses travelling along the links
  *   cells   a grid of cells lit by a slow diagonal wave
- * Brand kit colours (cyan, blue, violet, magenta on #06050D), the short title or the tag set in the corner.
+ * Kit colours (light blue, blue and greys on navy #0E1C38), the short title or the tag set in the corner.
  *
  * Runs in the browser (no dependencies, no network) and, for still share images, on a server with
  * any CanvasRenderingContext2D implementation: require() this file and call renderStill(). The
@@ -34,21 +34,21 @@
     'use strict';
 
     var C = {
-        bg: '#06050d',
-        surface: '#0b0a16',
-        line: '#1a1830',
-        lineStrong: '#262445',
-        lineHover: '#35325e',
-        ink: '#ffffff',
-        muted: '#a3a8c3',
-        dim: '#a3a8c3',
-        gold: '#00d2ff',   /* the kit's cyan: the accent (the name is historical) */
-        goldHi: '#7fe7ff', /* cyan lifted towards white, for dots and highlights */
-        green: '#248bff',  /* the kit's blue: the "fair value" line */
-        violet: '#7b3bff',
-        magenta: '#c02cff'
+        bg: '#0e1c38',
+        surface: '#13233f',
+        line: '#22345a',
+        lineStrong: '#2f4470',
+        lineHover: '#3f5789',
+        ink: '#f1f3f8',
+        muted: '#c9d2e8',
+        dim: '#aab6d0',
+        gold: '#6f8ddf',   /* the kit's light blue: the accent (the name is historical) */
+        goldHi: '#c9d2e8', /* kit grey, for dots and highlights */
+        green: '#9db4ee',  /* light blue lifted: the "fair value" line */
+        violet: '#3754a0',
+        magenta: '#9db4ee'
     };
-    var FONT_DISPLAY = '"Poppins", system-ui, sans-serif';
+    var FONT_DISPLAY = '"Figtree", system-ui, sans-serif';
     var FONT_MONO = '"IBM Plex Mono", ui-monospace, monospace';
     var TAU = Math.PI * 2;
 
@@ -845,7 +845,7 @@
         /* Text is drawn in the brand fonts: redraw once they have loaded. */
         if (document.fonts && document.fonts.load) {
             Promise.all([
-                document.fonts.load('700 40px "Poppins"'),
+                document.fonts.load('700 40px "Figtree"'),
                 document.fonts.load('500 11px "IBM Plex Mono"')
             ]).then(function () {
                 items.forEach(function (it) {
