@@ -1,3 +1,4 @@
+import { timePT, TZ } from '../../lib/time'
 import type { CSSProperties } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
@@ -148,7 +149,7 @@ const small = 'font-mono text-[11px] text-faint'
 const usdText = (v: number | null) => (v == null ? '—' : v === 0 ? '$0.00' : v < 0.01 ? '<$0.01' : `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
 const num = (v: number) => v.toLocaleString('en-US', { maximumFractionDigits: 5 })
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
-const bucketLabel = (t: number, step: number) => new Date(t * 1000).toLocaleString('en-US', { month: 'short', day: 'numeric', ...(step < 86_400 ? { hour: '2-digit', hour12: false } : {}), timeZone: 'UTC' })
+const bucketLabel = (t: number, step: number) => new Date(t * 1000).toLocaleString('en-US', { month: 'short', day: 'numeric', ...(step < 86_400 ? { hour: '2-digit', hour12: false } : {}), timeZone: TZ })
 
 function Amount({ c, muted }: { c: Cell; muted?: boolean }) {
   if (c.usd == null) return <span className={`${pillCls(STATUS[c.status].tone)} whitespace-nowrap`}>{STATUS[c.status].text}</span>
@@ -343,7 +344,7 @@ export default function RevenueAdmin({ token }: { token: string }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-col">
           <h2 className="m-0 font-display text-[22px] font-bold">Revenue</h2>
-          <span className={small}>Updated {updatedAt ? new Date(updatedAt).toLocaleTimeString('en-GB', { timeZone: 'UTC' }) : '—'} UTC, every 60 s</span>
+          <span className={small}>Updated {updatedAt ? timePT(updatedAt, true) : '—'}, every 60 s</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {RANGES.map((r) => (
