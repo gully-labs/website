@@ -3189,6 +3189,7 @@ await step('service hosts', async () => {
     const www = await hreq('www.holdermaps.xyz', `/base/${holder}`)
     check('holdermaps: www. is a 301 to the apex', www.status === 301 && www.headers.location === `https://holdermaps.xyz/base/${holder}`)
     check('holdermaps: gullylabs.xyz/holders keeps working while holdermaps.xyz is not primary', (await hreq('gullylabs.xyz', `/holders/base/${holder}`)).status === 200)
+    await hm.unrouteAll({ behavior: 'ignoreErrors' })
     await hm.close()
 
     // gullysecurity.xyz: Gully Security at the root, short paths, its API on the same origin, the rest of the site on gullylabs.xyz.
@@ -3245,6 +3246,7 @@ await step('service hosts', async () => {
     const secWww = await hreq('www.gullysecurity.xyz', '/reports')
     check('security host: www. is a 301 to the apex', secWww.status === 301 && secWww.headers.location === 'https://gullysecurity.xyz/reports')
     check('security host: gullylabs.xyz/security keeps working while gullysecurity.xyz is not primary', (await hreq('gullylabs.xyz', '/security')).status === 200)
+    await sc.unrouteAll({ behavior: 'ignoreErrors' })
     await sc.close()
   } finally {
     await hb.close()
