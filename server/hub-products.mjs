@@ -16,6 +16,7 @@
 // Nothing is invented: a source that cannot be read is null, never zero. Testnet ETH has no USD value and is
 // labelled as test ETH; nothing here is added to a dollar total.
 
+import { dayLA, lastDaysLA } from './time-la.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
@@ -265,11 +266,11 @@ export function readHolders(top, hist) {
 /** Gully Security: scans requested per day over 14 days, and their states. Pure: tested. */
 export function readSecurity(list, nowMs) {
   if (!Array.isArray(list)) return null
-  const days = Array.from({ length: 14 }, (_, i) => new Date(nowMs - (13 - i) * 86_400_000).toISOString().slice(0, 10))
+  const days = lastDaysLA(14, nowMs)
   const per = Object.fromEntries(days.map((d) => [d, 0]))
   const states = { done: 0, running: 0, failed: 0, other: 0 }
   for (const j of list) {
-    const d = String(j?.createdAt ?? '').slice(0, 10)
+    const d = dayLA(j?.createdAt ?? 0)
     if (d in per) per[d]++
     const s = j?.status === 'done' ? 'done' : j?.status === 'failed' || j?.state === 'cancelled' ? 'failed' : j?.state === 'started' || j?.state === 'starting' ? 'running' : 'other'
     states[s]++

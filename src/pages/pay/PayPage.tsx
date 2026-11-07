@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router'
 import { Seo } from '../../components/Seo'
@@ -34,7 +35,7 @@ function InvoiceView({ invoice, onPaid }: { invoice: Invoice; onPaid: (i: Invoic
   const open = invoice.status === 'open'
   const live = open && invoice.checkout.enabled
   const pill = invoice.status === 'paid' ? pills.paid : invoice.status === 'expired' ? pills.expired : invoice.status === 'cancelled' ? pills.cancelled : !invoice.checkout.enabled ? pills.closed : phase === 'confirming' ? pills.confirming : pills.waiting
-  const payBy = invoice.linkId ? `${new Date(invoice.expiresAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })} UTC` : fmtDay(invoice.expiresAt)
+  const payBy = invoice.linkId ? `${new Date(invoice.expiresAt).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} PT` : fmtDay(invoice.expiresAt)
 
   return (
     <CheckoutFrame

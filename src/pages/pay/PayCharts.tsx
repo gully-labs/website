@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useMemo, useState } from 'react'
 import { Flag } from 'lucide-react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
@@ -29,7 +30,7 @@ import type { PayAsset } from './api'
      the server caches it 3 min). Shown only where the server has the figure. */
 
 const fmtUsd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const hhmmss = (t: number) => new Date(t).toISOString().slice(11, 19)
+const hhmmss = (t: number) => new Date(t).toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 
 export type RingState = 'waiting' | 'checking' | 'pending' | 'done'
 
@@ -130,7 +131,7 @@ function PriceChartBody({ asset, quoted }: { asset: Pick<PayAsset, 'id' | 'symbo
         const [t, v] = p.value as [number, number]
         const isQuote = qt !== null && t === qt
         return tipHtml({
-          title: isQuote ? `Chainlink price the quote used · ${hhmmss(t)} UTC` : `Read at ${hhmmss(t)} UTC`,
+          title: isQuote ? `Chainlink price the quote used · ${hhmmss(t)} PT` : `Read at ${hhmmss(t)} PT`,
           rows: [
             { name: `${asset.symbol} / USD`, value: fmtUsd(v), color: C.gold },
             ...(q && !isQuote ? [{ name: 'vs quote', value: `${v >= q ? '+' : ''}${(((v - q) / q) * 100).toFixed(3)}%`, valueColor: v >= q ? '#3ddc97' : C.error }] : []),

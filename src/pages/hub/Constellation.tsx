@@ -6,6 +6,7 @@
    board, what's new, work with us, contact). On a phone the directory comes before the map.
    Every figure is read live (src/pages/hub/hubData.ts adapters): /api/hub, /api/hub/products, /api/stats and
    /api/hub/live. A source that cannot be read says so. Toasts only on real events seen between two polls. */
+import { timePT } from '../../lib/time'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Activity, ArrowDown, ArrowRight, ArrowUpRight, Blocks, Briefcase, ChartSpline, ChevronDown, CircleCheck, CircleDot, ExternalLink, FingerprintPattern, Hammer, Info, MessageSquare, Newspaper, Send, Trophy, X, type LucideIcon } from 'lucide-react'
@@ -308,13 +309,13 @@ function LiveBoard({ src, R }: { src: Sources; R: Record<ProductKey, Reading> })
   const chainRows = R.chain.series?.rows ?? []
   const idRows = R.id.series?.rows ?? []
   const tabs: ChartTab[] = [
-    { id: 'chain', label: 'Chain txs', title: 'Gully Chain transactions per hour (UTC)', series: [{ name: 'Transactions', color: '#00D2FF', values: chainRows.map((r) => r.v) }], labels: chainRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'indexer unreadable right now', sub: 'source: /api/hub/products (Gully Chain RPC and indexer)', legendTotal: chainRows.length ? `${chainRows.length} h total` : undefined },
-    { id: 'id', label: 'ID sign-ins', title: 'Gully ID sign-ins per hour (UTC)', series: [{ name: 'Sign-ins', color: '#00D2FF', values: idRows.map((r) => r.v) }], labels: idRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.live?.id ? 'ok' : src.live ? 'offline' : 'loading', empty: 'Gully ID stats unreadable right now', sub: 'source: gullyid.xyz/v1/stats/public', legendTotal: idRows.length ? `${idRows.length} h total` : undefined },
+    { id: 'chain', label: 'Chain txs', title: 'Gully Chain transactions per hour (PT)', series: [{ name: 'Transactions', color: '#00D2FF', values: chainRows.map((r) => r.v) }], labels: chainRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'indexer unreadable right now', sub: 'source: /api/hub/products (Gully Chain RPC and indexer)', legendTotal: chainRows.length ? `${chainRows.length} h total` : undefined },
+    { id: 'id', label: 'ID sign-ins', title: 'Gully ID sign-ins per hour (PT)', series: [{ name: 'Sign-ins', color: '#00D2FF', values: idRows.map((r) => r.v) }], labels: idRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.live?.id ? 'ok' : src.live ? 'offline' : 'loading', empty: 'Gully ID stats unreadable right now', sub: 'source: gullyid.xyz/v1/stats/public', legendTotal: idRows.length ? `${idRows.length} h total` : undefined },
   ]
   const mapRows = src.products?.holders?.daily ?? []
   const volRows = (src.stats?.daily ?? []).slice(-30)
   tabs.push(
-    { id: 'maps', label: 'Maps / day', title: 'HolderMaps maps opened per day (UTC)', series: [{ name: 'Maps', color: '#00D2FF', values: mapRows.map((r) => r.maps) }], labels: mapRows.map((r) => r.day.slice(5)), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'HolderMaps figures unreadable right now', sub: 'source: /api/hub/products', legendTotal: mapRows.length ? `${mapRows.length} days total` : undefined },
+    { id: 'maps', label: 'Maps / day', title: 'HolderMaps maps opened per day (PT)', series: [{ name: 'Maps', color: '#00D2FF', values: mapRows.map((r) => r.maps) }], labels: mapRows.map((r) => r.day.slice(5)), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'HolderMaps figures unreadable right now', sub: 'source: /api/hub/products', legendTotal: mapRows.length ? `${mapRows.length} days total` : undefined },
     { id: 'volume', label: 'Venue volume', title: 'Daily volume on the venues we built, USD', series: [{ name: 'Volume', color: '#00D2FF', values: volRows.map((r) => r.v) }], labels: volRows.map((r) => new Date(r.t * 1000).toISOString().slice(5, 10)), fmt: (v) => fmtUsd(v), state: src.stats ? 'ok' : 'loading', empty: 'venue figures unreadable right now', sub: 'source: /api/stats (each venue’s own API, DefiLlama as fallback)', legendTotal: volRows.length ? `${volRows.length} days total` : undefined },
   )
   // The tab with something to show comes first; decided once, so a poll never moves the tabs under the reader.
@@ -382,7 +383,7 @@ function News() {
             </button>
           ))}
         </div>
-        <p className="cst-note">Every item is live or shipped this week. Dates are UTC.</p>
+        <p className="cst-note">Every item is live or shipped this week.</p>
       </div>
       <ol className="cst-news-list">
         {NEWS.filter((n) => f === 'all' || n.p === f).map((n) => {
@@ -684,7 +685,7 @@ export function Constellation() {
                 {t.label}
               </button>
             ))}
-            <span className="cst-fresh gt-k">{hl.data ? `live · ${new Date(hl.data.generatedAt).toISOString().slice(11, 19)} UTC` : 'reading live sources…'}</span>
+            <span className="cst-fresh gt-k">{hl.data ? `live · ${timePT(hl.data.generatedAt, true)}` : 'reading live sources…'}</span>
           </div>
           {/* anchors the header links land on */}
           <span id="live" />

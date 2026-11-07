@@ -58,6 +58,9 @@ test('status page: banner and pills', () => {
   assert.equal(s.total, 2)
   assert.equal(s.up, 1)
   assert.equal(readStatusPage('<html></html>'), null)
+  // The page as it is drawn now: a sparkline between the name and the pill, 90 day bars after it, a pending check.
+  const now = readStatusPage('<span class="banner warn" role="status">x</span><section class="svc"><div class="top"><span class="nm">Website</span><span class="r"><svg><path d="M1 2"/></svg><span class="pill up">Operational</span></span></div><div class="bars"><i class="pill degraded"></i></div></section><section class="svc"><span class="nm">Wallet</span><span class="r"><svg></svg><span class="pill down">Down</span></span></section><section class="svc"><span class="nm">New</span><span class="pill pending">Pending</span></section>')
+  assert.deepEqual([now.up, now.total], [1, 2])
 })
 
 test('GET /api/hub with a stub fetch: down surfaces are down, never zero', async () => {
@@ -176,7 +179,7 @@ test('hub-products: HolderMaps daily series keeps the day high and the chains', 
 
 test('hub-products: security scans per day and states', () => {
   const now = Date.parse('2026-10-27T12:00:00Z')
-  const s = readSecurity([{ createdAt: '2026-10-27T01:00:00Z', status: 'done', published: true }, { createdAt: '2026-10-20T01:00:00Z', state: 'started' }, { createdAt: '2025-01-01T00:00:00Z', state: 'cancelled' }], now)
+  const s = readSecurity([{ createdAt: '2026-10-27T08:00:00Z', status: 'done', published: true }, { createdAt: '2026-10-20T01:00:00Z', state: 'started' }, { createdAt: '2025-01-01T00:00:00Z', state: 'cancelled' }], now)
   assert.equal(s.daily.length, 14)
   assert.equal(s.daily[13].scans, 1)
   assert.equal(s.total, 3)

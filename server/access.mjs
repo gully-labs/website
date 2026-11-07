@@ -10,6 +10,7 @@
 // Note: responses are edge-cacheable, so a request served by Cloudflare's cache never reaches this
 // code. Limits protect the origin; they are not a billing meter.
 
+import { dayLA, dayStartLA, lastDaysLA } from './time-la.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { bearer, clientIp, DATA_DIR } from './http.mjs'
@@ -31,12 +32,8 @@ try {
 }
 let dirty = false
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => dayLA()
 const hourKey = (ms) => new Date(ms).toISOString().slice(0, 13)
-const utcDayStart = (ms) => {
-  const d = new Date(ms)
-  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
-}
 
 // Per key, the request count of each of the last 60 minutes ([minute, count] pairs, at most 61), for
 // the usage-threshold notices (peakPerMinute). Only keys used in the last hour are held.
@@ -173,11 +170,7 @@ export function observe(req, res, keyId) {
 /** One key's usage, for the legacy key-holder view (GET /api/developer/me). */
 export function keyUsage(keyId) {
   const k = usage.keys[keyId]
-  const days = []
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10)
-    days.push({ day: d, requests: k?.days?.[d] ?? 0 })
-  }
+  const days = lastDaysLA(30).map((d) => ({ day: d, requests: k?.days?.[d] ?? 0 }))
   return { requests: k?.requests ?? 0, limited: k?.limited ?? 0, lastUsed: k?.lastUsed ?? null, today: k?.days?.[today()] ?? 0, days }
 }
 
@@ -195,7 +188,7 @@ export function accountUsage(keyIds, range = '24h') {
   const r = RANGES[range] ?? RANGES['24h']
   const now = Date.now()
   const sizeMs = r.hours * HOUR_MS
-  const lastStart = r.hours === 24 ? utcDayStart(now) : Math.floor(now / HOUR_MS) * HOUR_MS
+  const lastStart = r.hours === 24 ? dayStartLA(now) : Math.floor(now / HOUR_MS) * HOUR_MS
   const first = lastStart - (r.buckets - 1) * sizeMs
   const points = []
   for (let i = 0; i < r.buckets; i++) points.push({ t: new Date(first + i * sizeMs).toISOString(), total: 0, errors: 0, limited: 0, keys: {} })
@@ -211,7 +204,7 @@ export function accountUsage(keyIds, range = '24h') {
     s.limited += b[3]
     s.server += b[4]
   }
-  const dayStart = utcDayStart(now)
+  const dayStart = dayStartLA(now)
   const weekStart = Math.floor(now / HOUR_MS) * HOUR_MS - (7 * 24 - 1) * HOUR_MS
   let since = null
   for (const id of keyIds) {
@@ -236,7 +229,7 @@ export function accountUsage(keyIds, range = '24h') {
 function rangeWindow(range, now = Date.now()) {
   const r = RANGES[range] ?? RANGES['24h']
   const sizeMs = r.hours * HOUR_MS
-  const lastStart = r.hours === 24 ? utcDayStart(now) : Math.floor(now / HOUR_MS) * HOUR_MS
+  const lastStart = r.hours === 24 ? dayStartLA(now) : Math.floor(now / HOUR_MS) * HOUR_MS
   const first = lastStart - (r.buckets - 1) * sizeMs
   return { r, sizeMs, first, end: first + r.buckets * sizeMs }
 }
@@ -337,11 +330,7 @@ export function recentRequests(keyIds, limit = RECENT) {
 
 /** For the admin dashboard: a snapshot of API traffic. */
 export function accessStats() {
-  const days = []
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10)
-    days.push({ day: d, ...(usage.days[d] ?? { anonymous: 0, keyed: 0, limited: 0 }) })
-  }
+  const days = lastDaysLA(30).map((d) => ({ day: d, ...(usage.days[d] ?? { anonymous: 0, keyed: 0, limited: 0 }) }))
   return {
     since: usage.since,
     anonymousLimitPerMin: ANON_LIMIT_PER_MIN,

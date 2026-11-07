@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useMemo } from 'react'
 import { Link } from 'react-router'
 import { CHAIN_SHORT, DOWN, fmtGap, fmtPp, stockPath, UP, useMovers, type Mover } from '../../lib/tracker'
@@ -7,7 +8,7 @@ import { StockLogo } from './StockLogo'
 import { GhostChart } from '../charts/GhostChart'
 
 const H = 32
-const hhmm = (t: number) => new Date(t * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+const hhmm = (t: number) => new Date(t * 1000).toLocaleTimeString([], { timeZone: TZ, hour: '2-digit', minute: '2-digit' })
 
 /** What the movers show before there is enough history: a ghost chart where the lines will draw, with the
     server's own words under it (muted ink, 4.5:1 or better) instead of faint text on a shimmer. */

@@ -1,0 +1,107 @@
+[
+ {
+  "key": "gully",
+  "name": "Gully Chain",
+  "short": "GC",
+  "logo": "/chains/gully-chain.svg",
+  "state": "Testnet live",
+  "open": true,
+  "note": "Our own chain. Mainnet comes later.",
+  "live": [
+   "Launch tokens",
+   "Launchpads",
+   "DEXes",
+   "Gas sponsored by Gully",
+   "Gully Multisig"
+  ],
+  "planned": [],
+  "cta": {
+   "label": "Build here",
+   "href": "https://gullychain.xyz/core/app"
+  }
+ },
+ {
+  "key": "anubis",
+  "name": "Anubis",
+  "short": "AN",
+  "logo": null,
+  "state": "Multisig live",
+  "open": false,
+  "note": "Gully Multisig is live. Gully Core is next.",
+  "live": [
+   "Gully Multisig"
+  ],
+  "planned": [
+   "Launchpads",
+   "DEXes"
+  ],
+  "cta": {
+   "label": "Open Gully Multisig",
+   "href": "https://multisig.gullychain.xyz"
+  }
+ },
+ {
+  "key": "base",
+  "name": "Base",
+  "short": "BA",
+  "logo": null,
+  "state": "Coming",
+  "open": false,
+  "note": "Gully Core for builders.",
+  "live": [],
+  "planned": [
+   "Launchpads",
+   "DEXes",
+   "Stock markets"
+  ],
+  "cta": null
+ },
+ {
+  "key": "bnb",
+  "name": "BNB Chain",
+  "short": "BN",
+  "logo": "/chains/bnb-chain.svg",
+  "state": "Coming",
+  "open": false,
+  "note": "Gully Core for builders.",
+  "live": [],
+  "planned": [
+   "Launchpads",
+   "DEXes",
+   "Stock markets"
+  ],
+  "cta": null
+ },
+ {
+  "key": "robinhood",
+  "name": "Robinhood",
+  "short": "RH",
+  "logo": null,
+  "state": "Coming",
+  "open": false,
+  "note": "Gully Core for builders.",
+  "live": [],
+  "planned": [
+   "Launchpads",
+   "DEXes",
+   "Stock markets"
+  ],
+  "cta": null
+ },
+ {
+  "key": "hyperevm",
+  "name": "HyperEVM",
+  "short": "HY",
+  "logo": null,
+  "state": "Coming",
+  "open": false,
+  "note": "Gully Core for builders.",
+  "live": [],
+  "planned": [
+   "Launchpads",
+   "DEXes",
+   "Stock markets"
+  ],
+  "cta": null
+ }
+]

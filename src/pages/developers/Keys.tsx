@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { track } from '../../lib/track'
 import { Activity, AlertTriangle, AppWindow, BookOpen, Check, Clock, Code2, Gauge, KeyRound, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Send, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
@@ -124,7 +125,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
     if (week.state !== 'ok') return null
     const g = group(week.usage)
     const out: Record<string, { total: number; spark: number[]; labels: string[] }> = {}
-    const labels = g.map((b) => new Date(b.t).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }))
+    const labels = g.map((b) => new Date(b.t).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }))
     for (const k of account.keys) out[k.id] = { total: g.reduce((a, b) => a + (b.keys[k.id] ?? 0), 0), spark: g.map((b) => b.keys[k.id] ?? 0), labels }
     return out
   }, [week, account.keys])
@@ -533,7 +534,7 @@ function Requests({ account }: { account: Account }) {
               {rows.map((r, i) => (
                 <tr key={`${r.at}-${i}`} className="border-b border-line last:border-b-0 hover:bg-surface-hover">
                   <td className="py-[10px] pr-3 whitespace-nowrap text-muted" title={new Date(r.at).toLocaleString()}>
-                    {new Date(r.at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+                    {new Date(r.at).toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
                     <span className="ml-2 text-faint">{ago(r.at)}</span>
                   </td>
                   <td className="max-w-[340px] truncate py-[10px] pr-3 text-ink-2" title={r.path}>

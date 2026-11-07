@@ -1,3 +1,4 @@
+import { dayPT, lastDaysPT } from '../../../lib/time'
 import { BellRing, Loader2, Megaphone, MessageCircle, Send } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { GhostChart } from '../../../components/charts/GhostChart'
@@ -79,12 +80,10 @@ export default function TelegramView({ ctx }: { ctx: ServiceCtx }) {
   const onTg = view ? view.alerts.filter((a) => a.telegram) : []
   const days = useMemo(() => {
     if (!view) return []
-    const today = new Date()
-    return Array.from({ length: 14 }, (_, i) => {
-      const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (13 - i))
+    return lastDaysPT(14).map(({ key, label }) => {
       const values = { ok: 0, failed: 0 }
-      for (const a of view.alerts) for (const x of a.deliveries) if (x.channel === 'telegram' && !x.test && new Date(x.at).toDateString() === d.toDateString()) values[x.ok ? 'ok' : 'failed']++
-      return { label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), values }
+      for (const a of view.alerts) for (const x of a.deliveries) if (x.channel === 'telegram' && !x.test && dayPT(x.at) === key) values[x.ok ? 'ok' : 'failed']++
+      return { label, values }
     })
   }, [view])
   const sent = days.reduce((t, d) => t + d.values.ok, 0)

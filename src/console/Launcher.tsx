@@ -5,6 +5,7 @@
    - WhatsNew:   what shipped since the hub update, each row with its live state where the hub checks it.
    A state is read from /api/hub (server/hub.mjs). "coming" is a surface still being set up that has not answered
    200 yet; nothing is shown as up that was not checked, and no figure is typed in. */
+import { TZ } from '../lib/time'
 import type { ComponentType, ReactNode } from 'react'
 import { Activity, ArrowLeftRight, ArrowUpRight, Bot, CircleDollarSign, Gamepad2, HardDrive, Network, Rocket, ScanSearch, Server, ShieldCheck, Vault, type LucideProps } from 'lucide-react'
 import './console.css'
@@ -140,7 +141,7 @@ export function HubBoard() {
     <div className="hb card" data-testid="hub-board">
       <div className="ch">
         <span className="lab cy">{ic(Activity)}Live board</span>
-        <span className="r">{hub ? `checked ${new Date(hub.generatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · each minute` : 'checking…'}</span>
+        <span className="r">{hub ? `checked ${new Date(hub.generatedAt).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })} · each minute` : 'checking…'}</span>
       </div>
       <div className="hbg">
         <Cell label="Gully Chain block" value={chainHead(live)} sub={live.chain ? 'testnet 485590 · RPC' : hub?.chain ? 'testnet 485590 · indexer' : 'testnet 485590'} spark={chainGaps(live)} color={C.s[0]} />

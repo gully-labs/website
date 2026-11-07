@@ -1,3 +1,4 @@
+import { TZ } from '../../../lib/time'
 import { BarChart3, BellPlus, ChartCandlestick, ChevronLeft, ChevronRight, Rows3, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { NF } from '../../../components/charts/number-formats'
@@ -26,7 +27,7 @@ const TABS = ['stocks', 'chart'] as const
 type Sub = (typeof TABS)[number]
 
 const idOf = (r: { chain: string; ticker: string }) => `${r.chain}:${r.ticker}`
-const hhmm = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
+const hhmm = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false })
 const byGap = (a: TrackerRow, b: TrackerRow) => (b.gapPct === null ? -1 : Math.abs(b.gapPct)) - (a.gapPct === null ? -1 : Math.abs(a.gapPct))
 
 function RowSpark({ m, ticker }: { m: Mover | undefined; ticker: string }) {
@@ -78,7 +79,7 @@ export default function TrackerView({ ctx }: { ctx: ServiceCtx }) {
   const pages = Math.max(1, Math.ceil(shown.length / PAGE))
   const pg = Math.min(page, pages - 1)
 
-  const status: Status = st.k === 'ok' ? { tone: 'live', text: `live · ${hhmm(st.data.generatedAt)} UTC` } : st.k === 'error' ? { tone: 'down', text: 'unreadable' } : { tone: 'checking', text: 'reading…' }
+  const status: Status = st.k === 'ok' ? { tone: 'live', text: `live · ${hhmm(st.data.generatedAt)} PT` } : st.k === 'error' ? { tone: 'down', text: 'unreadable' } : { tone: 'checking', text: 'reading…' }
   const chains = data?.chains ?? []
   const pending = st.k === 'error' ? 'unreadable' : '…'
   const pickChain = (k: string) => {
