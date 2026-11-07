@@ -1,5 +1,6 @@
 /* Site header and footer in the lab-console language: one line from 1024 to 1920 px (labels drop to icons
    below 1280), a Menu sheet below 1024, Lucide icon on every item, live pill, pill buttons. */
+import { track } from '../lib/track'
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { Activity, ArrowLeftRight, ArrowRight, ArrowUpRight, BookOpen, Box, Briefcase, ChartCandlestick, ChartLine, FileText, Gauge, KeyRound, LayoutGrid, Lock, Mail, Menu, MessageCircle, Rocket, Scale, Send, Sparkles, Tag, Trophy, type LucideProps, X, Zap } from 'lucide-react'
@@ -106,7 +107,7 @@ export function ConsoleHeader() {
         </nav>
         <div className="navr">
           <LivePill />
-          <a className="btn sec sm" href={APP_URL} target="_blank" rel="noopener noreferrer" aria-label="Launch app">
+          <a className="btn sec sm" href={APP_URL} target="_blank" rel="noopener noreferrer" aria-label="Launch app" onClick={() => track('launch-app', { from: 'header' })}>
             {ic(Zap)}
             <span className="lbl">Launch app</span>
           </a>
