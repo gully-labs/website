@@ -20,6 +20,8 @@
     "test:public-error": "node --test scripts/test-public-error.mjs",
     "test:chains": "node scripts/test-chains.mjs",
     "test:chains-launch": "node scripts/test-chains-launch.mjs",
+    "test:chain-orders": "node scripts/test-chain-orders.mjs",
+    "test:chain-flow": "node scripts/e2e-chain-flow.mjs",
     "test:telegram": "node scripts/test-telegram.mjs",
     "test:tg-channel": "node scripts/test-tg-channel.mjs",
     "test:tg-broadcast": "node scripts/test-tg-broadcast.mjs",

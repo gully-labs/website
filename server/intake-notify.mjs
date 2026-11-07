@@ -38,6 +38,7 @@ const MAX_FIELD = 300
 
 /** kind -> emoji, label (digest + message), admin section hash. */
 export const KINDS = {
+  'chain-order': { emoji: '🧾', label: 'Chain order', section: 'chainorders', thanks: 'we have your chain order.' },
   'chains-waitlist': { emoji: '⛓️', label: 'Gully Chains waitlist', section: 'chainkit', thanks: 'you are on the Gully Chains waitlist. We will message you when early access opens, and we read every answer you gave.' },
   'chain-kit': { emoji: '🧰', label: 'Chain Kit waitlist', section: 'chainkit', thanks: 'you are on the Chain Kit waitlist. We will write when the kit opens.' },
   'chains-devnet': { emoji: '🧪', label: 'Devnet waitlist', section: 'chainkit', thanks: 'you are on the Gully Chains devnet waitlist. We will write when devnet access opens.' },
