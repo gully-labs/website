@@ -226,7 +226,7 @@ export function DevelopersPage() {
   }
 
   return (
-    <div className={session.state === 'in' ? 'contents' : 'flex min-h-dvh flex-col'}>
+    <div className={session.state === 'in' ? 'contents' : 'flex min-h-[calc(100dvh-1px)] flex-col'}>
       {session.state === 'loading' && (
         <section className="flex min-h-[50vh] items-center justify-center px-4">
           <span className="inline-flex items-center gap-3 font-mono text-[13px] text-faint">

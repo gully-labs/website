@@ -38,7 +38,7 @@ const NAV = [['#build', 'Build', 'hammer'], ['#products', 'Products', 'layout-gr
 /** Product tiles: the landing's list, kre8 beside its chain, the Gully Core emblem from its own kit. */
 /** Features with their own host and a real probe, so their status is read like any product's. */
 const TOOLS = [{ key: 'bridge', name: 'Gully Bridge', icon: '/brand/web/logos/gc-icon.svg', href: 'https://testnet-bridge.gullychain.xyz', label: 'Testnet' }, { key: 'faucet', name: 'Faucet', icon: '/brand/web/logos/gc-icon.svg', href: 'https://faucet.gullychain.xyz', label: 'Testnet' }, { key: 'explorer', name: 'Explorer', icon: '/brand/web/logos/gc-icon.svg', href: 'https://testnet-explorer.gullychain.xyz', label: 'Testnet' }]
-const KRE8 = { key: 'kre8', name: 'kre8', icon: '/brand/products/kre8-icon.svg', href: 'https://kre8.fun', label: 'Testnet' }
+const KRE8 = { key: 'kre8', name: 'kre8', icon: '/brand/products/kre8-icon-dark-1024.svg', href: 'https://kre8.fun', label: 'Testnet' }
 const iconOf = (p) => (p.key === 'core' ? '/brand/products/gully-core-emblem-192.png' : p.icon)
 const cap = (href, label, cls = '') => `<a class="cap ${cls}" href="${esc(href)}"${ext(href) ? ' target="_blank" rel="noopener noreferrer"' : ''}><b></b>${esc(label)}</a>`
 
@@ -60,7 +60,7 @@ a{color:inherit;text-decoration:none}ul{list-style:none;margin:0;padding:0}h1,h2
 .hero .w{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:center}
 .eye{font-size:14px;font-weight:600;color:var(--sky)}h1{margin-top:12px;font-size:clamp(38px,5.2vw,60px);line-height:1.03;font-weight:800;letter-spacing:-.03em}
 .lede{margin-top:14px;max-width:46ch;font-size:18px;line-height:1.45;color:var(--soft)}.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
-.hero{padding:10px 0 18px;background:radial-gradient(ellipse at 66% 45%,#0E1C38 0,#081226 58%,#060C1C 100%)}.howl{display:block;height:170px;width:auto;margin-top:14px}
+.hero{overflow:hidden;padding:10px 0 18px;background:radial-gradient(ellipse at 66% 45%,#0E1C38 0,#081226 58%,#060C1C 100%)}.howl{display:block;height:170px;width:auto;margin-top:14px}
 .cmap{position:relative;min-width:0;aspect-ratio:760/560}.cmap svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.cmap-tall{display:none}.cfield{position:absolute;inset:-6% -10%;width:120%;height:112%;object-fit:cover;pointer-events:none;opacity:.9;-webkit-mask-image:radial-gradient(closest-side,#000 55%,transparent);mask-image:radial-gradient(closest-side,#000 55%,transparent)}
 .edge{fill:none;stroke:#6F8DDF;stroke-opacity:.45;stroke-width:1.5}.edge.plan{stroke:#3754A0;stroke-opacity:1;stroke-dasharray:4 5}.spark{fill:#6F8DDF}.nd2 .halo{fill:#060C1C;stroke:var(--c);stroke-width:2;transition:stroke-width .18s}a:hover .nd2 .halo,a:focus-visible .nd2 .halo{stroke-width:3.5}.nd2 .ping{fill:none;stroke:var(--c);stroke-opacity:.5;transform-box:fill-box;transform-origin:center;opacity:0}.in .nd2.is-up .ping{animation:ping 2.6s ease-out infinite}.nd2.is-soon .halo{stroke-dasharray:3 4}
 .nd2 .nm{font:600 13px Figtree,sans-serif;fill:#F1F3F8}.nd2 .mt{font:500 11px 'IBM Plex Mono',ui-monospace,monospace;fill:var(--soft)}.nd2 .st{font:500 9.5px 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;fill:#6F8DDF}.nd2 .st.live{fill:#F1F3F8}.nd2 .st.soon{fill:#C9D2E8}.nd2 .st.down{fill:var(--bad)}
