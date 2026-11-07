@@ -16,7 +16,7 @@ const sections = [
   { id: 'stats', title: 'GET /api/stats' },
   { id: 'status', title: 'GET /api/status' },
   { id: 'geo', title: 'GET /api/geo' },
-  { id: 'deepcore', title: 'Launchpad' },
+  { id: 'launchpad', title: 'Launchpad' },
   { id: 'solana', title: 'Solana' },
   { id: 'ask', title: 'Gully AI' },
   { id: 'plans', title: 'Plans and alert channels' },
@@ -404,7 +404,7 @@ export function ApiReference() {
         </P>
       </Section>
 
-      <Section id="deepcore" title="Launchpad: /api/deepcore">
+      <Section id="launchpad" title="Launchpad: /api/deepcore">
         <Fields
           head={['Path', 'Answers', 'Limits and cache']}
           variant="routes"

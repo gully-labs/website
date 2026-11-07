@@ -70,7 +70,7 @@ export function Changelog() {
           </li>
           <li>The widget links each stock to its page.</li>
           <li>
-            The <Ext href="https://gullylabs.xyz/">landing page</Ext> describes the launchpad as it is today (launchpad, hosted Launchpads and DEXes, router) and shows its hosted sites, launches in the last 24 hours and dollars in locks, read from <Ext href="https://api.deepcore.fun/v1/overview">api.deepcore.fun</Ext>.
+            The <Ext href="https://gullylabs.xyz/">landing page</Ext> describes the launchpad as it is today (launchpad, hosted Launchpads and DEXes, router) and shows its hosted sites, launches in the last 24 hours and dollars in locks, read from the launchpad's API.
           </li>
           <li>A preview of Gully Chains, managed Arbitrum Orbit L3s, starting with Gully Devnet. In development; nothing is live yet.</li>
           <li>

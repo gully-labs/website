@@ -95,7 +95,7 @@ export function SwapsDocs() {
       <Section id="evm" title="EVM chains: LI.FI">
         <P>
           On {ROBINHOOD} and {BNB} the card is the {LIFI} widget, locked to the token’s chain and connected to the site’s own wallet connection. For comparison it also shows what the {LAUNCHPAD} router would give for the same payment (read
-          through our cached <C>GET /api/deepcore/quote</C>); “Swap on the launchpad” opens the {LAUNCHPAD} site (deepcore.fun), nothing is executed from here.
+          through our cached <C>GET /api/deepcore/quote</C>); “Swap on the launchpad” opens the {LAUNCHPAD} site, nothing is executed from here.
         </P>
       </Section>
 
@@ -119,7 +119,7 @@ export function SwapsDocs() {
       </Section>
 
       <Section id="fees" title="Fees">
-        <P>Any fee Gully Labs adds is set by the owner on the server and stated in the quote before you confirm. Exchanges and networks charge their own fees and slippage on top. What this build of the site says:</P>
+        <P>Any fee Gully Labs adds is set by Gully Labs on the server and stated in the quote before you confirm. Exchanges and networks charge their own fees and slippage on top. What this build of the site says:</P>
         <Fields
           head={['Route', 'Router', 'Gully Labs fee on this build']}
           rows={[

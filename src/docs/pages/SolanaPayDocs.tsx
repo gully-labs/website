@@ -165,7 +165,7 @@ export function SolanaPayDocs() {
 
       <Section id="off" title="When it is off">
         <Callout label="OFF UNTIL SET">
-          Solana checkout is on only while the owner has set the Solana treasury wallet. Unset, Solana assets are not offered, and a quote on Solana is refused with “Payments on Solana cannot be taken yet”. There is never a fallback address.
+          Solana checkout is on only while the Solana treasury wallet is set. Unset, Solana assets are not offered, and a quote on Solana is refused with “Payments on Solana cannot be taken yet”. There is never a fallback address.
         </Callout>
       </Section>
     </DocPage>
