@@ -31,6 +31,7 @@ import { handleEcosystem } from './ecosystem.mjs'
 import { handleDiscovery } from './discovery.mjs'
 import { headTags, pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
 import { landingAsset, renderLanding } from './landing.mjs'
+import { productMeta, renderProduct } from './product-pages.mjs'
 import { handleBlog } from './blog.mjs'
 import { handleOg } from './og.mjs'
 import { handleAnalytics } from './analytics.mjs'
@@ -348,11 +349,18 @@ async function handleRequest(req, res) {
   if (legal && legal !== url.pathname && (req.method === 'GET' || req.method === 'HEAD')) return send(res, 301, '', { Location: legal + url.search, 'Cache-Control': 'public, max-age=86400' })
   if (handleDiscovery(req, res, url)) return
   // The new landing, on an unlinked noindex path until the owner approves it, and its two scripts.
-  if (url.pathname === '/landing/live.js' || url.pathname === '/landing/graphs.mjs' || url.pathname === '/landing/fx.js') return send(res, 200, landingAsset(url.pathname), { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' })
+  if (url.pathname === '/landing/live.js' || url.pathname === '/landing/graphs.mjs' || url.pathname === '/landing/fx.js' || url.pathname === '/landing/product.js') return send(res, 200, landingAsset(url.pathname), { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' })
   // LANDING_HOME=1: the owner approved it; the same page is the home page of gullylabs.xyz, with the home page's head tags.
   if (url.pathname === '/preview/landing' || (url.pathname === '/' && /^(1|true|on|yes)$/i.test(String(process.env.LANDING_HOME ?? '')) && host === 'gullylabs.xyz' && (req.method === 'GET' || req.method === 'HEAD'))) {
     const meta = pageMeta(host, url.pathname)
-    if (meta.found) return send(res, 200, await renderLanding(headTags(meta)), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', ...(meta.noindex ? { 'X-Robots-Tag': 'noindex' } : {}) })
+    if (meta.found) return send(res, 200, await renderLanding(headTags(meta), null, { preview: url.pathname !== '/' }), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', ...(meta.noindex ? { 'X-Robots-Tag': 'noindex' } : {}) })
+  }
+  // One page per product and per Gully Core build, on the shared template: preview only, noindex, until the owner flips them.
+  const preview = /^\/preview\/(products|build)\/([a-z0-9-]+)$/.exec(url.pathname)
+  if (preview && (req.method === 'GET' || req.method === 'HEAD')) {
+    const kind = preview[1] === 'build' ? 'build' : 'product'
+    const m = productMeta(kind, preview[2])
+    if (m) return send(res, 200, await renderProduct(headTags({ ...pageMeta(host, '/preview/landing'), title: m.title, description: m.description }), kind, preview[2]), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Robots-Tag': 'noindex' })
   }
   if (url.pathname === '/robots.txt') return send(res, 200, robotsFor(host), { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
   if (url.pathname === '/sitemap.xml') {

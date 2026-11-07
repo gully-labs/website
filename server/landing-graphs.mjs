@@ -269,3 +269,46 @@ export function board({ hub, stats }) {
     pulse: line(series, 'Mean response time across every surface, last hour'),
   }
 }
+
+/** A reading on the clock people here read: Los Angeles, labelled PT. Instants stay in UTC in the data. */
+export const ptTime = (t = Date.now()) => `${new Date(t).toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', hour: 'numeric', minute: '2-digit' })} PT`
+
+const WORD = { live: 'Live', down: 'Down', coming: 'Coming online', reading: 'Reading' }
+/** Everything a product page shows that moves. `page`: { card, hub: [probe keys], metric }. Same rules as the landing:
+    an unreadable source is a dash and an empty frame, never a zero. */
+export function productView({ hub, products, live, stats }, page) {
+  const card = page.card ? cards({ hub, products, live, stats })[page.card] : null
+  const svcs = (hub?.services ?? []).filter((s) => page.hub.includes(s.key))
+  const state = card?.state ?? stateOf(hub, page.hub)
+  const up = svcs.filter((s) => s.state === 'up')
+  const mean = (xs) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null)
+  const msNow = mean(up.map((s) => s.ms).filter((m) => num(m) != null))
+  const len = Math.max(0, ...svcs.map((s) => s.history?.length ?? 0))
+  const series = []
+  for (let i = 0; i < len; i++) {
+    const at = svcs.map((s) => s.history?.[s.history.length - len + i]?.ms).filter((m) => num(m) != null)
+    series.push(at.length ? at.reduce((a, b) => a + b, 0) / at.length : null)
+  }
+  const all = svcs.flatMap((s) => s.history ?? [])
+  const answered = all.filter((h) => num(h.ms) != null).length
+  const meanMs = mean(series.filter((x) => x != null))
+  return {
+    state,
+    word: WORD[state] ?? state,
+    value: card?.value && card.value !== '–' ? card.value : '',
+    unit: card?.unit ?? '',
+    up: hub ? `${up.length}/${svcs.length}` : '–',
+    ms: msNow == null ? '–' : `${msNow} ms`,
+    answered: all.length ? `${((answered / all.length) * 100).toFixed(1)}%` : '–',
+    meanMs: meanMs == null ? '–' : `${meanMs} ms`,
+    latency: line(series, 'Mean response time of this product, last hour'),
+    activity: page.metric === 'blocks' ? blocks(products?.chain?.recent, 'Newest Gully Chain blocks') : page.metric ? coreBars(products, page.metric) : '',
+    cells: svcs.map((s) => `<i class="c ${s.state === 'up' ? 'up' : s.state === 'coming' ? 'soon' : 'off'}" title="${s.name}: ${s.state}"></i>`).join(''),
+  }
+}
+
+/** A launch preset's fee over its window. `p`: { from, to }, percent: the opening fee, falling to the final fee. */
+export function feeCurve(p) {
+  const y = (v) => (H - 8 - (v / 50) * (H - 16)).toFixed(1)
+  return svg(`<path class="g-line" pathLength="1" d="M0 ${y(p.from)}L${p.from === p.to ? W : W * 0.8} ${y(p.to)}L${W} ${y(p.to)}" vector-effect="non-scaling-stroke"/>`, `The fee falls from ${p.from}% to ${p.to}%`, true)
+}

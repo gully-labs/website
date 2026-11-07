@@ -14,8 +14,8 @@ import { ICONS, NAV_ICON, PRODUCT_ICON } from './landing-icons.mjs'
 const CONTENT = JSON.parse(fs.readFileSync(new URL('./data/page-content.json', import.meta.url), 'utf8'))
 const L = CONTENT.landing
 const CHAINS = JSON.parse(fs.readFileSync(new URL('./data/core-chains.json', import.meta.url), 'utf8'))
-const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-const icon = (name) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] ?? ICONS.box}</svg>`
+export const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+export const icon = (name) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] ?? ICONS.box}</svg>`
 const ext = (href) => /^https?:/.test(href)
 const a = (href, inner, cls = '') => `<a href="${esc(href)}"${cls ? ` class="${cls}"` : ''}${ext(href) ? ' target="_blank" rel="noopener noreferrer"' : ''}>${inner}</a>`
 const navLink = ([href, label]) => `<li>${a(href, `${icon(NAV_ICON[label] ?? 'box')}<span>${esc(label)}</span>`)}</li>`
@@ -25,7 +25,7 @@ const within = (p, ms) => Promise.race([p.catch(() => null), new Promise((r) => 
 
 const CORE = 'https://gullychain.xyz/core/app'
 /** The Build tabs: each one links to the real Gully Core app route. `metric`: the real series beside it. */
-const BUILD = [
+export const BUILD = [
   { key: 'token', label: 'Launch a token', icon: 'rocket', title: 'Launch a token', body: 'A token and its pool, tradable from the first block, with liquidity locked.', steps: ['Name your token', 'Set the launch rules', 'Go live'], cta: 'Launch a token', href: `${CORE}/launch/v2/new`, metric: 'launches' },
   { key: 'pad', label: 'Launchpad', icon: 'layers', title: 'Your own launchpad', body: 'A launch site with your brand, your domain and your rules, on the shared core.', steps: ['Pick a chain', 'Add your brand', 'Set your fee share'], cta: 'Build a launchpad', href: `${CORE}/pads/new`, metric: 'launches' },
   { key: 'dex', label: 'DEX', icon: 'arrow-left-right', title: 'Your own DEX', body: 'A swap site on Gully Core pools, ready to host with no contracts to deploy.', steps: ['Pick a chain', 'Choose your pairs', 'Publish your site'], cta: 'Build a DEX', href: `${CORE}/dexes/new?kind=dex`, metric: 'swaps' },
@@ -40,9 +40,9 @@ const NAV = [['#build', 'Build', 'hammer'], ['#products', 'Products', 'layout-gr
 const TOOLS = [{ key: 'bridge', name: 'Gully Bridge', icon: '/brand/web/logos/gc-icon.svg', href: 'https://testnet-bridge.gullychain.xyz', label: 'Testnet' }, { key: 'faucet', name: 'Faucet', icon: '/brand/web/logos/gc-icon.svg', href: 'https://faucet.gullychain.xyz', label: 'Testnet' }, { key: 'explorer', name: 'Explorer', icon: '/brand/web/logos/gc-icon.svg', href: 'https://testnet-explorer.gullychain.xyz', label: 'Testnet' }]
 const KRE8 = { key: 'kre8', name: 'kre8', icon: '/brand/products/kre8-icon-192.png', href: 'https://kre8.fun', label: 'Testnet' }
 const iconOf = (p) => (p.key === 'core' ? '/brand/products/gully-core-emblem-192.png' : p.icon)
-const cap = (href, label, cls = '') => `<a class="cap ${cls}" href="${esc(href)}"${ext(href) ? ' target="_blank" rel="noopener noreferrer"' : ''}><b></b>${esc(label)}</a>`
+export const cap = (href, label, cls = '') => `<a class="cap ${cls}" href="${esc(href)}"${ext(href) ? ' target="_blank" rel="noopener noreferrer"' : ''}><b></b>${esc(label)}</a>`
 
-const CSS = `@font-face{font-family:Figtree;src:url(/fonts/figtree-latin-500.woff2) format("woff2");font-weight:400 500;font-display:swap}
+export const CSS = `@font-face{font-family:Figtree;src:url(/fonts/figtree-latin-500.woff2) format("woff2");font-weight:400 500;font-display:swap}
 @font-face{font-family:'IBM Plex Mono';src:url(/fonts/ibm-plex-mono-latin-500.woff2) format("woff2");font-weight:500;font-display:swap}
 @font-face{font-family:Figtree;src:url(/fonts/figtree-latin-700.woff2) format("woff2");font-weight:600 800;font-display:swap}
 :root{color-scheme:dark;--navy:#0E1C38;--blue:#3754A0;--sky:#6F8DDF;--ground:#F1F3F8;--soft:#C9D2E8;--ok:#6F8DDF;--bad:#FF8A7A;--soon:#C9D2E8}
@@ -95,7 +95,7 @@ footer{margin-top:36px;padding:26px 0;border-top:1px solid var(--blue)}footer a:
 
 const tile = (p, v) => `<a class="tile" data-p="${p.key}" data-state="${v.state}" href="${esc(p.href)}"${ext(p.href) ? ' target="_blank" rel="noopener noreferrer"' : ''}><img src="${esc(iconOf(p))}" alt="" width="32" height="32" loading="lazy"><span><b>${esc(p.name)}</b><span class="st" data-fb="${esc(p.kind ?? p.label)}" data-u>${esc(v.value ? `${v.value} ${v.unit}` : p.kind ?? p.label)}</span></span></a>`
 const byKey = Object.fromEntries(L.products.map((p) => [p.key, p]))
-const TILES = [byKey.core, byKey.chain, KRE8, ...L.products.filter((p) => !['core', 'chain'].includes(p.key)), ...TOOLS, ...L.peddle]
+export const TILES = [byKey.core, byKey.chain, KRE8, ...L.products.filter((p) => !['core', 'chain'].includes(p.key)), ...TOOLS, ...L.peddle]
 
 const MAP_ICON = { id: '/brand/hub/icons/gully-id.svg', ai: '/brand/hub/icons/ai.png' }
 const MAP_NODES = ['id', 'pay', 'rpc', 'holdermaps', 'security', 'studio', 'ai', 'chain', 'core', 'kre8', 'multisig'].map((k) => {
@@ -114,16 +114,20 @@ function slim({ hub: h, products: p, live: l, stats: s }) {
   }
 }
 
+/** The bar, the header and the footer: the landing and the product pages draw the same ones. */
+const N = CONTENT.nav
+export const pageTop = () => `<div class="fx" id="fx"><a href="https://x.com/Gully_Labs" target="_blank" rel="noopener noreferrer">Follow @Gully_Labs on X</a><button type="button" aria-label="Dismiss">×</button></div><header class="top"><div class="w"><a href="/" aria-label="Gully Labs home"><img src="/brand/kit/logotype-reversed.svg" alt="Gully Labs" width="154" height="28"></a><nav aria-label="Main"><ul>${NAV.map(([href, label, ic]) => `<li>${a(href, `${icon(ic)}<span>${esc(label)}</span>`)}</li>`).join('')}</ul></nav>${cap('https://app.gullylabs.xyz', 'Open app', 'solid sm')}</div></header>`
+export const pageFoot = () => `<footer><div class="w"><div class="f"><div><img src="/brand/kit/logotype-reversed.svg" alt="Gully Labs" width="175" height="34" loading="lazy"><p style="margin-top:10px;font-size:14px;color:var(--soft)">${esc(N.tagline)}</p><ul style="margin-top:8px">${N.footer.map(navLink).join('')}</ul></div>${N.products.map((g) => `<nav aria-label="${esc(g.group)}"><span class="lab">${esc(g.group)}</span><ul>${g.links.map(([href, label]) => `<li>${a(href, `${icon(PRODUCT_ICON[label] ?? 'box')}<span>${esc(label)}</span>`)}</li>`).join('')}</ul></nav>`).join('')}</div><div class="fb"><span>${esc(N.copy)}</span><ul>${N.legal.map(navLink).join('')}</ul><a class="pb" href="/" aria-label="Powered by Gully Labs"><img src="/brand/kit/powered-by-clear-white.svg" alt="Powered by Gully Labs" width="150" height="40" loading="lazy"></a></div></div></footer>`
+
 /** The whole page. `meta`: title, description and head tags, already rendered for this path by seo.mjs. */
-export async function renderLanding(head, given = null) {
+export async function renderLanding(head, given = null, { preview = false } = {}) {
   const [hubB, products, live, stats] = given ? [given.hub, given.products, given.live, given.stats] : await Promise.all([within(hub(), 250), within(hubProducts(), 250), within(hubLive(), 250), within(readStats(), 250)])
   const data = { hub: hubB, products, live, stats, stages: STAGES }
   const c = cards(data)
   const b = board(data)
-  const N = CONTENT.nav
   const boot = JSON.stringify({ ...slim(data), stages: STAGES }).replace(/</g, '\\u003c')
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${head}<link rel="preload" href="/fonts/figtree-latin-700.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/brand/kit/owl/owl-presenting-400.webp" as="image"><link rel="modulepreload" href="/landing/graphs.mjs"><script src="/landing/fx.js"></script><style>${CSS}</style></head><body>
-<div class="fx" id="fx"><a href="https://x.com/Gully_Labs" target="_blank" rel="noopener noreferrer">Follow @Gully_Labs on X</a><button type="button" aria-label="Dismiss">×</button></div><header class="top"><div class="w"><a href="/" aria-label="Gully Labs home"><img src="/brand/kit/logotype-reversed.svg" alt="Gully Labs" width="154" height="28"></a><nav aria-label="Main"><ul>${NAV.map(([href, label, ic]) => `<li>${a(href, `${icon(ic)}<span>${esc(label)}</span>`)}</li>`).join('')}</ul></nav>${cap('https://app.gullylabs.xyz', 'Open app', 'solid sm')}</div></header>
+  const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${head}<link rel="preload" href="/fonts/figtree-latin-700.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/brand/kit/owl/owl-presenting-400.webp" as="image"><link rel="modulepreload" href="/landing/graphs.mjs"><script src="/landing/fx.js"></script><style>${CSS}</style></head><body>
+${pageTop()}
 <main>
 <section class="hero"><div class="w"><div><p class="eye">You Think It, We Ship It</p><h1>Launch a token. Run a launchpad. Own a DEX.</h1><p class="lede">Gully Core gives you the whole stack, on the chains your users already use.</p><div class="cta">${cap('#build', 'Start building', 'solid')}${cap('https://app.gullylabs.xyz', 'Open the app')}</div><img class="howl" src="/brand/kit/owl/owl-presenting-400.webp" alt="The Gully Labs owl presenting" width="92" height="170"></div>
 <div class="cmap" data-anim><img class="cfield" src="/brand/hub/art/hero-field-kit.svg" alt="" width="1200" height="760">${constellation('wide', MAP_NODES, data)}${constellation('tall', MAP_NODES, data)}</div></div></section>
@@ -135,15 +139,17 @@ export async function renderLanding(head, given = null) {
 <div class="box fee"><div><h2>One simple fee</h2><p>Builders pay 0.30% of every trade. Nothing else.</p></div><b>0.30%</b></div></div></section>
 <section class="s" id="products"><div class="w"><h2 class="t">Everything in orbit</h2><div class="tiles">${TILES.map((p) => tile(p, c[p.key])).join('')}</div></div></section>
 </main>
-<footer><div class="w"><div class="f"><div><img src="/brand/kit/logotype-reversed.svg" alt="Gully Labs" width="175" height="34" loading="lazy"><p style="margin-top:10px;font-size:14px;color:var(--soft)">${esc(N.tagline)}</p><ul style="margin-top:8px">${N.footer.map(navLink).join('')}</ul></div>${N.products.map((g) => `<nav aria-label="${esc(g.group)}"><span class="lab">${esc(g.group)}</span><ul>${g.links.map(([href, label]) => `<li>${a(href, `${icon(PRODUCT_ICON[label] ?? 'box')}<span>${esc(label)}</span>`)}</li>`).join('')}</ul></nav>`).join('')}</div><div class="fb"><span>${esc(N.copy)}</span><ul>${N.legal.map(navLink).join('')}</ul><a class="pb" href="/" aria-label="Powered by Gully Labs"><img src="/brand/kit/powered-by-clear-white.svg" alt="Powered by Gully Labs" width="150" height="40" loading="lazy"></a></div></div></footer>
+${pageFoot()}
 <div id="toasts" role="status" aria-live="polite"></div>
 <script type="application/json" id="boot">${boot}</script><script type="module" src="/landing/live.js"></script></body></html>`
+  // On the preview, products open their preview pages; the home page keeps the current ones until the owner flips it.
+  return preview ? page.replaceAll('href="/products/', 'href="/preview/products/') : page
 }
 
 /** The two script files, from server/ so the server and the browser run the same graph code. */
 export function landingAsset(pathname) {
   // A blocking one-liner before the first paint, so a dismissed bar never shows or shifts the page (the CSP refuses inline scripts).
   if (pathname === '/landing/fx.js') return "try{if(localStorage.getItem('gl-follow-x-dismissed')==='1')document.documentElement.classList.add('fx-off')}catch(e){}"
-  const f = pathname === '/landing/graphs.mjs' ? 'landing-graphs.mjs' : pathname === '/landing/live.js' ? 'landing-live.mjs' : null
+  const f = pathname === '/landing/graphs.mjs' ? 'landing-graphs.mjs' : pathname === '/landing/live.js' ? 'landing-live.mjs' : pathname === '/landing/product.js' ? 'product-live.mjs' : null
   return f ? fs.readFileSync(new URL(`./${f}`, import.meta.url), 'utf8') : null
 }
