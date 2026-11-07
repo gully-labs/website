@@ -58,6 +58,7 @@
     "test:badges": "node scripts/test-badges.mjs",
     "test:gully-score": "node scripts/test-gully-score.mjs",
     "test:gully-chain": "node --test scripts/test-gully-chain.mjs",
+    "test:gully-mainnet": "node --test scripts/test-gully-mainnet.mjs",
     "seo:indexnow": "node scripts/indexnow-submit.mjs",
     "test:holders": "node --test scripts/test-holders.mjs",
     "test:holders-hero": "node --test scripts/test-holders-hero.mjs",
