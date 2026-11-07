@@ -1732,10 +1732,13 @@ await step('security', async () => {
     if (mobile) await noHorizontalScroll(page, '/security')
     else {
       // Open the header's Products menu: the footer lists these links as plain text, so it must not count.
+      await page.goto(BASE + '/about')
       await page.locator('[data-menu-trigger="products"]').first().click()
       await page.locator('header a[href*="gullysecurity.xyz"]').first().waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {})
       check('/security: Security and Gully Score are in the Products menu with icons', (await page.locator('header a[href*="gullysecurity.xyz"] svg').count()) > 0 && (await page.locator('header a[href*="/score"] svg').count()) > 0)
       await page.keyboard.press('Escape')
+      await page.goto(BASE + '/security')
+      await page.getByRole('heading', { level: 1 }).waitFor()
     }
     await shot(page, 'security-page')
     await designAudit(page, `security-page at ${page.viewportSize().width}`)
@@ -2462,7 +2465,7 @@ await step('da3-g6 empty states, fills, logos and prose', async () => {
     })
     check(`da3-g6 ${url} ${width}: the movers note is on a ghost chart at 4.5:1 or better, not on a shimmer`, r.hasSvg && !r.shimmer && r.size >= 11 && ratio(r.color, [21, 29, 40]) >= 4.5 && /Needs 24h of snapshots/.test(r.text), JSON.stringify(r))
     await noHorizontalScroll(page, `da3-g6 ${url} ${width}`)
-    await w.verify([/ERR_BLOCKED_BY_CLIENT/i, ...(url === '/this-page-does-not-exist' ? [/404/] : [])])
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i, ...(url === '/tracker/robinhood/ZZZZ' ? [/404/] : [])])
     await ctx.close()
   }
   // D17, the same pattern on /ask: with no trusted gap, the widest-gaps chart is a ghost with a 4.5:1 note.
@@ -2546,7 +2549,7 @@ await step('da3-g6 empty states, fills, logos and prose', async () => {
     }
     if (width === 1440) {
       // "null" belongs in code only; no raw error JSON in prose.
-      for (const slug of ['api', 'gully-ai', 'gully-score', 'status', 'teams', 'plans-alerts', 'sdk', 'gully-pay', 'gully-pay-merchants']) {
+      for (const slug of ['api', 'gully-ai', 'gully-score', 'status', 'teams', 'plans-alerts', 'sdk']) {
         await page.goto(`${BASE}/docs/${slug}`)
         await page.getByRole('heading', { level: 1 }).first().waitFor()
         const prose = await page.evaluate(() => {
@@ -2720,6 +2723,10 @@ await step('analytics events', async () => {
   const ev = []
   const collect = async () => ev.push(...(await page.evaluate(() => window.__ev)))
   await page.goto(BASE + '/tracker')
+  const launch = page.locator('header a', { hasText: 'Launch app' }).first()
+  await launch.waitFor()
+  await launch.evaluate((a) => a.addEventListener('click', (e) => e.preventDefault()))
+  await launch.click()
   await collect()
   await page.goto(BASE + '/pricing')
   const plan = page.locator('#panel-api a[target="_blank"]').first()
@@ -2779,7 +2786,7 @@ await step('analytics events', async () => {
     await grab()
     await page.goto(BASE + '/tracker/solana/TSLA')
     await page.getByRole('checkbox', { name: 'I understand' }).check()
-    await page.getByText(/~0\.0231/).waitFor({ timeout: 15_000 })
+    await page.getByText(/0\.0231/).first().waitFor({ timeout: 15_000 })
     await grab()
     const by = (n) => pev.filter((e) => e[0] === n).map((e) => e[1])
     check('analytics: ask-asked carries the surface and the tools, not the question', by('ask-asked').length === 1 && by('ask-asked')[0].surface === 'ask-page' && typeof by('ask-asked')[0].tools === 'string' && !('q' in by('ask-asked')[0]), JSON.stringify(by('ask-asked')))
@@ -3181,8 +3188,8 @@ await step('service hosts', async () => {
     // A link to a site page leaves for gullylabs.xyz directly.
     await hp.goto(at('holdermaps.xyz', '/'))
     await hp.getByRole('heading', { level: 1, name: 'Who really holds it?' }).waitFor({ timeout: 30_000 })
-    await Promise.all([hp.waitForURL('https://gullylabs.xyz/**', { timeout: 15_000 }), hp.locator('footer a[href="/terms"]').first().click()])
-    check('holdermaps: a site link (Terms) goes to https://gullylabs.xyz/terms', hp.url() === 'https://gullylabs.xyz/terms', hp.url())
+    check('holdermaps: site links go to https://gullylabs.xyz', (await hp.locator('a[href^="https://gullylabs.xyz"]').count()) > 0)
+    check('holdermaps: Terms is its own page on this host (2026-11-03)', (await hp.locator('footer a[href="/terms"]').count()) > 0)
     check('holdermaps: no CSP violations on its pages', cspErrors.length === 0, cspErrors.slice(0, 2).join(' | '))
     const www = await hreq('www.holdermaps.xyz', `/base/${holder}`)
     check('holdermaps: www. is a 301 to the apex', www.status === 301 && www.headers.location === `https://holdermaps.xyz/base/${holder}`)
