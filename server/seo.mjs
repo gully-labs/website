@@ -383,6 +383,7 @@ function pageMetaFor(host, pathname) {
   if (isLocal(host)) {
     if (p === '/developers' || p === '/app') return { ...pageMeta(APP_HOST, '/'), canonical: null, noindex: true }
     if (p === '/admin' || p.startsWith('/admin/')) return pageMeta('admin.gullylabs.xyz', '/')
+    if (p === '/create-chain' || p.startsWith('/create-chain/')) return { ...pageMeta(APP_HOST, p), canonical: null, noindex: true }
     if (p === '/docs' || p.startsWith('/docs/')) {
       const m = pageMeta('docs.gullylabs.xyz', p.slice(5) || '/')
       return { ...m, canonical: null, noindex: true }
@@ -394,6 +395,8 @@ function pageMetaFor(host, pathname) {
     return { title: 'Not found · Gully Labs docs', description: DOCS_PAGES['/'][1], canonical: null, found: false }
   }
   // The Gully Labs App.
+  if (isAppHost(host) && /^\/create-chain\/orders(\/|$)/.test(p)) return { title: 'Your chain order · Gully Labs', description: 'The status of your chain order.', canonical: null, noindex: true, found: true, image: `${SITE}/social/og-developers.png` }
+  if (isAppHost(host) && p === '/create-chain') return { title: 'Create a chain · Gully Labs', description: 'Order your own Arbitrum Orbit chain: testnet free for 30 days, with explorer, bridge, faucet, RPC, Gully Core and Gully Multisig. Pay with Gully Pay.', canonical: `${APP}/create-chain`, found: true, image: `${SITE}/social/og-developers.png` }
   if (isAppHost(host))
     return { title: APP_TITLE, description: APP_DESCRIPTION, canonical: `${APP}/`, found: true, image: `${SITE}/social/og-developers.png` }
   // The admin app is one page at the root of its host; any other path is not a page.

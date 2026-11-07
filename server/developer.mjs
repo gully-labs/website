@@ -179,8 +179,15 @@ export function sessionContext(req) {
   return { user, workspace, role }
 }
 
+/** Read-only: { address, sub } of a Sign in with Gully ID session, or null (signed out, blocked, or signed in by wallet). */
+export function sessionGullyId(req) {
+  const s = currentSession(req)
+  if (!s || s.via !== 'gully-id' || !s.gullySub) return null
+  return getAccount(s.address)?.blocked ? null : { address: s.address, sub: s.gullySub }
+}
+
 /** CSRF guard for every state-changing request. */
-function sameSite(req) {
+export function sameSite(req) {
   if (req.headers['x-requested-with'] !== 'gully') return false
   const origin = req.headers.origin
   if (!origin) return true
@@ -258,7 +265,7 @@ export async function handleDeveloper(req, res, url) {
     if (!v.ok) return json(res, v.status, { error: v.error, code: v.code }), true
     if (getAccount(v.address)?.blocked) return json(res, 403, { error: 'This wallet is blocked from the developer programme. Contact team@gullylabs.xyz.' }), true
     touchAccount(v.address)
-    const id = createSession(v.address, { userAgent: String(req.headers['user-agent'] ?? '') })
+    const id = createSession(v.address, { userAgent: String(req.headers['user-agent'] ?? ''), via: 'gully-id', gullySub: v.sub })
     return json(res, 200, { address: v.address, via: 'gully-id' }, { 'Set-Cookie': sessionCookie(req, id, Math.floor(SESSION_TTL_MS / 1000)) }), true
   }
 

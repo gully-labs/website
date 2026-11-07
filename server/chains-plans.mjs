@@ -31,9 +31,9 @@ export const STACK = [
 
 export const CHAINS = {
   // Free for `freeDays`, then `monthlyUsd` a month. null: not set yet, shown as "TBA".
-  testnet: { id: 'testnet', name: 'Testnet', freeDays: 30, monthlyUsd: null },
+  testnet: { id: 'testnet', name: 'Testnet', freeDays: 30, monthlyUsd: 212.5 },
   // From `fromUsdPerMonth` a month, plus `sequencerProfitPct` per cent of the sequencer's profit; data availability at cost.
-  mainnet: { id: 'mainnet', name: 'Managed mainnet', fromUsdPerMonth: 3500, sequencerProfitPct: 5, daAtCost: true },
+  mainnet: { id: 'mainnet', name: 'Managed mainnet', fromUsdPerMonth: 4250, sequencerProfitPct: 4.25, daAtCost: true },
   // `usd`: null is "TBA"; `model` says how it is billed.
   addons: [
     { id: 'paymaster', name: 'Sponsored gas paymaster', model: 'usage-billed', usd: null, status: 'with-testnet' },
@@ -43,6 +43,79 @@ export const CHAINS = {
     { id: 'gully-core', name: 'Gully Core launchpad', model: 'revenue share on launch fees', usd: null, status: 'planned' },
   ],
   note: 'Prices before launch may change.',
+}
+
+/* ---------------------------------------------------------- Create a chain: the order flow's prices --- */
+
+// HOW THE NUMBERS WERE SET (owner, Nov 2026: "competitive pricing 15% cheaper"). Read 2026-11-07. Internal: never sent to
+// a page, and no page compares us with anyone, because a comparison needs a source and the base fee below has none.
+//   - conduit.xyz/pricing, Trial Testnet "$250 per month"                     -> ours $212.50 a month after the free days
+//   - conduit.xyz/pricing, Growth "Contact for pricing + 5% sequencer profit" -> ours 4.25% of sequencer profit
+//   - Conduit's old Growth base ($60,000 a year, our Oct 2026 note) is NOT published any more. $4,250 a month is that
+//     note less 15%: the owner's target, unsourced, until he confirms it.
+//   - caldera.xyz/pricing is a 404, and neither caldera.xyz nor docs.caldera.xyz shows a price: no Caldera benchmark.
+export const PRICE_BENCHMARKS = {
+  checkedAt: '2026-11-07',
+  discountPct: 15,
+  sources: [
+    { name: 'Conduit Trial Testnet', url: 'https://www.conduit.xyz/pricing', published: '$250 per month', ours: '$212.50 per month' },
+    { name: 'Conduit Growth share', url: 'https://www.conduit.xyz/pricing', published: '5% sequencer profit', ours: '4.25% sequencer profit' },
+    { name: 'Conduit Growth base', url: 'https://www.conduit.xyz/pricing', published: null, ours: '$4,250 per month (owner target, unsourced)' },
+    { name: 'Caldera', url: 'https://caldera.xyz', published: null, ours: null },
+  ],
+}
+
+// What a testnet order pays at checkout. A testnet chain is free for its free days, so this is not a price: it proves the
+// payment path, in testnet USDC.e (no value). 0 skips checkout: the order goes straight to Paid.
+export const TESTNET_TEST_CHARGE_USD = 1
+
+/** Add-ons in the order flow. A number is a monthly price (0: included), null: priced with the customer. `fee`: a usage term. */
+export const ORDER_ADDONS = [
+  { id: 'explorer', name: 'Block explorer', icon: 'search', body: 'Your own branded explorer.', testnetUsd: 0, mainnetUsd: 0, standard: true },
+  { id: 'bridge', name: 'Bridge', icon: 'bridge', body: 'Move assets to and from the parent chain.', testnetUsd: 0, mainnetUsd: 0, standard: true },
+  { id: 'faucet', name: 'Faucet', icon: 'droplets', body: 'Test funds for your builders.', testnetUsd: 0, mainnetUsd: null, testnetOnly: true, standard: true },
+  { id: 'rpc', name: 'Gully RPC', icon: 'server', body: 'Public and keyed RPC endpoints.', testnetUsd: 0, mainnetUsd: 0, standard: true },
+  { id: 'monitoring', name: 'Monitoring', icon: 'activity', body: 'Uptime, sequencer and batch alerts.', testnetUsd: 0, mainnetUsd: 0, standard: false },
+  { id: 'gully-core', name: 'Gully Core', icon: 'layers', body: 'Launchpad and DEX contracts on your chain.', testnetUsd: 0, mainnetUsd: 0, fee: '0.30% of every trade', standard: false },
+  { id: 'multisig', name: 'Gully Multisig', icon: 'shield', body: 'A multisig for your chain owner role.', testnetUsd: 0, mainnetUsd: null, standard: false },
+]
+
+/** Where a chain may settle: the parents on which Nitro's licence is free. */
+export const ORDER_PARENTS = {
+  testnet: [{ id: 421614, name: 'Arbitrum Sepolia' }],
+  mainnet: [{ id: 42161, name: 'Arbitrum One' }, { id: 42170, name: 'Arbitrum Nova' }],
+}
+export const NITRO_LICENCE_NOTE = 'Arbitrum Nitro is free to run only when your chain settles to Arbitrum One, Arbitrum Nova or Arbitrum Sepolia, so those are the only parents we offer.'
+export const GAS_TOKENS = [{ id: 'eth', name: 'ETH' }, { id: 'custom', name: 'Your own token' }]
+
+// Gully Pay has no subscriptions API today (a subscriptions table and a buyer's read-only list; nothing creates or
+// renews one): the first month is one hosted checkout, and each later month is an invoice we send by hand.
+export const BILLING = { model: 'first-month-invoice', note: 'Billed monthly by invoice. Nothing renews by itself.' }
+
+const money = (usd) => `$${usd.toLocaleString('en-US', { minimumFractionDigits: Number.isInteger(usd) ? 0 : 2, maximumFractionDigits: 2 })}`
+
+/**
+ * The one price calculation: the page shows it, the order stores it, checkout charges it.
+ * Returns null for an unknown tier or add-on. `dueCents`: what checkout charges today, in USD cents.
+ */
+export function quoteOrder(tier, addonIds = []) {
+  if (tier !== 'testnet' && tier !== 'mainnet') return null
+  const picked = []
+  for (const id of new Set(addonIds)) {
+    const a = ORDER_ADDONS.find((x) => x.id === id)
+    if (!a || (a.testnetOnly && tier !== 'testnet')) return null
+    picked.push(a)
+  }
+  const usdOf = (a) => (tier === 'testnet' ? a.testnetUsd : a.mainnetUsd)
+  const addons = picked.map((a) => ({ id: a.id, name: a.name, usd: usdOf(a), fee: a.fee ?? null }))
+  const addonMonthly = addons.reduce((n, a) => n + (a.usd ?? 0), 0)
+  if (tier === 'testnet') {
+    const dueCents = Math.round(TESTNET_TEST_CHARGE_USD * 100)
+    const monthlyUsd = CHAINS.testnet.monthlyUsd + addonMonthly
+    return { tier, addons, dueCents, testCharge: dueCents > 0, freeDays: CHAINS.testnet.freeDays, monthlyUsd, sequencerProfitPct: null, daAtCost: false, priceWithUs: false, headline: `Free for ${CHAINS.testnet.freeDays} days`, after: `Then ${money(monthlyUsd)} a month, invoiced` }
+  }
+  const monthlyUsd = CHAINS.mainnet.fromUsdPerMonth + addonMonthly
+  return { tier, addons, dueCents: Math.round(monthlyUsd * 100), testCharge: false, freeDays: 0, monthlyUsd, sequencerProfitPct: CHAINS.mainnet.sequencerProfitPct, daAtCost: CHAINS.mainnet.daAtCost, priceWithUs: addons.some((a) => a.usd === null), headline: `${money(monthlyUsd)} a month`, after: `+ ${CHAINS.mainnet.sequencerProfitPct}% of sequencer profit, data availability at cost` }
 }
 
 /** The waitlist form's choices: [value, label]. The server accepts only these values. */

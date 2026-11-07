@@ -141,13 +141,13 @@ function pruneSessions() {
  * Starts a session for a wallet; returns the plaintext session id (for the cookie) once.
  * `userAgent` (optional) is kept, cut to 200 characters, to label the device in the sessions list.
  */
-export function createSession(address, { userAgent = null } = {}) {
+export function createSession(address, { userAgent = null, via = null, gullySub = null } = {}) {
   pruneSessions()
   const mine = Object.entries(sessions).filter(([, s]) => s.address === address).sort((a, b) => a[1].createdAt.localeCompare(b[1].createdAt))
   while (mine.length >= MAX_SESSIONS_PER_ACCOUNT) delete sessions[mine.shift()[0]]
   const id = randomToken(32)
   const now = Date.now()
-  sessions[sha256(id)] = { address, createdAt: new Date(now).toISOString(), expiresAt: new Date(now + SESSION_TTL_MS).toISOString(), lastSeenAt: new Date(now).toISOString(), userAgent: typeof userAgent === 'string' ? userAgent.slice(0, 200) : null, activeWorkspace: null }
+  sessions[sha256(id)] = { address, ...(via ? { via, gullySub } : {}), createdAt: new Date(now).toISOString(), expiresAt: new Date(now + SESSION_TTL_MS).toISOString(), lastSeenAt: new Date(now).toISOString(), userAgent: typeof userAgent === 'string' ? userAgent.slice(0, 200) : null, activeWorkspace: null }
   saveSessions()
   return id
 }

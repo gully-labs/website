@@ -31,6 +31,7 @@ import { sectionCls } from './adminSections'
 import { HealthCard } from './HealthCard'
 import { AlertsAdmin, ChainKitAdmin, WorkspacesAdmin } from './OpsAdmin'
 import { ChainsWaitlist } from './ChainsWaitlist'
+import { ChainOrdersAdmin } from './ChainOrdersAdmin'
 import { ArrowMark } from './newTab'
 import { EcosystemSubmissions } from './EcosystemSubmissions'
 
@@ -1175,6 +1176,9 @@ export function AdminPage() {
             </Sec>
             <Sec id="analytics" at={sec}>
               <AnalyticsAccounts data={data.analytics} act={act} />
+            </Sec>
+            <Sec id="chainorders" at={sec}>
+              <ChainOrdersAdmin token={token} />
             </Sec>
             <Sec id="chainkit" at={sec}>
               <ChainKitAdmin token={token} />
