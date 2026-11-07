@@ -38,7 +38,7 @@ const NAV = [['#build', 'Build', 'hammer'], ['#products', 'Products', 'layout-gr
 /** Product tiles: the landing's list, kre8 beside its chain, the Gully Core emblem from its own kit. */
 /** Features with their own host and a real probe, so their status is read like any product's. */
 const TOOLS = [{ key: 'bridge', name: 'Gully Bridge', icon: '/brand/web/logos/gc-icon.svg', href: 'https://testnet-bridge.gullychain.xyz', label: 'Testnet' }, { key: 'faucet', name: 'Faucet', icon: '/brand/web/logos/gc-icon.svg', href: 'https://faucet.gullychain.xyz', label: 'Testnet' }, { key: 'explorer', name: 'Explorer', icon: '/brand/web/logos/gc-icon.svg', href: 'https://testnet-explorer.gullychain.xyz', label: 'Testnet' }]
-const KRE8 = { key: 'kre8', name: 'kre8', icon: '/brand/products/kre8-icon-dark-1024.svg', href: 'https://kre8.fun', label: 'Testnet' }
+const KRE8 = { key: 'kre8', name: 'kre8', icon: '/brand/products/kre8-icon-192.png', href: 'https://kre8.fun', label: 'Testnet' }
 const iconOf = (p) => (p.key === 'core' ? '/brand/products/gully-core-emblem-192.png' : p.icon)
 const cap = (href, label, cls = '') => `<a class="cap ${cls}" href="${esc(href)}"${ext(href) ? ' target="_blank" rel="noopener noreferrer"' : ''}><b></b>${esc(label)}</a>`
 
