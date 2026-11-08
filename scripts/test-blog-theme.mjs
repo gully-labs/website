@@ -6,6 +6,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { renderFooter } from './build-blog-footer.mjs'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -15,6 +16,7 @@ const KIT = path.join(ROOT, 'brand/gully-labs-kit-2026-11')
 const sha = (f) => crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex')
 const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]))
 const lock = new Map(fs.readFileSync(`${KIT}.sha256`, 'utf8').trim().split('\n').map((l) => [l.slice(66).trim(), l.slice(0, 64)]))
+const FOOTER = JSON.parse(fs.readFileSync(path.join(ROOT, 'ghost/footer-data.json'), 'utf8'))
 const read = (f) => fs.readFileSync(path.join(THEME, f), 'utf8')
 const text = walk(THEME).filter((f) => /\.(hbs|css|js|json|webmanifest)$/.test(f) && !f.includes(`${path.sep}lib${path.sep}`))
 
@@ -93,6 +95,19 @@ test('the Products menu names the same products and links as gullylabs.xyz', () 
   for (const [name, url] of site) {
     const hit = menu.find(([n]) => n === name)
     assert.ok(hit, `missing in the blog menu: ${name}`)
-    assert.equal(hit[1].replace(/\/$/, ''), url.replace(/\/$/, ''), name)
+    // Gully Core follows the footer data (gullycore.xyz) until the catalog entry is moved there too; every other product follows the catalog.
+    const want = name === 'Gully Core' ? FOOTER.columns.flatMap((x) => x.links).find((l) => l.label === 'Gully Core').href : url
+    assert.equal(hit[1].replace(/\/$/, ''), want.replace(/\/$/, ''), name)
   }
+})
+
+test('the blog footer is the shared footer data: generated from the pinned copy, the pinned copy equals the website file', () => {
+  assert.equal(read('partials/footer.hbs'), renderFooter(FOOTER), 'run node scripts/build-blog-footer.mjs')
+  assert.match(fs.readFileSync(path.join(ROOT, 'ghost/footer-data.pin'), 'utf8'), /^[0-9a-f]{7,40}\s*$/)
+  const site = path.join(ROOT, 'server/data/footer.json')
+  if (fs.existsSync(site)) assert.deepEqual(FOOTER, JSON.parse(fs.readFileSync(site, 'utf8')), 'ghost/footer-data.json is behind server/data/footer.json: re-pin')
+  for (const c of [...FOOTER.columns, FOOTER.peddle]) assert.ok(c.links.length <= 7, `${c.title} has ${c.links.length} rows`)
+  const html = read('partials/footer.hbs')
+  for (const l of [...FOOTER.columns.flatMap((c) => c.links), ...FOOTER.peddle.links, ...FOOTER.legal]) assert.ok(html.includes(`label="${l.label}"`) || html.includes(`>${l.label}</a>`), l.label)
+  assert.ok(!/products\/gully-core/.test(html), 'Gully Core must follow the data (gullycore.xyz)')
 })
