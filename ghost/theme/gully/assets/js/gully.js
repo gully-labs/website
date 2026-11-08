@@ -4,7 +4,7 @@
  *   2. Mobile sheet with accordions (focus trap, Escape, closes at desktop width)
  *   3. Links to other Gully sites in Ghost's navigation: new tab, rel, marker
  *   4. Reading progress hairline on posts
- *   5. Copy link and code blocks, with toasts (bottom-right stack, Lucide icon, cyan progress bar) on each real event
+ *   5. Copy link and code blocks, with toasts (bottom-right stack, Lucide icon, accent progress bar) on each real event
  *   6. Content helpers: responsive embeds, scrollable tables
  *   7. Live Gully stats ticker (gullylabs.xyz/api/stats): count-up numbers, continuous scroll, 30-day sparkline
  *   0. (first) Retires the old Ghost admin code-injection intro, so an empty blog shows the theme's one empty state
@@ -17,7 +17,7 @@
 
     /* ------------------------------------------- 0. old code-injection intro --- */
     /* Before this theme, Ghost admin > Code injection (site footer) added a "How we build" intro (section.gl-intro)
-       and a stylesheet that restyles .gl-btn in the old palette. The theme has its own empty state: remove both.
+       and a stylesheet that restyles .gk-btn in the old palette. The theme has its own empty state: remove both.
        The owner should still clear that code injection; this only keeps a stale one from showing. */
     Array.prototype.forEach.call(document.querySelectorAll('section.gl-intro'), function (el) {
         el.parentNode.removeChild(el);
@@ -180,6 +180,10 @@
         });
     }
 
+    /* Ghost's old site-footer Code injection adds this old block to an empty home page. */
+    var oldIntro = document.querySelector('.gl-intro');
+    if (oldIntro) oldIntro.parentNode.removeChild(oldIntro);
+
     /* Retired Gully hosts that Ghost's own navigation (admin > Settings > Navigation) may still name: developers.
        has no DNS since 2026-10-17; the developer docs live on docs.gullylabs.xyz. Rewritten before the scan below. */
     var RETIRED = { 'developers.gullylabs.xyz': 'https://docs.gullylabs.xyz/' };
@@ -246,7 +250,7 @@
     }
 
     /* ------------------------------------------------------------ 5. copy + toast --- */
-    /* Toasts: one element per event, stacked bottom right (newest at the bottom), a Lucide icon, a cyan progress bar
+    /* Toasts: one element per event, stacked bottom right (newest at the bottom), a Lucide icon, an accent progress bar
        that runs the toast's life (3.2 s; hover pauses it), click to dismiss. Only real events call say(). */
     var toasts = document.querySelector('[data-gl-toasts]');
     var ICON = {

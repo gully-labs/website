@@ -47,6 +47,7 @@
     "test:og": "node scripts/test-og.mjs",
     "test:seo-audit": "node scripts/test-seo-audit.mjs",
     "test:brand-kit": "node --test scripts/test-brand-kit.mjs",
+    "test:blog-theme": "node --test scripts/test-blog-theme.mjs",
     "test:landing": "node --test scripts/test-landing.mjs",
     "test:time": "node --test scripts/test-time.mjs",
     "seo:content": "node scripts/build-page-content.mjs",

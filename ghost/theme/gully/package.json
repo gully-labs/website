@@ -1,8 +1,8 @@
 {
     "name": "gully",
-    "description": "The Gully Labs blog theme, in the 2026 Gully Labs brand kit. Built on Ghost's Source theme (MIT, Ghost Foundation).",
+    "description": "The Gully Labs blog theme, on the 2026-11 Gully Labs kit. Built on Ghost's Source theme (MIT, Ghost Foundation).",
     "demo": "https://blog.gullylabs.xyz",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "engines": {
         "ghost": ">=6.0.0"
     },
@@ -52,7 +52,7 @@
                 "type": "boolean",
                 "default": true,
                 "group": "homepage",
-                "description": "Show the 'From the Stock tracker' links to gullylabs.xyz on the home page"
+                "description": "Show the 'From Gully Labs' links to gullylabs.xyz on the home page"
             },
             "generated_post_share_images": {
                 "type": "boolean",
