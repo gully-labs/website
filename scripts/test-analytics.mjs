@@ -471,6 +471,16 @@ try {
   check('a house website on a lapsed account is accepted (200)', r.status === 200, JSON.stringify(r.data))
   const loader = await proxy('/a.js')
   check('the loader script maps the house hosts to their ids, with no query or hash sent', loader.status === 200 && loader.text.includes('"gullylabs.xyz":"78f29233-0000-4000-8000-000000000000"') && loader.text.includes('reset-password') && loader.text.includes('checkout') && loader.text.includes('data-exclude-search') && loader.text.includes('data-web3-address') && loader.text.includes('/script.js') && !loader.text.includes(siteB.id.toUpperCase()), String(loader.status))
+  check('the loader is valid JavaScript and skips sign-in, checkout and token pages', (() => {
+    try {
+      new Function(loader.text)
+    } catch {
+      return false
+    }
+    const m = /new RegExp\(("(?:[^"\\]|\\.)*"),"i"\)/.exec(loader.text)
+    const re = m && new RegExp(JSON.parse(m[1]), 'i')
+    return !!re && ['/checkout/x', '/reset-password', '/verify-email', '/auth/callback/', '/pay/slug'].every((p) => re.test(p)) && !['/', '/pricing', '/docs/payments'].some((p) => re.test(p))
+  })())
   fs.writeFileSync(houseFile, JSON.stringify({ sites: {} }))
   fs.utimesSync(houseFile, new Date(Date.now() + 5000), new Date(Date.now() + 5000))
   accounts.resetHouseForTest()

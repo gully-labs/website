@@ -271,9 +271,12 @@ async function handleEvents(req, res, batch) {
  * Cookieless; Do Not Track respected by Umami (data-do-not-track); the address is sent without query or hash and sign-in
  * callback pages are never tracked, so no code or token reaches analytics.
  */
+/** Pages that carry ids or tokens in the path, or are sign-in steps: never tracked. */
+const NEVER_TRACK = '(^|/)(callback|checkout|pay|fund|reset-password|verify-email|sign-?in|login|consent|approve|approval|connect|authorize|oauth|wallet)(/|$)'
+
 export function loaderScript() {
   const map = houseHostMap()
-  return `(function(){try{var m=${JSON.stringify(map)};var h=location.hostname.toLowerCase();var id=m[h];if(!id)return;if(/(^|\/)(callback|checkout|pay|fund|reset-password|verify-email|sign-?in|login|consent|approve|approval|connect|authorize|oauth|wallet)(\/|$)/i.test(location.pathname)||document.querySelector('script[data-website-id]'))return;var s=document.createElement('script');s.defer=true;var u=${JSON.stringify(DASHBOARD_ORIGIN + '/script.js')};try{if(window.trustedTypes&&trustedTypes.createPolicy){u=trustedTypes.createPolicy('gully-analytics',{createScriptURL:function(x){return x}}).createScriptURL(u)}}catch(e){}s.src=u;s.setAttribute('data-website-id',id);s.setAttribute('data-domains',h);s.setAttribute('data-do-not-track','true');s.setAttribute('data-exclude-search','true');s.setAttribute('data-exclude-hash','true');s.setAttribute('data-web3','true');s.setAttribute('data-web3-address','none');document.head.appendChild(s)}catch(e){}})();\n`
+  return `(function(){try{var m=${JSON.stringify(map)};var h=location.hostname.toLowerCase();var id=m[h];if(!id)return;if(new RegExp(${JSON.stringify(NEVER_TRACK)},"i").test(location.pathname)||document.querySelector('script[data-website-id]'))return;var s=document.createElement('script');s.defer=true;var u=${JSON.stringify(DASHBOARD_ORIGIN + '/script.js')};try{if(window.trustedTypes&&trustedTypes.createPolicy){u=trustedTypes.createPolicy('gully-analytics',{createScriptURL:function(x){return x}}).createScriptURL(u)}}catch(e){}s.src=u;s.setAttribute('data-website-id',id);s.setAttribute('data-domains',h);s.setAttribute('data-do-not-track','true');s.setAttribute('data-exclude-search','true');s.setAttribute('data-exclude-hash','true');s.setAttribute('data-web3','true');s.setAttribute('data-web3-address','none');document.head.appendChild(s)}catch(e){}})();\n`
 }
 
 function serveLoader(req, res) {
