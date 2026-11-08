@@ -85,6 +85,20 @@ test('every image on the page is a file we hold, served at its own path', async 
   }
 })
 
+test('the owl, logotype, badge and the Gully Core mark are the official files, byte for byte', async () => {
+  const { createHash } = await import('node:crypto')
+  const sha = (f) => createHash('sha256').update(fs.readFileSync(new URL(`../public${f}`, import.meta.url))).digest('hex')
+  const want = {
+    '/brand/kit/owl/owl-presenting.png': '602a46f137f4e76586f1994423981d0c52ce45ff93b6f889cc053164829f70ef', // Gully Labs kit mascot/owl-presenting.png
+    '/brand/kit/logotype-reversed.svg': 'db34f10cdf149859f31121b3b03c61f9064301a254d54fd0238d30c630ee13a6', // kit logo/logotype-reversed.svg
+    '/brand/kit/powered-by-clear-white.svg': '21ba7df99a68c2bd1849af36c5debd9a8956bcdd207ab2a52e5f37e3a03295c1', // kit badges/powered-by-clear-white.svg
+    '/brand/web/logos/gc-icon.svg': '4f86d2a0c2bb1afda317f21ae7c2198564ca61241f2c48cc75df1cb87033739b', // Gully Chain kit v4 logo/gc-icon.svg
+  }
+  for (const [f, h] of Object.entries(want)) assert.equal(sha(f), h, f)
+  assert.ok(html.includes('/brand/kit/owl/owl-presenting.png') && !html.includes('owl-presenting-400.webp'), 'the page serves the kit owl')
+  assert.ok(!html.includes('gully-core-emblem-192.png'), 'Gully Core shows gc-icon.svg')
+})
+
 test('chain states come from the config and only an open chain links to the builder', () => {
   const chains = JSON.parse(fs.readFileSync(new URL('../server/data/core-chains.json', import.meta.url), 'utf8'))
   for (const c of chains) {
