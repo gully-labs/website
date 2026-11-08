@@ -39,7 +39,7 @@ const STATUS_PAGE = () => env('GULLY_STATUS_PAGE_URL', 'https://status.gullylabs
 export const SURFACES = [
   { key: 'chain-site', group: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz' },
   { key: 'street', group: 'chain', name: 'Gully Street app', url: 'https://kre8.fun' },
-  { key: 'explorer', group: 'chain', name: 'Explorer', url: 'https://testnet-explorer.gullychain.xyz' },
+  { key: 'explorer', group: 'chain', name: 'Explorer', url: 'https://testnet.gullyscan.xyz' },
   { key: 'faucet', group: 'chain', name: 'Faucet', url: 'https://faucet.gullychain.xyz' },
   { key: 'bridge', group: 'chain', name: 'Bridge', url: 'https://testnet-bridge.gullychain.xyz' },
   { key: 'docs', group: 'chain', name: 'Docs', url: 'https://docs.gullychain.xyz' },

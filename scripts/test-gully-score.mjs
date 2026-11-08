@@ -219,7 +219,7 @@ try {
     const before = fetched.length
     const gc = await get(485590, H)
     check('Gully Chain Testnet: scored from chain reads only (no Sourcify or Etherscan call)', gc?.chainKey === 'gully' && fetched.slice(before).every((u) => !/sourcify|etherscan/.test(u)), JSON.stringify(fetched.slice(before)))
-    check('Gully Chain Testnet: the code counts as not verified, saying no service covers the chain', part(gc, 'verified').available && part(gc, 'verified').score === 0 && /no source verification service/.test(part(gc, 'verified').reason) && part(gc, 'verified').evidence[0].url.startsWith('https://testnet-explorer.gullychain.xyz/address/'))
+    check('Gully Chain Testnet: the code counts as not verified, saying no service covers the chain', part(gc, 'verified').available && part(gc, 'verified').score === 0 && /no source verification service/.test(part(gc, 'verified').reason) && part(gc, 'verified').evidence[0].url.startsWith('https://testnet.gullyscan.xyz/address/'))
     check('Gully Chain Testnet: control is read from the chain (one wallet)', part(gc, 'control').score === 15)
     check('Gully Chain Testnet: never offered or priced for payment (read-only chain)', !pay.CHAINS[485590] && !pay.ASSETS.some((x) => x.chainId === 485590) && !pay.publicChains({ all: true }).some((c) => c.id === 485590) && pay.chainInfo(485590)?.readOnly === true)
     check('Gully Chain Testnet: not offered for monitoring', !mon.monitorChains().some((c) => c.id === 485590) && mon.scoreChainOf('gully')?.id === 485590)
