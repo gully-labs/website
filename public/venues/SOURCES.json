@@ -17,7 +17,7 @@
     "file": "/venues/peddles.svg",
     "from": "https://peddles.xyz/brand/svg/app-icon-ink.svg",
     "page": "https://peddles.xyz/manifest.webmanifest",
-    "note": "its app icon SVG, unchanged but for whitespace",
+    "note": "its app icon SVG, byte for byte as served",
     "fetchedAt": "2026-10-17T12:00:00Z"
   },
   "peddlequest": {

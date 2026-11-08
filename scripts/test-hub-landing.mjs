@@ -120,7 +120,7 @@ test('Peddle family: PeddleSwap (DEX), Peddles (launchpad) and PeddleQuest, offi
     ['peddlequest', 'Quests', 'https://peddlequest.xyz/'],
   ])
   // the logo files are the projects' own (public/venues/SOURCES.json): unchanged bytes
-  const want = { peddleswap: '432d71f7c422274db54e4a7ab7e790e8914394105f05d77d28c2c6a16ad1d72a', peddles: '1aa72a4f33334c7f82b42b1a777c67d5473b6220328f0c5381ff0a5a818c1b95', peddlequest: 'acced9dd25adf3a7122a16a3092cbd0f76b257bc00760ad1c728695c9c143945' }
+  const want = { peddleswap: '432d71f7c422274db54e4a7ab7e790e8914394105f05d77d28c2c6a16ad1d72a', peddles: 'cfc3e2fa5c7c215be68a3ae3f9f76fd4704232c0344aab5306cfad2821598d2e', peddlequest: 'acced9dd25adf3a7122a16a3092cbd0f76b257bc00760ad1c728695c9c143945' }
   const sources = JSON.parse(read('public/venues/SOURCES.json'))
   for (const p of H.PEDDLE_FAMILY) {
     assert.equal(p.logo, sources[p.key].file, `${p.key} uses its file in public/venues`)
@@ -136,8 +136,8 @@ test('Peddle family: PeddleSwap (DEX), Peddles (launchpad) and PeddleQuest, offi
 test('product count: eight Gully-named products + the Peddle family, the same in the title, the H1, crawlers and JSON-LD', async () => {
   assert.equal(H.PRODUCT_COUNT, 11)
   assert.equal(H.PRODUCT_COUNT_WORD, 'eleven')
-  assert.match(H.LANDING_TITLE, /^Eleven products: .*trading/)
-  for (const n of ['PeddleSwap', 'Peddles']) assert.ok(H.LANDING_DESCRIPTION.includes(n), n)
+  assert.match(H.LANDING_TITLE, /^Launch a token, a launchpad or a DEX$/)
+  assert.ok(H.LANDING_DESCRIPTION.includes('Gully Core') && H.LANDING_TITLE.length + 13 <= 60 && H.LANDING_DESCRIPTION.length <= 160, 'the home title and description are in range')
   const page = read('src/pages/hub/Constellation.tsx')
   assert.ok(!/Eight (connected )?products/.test(page), 'no stale count on the landing')
   assert.ok(page.includes('<PeddleFamily stats={stats}'), 'the family is in the product line-up')

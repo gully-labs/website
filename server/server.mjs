@@ -352,12 +352,19 @@ async function handleRequest(req, res) {
   const legal = isSecurity ? null : legalCanonicalPath(url.pathname)
   if (legal && legal !== url.pathname && (req.method === 'GET' || req.method === 'HEAD')) return send(res, 301, '', { Location: legal + url.search, 'Cache-Control': 'public, max-age=86400' })
   if (handleDiscovery(req, res, url)) return
-  // The new landing, on an unlinked noindex path until the owner approves it, and its two scripts.
+  // The landing scripts.
   if (url.pathname === '/landing/live.js' || url.pathname === '/landing/graphs.mjs' || url.pathname === '/landing/fx.js' || url.pathname === '/landing/product.js') return send(res, 200, landingAsset(url.pathname), { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' })
-  // LANDING_HOME=1: the owner approved it; the same page is the home page of gullylabs.xyz, with the home page's head tags.
-  if (url.pathname === '/preview/landing' || (url.pathname === '/' && /^(1|true|on|yes)$/i.test(String(process.env.LANDING_HOME ?? '')) && host === 'gullylabs.xyz' && (req.method === 'GET' || req.method === 'HEAD'))) {
+  // The new landing is the home page of gullylabs.xyz (owner, 2026-11-08), with the home page's head tags. The old unlinked
+  // preview path redirects to it. Other hosts keep their own home pages.
+  if (url.pathname === '/preview/landing' && host === 'gullylabs.xyz' && (req.method === 'GET' || req.method === 'HEAD')) return send(res, 301, '', { Location: '/', 'Cache-Control': 'public, max-age=300' })
+  // Any other host (local runs, the suite) still serves the preview path, noindex, so the page can be tested without the live host name.
+  if (url.pathname === '/preview/landing') {
     const meta = pageMeta(host, url.pathname)
-    if (meta.found) return send(res, 200, await renderLanding(headTags(meta), null, { preview: url.pathname !== '/' }), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', ...(meta.noindex ? { 'X-Robots-Tag': 'noindex' } : {}) })
+    if (meta.found) return send(res, 200, await renderLanding(headTags(meta), null, { preview: true }), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Robots-Tag': 'noindex' })
+  }
+  if (url.pathname === '/' && host === 'gullylabs.xyz' && (req.method === 'GET' || req.method === 'HEAD')) {
+    const meta = pageMeta(host, '/')
+    if (meta.found) return send(res, 200, await renderLanding(headTags(meta), null, { preview: false }), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' })
   }
   // One page per product and per Gully Core build, on the shared template: preview only, noindex, until the owner flips them.
   const preview = /^\/preview\/(products|build)\/([a-z0-9-]+)$/.exec(url.pathname)
