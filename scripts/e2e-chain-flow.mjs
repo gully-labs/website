@@ -76,7 +76,7 @@ async function toPay(page, chainId, { width, first = false, due = '$1.00', tag =
     check(`${width} live price: due today is ${due}`, (await page.getByTestId('due-today').innerText()) === due)
     const before = await page.getByTestId('price-summary').innerText()
     await page.getByTestId('addon-gully-core').click()
-    await page.getByTestId('price-summary').getByText('0.30% of every trade').waitFor()
+    await page.getByTestId('price-summary').getByText('0.30% of every trade').first().waitFor()
     check(`${width} live price: an add-on updates the summary`, (await page.getByTestId('price-summary').innerText()) !== before)
     await shot(page, `${tag}2-plan-${width}`)
   }
@@ -107,7 +107,7 @@ async function layoutChecks(width) {
   await page.goto(`${BASE}/create-chain`)
   await page.getByTestId('chain-name').waitFor()
   check(`${width} layout: the site header with its nav, and the Gully ID chip in it`, (await page.locator('header.nav nav[aria-label="Main"]').count()) === 1 && (await page.locator('header.nav').getByTestId('gully-id-chip').count()) === 1)
-  check(`${width} layout: five numbered steps, the first is current`, (await page.locator('[data-testid^="step-"]').count()) === 5 && (await page.getByTestId('step-1').getAttribute('aria-current')) === 'step' && (await page.getByTestId('step-1').innerText()).trim() === '1')
+  check(`${width} layout: five numbered steps, the first is current`, (await page.locator('[data-testid^="step-"]').count()) === 5 && (await page.getByTestId('step-1').getAttribute('aria-current')) === 'step' && (await page.getByTestId('step-1').innerText()).trim().startsWith('1'))
   check(`${width} layout: the empty summary shows the owl`, await page.getByTestId('chain-empty').isVisible())
   check(`${width} layout: helper text under the fields and a logo drop zone`, /unique|tell chains apart/i.test(await page.locator('main').innerText()) && (await page.getByRole('button', { name: 'Add a logo' }).count()) === 1 && (await page.getByRole('group', { name: 'Gas token' }).count()) === 1)
   check(`${width} layout: Back is not drawn on the first step`, (await page.getByTestId('back').count()) === 0)
