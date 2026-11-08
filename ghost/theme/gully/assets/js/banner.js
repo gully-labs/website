@@ -5,11 +5,11 @@
  * The same post always gets the same picture; two posts practically never look alike. Five motifs,
  * picked by the seed and leaning on the primary tag:
  *   lines   drifting chart lines over a hairline grid
- *   gap     a gold price line against a fair-value line, the band between them pulsing
+ *   gap     a price line against a fair-value line, the band between them pulsing
  *   ticker  rows of the post's own words sliding past in mono, like a tape
  *   graph   blocks joined into a chain graph, pulses travelling along the links
  *   cells   a grid of cells lit by a slow diagonal wave
- * Brand kit colours (cyan, blue, violet, magenta on #06050D), the short title or the tag set in the corner.
+ * Kit colours (light blue, blue and greys on navy #0E1C38), the short title or the tag set in the corner.
  *
  * Runs in the browser (no dependencies, no network) and, for still share images, on a server with
  * any CanvasRenderingContext2D implementation: require() this file and call renderStill(). The
@@ -34,21 +34,21 @@
     'use strict';
 
     var C = {
-        bg: '#06050d',
-        surface: '#0b0a16',
-        line: '#1a1830',
-        lineStrong: '#262445',
-        lineHover: '#35325e',
-        ink: '#ffffff',
-        muted: '#a3a8c3',
-        dim: '#a3a8c3',
-        gold: '#00d2ff',   /* the kit's cyan: the accent (the name is historical) */
-        goldHi: '#7fe7ff', /* cyan lifted towards white, for dots and highlights */
-        green: '#248bff',  /* the kit's blue: the "fair value" line */
-        violet: '#7b3bff',
-        magenta: '#c02cff'
+        bg: '#0e1c38',
+        surface: '#0e1c38',
+        line: '#3754a0',
+        lineStrong: '#3754a0',
+        lineHover: '#6f8ddf',
+        ink: '#f1f3f8',
+        muted: '#c9d2e8',
+        dim: '#c9d2e8',
+        accent: '#6f8ddf',   /* the kit's light blue: the accent (the name is historical) */
+        accentHi: '#c9d2e8', /* kit grey, for dots and highlights */
+        green: '#c9d2e8',  /* kit grey: the "fair value" line */
+        violet: '#3754a0',
+        magenta: '#c9d2e8'
     };
-    var FONT_DISPLAY = '"Poppins", system-ui, sans-serif';
+    var FONT_DISPLAY = '"Figtree", system-ui, sans-serif';
     var FONT_MONO = '"IBM Plex Mono", ui-monospace, monospace';
     var TAU = Math.PI * 2;
 
@@ -274,7 +274,7 @@
                     big: isBig,
                     size: isBig ? Math.max(22, Math.min(64, h * 0.2)) : 11 + Math.floor(r() * 3),
                     v: (18 + r() * 34) * sp.speed * (i % 2 ? -1 : 1),
-                    gold: i === (big + 1) % rowsN
+                    accent: i === (big + 1) % rowsN
                 });
             }
             return {rows: rows};
@@ -325,10 +325,10 @@
             var rows = Math.ceil(h / (size + gap)) + 1;
             /* Per-cell jitter and colour, fixed for the scene (not recomputed per frame). */
             var jitter = new Float32Array(cols * rows);
-            var gold = new Uint8Array(cols * rows);
+            var accent = new Uint8Array(cols * rows);
             for (var n = 0; n < cols * rows; n++) {
                 jitter[n] = r() * 0.6;
-                gold[n] = r() < 0.09 ? 1 : 0;
+                accent[n] = r() < 0.09 ? 1 : 0;
             }
             return {
                 size: size,
@@ -336,7 +336,7 @@
                 cols: cols,
                 rows: rows,
                 jitter: jitter,
-                gold: gold,
+                accent: accent,
                 cos: Math.cos(theta),
                 sin: Math.sin(theta),
                 lambda: 90 + r() * 140,
@@ -362,8 +362,8 @@
                     ctx.lineTo(0, h);
                     ctx.closePath();
                     var g = ctx.createLinearGradient(0, L.base - L.amp, 0, h);
-                    g.addColorStop(0, alpha(C.gold, 0.16));
-                    g.addColorStop(1, alpha(C.gold, 0));
+                    g.addColorStop(0, alpha(C.accent, 0.16));
+                    g.addColorStop(1, alpha(C.accent, 0));
                     ctx.fillStyle = g;
                     ctx.fill();
                     ctx.restore();
@@ -373,7 +373,7 @@
                         if (x2 === 0) ctx.moveTo(x2, y2);
                         else ctx.lineTo(x2, y2);
                     }
-                    ctx.strokeStyle = C.gold;
+                    ctx.strokeStyle = C.accent;
                     ctx.lineWidth = 2;
                     ctx.setLineDash([]);
                     ctx.stroke();
@@ -382,12 +382,12 @@
                     var pulse = frac(t * 0.6);
                     ctx.beginPath();
                     ctx.arc(hx, hy, 4 + pulse * 14, 0, TAU);
-                    ctx.strokeStyle = alpha(C.gold, 0.5 * (1 - pulse));
+                    ctx.strokeStyle = alpha(C.accent, 0.5 * (1 - pulse));
                     ctx.lineWidth = 1.5;
                     ctx.stroke();
                     ctx.beginPath();
                     ctx.arc(hx, hy, 3.5, 0, TAU);
-                    ctx.fillStyle = C.goldHi;
+                    ctx.fillStyle = C.accentHi;
                     ctx.fill();
                 } else {
                     ctx.strokeStyle = alpha(i % 2 ? C.muted : C.dim, 0.42);
@@ -411,7 +411,7 @@
             for (var i = 0; i < price.length; i++) ctx.lineTo(price[i][0], price[i][1]);
             for (var j = fair.length - 1; j >= 0; j--) ctx.lineTo(fair[j][0], fair[j][1]);
             ctx.closePath();
-            ctx.fillStyle = alpha(C.gold, 0.1 + 0.07 * (0.5 + 0.5 * Math.sin(t * 1.3)));
+            ctx.fillStyle = alpha(C.accent, 0.1 + 0.07 * (0.5 + 0.5 * Math.sin(t * 1.3)));
             ctx.fill();
             ctx.beginPath();
             for (var a = 0; a < fair.length; a++) ctx.lineTo(fair[a][0], fair[a][1]);
@@ -422,7 +422,7 @@
             ctx.setLineDash([]);
             ctx.beginPath();
             for (var b = 0; b < price.length; b++) ctx.lineTo(price[b][0], price[b][1]);
-            ctx.strokeStyle = C.gold;
+            ctx.strokeStyle = C.accent;
             ctx.lineWidth = 2;
             ctx.stroke();
             var nx = Math.round(w * st.now / 6) * 6;
@@ -442,10 +442,10 @@
             ctx.lineTo(nx + 12, py);
             ctx.lineTo(nx + 12, fy);
             ctx.lineTo(nx + 8, fy);
-            ctx.strokeStyle = C.gold;
+            ctx.strokeStyle = C.accent;
             ctx.lineWidth = 1.25;
             ctx.stroke();
-            ctx.fillStyle = C.goldHi;
+            ctx.fillStyle = C.accentHi;
             ctx.beginPath();
             ctx.arc(nx, py, 3.5, 0, TAU);
             ctx.fill();
@@ -455,7 +455,7 @@
             ctx.fill();
             if (h > 90) {
                 ctx.font = '500 11px ' + FONT_MONO;
-                ctx.fillStyle = alpha(C.gold, 0.9);
+                ctx.fillStyle = alpha(C.accent, 0.9);
                 ctx.textBaseline = 'middle';
                 ctx.fillText('GAP', nx + 17, (py + fy) / 2);
             }
@@ -469,7 +469,7 @@
                 ctx.font = (R.big ? '700 ' + R.size + 'px ' + FONT_DISPLAY : '500 ' + R.size + 'px ' + FONT_MONO);
                 if (!R.width) R.width = ctx.measureText(R.text).width || 1;
                 var x = -frac((t * R.v) / R.width) * R.width;
-                ctx.fillStyle = R.big ? alpha(C.ink, 0.1) : R.gold ? alpha(C.gold, 0.85) : alpha(C.muted, 0.38);
+                ctx.fillStyle = R.big ? alpha(C.ink, 0.1) : R.accent ? alpha(C.accent, 0.85) : alpha(C.muted, 0.38);
                 for (var xx = x; xx < w; xx += R.width) ctx.fillText(R.text, xx, y);
                 if (i > 0) {
                     ctx.fillStyle = alpha(C.lineStrong, 0.7);
@@ -496,7 +496,7 @@
                 var k = frac(t * P.v + P.ph);
                 var px = N[P.a].x + (N[P.b].x - N[P.a].x) * k;
                 var py = N[P.a].y + (N[P.b].y - N[P.a].y) * k;
-                ctx.fillStyle = alpha(C.gold, 0.25 + 0.75 * Math.sin(k * Math.PI));
+                ctx.fillStyle = alpha(C.accent, 0.25 + 0.75 * Math.sin(k * Math.PI));
                 ctx.beginPath();
                 ctx.arc(px, py, 2.2, 0, TAU);
                 ctx.fill();
@@ -506,10 +506,10 @@
                 var s = n.size;
                 if (i === st.hub) {
                     var ring = frac(t * 0.45);
-                    ctx.strokeStyle = alpha(C.gold, 0.55 * (1 - ring));
+                    ctx.strokeStyle = alpha(C.accent, 0.55 * (1 - ring));
                     ctx.lineWidth = 1.25;
                     ctx.strokeRect(n.x - s - ring * 16, n.y - s - ring * 16, (s + ring * 16) * 2, (s + ring * 16) * 2);
-                    ctx.fillStyle = C.gold;
+                    ctx.fillStyle = C.accent;
                     ctx.fillRect(n.x - s, n.y - s, s * 2, s * 2);
                 } else {
                     ctx.fillStyle = C.surface;
@@ -530,8 +530,8 @@
                     var ph = (x * st.cos + y * st.sin) / st.lambda + st.jitter[n];
                     var v = Math.max(0, Math.sin(t * st.omega - ph * TAU * 0.5));
                     var lit = v * v * v * v * v * v;
-                    var goldCell = st.gold[n] === 1;
-                    ctx.fillStyle = goldCell ? alpha(C.gold, 0.1 + 0.75 * lit) : alpha(C.lineHover, 0.18 + 0.5 * lit);
+                    var accentCell = st.accent[n] === 1;
+                    ctx.fillStyle = accentCell ? alpha(C.accent, 0.1 + 0.75 * lit) : alpha(C.lineHover, 0.18 + 0.5 * lit);
                     ctx.fillRect(x, y, st.size, st.size);
                 }
             }
@@ -584,8 +584,8 @@
             ctx.fillStyle = C.bg;
             ctx.fillRect(0, 0, w, h);
             var glow = ctx.createRadialGradient(w * sp.glowX, h * sp.glowY, 0, w * sp.glowX, h * sp.glowY, Math.max(w, h) * 0.7);
-            glow.addColorStop(0, alpha(C.gold, 0.08));
-            glow.addColorStop(1, alpha(C.gold, 0));
+            glow.addColorStop(0, alpha(C.accent, 0.08));
+            glow.addColorStop(1, alpha(C.accent, 0));
             ctx.fillStyle = glow;
             ctx.fillRect(0, 0, w, h);
             if (variant !== 'spark') {
@@ -596,7 +596,7 @@
             DRAW[sp.motif](ctx, st, w, h, t);
         } else {
             /* Over a photo: the motif lives in the lower band only, fading out upwards, so the image
-               stays fully visible; a gold frame of corner ticks marks the banner. */
+               stays fully visible; a frame of corner ticks marks the banner. */
             ctx.save();
             ctx.globalAlpha = 0.85;
             DRAW[sp.motif](ctx, st, w, h, t);
@@ -617,7 +617,7 @@
         }
 
         var pad = Math.max(14, Math.min(28, w * 0.035));
-        corners(ctx, w, h, Math.round(pad * 0.5), Math.min(18, pad * 0.7), alpha(C.gold, hasImage ? 0.9 : 0.55));
+        corners(ctx, w, h, Math.round(pad * 0.5), Math.min(18, pad * 0.7), alpha(C.accent, hasImage ? 0.9 : 0.55));
 
         /* Kicker: tag (or GULLY LABS) and the banner's code, top left (larger on the share image). */
         var kicker = (sp.tagName || 'Gully Labs').toUpperCase() + '  /  ' + sp.code;
@@ -627,7 +627,7 @@
         var kw = ctx.measureText(kicker).width;
         ctx.fillStyle = alpha(C.bg, hasImage ? 0.78 : variant === 'share' ? 0.92 : 0.7);
         ctx.fillRect(pad - 6, pad - 5, kw + 12, variant === 'share' ? 34 : 22);
-        ctx.fillStyle = C.gold;
+        ctx.fillStyle = C.accent;
         ctx.fillText(kicker, pad, pad + 1);
 
         /* Share image: the whole title, as large as fits in three lines (see shareTitle). */
@@ -845,7 +845,7 @@
         /* Text is drawn in the brand fonts: redraw once they have loaded. */
         if (document.fonts && document.fonts.load) {
             Promise.all([
-                document.fonts.load('700 40px "Poppins"'),
+                document.fonts.load('700 40px "Figtree"'),
                 document.fonts.load('500 11px "IBM Plex Mono"')
             ]).then(function () {
                 items.forEach(function (it) {

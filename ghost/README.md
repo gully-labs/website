@@ -1,14 +1,14 @@
 # Blog theme (blog.gullylabs.xyz)
 
 The Gully Labs blog runs on open-source Ghost 6 (compose service `blog`, see the project notes). Its
-look is the custom theme in `theme/gully/`, built on Ghost's official **Source** theme v1.7.6 (MIT), in the
-**2026 Gully Labs brand kit** (`Desktop\GULLY LABS GRAPHICS\Gully Labs\brand-kit`, read its
-`CLAUDE_INTEGRATION_PROMPT.md`): background `#06050D`, surfaces `#0B0A16`, cyan `#00D2FF` as the accent, blue
-`#248BFF`, violet `#7B3BFF`, magenta `#C02CFF`, muted text `#A3A8C3`, Poppins 500/600/700 (self-hosted), the
-tagline "You Think It, We Ship It." verbatim. The kit's files sit in `theme/gully/assets/brand/` byte for byte
-(logo, horizontal wordmark, icon, favicons and app icons, the "Powered by" badge, the OG image, two mascots);
-nothing is re-drawn, re-coloured or cropped, every `<img>` carries the kit's exact ratio. The kit's SVGs are
-wrappers around an `<image>` with no data, so the PNGs (with `-2x`/`-3x` srcsets) are the masters. The owner's
+look is the custom theme in `theme/gully/`, built on Ghost's official **Source** theme v1.7.6 (MIT), on the
+**2026-11 Gully Labs kit** (`brand/gully-labs-kit-2026-11`): navy `#0E1C38` page and theme-color, surfaces `#13233F`
+and `#0B1730` (the same steps as gullylabs.xyz), kit blue `#3754A0`, light blue `#6F8DDF` as the accent, ground
+`#F1F3F8` as the text colour, greys `#C9D2E8` `#D6DCE8`, Figtree (the site's self-hosted files; the kit has no font),
+the tagline "You Think It, We Ship It." verbatim. `theme/gully/assets/brand/` holds the kit's reversed logotype and mark and
+the clear-white "Powered by" badge byte for byte, and the favicons, app icons, owl WebPs and share card derived by
+`scripts/brand-kit-derive.py`, the same bytes as `public/brand/kit` (`npm run test:blog-theme` checks both and that nothing
+of the old brand is left). Nothing is re-drawn, re-coloured or cropped. The owner's
 UI rules apply too: minimal pages, a Lucide icon on every menu item, one signature pill button, toasts on real
 events, and a continuously animated live element on every page (the stats ticker).
 
@@ -25,8 +25,7 @@ scripts/
 
 ## What the theme does
 
-- **Header, one line from 1024 to 1920 px:** the kit's compact lockup (icon 30x33 + horizontal wordmark 170x17, to
-  gullylabs.xyz, new tab) plus "Blog"; Products and App &amp; API menus, Projects, Pricing, the signature
+- **Header, one line from 1024 to 1920 px:** the kit's logotype (143x26, to gullylabs.xyz, new tab) plus "Blog"; Products and App &amp; API menus, Projects, Pricing, the signature
   "Launch app" button (to app.gullylabs.xyz). Every item has a Lucide icon. Links to other
   Gully sites (gullylabs.xyz, app., docs., analytics., github.com, x.com, t.me) open in a new tab
   with a ↗ marker, `rel="noopener noreferrer"` and hidden "(opens in a new tab)" text.
@@ -37,39 +36,39 @@ scripts/
 - **Live stats ticker** under the header on every page (`partials/ticker.hbs`, `gully.js` section 7): all-time
   and 24 h volume, value locked, 24 h and all-time fees from `https://gullylabs.xyz/api/stats` (CORS open),
   refreshed every 60 s while the tab is visible; the numbers count up, the strip scrolls continuously, a
-  gradient sparkline draws the last 30 days of volume, a pulsing cyan dot says "live". Reduced motion: no
+  gradient sparkline draws the last 30 days of volume, a pulsing light-blue dot says "live". Reduced motion: no
   scroll, no count-up. If the API fails the last values stay and the dot goes dim (no toast: not the
   reader's action).
 - **Signature button** (`.gl-btn`): a pill, left Lucide icon, the trailing arrow slides right on hover, a
-  shine sweeps across, scale .98 when pressed, cyan focus ring. `--primary` cyan fill / black text,
-  `--secondary` blue fill / white text, `--ghost` 1 px line.
-- **Toasts** (`gully.js` section 5): bottom-right stack, night surface, 22 px corners, Lucide icon, a cyan
+  shine sweeps across, scale .98 when pressed, light-blue focus ring. `--primary` light-blue fill / navy text,
+  `--secondary` kit blue fill / white text, `--ghost` 1 px line.
+- **Toasts** (`gully.js` section 5): bottom-right stack, night surface, 22 px corners, Lucide icon, an accent
   gradient progress bar that is the toast's life (3.2 s, hover pauses), click to dismiss. Only real events:
   link copied, code copied, copy failed.
 - **Mobile:** a Menu button opens a full-height sheet with the same groups as accordions.
-- **Footer:** the kit's full logo (232x93, with its 2x file), the tagline, Products / App & API / Company /
+- **Footer:** the kit's logotype (187x34), the tagline, Products / App & API / Company /
   Social columns, Start a project, the "Information only, not investment advice" line, Ghost's secondary
-  navigation and the kit's "Powered by Gully Labs" badge (30 px high, 26 px on phones, right of the copyright; 1x/2x/3x). No "Powered by Ghost".
+  navigation and the kit's clear-white "Powered by Gully Labs" badge (30 px high, 26 px on phones, right of the copyright). No "Powered by Ghost".
 - **Home, kept short:** masthead (site title, description, tagline), 01 the lead story (newest featured
   post, else the newest post), 02 the five latest posts in a hairline grid with the archive tile (two rows
   at 1024+) and topic chips, 03 "From the Stock tracker" links. `posts_per_page` is 6, so page 2 exists (and the
   tile links to it) as soon as there is a seventh post; every post is reachable. With no posts:
-  "First posts coming soon" with the kit's "building" mascot and links to the app and docs.
+  "First posts coming soon" with the kit's owl (laptop) and links to the app and docs.
 - **Post:** gradient reading-progress hairline, kicker (tag, date, reading time), display title, share
   (X, Telegram, copy link with a toast), the generated banner, content with docs-style code blocks
   (language label and copy button), captions, author box, related posts (same primary tag, else latest).
-- **Tag, author, 404 (with the kit's "planning" mascot) and error pages**, pagination.
+- **Tag, author, 404 (with the kit's owl, notebook) and error pages**, pagination.
 - **No email opt-in or members UI**: no sign-in, subscribe, account or newsletter forms, no post-end
   sign-up box, no comments, no "Members" lock on cards, and partials/content-cta.hbs blanks Ghost's
   members-only upgrade box. Set Settings > Membership > Subscription access to "Nobody" so Ghost
   does not load Portal either.
-- **Accessibility:** 44 px targets, cyan focus rings, skip link, disclosure-button menus (Escape closes
+- **Accessibility:** 44 px targets, light-blue focus rings, skip link, disclosure-button menus (Escape closes
   and returns focus, arrow keys move), focus-trapped mobile sheet, text contrast at or above 4.5:1
-  (small text uses `#A3A8C3` or lighter on `#06050D`, 8.6:1). Reduced motion follows the site's policy: fades
+  (small text uses `#AAB6D0` or lighter on `#0E1C38`). Reduced motion follows the site's policy: fades
   and colour changes only.
 - **No third-party scripts or fonts.** Fonts and brand files are served from the theme's own assets; the only
-  network call is the stats ticker (gullylabs.xyz, our own API). `head`: favicons 16/32/48, apple-touch-icon
-  180, `site.webmanifest` (192/512 app icons, `#06050D`), `theme-color #06050D`.
+  network call is the stats ticker (gullylabs.xyz, our own API). `head`: favicon.ico and favicons 16/32/48,
+  apple-touch-icon 180, `site.webmanifest` (192/512 and maskable app icons, `#0E1C38`), `theme-color #0E1C38`.
 
 ### Animated banners
 
@@ -87,17 +86,17 @@ seed picks within it, along with every shape, speed and colour placement. A kick
 - `prefers-reduced-motion: reduce`, or the theme setting **Animated banners** off: one still frame,
   faded in.
 - **Posts with a feature image:** the image stays fully visible (with its alt text); the animated layer
-  only frames it (cyan corner ticks, a kicker) and moves in a band along the bottom that fades out
+  only frames it (light-blue corner ticks, a kicker) and moves in a band along the bottom that fades out
   upwards.
 - Without JavaScript the banner shows a static hairline grid.
 
 ## Share images (og:image)
 
 **Owner rule (2026-10-25): every brand uses its own kit OG image.** The theme prints, before `{{ghost_head}}`
-(crawlers take the first tag), `og:image` / `twitter:image` = the kit's `og-image-1200x630.png` at the
-absolute blog URL (`{{@site.url}}{{asset "brand/social/og-image-1200x630.png"}}` →
-`https://blog.gullylabs.xyz/assets/brand/social/og-image-1200x630.png?v=…`), with width, height, alt "Gully
-Labs logo with mascot" and `twitter:card summary_large_image`, on every page that has no image of its own:
+(crawlers take the first tag), `og:image` / `twitter:image` = the site's derived `og-default-1200x630.png` at the
+absolute blog URL (`{{@site.url}}{{asset "brand/social/og-default-1200x630.png"}}` →
+`https://blog.gullylabs.xyz/assets/brand/social/og-default-1200x630.png?v=…`), with width, height, alt "Gully
+Labs logotype with the owl" and `twitter:card summary_large_image`, on every page that has no image of its own:
 home, index, tag, author, 404, and posts/pages without a feature image or their own social image. A post's
 feature image is the author's real content and stays its share image (Ghost prints it).
 
@@ -108,12 +107,12 @@ has no vector wordmark, `banner.js` no longer draws one: the share still ends wi
 
 - **What it shows:** the post's own banner (`banner.js`, variant `share`) frozen at its still frame
   `t0 = (seed % 997) / 31` s, the same frame reduced-motion visitors see; the kicker with the primary
-  tag's name and the banner code (`NEWS / GL-1005`); the whole title, upper-cased, in Poppins 700
+  tag's name and the banner code (`NEWS / GL-1005`); the whole title, upper-cased, in the display font
   at the largest of 88/78/68/60/52 px that fits three lines of 84% width (long words break; past that
   the third line ends in an ellipsis); `BLOG.GULLYLABS.XYZ` in IBM Plex Mono and the tagline "You Think It,
-  We Ship It." in Poppins 600. (`scripts/brand-from-kit.mjs` and `server/og.mjs`'s `kitWordmark` still
+  We Ship It." in the display font. (`scripts/brand-from-kit.mjs` and `server/og.mjs`'s `kitWordmark` still
   target the old kit's outlined wordmark; banner.js no longer carries the `kit-wordmark` markers, and
-  `server/og.mjs`, Dockerfile `og/fonts` need Poppins instead of Barlow Condensed before the generated still
+  `server/og.mjs`, Dockerfile `og/fonts` need Figtree instead of Barlow Condensed before the generated still
   is re-enabled.)
   Characters the brand fonts don't have (emoji) are left out of the image; the seed still uses the
   real title, so the art matches the blog's banner.
@@ -161,7 +160,7 @@ node scripts/blog-theme-zip.mjs                # writes ghost/theme/gully.zip
 npx gscan@6.6.1 --zip ghost/theme/gully.zip --v6
 ```
 
-## Upload and activate (owner's session)
+## Upload and activate (needs the Ghost Admin API key)
 
 ```
 GHOST_ADMIN_KEY="<id>:<secret>" node scripts/blog-theme-upload.mjs
@@ -175,7 +174,9 @@ GHOST_ADMIN_KEY="<id>:<secret>" node scripts/blog-theme-upload.mjs
   `/ghost/api/admin/themes/gully/activate/`. It prints only `upload: HTTP <status>` and
   `activate: HTTP <status>`, plus Ghost's error message on failure.
 - `--no-activate` uploads only. `GHOST_URL` points it at another Ghost (for a test instance).
-- **Rollback:** Ghost admin > Settings > Design > Change theme > activate Source again (it stays installed).
+- **Rollback:** the upload replaces the installed "gully" theme, so take a copy first: download it in Ghost admin >
+  Settings > Design > Change theme > Installed > gully > Download (or tar `/var/lib/ghost/content/themes/gully` from the
+  container), and upload that zip to go back. Activating Source (it stays installed) is the instant fallback.
 
 ## Settings the owner sets by hand in Ghost admin
 
@@ -187,15 +188,15 @@ Ghost admin (Settings):
    - Title: `Gully Labs Blog`
    - Description: `Building on-chain: stock token gaps, analytics, payments and the tools behind them.`
    The home masthead shows both.
-2. **Accent colour** (Design > Brand): `#00D2FF` (the kit's cyan). The theme's accent is fixed, but Ghost's
+2. **Accent colour** (Design > Brand): `#6F8DDF` (the kit's light blue). The theme's accent is fixed, but Ghost's
    own cards and admin previews use the accent.
-3. **Publication icon** (Design > Brand): the kit's `icon/app-icon-512.png` (square, rounded, dark; Ghost
-   wants a square ≥ 60 px). The theme prints its own favicons from `assets/brand/icon` regardless.
-4. **Publication logo** (Design > Brand): the kit's `logo/gully-labs-logo.png` (928x372, transparent). The
-   theme shows the kit files from its own assets; Ghost uses the uploaded logo in emails.
-5. **Publication cover** (Design > Brand): the kit's `social/og-image-1200x630.png`. The theme prints that
-   same image (from its assets, absolute blog URL) as `og:image` on every page without an image of its own,
-   so the cover only matters for Ghost's own tags and admin.
+3. **Publication icon** (Design > Brand): `public/brand/kit/icon/icon-512.png` (the mark on navy; Ghost wants a square
+   ≥ 60 px). The theme prints its own favicons after `{{ghost_head}}` regardless.
+4. **Publication logo** (Design > Brand): the kit's `logo/logotype-color.svg` for white emails. Ghost uses the uploaded
+   logo in emails; the theme shows the kit file from its own assets.
+5. **Publication cover and default social image** (Design > Brand, and General > Meta / X / Facebook cards):
+   `public/brand/kit/og-default-1200x630.png`. The live site's settings still print `gullylabs.xyz/social/og-home.png` and
+   `gullylabs.xyz/favicon.png` from `{{ghost_head}}`, after the theme's tags.
 6. **Navigation** (Navigation):
    - Primary (the blog sections bar): e.g. `Home` → `/`, `Releases` → `/tag/releases/`,
      `Engineering` → `/tag/engineering/`, `Tracker` → `/tag/tracker/`. Labels pick the icons (see above).

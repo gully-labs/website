@@ -1566,7 +1566,7 @@ await step('admin', async () => {
   const logos = await page.locator('main img').evaluateAll((els) => els.map((i) => i.complete && i.naturalWidth > 0))
   check('admin: chain and asset logos load', logos.length > 0 && logos.every(Boolean), `${logos.filter(Boolean).length}/${logos.length}`)
   // Tap targets (N36): every visible control is 44 px high.
-  for (const sec of ['health', 'overview', 'traffic', 'developers', 'alerts', 'workspaces', 'security', 'telegram', 'billing', 'pay', 'analytics', 'chainkit', 'inbox', 'ai']) {
+  for (const sec of ['health', 'overview', 'traffic', 'developers', 'alerts', 'workspaces', 'security', 'telegram', 'billing', 'pay', 'analytics', 'chainorders', 'chainkit', 'inbox', 'ai']) {
     await page.goto(BASE + '/admin#' + sec)
     await page.waitForTimeout(1500)
     const small = await page.locator('main').locator('button, select, input:not([type=checkbox]):not([type=radio]), textarea, a[href], summary').evaluateAll((els) => els.filter((e) => { const r = e.getBoundingClientRect(); const st = getComputedStyle(e); return r.width > 0 && r.height > 0 && st.visibility !== 'hidden' && !e.closest('.sr-only') && r.height < 43.5 }).map((e) => `${e.tagName} ${(e.textContent ?? '').trim().slice(0, 24)} ${Math.round(e.getBoundingClientRect().height)}`))
@@ -3393,6 +3393,40 @@ await step('design audit 4', async () => {
     await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
     await ctx.close()
   }
+})
+
+await step('preview pages: landing and product template', async () => {
+  for (const width of [1440, 390]) {
+    const ctx = await newContext({ width, height: 844, mobile: width < 600 })
+    const page = await ctx.newPage()
+    const w = watch(page, `preview ${width}`)
+    const badImages = []
+    page.on('response', (r) => { if (r.request().resourceType() === 'image' && r.status() !== 200 && r.status() !== 304) badImages.push(`${r.status()} ${r.url()}`) })
+    page.on('requestfailed', (r) => { if (r.resourceType() === 'image') badImages.push(`failed ${r.url()}`) })
+    await page.goto(BASE + '/preview/landing')
+    await page.locator('h1').waitFor()
+    check(`preview landing ${width}: a product opens its preview page`, (await page.locator('a[href^="/preview/products/"]').count()) > 5 && (await page.locator('a[href^="/products/"]').count()) === 0)
+    await noHorizontalScroll(page, `preview landing ${width}`)
+    for (const p of ['/preview/products/gully-core', '/preview/products/chain', '/preview/products/quests', '/preview/build/dex']) {
+      await page.goto(BASE + p)
+      await page.locator('h1').waitFor()
+      check(`${p} ${width}: live figures, steps and footer`, (await page.locator('[data-v="latency"]').count()) === 1 && (await page.locator('.steps li').count()) >= 3 && (await page.locator('footer').count()) === 1)
+      await noHorizontalScroll(page, `${p} ${width}`)
+    }
+    await page.goto(BASE + '/preview/build/token')
+    await page.getByRole('button', { name: 'Stealth' }).click()
+    check(`token launch ${width}: the preset picker changes the schedule`, await page.getByText('50% to 1% over 2 minutes').isVisible())
+    await page.getByRole('button', { name: 'Custom' }).click()
+    check(`token launch ${width}: Custom draws no curve`, (await page.locator('[data-curve] svg').count()) === 0)
+    await noHorizontalScroll(page, `/preview/build/token ${width}`)
+    check(`preview ${width}: every image loads, none redirected`, badImages.length === 0, badImages.join(' ').slice(0, 300))
+    await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
+    await ctx.close()
+  }
+  const r = await fetch(BASE + '/preview/products/nope')
+  check('an unknown preview product is a 404', r.status === 404, String(r.status))
+  const home = await (await fetch(BASE + '/')).text()
+  check('the home page is not the new landing', !home.includes('/landing/live.js'))
 })
 
 const unexpectedOutbound = blockedOutbound.filter((u) => !/dexscreener|geckoterminal|rpc\.|arbitrum\.io|mainnet\.base\.org|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag|gully|holdermaps|kre8\.fun/i.test(u))

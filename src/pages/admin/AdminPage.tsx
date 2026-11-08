@@ -31,11 +31,13 @@ import { sectionCls } from './adminSections'
 import { HealthCard } from './HealthCard'
 import { AlertsAdmin, ChainKitAdmin, WorkspacesAdmin } from './OpsAdmin'
 import { ChainsWaitlist } from './ChainsWaitlist'
+import { ChainOrdersAdmin } from './ChainOrdersAdmin'
 import { ArrowMark } from './newTab'
 import { EcosystemSubmissions } from './EcosystemSubmissions'
 
 // The live charts (and ECharts with them) load on demand, after the dashboard's own figures.
 const AdminCharts = lazy(() => import('./AdminCharts'))
+const RevenueAdmin = lazy(() => import('./RevenueAdmin'))
 
 /* The private admin dashboard. Everything comes from /api/admin/* behind ADMIN_TOKEN; the token is
    kept in this tab's sessionStorage only. Refreshes every 30 seconds. Not linked from the site.
@@ -929,6 +931,12 @@ export function AdminPage() {
             <FeeProxyCard s={o.feeProxy} act={act} />
             </Sec>
 
+            <Sec id="revenue" at={sec}>
+              <Suspense fallback={<ChartBox height={280} state="loading" />}>
+                <RevenueAdmin token={token} />
+              </Suspense>
+            </Sec>
+
             <Sec id="traffic" at={sec}>
             <div className="grid grid-cols-[1.4fr_1fr] gap-5 max-[1099px]:grid-cols-1">
               <section className={card}>
@@ -1175,6 +1183,9 @@ export function AdminPage() {
             </Sec>
             <Sec id="analytics" at={sec}>
               <AnalyticsAccounts data={data.analytics} act={act} />
+            </Sec>
+            <Sec id="chainorders" at={sec}>
+              <ChainOrdersAdmin token={token} />
             </Sec>
             <Sec id="chainkit" at={sec}>
               <ChainKitAdmin token={token} />

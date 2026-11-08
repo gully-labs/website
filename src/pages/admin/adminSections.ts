@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { Activity, Bell, Boxes, Building2, ChartColumn, CreditCard, HeartPulse, Inbox, LayoutDashboard, Send, Shield, Sparkles, Users, Wallet } from 'lucide-react'
+import { Activity, Bell, Boxes, Building2, ChartColumn, CircleDollarSign, ClipboardList, CreditCard, HeartPulse, Inbox, LayoutDashboard, Send, Shield, Sparkles, Users, Wallet } from 'lucide-react'
 
 /* The admin page's section nav: one chip per section, with its icon. It sits in the sticky header, scrolls
    sideways on a phone, and marks the section in view (aria-current). Each section is a wrapper with the
@@ -8,6 +8,7 @@ import { Activity, Bell, Boxes, Building2, ChartColumn, CreditCard, HeartPulse, 
 export const ADMIN_SECTIONS: { id: string; label: string; icon: LucideIcon }[] = [
   { id: 'health', label: 'Health', icon: HeartPulse },
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'revenue', label: 'Revenue', icon: CircleDollarSign },
   { id: 'traffic', label: 'Traffic', icon: Activity },
   { id: 'developers', label: 'Developers', icon: Users },
   { id: 'alerts', label: 'Alerts', icon: Bell },
@@ -17,6 +18,7 @@ export const ADMIN_SECTIONS: { id: string; label: string; icon: LucideIcon }[] =
   { id: 'billing', label: 'Billing', icon: CreditCard },
   { id: 'pay', label: 'Gully Pay', icon: Wallet },
   { id: 'analytics', label: 'Analytics', icon: ChartColumn },
+  { id: 'chainorders', label: 'Chain orders', icon: ClipboardList },
   { id: 'chainkit', label: 'Chain Kit', icon: Boxes },
   { id: 'inbox', label: 'Enquiries', icon: Inbox },
   { id: 'ai', label: 'Gully AI', icon: Sparkles },

@@ -65,8 +65,7 @@ export function gullyPayConfig() {
 }
 
 /** Checkout can be offered: a store, its API key and the webhook signing key are all set. */
-export function gullyPayEnabled() {
-  const c = gullyPayConfig()
+export function gullyPayEnabled(c = gullyPayConfig()) {
   return /^[0-9a-f-]{36}$/i.test(c.storeId) && c.apiKey.length > 8 && c.signingKey.length >= 16
 }
 
@@ -80,11 +79,12 @@ export function setGullyPayFetchForTest(f) {
 
 /**
  * Creates a hosted checkout session. `amountCents` in USD cents. Returns { sessionId, checkoutUrl, expiresAt }.
+ * `config` (default gullyPayConfig()): a product with its own Gully Pay store passes its settings (chain-orders.mjs).
  * Throws an Error with `.code = 'gullypay-off' | 'gullypay-error'` (the message is safe to show).
  */
-export async function createHostedCheckout({ amountCents, currency = 'USD', clientReferenceId, successUrl, cancelUrl }) {
-  const c = gullyPayConfig()
-  if (!gullyPayEnabled()) throw Object.assign(new Error('Gully Pay checkout is not configured.'), { code: 'gullypay-off' })
+export async function createHostedCheckout({ amountCents, currency = 'USD', clientReferenceId, successUrl, cancelUrl, customerEmail, config }) {
+  const c = config ?? gullyPayConfig()
+  if (!gullyPayEnabled(c)) throw Object.assign(new Error('Gully Pay checkout is not configured.'), { code: 'gullypay-off' })
   const amount = Number(amountCents)
   if (!Number.isInteger(amount) || amount < 1) throw Object.assign(new Error('Bad amount.'), { code: 'gullypay-error' })
   let r
@@ -92,7 +92,7 @@ export async function createHostedCheckout({ amountCents, currency = 'USD', clie
     r = await fetchImpl(`${c.apiUrl}/checkout/hosted/${c.storeId}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${c.apiKey}`, 'user-agent': 'gully-labs-holdermaps/1' },
-      body: JSON.stringify({ amount, currency, clientReferenceId, successUrl, cancelUrl }),
+      body: JSON.stringify({ amount, currency, clientReferenceId, successUrl, cancelUrl, ...(customerEmail ? { customerEmail } : {}) }),
       signal: AbortSignal.timeout(15_000),
     })
   } catch (e) {

@@ -12,6 +12,8 @@
 //   POST /api/admin/accounts/:address/block|unblock   wallet accounts (Sign-In with Ethereum)
 //   GET  /api/admin/enquiries                 contact-form enquiries, newest first
 //   GET  /api/admin/chains/waitlist           Gully Chains waitlist rows (chains-waitlist.mjs), newest first
+//   GET  /api/admin/chain-orders              Create a chain orders (chain-orders.mjs), newest first
+//   POST /api/admin/chain-orders/:id/status   { status: 'setting_up'|'live'|'cancelled', note? } move an order on
 //   GET  /api/admin/launch-list[?format=csv]  "notify me" sign-ups
 //   POST /api/admin/enquiries/:id/handled     { handled: boolean }
 //   GET  /api/admin/billing                   subscriptions (wallets with a plan), every payment, checkout state
@@ -68,6 +70,7 @@ import { handleEcosystemAdmin } from './ecosystem.mjs'
 import { handleSecurityAdmin } from './security-routes.mjs'
 import { handleAdminSafe } from './safe-deploy.mjs'
 import { handleChainsAdmin } from './chains-waitlist.mjs'
+import { handleChainOrdersAdmin } from './chain-orders.mjs'
 import { sendCsv, toCsv } from './intake-notify.mjs'
 import { planOf, publicPlans, treasury } from './plans.mjs'
 import { guardOr, recentRefusals, refusedCheckout } from './pay-guard.mjs'
@@ -80,6 +83,7 @@ const PROXY_ACCOUNT = "That address is Request Network's fee proxy contract, not
 import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { checkAdmin, handleAdminAuth } from './admin-auth.mjs'
 import { readStats } from './stats.mjs'
+import { handleRevenueAdmin } from './revenue.mjs'
 import { statsWatchdogHealth } from './stats-watchdog.mjs'
 import { umamiConfigured } from './umami.mjs'
 import { linkedChat, telegramStats } from './telegram.mjs'
@@ -383,6 +387,7 @@ export async function handleAdmin(req, res, url) {
   if (p.startsWith('/api/admin/safe/')) return handleAdminSafe(req, res, url)
   if (p === '/api/admin/broadcasts' || p.startsWith('/api/admin/broadcasts/')) return handleBroadcastAdmin(req, res, url)
   if (p === '/api/admin/ecosystem/submissions') return handleEcosystemAdmin(req, res)
+  if (p === '/api/admin/revenue') return handleRevenueAdmin(req, res, url)
   const db = developers()
 
   // Fee-proxy monitor (fee-proxy-monitor.mjs): read every proxy's balances now. Reads under CACHE_MS are reused, so
@@ -610,6 +615,7 @@ export async function handleAdmin(req, res, url) {
   }
 
   if (p === '/api/admin/chains/waitlist') return handleChainsAdmin(req, res)
+  if (p === '/api/admin/chain-orders' || p.startsWith('/api/admin/chain-orders/')) return handleChainOrdersAdmin(req, res, url)
   if (p === '/api/admin/enquiries') return json(res, 200, { enquiries: [...listEnquiries()].reverse() }), true
 
   if (p === '/api/admin/launch-list') {
