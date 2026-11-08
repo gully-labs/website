@@ -50,6 +50,12 @@ const payChildren = [
   { path: '/pay/m/l/:id', lazy: () => import('./pages/merchant-pay/MerchantPay').then((m) => ({ Component: m.MerchantLinkPage })) },
 ]
 
+// Create a chain: on the app host, and locally on the main host too.
+const createChainRoutes = [
+  { path: '/create-chain', lazy: () => import('./pages/create-chain/CreateChain').then((m) => ({ Component: m.CreateChainPage })) },
+  { path: '/create-chain/orders/:id', lazy: () => import('./pages/create-chain/ChainOrder').then((m) => ({ Component: m.ChainOrderPage })) },
+]
+
 const mainRoutes = [
   {
     element: <Layout />,
@@ -114,6 +120,8 @@ const mainRoutes = [
   // and, under its old name, /developers; anywhere else both leave for the app (the server 301s first).
   { path: '/app', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={APP_URL} /> },
   { path: '/developers', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={APP_URL} /> },
+  // Create a chain: the app host's page (the server sends other hosts there); locally it is here too.
+  ...(isLocalHost() ? createChainRoutes : []),
   // The Telegram Mini App (opened from @GullyLabsBot): full screen in Telegram's own chrome, no site header or footer.
   { path: '/tg', element: <TgRoute /> },
   // The embeddable Holder Map (widget.js data-gully-widget="holders"): framed by other sites, no site chrome.
@@ -133,6 +141,7 @@ const adminRoutes = [{ path: '*', element: <AdminRoute /> }]
 // The app is full-screen: it draws its own sidebar and header, so no site Layout here.
 const appRoutes = [
   { path: '/', element: <DevelopersRoute /> },
+  ...createChainRoutes,
   { path: '*', element: <ToSite /> },
 ]
 

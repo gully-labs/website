@@ -44,9 +44,9 @@ try {
   /* ---- the offer comes from the config ---- */
   const plans = await call('/api/chains/plans')
   check('GET /api/chains/plans answers 200 and says nothing is live', plans.status === 200 && plans.data?.live === false)
-  check('the testnet price is null (TBA) in the config and in the answer', CHAINS.testnet.monthlyUsd === null && plans.data?.testnet?.monthlyUsd === null)
+  check('the testnet price comes from the config ($212.50, 15% under the published trial price)', CHAINS.testnet.monthlyUsd === 212.5 && plans.data?.testnet?.monthlyUsd === CHAINS.testnet.monthlyUsd)
   check('the testnet is free for the configured days', plans.data?.testnet?.freeDays === CHAINS.testnet.freeDays && CHAINS.testnet.freeDays === 30)
-  check('managed mainnet price, profit share and DA come from the config', plans.data?.mainnet?.fromUsdPerMonth === CHAINS.mainnet.fromUsdPerMonth && plans.data?.mainnet?.sequencerProfitPct === CHAINS.mainnet.sequencerProfitPct && plans.data?.mainnet?.daAtCost === true && CHAINS.mainnet.fromUsdPerMonth === 3500 && CHAINS.mainnet.sequencerProfitPct === 5)
+  check('managed mainnet price, profit share and DA come from the config', plans.data?.mainnet?.fromUsdPerMonth === CHAINS.mainnet.fromUsdPerMonth && plans.data?.mainnet?.sequencerProfitPct === CHAINS.mainnet.sequencerProfitPct && plans.data?.mainnet?.daAtCost === true && CHAINS.mainnet.fromUsdPerMonth === 4250 && CHAINS.mainnet.sequencerProfitPct === 4.25)
   check('every service and add-on in the config is in the answer', plans.data?.services?.length === SERVICES.length && plans.data?.addons?.length === CHAINS.addons.length)
   check('the price note says prices may change', /may change/i.test(plans.data?.note ?? ''))
   check('the services are marked included or add-on, and the not-yet-built ones carry a status', SERVICES.every((s) => s.kind === 'included' || s.kind === 'addon') && SERVICES.find((s) => s.id === 'aa')?.status === 'with-testnet' && SERVICES.find((s) => s.id === 'paymaster')?.status === 'with-testnet' && SERVICES.find((s) => s.id === 'usdc-gas')?.status === 'planned' && SERVICES.find((s) => s.id === 'gully-core')?.status === 'planned')

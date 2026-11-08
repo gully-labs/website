@@ -17,6 +17,7 @@ import { readHero } from './holders-hero.mjs'
 import { handleHolderBadge, handlePartnerLaunch } from './holders-partners.mjs'
 import { handleHolderDeep, startDeepRunner } from './holders-deep-routes.mjs'
 import { handleGullyPayWebhook } from './gullypay.mjs'
+import { handleChainOrders } from './chain-orders.mjs'
 import { handleBadgeRoutes } from './badge-routes.mjs'
 import { startChannel } from './telegram-channel.mjs'
 import { handleBroadcastRedirect, startBroadcasts } from './telegram-broadcast.mjs'
@@ -324,7 +325,10 @@ async function handleRequest(req, res) {
   if (!isApp && !isLocal && /^\/(app|developers)(\/|$)/.test(url.pathname)) {
     return send(res, 301, '', { Location: `${APP_URL}/`, 'Cache-Control': 'public, max-age=3600' })
   }
-  if (isApp && isPage && url.pathname !== '/') {
+  // Create a chain signs in with Gully ID, so it lives on the app host (the only host whose CSP loads the Gully ID SDK).
+  const createChain = /^\/create-chain(\/|$)/.test(url.pathname)
+  if (createChain && !isApp && !isLocal) return send(res, 301, '', { Location: APP_URL + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' })
+  if (isApp && isPage && url.pathname !== '/' && !createChain) {
     // A dashboard page by path (/keys, /billing/plans, /dashboard): that page of the app, not a gullylabs.xyz 404.
     const tab = appTabUrl(url.pathname)
     if (tab) return send(res, 301, '', { Location: tab, 'Cache-Control': 'public, max-age=3600' })
@@ -452,6 +456,8 @@ async function handleRequest(req, res) {
   if (url.pathname.startsWith('/api/holders/') && url.pathname.endsWith('/badge.svg') && (await handleHolderBadge(req, res, url))) return
   // Gully Pay's signed merchant webhook (gullypay.mjs): checkout.session.* events, the signature is the auth.
   if (url.pathname === '/api/gullypay/webhook') return void (await handleGullyPayWebhook(req, res))
+  // Create a chain (chain-orders.mjs): the offer, orders, and their own signed Gully Pay webhook.
+  if (url.pathname === '/api/chain-orders' || url.pathname.startsWith('/api/chain-orders/')) return void ((await handleChainOrders(req, res, url)) || send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' }))
   // Holder Map Deep check (holders-deep-routes.mjs): paid per token through Gully Pay.
   if (url.pathname === '/api/holders/deep' || url.pathname.startsWith('/api/holders/deep/')) return void (await handleHolderDeep(req, res, url))
   // Badges (badge-routes.mjs): the Holder Map badge and "Built by Gully Labs". Open and cacheable, never metered.

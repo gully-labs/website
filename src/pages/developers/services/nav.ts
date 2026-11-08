@@ -55,7 +55,7 @@ export const APP_GROUPS: { title: string; links: AppLink[] }[] = [
       { label: 'DEX', href: `${CORE_APP}/dexes/new?kind=dex`, icon: ArrowLeftRight },
       { label: 'Stock market', href: `${CORE_APP}/pads/new?kind=stocks`, icon: ChartNoAxesColumn },
       { label: 'Vault', href: `${CORE_APP}/vaults/new`, icon: Vault },
-      { label: 'Create a chain', href: 'https://gullylabs.xyz/services#contact', icon: Network },
+      { label: 'Create a chain', href: '/create-chain', icon: Network },
     ],
   },
   {
