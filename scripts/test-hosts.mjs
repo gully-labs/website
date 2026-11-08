@@ -139,7 +139,12 @@ try {
     const local = await get(`localhost:${PORT}`, INV)
     check('localhost keeps /pay by path (development)', local.status === 200 && !local.headers.location, String(local.status))
     const main = await get(MAIN, '/')
-    check('main /: still the site, with the analytics beacon and its own CSP', main.status === 200 && main.text.includes('analytics.gullylabs.xyz') && /static\.cloudflareinsights\.com/.test(main.headers['content-security-policy'] ?? ''))
+    // The flip (owner, 2026-11-08): / is the new landing, indexable with its own canonical; the old preview path redirects to it.
+    check('main /: the landing, indexable, canonical /, title and description in range', main.status === 200 && main.text.includes('/landing/live.js') && !/noindex/i.test(main.text) && !/noindex/i.test(main.headers['x-robots-tag'] ?? '') && main.text.includes('<link rel="canonical" href="https://gullylabs.xyz/">') && /<title>[^<]{20,60}<\/title>/.test(main.text) && /<meta name="description" content="[^"]{70,160}"/.test(main.text) && main.text.includes('href="/products/') && !main.text.includes('/preview/products/'))
+    const prev = await get(MAIN, '/preview/landing')
+    check('main /preview/landing: 301 to /', prev.status === 301 && prev.headers.location === '/', String(prev.status))
+    check('localhost still serves the preview path, noindex (suite and development)', (await get(`localhost:${PORT}`, '/preview/landing')).status === 200)
+    check('main /: the new landing, with the analytics beacon and its own CSP', main.status === 200 && main.text.includes('analytics.gullylabs.xyz') && /static\.cloudflareinsights\.com/.test(main.headers['content-security-policy'] ?? ''))
   }
 
   /* ----------------------------------------------------------------- api. --- */
@@ -247,8 +252,8 @@ try {
     const man = await get(HM, '/manifest.webmanifest')
     check('holdermaps manifest: installs as HolderMaps, with its own icons and colours', man.status === 200 && man.data?.name === 'HolderMaps' && man.data.theme_color === '#0A0A0A' && man.data.background_color === '#0A0A0A' && man.data.icons.length === 2 && man.data.icons.every((i) => i.src.startsWith('/brand/holdermaps/')), man.text.slice(0, 120))
     // The main site's head keeps the Gully Labs brand.
-    const mainHome = await get(MAIN, '/')
-    check('main /: still Gully Labs theme-color, icons and site name', mainHome.text.includes('<meta name="theme-color" content="#0E1C38" />') && mainHome.text.includes('href="/brand/icon/favicon-16.png"') && mainHome.text.includes('<meta property="og:site_name" content="Gully Labs" />'))
+    const mainHome = await get(MAIN, '/products')
+    check('main /products: still Gully Labs theme-color, icons and site name', mainHome.text.includes('<meta name="theme-color" content="#0E1C38" />') && mainHome.text.includes('href="/brand/icon/favicon-16.png"') && mainHome.text.includes('<meta property="og:site_name" content="Gully Labs" />'))
     // Gully AI: its own share image and theme colour on /ask; the site's tab icon and site name are kept.
     const ask = await get(MAIN, '/ask')
     check('main /ask: Gully AI share image and theme colour, Gully Labs icons and site name', ask.text.includes('<meta property="og:image" content="https://gullylabs.xyz/brand/gullyai/og-1200x630.png" />') && ask.text.includes('<meta name="theme-color" content="#000406" />') && ask.text.includes('href="/brand/icon/favicon-16.png"') && ask.text.includes('<meta property="og:site_name" content="Gully Labs" />') && /og:image:alt" content="Gully AI/.test(ask.text))
@@ -275,7 +280,7 @@ try {
       check('primary: a token page names its own holdermaps.xyz address as canonical (never "holdermaps.xyznull")', hp.text.includes(`<link rel="canonical" href="https://holdermaps.xyz/base/${TOKEN}" />`) && !hp.text.includes('xyznull'), hp.text.match(/<link rel="canonical"[^>]*>/)?.[0])
       const hsm = (await get(HM, '/sitemap.xml')).text
       check('primary: the holdermaps.xyz sitemap lists the home page and has no broken <loc>', hsm.includes('<loc>https://holdermaps.xyz/</loc>') && !hsm.includes('null'))
-      check('primary: pages carry the holdermaps-primary tag (the browser follows it)', hp.text.includes('<meta name="holdermaps-primary" content="1" />') && (await get(MAIN, '/')).text.includes('holdermaps-primary'))
+      check('primary: pages carry the holdermaps-primary tag (the browser follows it)', hp.text.includes('<meta name="holdermaps-primary" content="1" />') && (await get(MAIN, '/products')).text.includes('holdermaps-primary'))
       const msm = (await get(MAIN, '/sitemap.xml')).text
       check('primary: the main sitemap no longer lists Holder Map pages', !msm.includes(`${MAIN}/holders`) && msm.includes(`<loc>https://${MAIN}/tracker</loc>`))
       check('primary: links the server writes name holdermaps.xyz', holderPageUrl('base', TOKEN) === `https://holdermaps.xyz/base/${TOKEN}` && holderHomeUrl() === 'https://holdermaps.xyz/')
@@ -371,7 +376,7 @@ try {
       check('primary: localhost, docs. and app. keep their /security behaviour (development, other hosts)', (await get(`localhost:${PORT}`, '/security')).status === 200 && (await get('docs.gullylabs.xyz', '/security')).headers.location !== 'https://gullysecurity.xyz/')
       const sp = await get(SEC, '/reports')
       check('primary: gully-web no longer serves gullysecurity.xyz (421, the standalone app does)', sp.status === 421 && (await get(`www.${SEC}`, '/')).status === 421 && (await get(SEC, '/api/security/reports')).status === 421, `${sp.status}`)
-      check('primary: main pages carry the security-primary tag (the browser follows it)', (await get(MAIN, '/')).text.includes('<meta name="security-primary" content="1" />'))
+      check('primary: main pages carry the security-primary tag (the browser follows it)', (await get(MAIN, '/products')).text.includes('<meta name="security-primary" content="1" />'))
       // /api/score* is answered by the Security app until clients migrate: GET proxied, POST a 308.
       const stub = http.createServer((q, r) => { r.writeHead(200, { 'Content-Type': 'application/json' }); r.end(JSON.stringify({ proxied: q.url })) })
       await new Promise((ok) => stub.listen(0, '127.0.0.1', ok))

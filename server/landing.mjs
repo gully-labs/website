@@ -124,13 +124,15 @@ export const pageTop = () => `<div class="fx" id="fx"><a href="https://x.com/Gul
 export const pageFoot = () => `<footer><div class="w"><div class="f"><div><img src="/brand/kit/logotype-reversed.svg" alt="Gully Labs" width="175" height="34" loading="lazy"><p style="margin-top:10px;font-size:14px;color:var(--soft)">${esc(N.tagline)}</p><ul style="margin-top:8px">${N.footer.map(navLink).join('')}</ul></div>${N.products.map((g) => `<nav aria-label="${esc(g.group)}"><span class="lab">${esc(g.group)}</span><ul>${g.links.map(([href, label]) => `<li>${a(href, `${icon(PRODUCT_ICON[label] ?? 'box')}<span>${esc(label)}</span>`)}</li>`).join('')}</ul></nav>`).join('')}</div><div class="fb"><span>${esc(N.copy)}</span><ul>${N.legal.map(navLink).join('')}</ul><a class="pb" href="/" aria-label="Powered by Gully Labs"><img src="/brand/kit/powered-by-clear-white.svg" alt="Powered by Gully Labs" width="150" height="40" loading="lazy"></a></div></div></footer>`
 
 /** The whole page. `meta`: title, description and head tags, already rendered for this path by seo.mjs. */
+/** The home page counts page views like the one it replaces (Gully Analytics, cookie-free, production hosts only); the preview does not. */
+const ANALYTICS = '<script defer src="https://analytics.gullylabs.xyz/script.js" data-website-id="78f29233-9f70-4c45-a440-35d1457d2207" data-domains="gullylabs.xyz,docs.gullylabs.xyz,app.gullylabs.xyz,admin.gullylabs.xyz,blog.gullylabs.xyz,holdermaps.xyz,gullysecurity.xyz" data-web3="true"></script>'
 export async function renderLanding(head, given = null, { preview = false } = {}) {
   const [hubB, products, live, stats] = given ? [given.hub, given.products, given.live, given.stats] : await Promise.all([within(hub(), 250), within(hubProducts(), 250), within(hubLive(), 250), within(readStats(), 250)])
   const data = { hub: hubB, products, live, stats, stages: STAGES }
   const c = cards(data)
   const b = board(data)
   const boot = JSON.stringify({ ...slim(data), stages: STAGES }).replace(/</g, '\\u003c')
-  const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${head}<link rel="preload" href="/fonts/figtree-latin-700.woff2" as="font" type="font/woff2" crossorigin><link rel="modulepreload" href="/landing/graphs.mjs"><script src="/landing/fx.js"></script><style>${CSS}</style></head><body>
+  const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${head}<link rel="preload" href="/fonts/figtree-latin-700.woff2" as="font" type="font/woff2" crossorigin><link rel="modulepreload" href="/landing/graphs.mjs"><script src="/landing/fx.js"></script><style>${CSS}</style>${preview ? '' : ANALYTICS}</head><body>
 ${pageTop()}
 <main>
 <section class="hero"><div class="w"><div><p class="eye">You Think It, We Ship It</p><h1>Launch a token. Run a launchpad. Own a DEX.</h1><p class="lede">Gully Core gives you the whole stack, on the chains your users already use.</p><div class="cta">${cap('#build', 'Start building', 'solid')}${cap('https://app.gullylabs.xyz', 'Open the app')}</div></div>

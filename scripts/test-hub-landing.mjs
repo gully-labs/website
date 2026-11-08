@@ -136,8 +136,8 @@ test('Peddle family: PeddleSwap (DEX), Peddles (launchpad) and PeddleQuest, offi
 test('product count: eight Gully-named products + the Peddle family, the same in the title, the H1, crawlers and JSON-LD', async () => {
   assert.equal(H.PRODUCT_COUNT, 11)
   assert.equal(H.PRODUCT_COUNT_WORD, 'eleven')
-  assert.match(H.LANDING_TITLE, /^Eleven products: .*trading/)
-  for (const n of ['PeddleSwap', 'Peddles']) assert.ok(H.LANDING_DESCRIPTION.includes(n), n)
+  assert.match(H.LANDING_TITLE, /^Launch a token, a launchpad or a DEX$/)
+  assert.ok(H.LANDING_DESCRIPTION.includes('Gully Core') && H.LANDING_TITLE.length + 13 <= 60 && H.LANDING_DESCRIPTION.length <= 160, 'the home title and description are in range')
   const page = read('src/pages/hub/Constellation.tsx')
   assert.ok(!/Eight (connected )?products/.test(page), 'no stale count on the landing')
   assert.ok(page.includes('<PeddleFamily stats={stats}'), 'the family is in the product line-up')
