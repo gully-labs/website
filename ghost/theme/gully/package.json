@@ -52,7 +52,7 @@
                 "type": "boolean",
                 "default": true,
                 "group": "homepage",
-                "description": "Show the 'From the Stock tracker' links to gullylabs.xyz on the home page"
+                "description": "Show the 'From Gully Labs' links to gullylabs.xyz on the home page"
             },
             "generated_post_share_images": {
                 "type": "boolean",

@@ -13,8 +13,6 @@
     <link rel="preload" as="font" type="font/woff2" href="{{asset "fonts/ibm-plex-mono-latin-400-normal.woff2"}}" crossorigin>
     {{> "fonts"}}
 
-    <link rel="stylesheet" href="{{asset "css/screen.css"}}">
-
     {{!-- Share image (owner rule: every brand uses its own kit OG image). Every page that has no image of its own
           gets the Gully Labs share card (og-default-1200x630.png, the website's derived file) at an absolute blog.gullylabs.xyz URL, before {{ghost_head}}
           because crawlers take the first og:image / twitter:image. A post's feature image (or its own social image)
@@ -60,6 +58,8 @@
 
     <script defer src="https://analytics.gullylabs.xyz/script.js" data-website-id="78f29233-9f70-4c45-a440-35d1457d2207" data-domains="blog.gullylabs.xyz" data-web3="true"></script>
     {{ghost_head}}
+    {{!-- After ghost_head on purpose: the theme wins over the old Code injection and the accent in Ghost settings. --}}
+    <link rel="stylesheet" href="{{asset "css/screen.css"}}">
     {{> "brand/head"}}
 </head>
 <body class="{{body_class}}{{#if @custom.animated_banners}} gl-animate{{/if}}">

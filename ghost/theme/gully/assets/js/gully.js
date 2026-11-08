@@ -17,7 +17,7 @@
 
     /* ------------------------------------------- 0. old code-injection intro --- */
     /* Before this theme, Ghost admin > Code injection (site footer) added a "How we build" intro (section.gl-intro)
-       and a stylesheet that restyles .gl-btn in the old palette. The theme has its own empty state: remove both.
+       and a stylesheet that restyles .gk-btn in the old palette. The theme has its own empty state: remove both.
        The owner should still clear that code injection; this only keeps a stale one from showing. */
     Array.prototype.forEach.call(document.querySelectorAll('section.gl-intro'), function (el) {
         el.parentNode.removeChild(el);
@@ -179,6 +179,10 @@
             });
         });
     }
+
+    /* Ghost's old site-footer Code injection adds this gold block to an empty home page. */
+    var oldIntro = document.querySelector('.gl-intro');
+    if (oldIntro) oldIntro.parentNode.removeChild(oldIntro);
 
     /* Retired Gully hosts that Ghost's own navigation (admin > Settings > Navigation) may still name: developers.
        has no DNS since 2026-10-17; the developer docs live on docs.gullylabs.xyz. Rewritten before the scan below. */
