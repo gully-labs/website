@@ -54,6 +54,8 @@ export const CHAINS = {
 // a page, and no page compares us with anyone, because a comparison needs a source and the base fee below has none.
 //   - conduit.xyz/pricing, Trial Testnet "$250 per month"                     -> ours $212.50 a month after the free days
 //   - conduit.xyz/pricing, Growth "Contact for pricing + 5% sequencer profit" -> ours 4.25% of sequencer profit
+//   - Also read 2026-11-08, no price shown: caldera.xyz/pricing and alchemy.com/rollups/pricing answer 404; gelato.cloud/rollups
+//     names no amount. Third-party only (AWS Marketplace listing for Caldera: $500 a month per rollup pod, not a plan price).
 //   - Conduit's old Growth base ($60,000 a year, our Oct 2026 note) is NOT published any more. $4,250 a month is that
 //     note less 15%: the owner's target, unsourced, until he confirms it.
 //   - caldera.xyz/pricing is a 404, and caldera.xyz shows no price or pricing link: no Caldera benchmark.
