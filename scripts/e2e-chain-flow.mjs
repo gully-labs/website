@@ -89,7 +89,7 @@ async function toPay(page, chainId, { width, first = false, due = '$1.00', tag =
   if (first) {
     check(`${width} step 4: Next waits for Gully ID`, await page.getByTestId('next').isDisabled())
     await shot(page, `${tag}4-signin-${width}`)
-    await page.getByRole('button', { name: 'Sign in with Gully ID' }).click()
+    await page.getByTestId('gully-id-signin').click()
   }
   await page.getByTestId('signed-in').waitFor()
   await page.getByTestId('chain-email').fill('team@example.com')
@@ -255,7 +255,7 @@ for (const width of [390, 1440]) {
 const ctx = await context(1440)
 const page = await ctx.newPage()
 await page.goto(`${BASE}/create-chain/orders/co_nothinghere00`)
-await page.getByRole('button', { name: 'Sign in with Gully ID' }).waitFor()
+await page.getByTestId('gully-id-signin').waitFor()
 check('a signed-out order page asks for Gully ID', true)
 await ctx.close()
 
