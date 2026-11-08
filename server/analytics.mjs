@@ -24,7 +24,8 @@
 // Everything else streams through untouched.
 
 import http from 'node:http'
-import { admitEvents, DASHBOARD_ORIGIN, houseHostMap, recordEvents } from './analytics-accounts.mjs'
+import crypto from 'node:crypto'
+import { admitEvents, DASHBOARD_ORIGIN, houseHostMap, houseWalletHostList, isWalletSite, recordEvents } from './analytics-accounts.mjs'
 import { loginInterstitial, ssoPage } from './analytics-sso.mjs'
 import { ANALYTICS_TRIAL_DAYS } from './plans.mjs'
 
@@ -261,8 +262,29 @@ async function handleEvents(req, res, batch) {
   if (!keep.length) return refuse(req, res, verdicts.find((v) => !v.ok).block)
   const counts = new Map()
   ids.forEach((id, i) => id && verdicts[i].ok && counts.set(id, (counts.get(id) ?? 0) + 1))
-  const out = keep.length === items.length ? body : Buffer.from(JSON.stringify(keep))
+  let changed = keep.length !== items.length
+  for (const it of keep) if (scrubWallet(it)) changed = true
+  const out = !changed ? body : Buffer.from(JSON.stringify(batch ? keep : keep[0]))
   forward(req, res, out, (status) => status < 400 && recordEvents(counts))
+}
+
+/**
+ * Unique-wallet counting without the address. The tracker sends a client-side hash (first 16 hex of SHA-256 of the
+ * lowercase address) in data.address, only on app surfaces. Here it is re-hashed with a server-side pepper and the
+ * website id (HMAC-SHA256, first 16 hex), so the stored value cannot be reversed or matched across sites, and is
+ * dropped everywhere else: a full address, any other shape, a site not on the config's `wallets` list, or no pepper.
+ * Returns true when the item changed.
+ */
+const walletPepper = () => process.env.ANALYTICS_WALLET_PEPPER || process.env.ANALYTICS_APP_SECRET || ''
+export function scrubWallet(item) {
+  const d = item?.payload?.data
+  if (!d || typeof d !== 'object' || !('address' in d)) return false
+  const site = typeof item.payload.website === 'string' ? item.payload.website.toLowerCase() : ''
+  const v = typeof d.address === 'string' ? d.address.toLowerCase() : ''
+  const pepper = walletPepper()
+  if (pepper && isWalletSite(site) && /^[0-9a-f]{16}$/.test(v)) d.address = crypto.createHmac('sha256', pepper).update(`${site}:${v}`).digest('hex').slice(0, 16)
+  else delete d.address
+  return true
 }
 
 /**
@@ -271,9 +293,13 @@ async function handleEvents(req, res, batch) {
  * Cookieless; Do Not Track respected by Umami (data-do-not-track); the address is sent without query or hash and sign-in
  * callback pages are never tracked, so no code or token reaches analytics.
  */
+/** Pages that carry ids or tokens in the path, or are sign-in steps: never tracked. */
+const NEVER_TRACK = '(^|/)(callback|checkout|pay|fund|reset-password|verify-email|sign-?in|login|consent|approve|approval|connect|authorize|oauth)(/|$)'
+
 export function loaderScript() {
   const map = houseHostMap()
-  return `(function(){try{var m=${JSON.stringify(map)};var h=location.hostname.toLowerCase();var id=m[h];if(!id)return;if(/\/callback\/?$/.test(location.pathname)||document.querySelector('script[data-website-id]'))return;var s=document.createElement('script');s.defer=true;s.src=${JSON.stringify(DASHBOARD_ORIGIN + '/script.js')};s.setAttribute('data-website-id',id);s.setAttribute('data-domains',h);s.setAttribute('data-do-not-track','true');s.setAttribute('data-exclude-search','true');s.setAttribute('data-exclude-hash','true');s.setAttribute('data-web3','true');s.setAttribute('data-web3-address','none');document.head.appendChild(s)}catch(e){}})();\n`
+  const wallets = houseWalletHostList()
+  return `(function(){try{var m=${JSON.stringify(map)};var w=${JSON.stringify(wallets)};var h=location.hostname.toLowerCase();var id=m[h];if(!id)return;if(new RegExp(${JSON.stringify(NEVER_TRACK)},"i").test(location.pathname)||document.querySelector('script[data-website-id]'))return;var s=document.createElement('script');s.defer=true;var u=${JSON.stringify(DASHBOARD_ORIGIN + '/script.js')};try{if(window.trustedTypes&&trustedTypes.createPolicy){u=trustedTypes.createPolicy('gully-analytics',{createScriptURL:function(x){return x}}).createScriptURL(u)}}catch(e){}s.src=u;s.setAttribute('data-website-id',id);s.setAttribute('data-domains',h);s.setAttribute('data-do-not-track','true');s.setAttribute('data-exclude-search','true');s.setAttribute('data-exclude-hash','true');s.setAttribute('data-web3','true');s.setAttribute('data-web3-address',w.indexOf(h)>=0?'hash':'none');document.head.appendChild(s)}catch(e){}})();\n`
 }
 
 function serveLoader(req, res) {
