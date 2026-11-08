@@ -470,7 +470,7 @@ try {
   r = await sendEvent(siteB.id)
   check('a house website on a lapsed account is accepted (200)', r.status === 200, JSON.stringify(r.data))
   const loader = await proxy('/a.js')
-  check('the loader script maps the house hosts to their ids, with no query or hash sent', loader.status === 200 && loader.text.includes('"gullylabs.xyz":"78f29233-0000-4000-8000-000000000000"') && loader.text.includes('data-exclude-search') && loader.text.includes('data-web3-address') && loader.text.includes('/script.js') && !loader.text.includes(siteB.id.toUpperCase()), String(loader.status))
+  check('the loader script maps the house hosts to their ids, with no query or hash sent', loader.status === 200 && loader.text.includes('"gullylabs.xyz":"78f29233-0000-4000-8000-000000000000"') && loader.text.includes('reset-password') && loader.text.includes('checkout') && loader.text.includes('data-exclude-search') && loader.text.includes('data-web3-address') && loader.text.includes('/script.js') && !loader.text.includes(siteB.id.toUpperCase()), String(loader.status))
   fs.writeFileSync(houseFile, JSON.stringify({ sites: {} }))
   fs.utimesSync(houseFile, new Date(Date.now() + 5000), new Date(Date.now() + 5000))
   accounts.resetHouseForTest()
