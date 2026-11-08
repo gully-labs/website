@@ -79,6 +79,8 @@ reindex()
 const HOUSE_FILE = () => process.env.ANALYTICS_HOUSE_FILE || path.join(DATA_DIR, 'analytics-house.json')
 let house = new Set()
 let houseHosts = {}
+let houseWallets = new Set() // website ids that may carry a hashed wallet identifier
+let houseWalletHosts = []
 let houseKey = ''
 let houseCheckedAt = 0
 function houseIds(now = Date.now()) {
@@ -96,9 +98,11 @@ function houseIds(now = Date.now()) {
   if (key === houseKey) return house
   const ids = new Set(env.split(',').map((x) => x.trim().toLowerCase()).filter((x) => UUID_RE.test(x)))
   const hosts = {}
+  let walletHosts = []
   if (mtime) {
     try {
       const cfg = JSON.parse(fs.readFileSync(file, 'utf8'))
+      walletHosts = (Array.isArray(cfg?.wallets) ? cfg.wallets : []).map((h) => String(h).toLowerCase())
       for (const [h, v] of Object.entries(cfg?.sites ?? {})) {
         const id = String(typeof v === 'string' ? v : v?.id ?? '').toLowerCase()
         if (UUID_RE.test(id)) {
@@ -112,11 +116,17 @@ function houseIds(now = Date.now()) {
   }
   house = ids
   houseHosts = hosts
+  houseWalletHosts = walletHosts.filter((h) => hosts[h])
+  houseWallets = new Set(houseWalletHosts.map((h) => hosts[h]))
   houseKey = key
   return house
 }
 /** host -> website id of every Gully-owned site in the house config (what the /a.js loader serves). */
 export const houseHostMap = () => (houseIds(), houseHosts)
+/** Hosts (app surfaces) where the loader may send a hashed wallet identifier, from the config's `wallets` list. */
+export const houseWalletHostList = () => (houseIds(), houseWalletHosts)
+/** Whether a website id is an app surface allowed to carry the hashed wallet identifier. */
+export const isWalletSite = (id) => typeof id === 'string' && (houseIds(), houseWallets.has(id.toLowerCase()))
 /** Tests only: forget the cached house list so the next check re-reads the config. */
 export const resetHouseForTest = () => {
   houseKey = ''
