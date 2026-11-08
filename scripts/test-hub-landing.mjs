@@ -87,7 +87,7 @@ test('live events: real, dated, newest first, explorer links only for real hashe
   const ev = H.liveEvents(full, 8)
   assert.ok(ev.length > 0 && ev.length <= 8)
   for (let i = 1; i < ev.length; i++) assert.ok(Date.parse(ev[i - 1].at) >= Date.parse(ev[i].at))
-  for (const e of ev) if (e.href) assert.match(e.href, /^https:\/\/testnet-explorer\.gullychain\.xyz\/tx\/0x[0-9a-fA-F]{64}$/)
+  for (const e of ev) if (e.href) assert.match(e.href, /^https:\/\/testnet.gullyscan.xyz\/tx\/0x[0-9a-fA-F]{64}$/)
 })
 
 test('toasts: nothing on the first reading, one per real change after', () => {

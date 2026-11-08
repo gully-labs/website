@@ -225,7 +225,7 @@ try {
     check('Gully Chain Testnet: not offered for monitoring', !mon.monitorChains().some((c) => c.id === 485590) && mon.scoreChainOf('gully')?.id === 485590)
     const r = await fetch(`${BASE}/api/score/gully/${H}`)
     const j = await r.json()
-    check('GET /api/score/gully/:address answers with CORS and the testnet explorer', r.status === 200 && r.headers.get('access-control-allow-origin') === '*' && j.chain?.key === 'gully' && /testnet-explorer\.gullychain\.xyz/.test(j.links?.explorer ?? ''), `${r.status} ${JSON.stringify(j).slice(0, 200)}`)
+    check('GET /api/score/gully/:address answers with CORS and the testnet explorer', r.status === 200 && r.headers.get('access-control-allow-origin') === '*' && j.chain?.key === 'gully' && /testnet.gullyscan.xyz/.test(j.links?.explorer ?? ''), `${r.status} ${JSON.stringify(j).slice(0, 200)}`)
 
     // A Gully Launchpad token: known code, the curve holds the liquidity, the creator's record, a simulated 5% fee.
     const gl = await get(485590, L)

@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-07T04:10:26.149Z",
+ "updatedAt": "2026-11-08T23:47:13.346Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -3554,8 +3554,8 @@
    "title": "gullylabs.xyz website (gully-labs/website README)",
    "url": "https://github.com/gully-labs/website/blob/main/README.md",
    "section": null,
-   "text": "You Think It, We Ship It. The source of gullylabs.xyz: the hub for every Gully product, the docs and the app. Built and run by Gully Labs. You Think It, We Ship It.",
-   "updatedAt": "2026-10-28T13:04:45.052Z"
+   "text": "You Think It, We Ship It. The source of gullylabs.xyz: the hub for every Gully product, the docs and the app. Built and run by Gully Labs. You Think It, We Ship It. Community: Telegram news · Deploys · BuyBot · Chain Bot · Discord",
+   "updatedAt": "2026-11-08T23:47:13.346Z"
   },
   {
    "id": "0f128ece1572",
@@ -4588,8 +4588,8 @@
    "title": "Roadmap: Launchpad (Gully Core), not available yet",
    "url": "https://gullylabs.xyz/products",
    "section": "Launchpad (planned)",
-   "text": "Launchpad (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. A token, its pool and locked liquidity created in one transaction, with a decaying anti-snipe fee at the open. Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet.",
-   "updatedAt": "2026-11-06T16:07:55.653Z",
+   "text": "Launchpad (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. A token, its pool and locked liquidity created in one transaction, with a decaying anti-snipe fee at the open. Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet.",
+   "updatedAt": "2026-11-08T23:47:13.346Z",
    "feature": "deepcore-launchpad",
    "status": "planned"
   },
@@ -4599,8 +4599,8 @@
    "title": "Roadmap: Hosted Launchpads and DEXes (Gully Core), not available yet",
    "url": "https://gullylabs.xyz/products",
    "section": "Hosted Launchpads and DEXes (planned)",
-   "text": "Hosted Launchpads and DEXes (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Builders open their own launchpad or DEX on Gully Core. Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet.",
-   "updatedAt": "2026-11-06T16:07:55.653Z",
+   "text": "Hosted Launchpads and DEXes (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Builders open their own launchpad or DEX on Gully Core. Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet.",
+   "updatedAt": "2026-11-08T23:47:13.346Z",
    "feature": "deepcore-hosted-pads",
    "status": "planned"
   },
@@ -4610,8 +4610,8 @@
    "title": "Roadmap: Best-price router (Gully Core), not available yet",
    "url": "https://gullylabs.xyz/products",
    "section": "Best-price router (planned)",
-   "text": "Best-price router (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Swaps routed across Gully Core pools and other venues. Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet.",
-   "updatedAt": "2026-11-06T16:07:55.653Z",
+   "text": "Best-price router (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Swaps routed across Gully Core pools and other venues. Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet.",
+   "updatedAt": "2026-11-08T23:47:13.346Z",
    "feature": "deepcore-router",
    "status": "planned"
   },
@@ -4621,8 +4621,8 @@
    "title": "Roadmap: Locks, vesting, airdrops, splits and multisend (Gully Core), not available yet",
    "url": "https://gullylabs.xyz/products",
    "section": "Locks, vesting, airdrops, splits and multisend (planned)",
-   "text": "Locks, vesting, airdrops, splits and multisend (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Utility contracts for locking liquidity or tokens, distributing tokens and splitting revenue. Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet.",
-   "updatedAt": "2026-11-06T16:07:55.653Z",
+   "text": "Locks, vesting, airdrops, splits and multisend (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Utility contracts for locking liquidity or tokens, distributing tokens and splitting revenue. Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet.",
+   "updatedAt": "2026-11-08T23:47:13.346Z",
    "feature": "deepcore-locks-airdrops-splits",
    "status": "planned"
   },
@@ -4632,8 +4632,8 @@
    "title": "Roadmap: Limit orders and DCA (Gully Core), not available yet",
    "url": "https://gullylabs.xyz/products",
    "section": "Limit orders and DCA (planned)",
-   "text": "Limit orders and DCA (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. On-chain range (limit) orders and dollar-cost averaging contracts. Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet.",
-   "updatedAt": "2026-11-06T16:07:55.653Z",
+   "text": "Limit orders and DCA (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. On-chain range (limit) orders and dollar-cost averaging contracts. Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet.",
+   "updatedAt": "2026-11-08T23:47:13.346Z",
    "feature": "deepcore-limit-orders-dca",
    "status": "planned"
   },
@@ -4643,8 +4643,8 @@
    "title": "Roadmap: Gully Core on more chains (Gully Core), not available yet",
    "url": "https://gullylabs.xyz/products",
    "section": "Gully Core on more chains (planned)",
-   "text": "Gully Core on more chains (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Gully Core on Anubis Network and other chains, as a service for builders. Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet.",
-   "updatedAt": "2026-11-06T16:08:58.341Z",
+   "text": "Gully Core on more chains (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. Gully Core on Anubis Network and other chains, as a service for builders. Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet.",
+   "updatedAt": "2026-11-08T23:47:13.346Z",
    "feature": "deepcore-four-chains",
    "status": "planned"
   },
@@ -4654,8 +4654,8 @@
    "title": "Roadmap: SDK, widgets and scaffolders (Gully Core), not available yet",
    "url": "https://gullylabs.xyz/products",
    "section": "SDK, widgets and scaffolders (planned)",
-   "text": "SDK, widgets and scaffolders (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. An SDK, swap widgets and project scaffolders for builders. Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet.",
-   "updatedAt": "2026-11-06T16:07:55.653Z",
+   "text": "SDK, widgets and scaffolders (Gully Core) is planned and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. An SDK, swap widgets and project scaffolders for builders. Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet.",
+   "updatedAt": "2026-11-08T23:47:13.346Z",
    "feature": "deepcore-dev-tools",
    "status": "planned"
   },

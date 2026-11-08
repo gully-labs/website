@@ -442,7 +442,7 @@ export const PRODUCTS: ProductDef[] = [
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Quests' },
     url: `${STREET}/quests`,
     urlLabel: 'kre8.fun/quests',
-    docs: 'https://docs.gullychain.xyz/gully-core/',
+    docs: 'https://docs.gullycore.xyz/',
     hub: ['street', 'indexer'],
     og: '/brand/web/og/gully-chain.png',
     category: 'GameApplication',
@@ -585,7 +585,7 @@ export const PRODUCTS: ProductDef[] = [
     ],
     faq: [
       ['Who builds Gully Core?', 'Gully Labs. It is our own launchpad and DEX core, built on PancakeSwap Infinity’s audited core.'],
-      ['Where is it live?', 'On Anubis mainnet and on Gully Chain testnet, with more chains coming. The home is gullycore.xyz; the testnet app is at gullychain.xyz/core until app.gullycore.xyz opens.'],
+      ['Where is it live?', 'On Anubis, Robinhood Chain, BNB Chain and Base mainnets and on Gully Chain testnet. The home is gullycore.xyz; the app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet).'],
     ],
     pricing: 'free-testnet',
   },
