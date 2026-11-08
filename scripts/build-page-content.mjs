@@ -214,7 +214,7 @@ export async function build() {
       ],
     }
   })
-  const product = Object.fromEntries(C.PRODUCTS.map((p) => [p.slug, { name: p.name, line: p.line, url: p.url, og: p.og, category: p.category, faq: C.productFaq(p) }]))
+  const product = Object.fromEntries(C.PRODUCTS.map((p) => [p.slug, { name: p.name, line: p.line, url: p.url, urlLabel: p.urlLabel, cta: p.cta ?? null, cta2: p.cta2 ?? null, docs: p.docs ?? null, group: p.group, hub: p.hub, og: p.og, category: p.category, features: p.features, how: p.how, price: C.pricingNote(p), faq: C.productFaq(p) }]))
 
   // One page per Peddle project.
   for (const p of projects) {

@@ -168,8 +168,8 @@ export function cards({ hub, products, live, stats }) {
 /* ---- the constellation: the same geometry as src/pages/hub/hubData.ts MAP, with Gully Core, kre8 and Gully Multisig added
    on the bottom row, where nothing else sits. Rings, tags and metrics redraw from live data; links never move. ---- */
 const MAPS = {
-  wide: { vb: [760, 560], r: 30, rc: 42, cap: 22, at: { id: [128, 118], pay: [380, 64], rpc: [632, 118], holdermaps: [672, 330], security: [530, 488], studio: [230, 488], ai: [88, 330], chain: [380, 282], core: [380, 488], kre8: [92, 488], multisig: [668, 488] } },
-  tall: { vb: [360, 720], r: 24, rc: 32, cap: 16, at: { id: [70, 62], pay: [290, 62], rpc: [62, 236], chain: [180, 226], holdermaps: [298, 236], studio: [70, 402], security: [290, 402], ai: [180, 520], kre8: [60, 560], multisig: [300, 560], core: [180, 656] } },
+  wide: { vb: [926, 646], r: 34, rc: 47, spark: 3, t: [13, 23, 40], at: { id: [163, 114], pay: [451, 58], rpc: [740, 114], holdermaps: [785, 330], security: [622, 548], studio: [280, 548], ai: [118, 330], chain: [451, 300], core: [451, 548], kre8: [118, 548], multisig: [785, 548] } },
+  tall: { vb: [360, 600], r: 24, rc: 32, spark: 2.4, t: [8, 15, 28], at: { id: [64, 62], pay: [180, 62], rpc: [296, 62], ai: [64, 216], chain: [180, 216], holdermaps: [296, 216], studio: [64, 376], core: [180, 376], security: [296, 376], kre8: [100, 530], multisig: [260, 530] } },
 }
 const EDGES = [['id', 'chain', 'live'], ['id', 'pay', 'plan'], ['id', 'rpc', 'plan'], ['id', 'studio', 'live'], ['pay', 'chain', 'live'], ['pay', 'rpc', 'plan'], ['pay', 'studio', 'live'], ['rpc', 'chain', 'live'], ['chain', 'holdermaps', 'live'], ['chain', 'security', 'live'], ['chain', 'studio', 'live'], ['ai', 'studio', 'plan'], ['chain', 'core', 'live'], ['chain', 'kre8', 'live'], ['chain', 'multisig', 'live']]
 /** Rings on the kit palette; the logos carry each product's own colour. */
@@ -228,21 +228,24 @@ export function constellation(layout, nodes, data) {
   const live = mapNodes(data)
   const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
   const lines = EDGES.map(([a, b, kind], i) => `<path id="${layout}-e${i}" class="edge ${kind}" d="${curve(L.at[a], L.at[b], c)}"/>`).join('')
-  const sparks = EDGES.map(([, , kind], i) => (kind === 'live' ? `<circle class="spark" r="2.4"><animateMotion dur="${3 + (i % 4) * 0.7}s" repeatCount="indefinite" begin="-${(i * 0.37).toFixed(2)}s"><mpath href="#${layout}-e${i}"/></animateMotion></circle>` : '')).join('')
+  const sparks = EDGES.map(([, , kind], i) => (kind === 'live' ? `<circle class="spark" r="${L.spark}"><animateMotion dur="${3 + (i % 4) * 0.7}s" repeatCount="indefinite" begin="-${(i * 0.37).toFixed(2)}s"><mpath href="#${layout}-e${i}"/></animateMotion></circle>` : '')).join('')
   const clips = nodes.map((p) => `<clipPath id="${layout}-cp-${p.key}"><circle r="${(p.key === 'chain' ? L.rc : L.r) - 5}"/></clipPath>`).join('')
   const ext = (h) => (/^https?:/.test(h) ? ' target="_blank" rel="noopener noreferrer"' : '')
   const body = nodes.map((p) => {
     const r = p.key === 'chain' ? L.rc : L.r
     const [x, y] = L.at[p.key]
     const v = live[p.key]
-    return `<a href="${esc(p.href)}"${ext(p.href)} aria-label="${esc(p.name)}"><g class="nd2${v.up ? ' is-up' : ''}${v.soon ? ' is-soon' : ''}" data-mk="${p.key}" style="--c:${RING}" transform="translate(${x} ${y})"><circle class="ping" r="${r + 2}"/><circle class="halo" r="${r}"/><image href="${esc(p.icon)}" x="${-(r - 5)}" y="${-(r - 5)}" width="${2 * (r - 5)}" height="${2 * (r - 5)}" clip-path="url(#${layout}-cp-${p.key})" preserveAspectRatio="xMidYMid slice"/><text class="st ${v.cls}" y="${-r - 8}" text-anchor="middle">${esc(v.tag)}</text><text class="nm" y="${r + 17}" text-anchor="middle">${esc(p.name)}</text><text class="mt" y="${r + 32}" text-anchor="middle">${esc(v.metric)}</text></g></a>`
+    const inset = Math.round(((p.inset ?? 0) * r) / 34)
+    return `<a href="${esc(p.href)}"${ext(p.href)} aria-label="${esc(p.name)}"><g class="nd2${v.up ? ' is-up' : ''}${v.soon ? ' is-soon' : ''}" data-mk="${p.key}" style="--c:${RING}" transform="translate(${x} ${y})"><circle class="out" r="${r + 9}"/><circle class="ping" r="${r + 2}"/><circle class="halo" r="${r}"/><image href="${esc(p.icon)}" x="${-(r - 5 - inset)}" y="${-(r - 5 - inset)}" width="${2 * (r - 5 - inset)}" height="${2 * (r - 5 - inset)}" clip-path="url(#${layout}-cp-${p.key})" preserveAspectRatio="xMidYMid slice"/><text class="st ${v.cls}" y="${-r - L.t[0]}" text-anchor="middle">${esc(v.tag)}</text><text class="nm" y="${r + L.t[1]}" text-anchor="middle">${esc(p.name)}</text><text class="mt" y="${r + L.t[2]}" text-anchor="middle">${esc(v.metric)}</text></g></a>`
   }).join('')
   return `<svg class="cmap-${layout}" viewBox="0 0 ${L.vb[0]} ${L.vb[1]}" role="group" aria-label="The Gully products as a connected map, with a live reading on each"><defs>${clips}</defs><g>${lines}${sparks}</g>${body}</svg>`
 }
 
 /** The Build panel's chart: real Gully Chain testnet activity by the hour, never a drawn curve. */
-export const METRIC = { launches: 'Launches', swaps: 'Swaps', trades: 'Trades' }
+export const METRIC = { launches: 'Launches', swaps: 'Swaps', trades: 'Trades', blocks: 'Newest blocks' }
+export const metricNote = (metric) => (metric === 'blocks' ? 'on Gully Chain testnet, filled by transactions' : 'on Gully Chain testnet, last 24 hours')
 export const coreBars = (products, metric) => {
+  if (metric === 'blocks') return blocks(products?.chain?.recent, 'Newest Gully Chain blocks')
   const hourly = products?.activity?.hourly ?? []
   return bars(hourly.map((h) => h[metric] ?? 0), `${METRIC[metric]} on Gully Chain testnet, last 24 hours`)
 }
@@ -268,4 +271,47 @@ export function board({ hub, stats }) {
     cells: svcs.map((s) => `<i class="c ${s.state === 'up' ? 'up' : s.state === 'coming' ? 'soon' : 'off'}" title="${s.name}: ${s.state}"></i>`).join(''),
     pulse: line(series, 'Mean response time across every surface, last hour'),
   }
+}
+
+/** A reading on the clock people here read: Los Angeles, labelled PT. Instants stay in UTC in the data. */
+export const ptTime = (t = Date.now()) => `${new Date(t).toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', hour: 'numeric', minute: '2-digit' })} PT`
+
+const WORD = { live: 'Live', down: 'Down', coming: 'Coming online', reading: 'Reading' }
+/** Everything a product page shows that moves. `page`: { card, hub: [probe keys], metric }. Same rules as the landing:
+    an unreadable source is a dash and an empty frame, never a zero. */
+export function productView({ hub, products, live, stats }, page) {
+  const card = page.card ? cards({ hub, products, live, stats })[page.card] : null
+  const svcs = (hub?.services ?? []).filter((s) => page.hub.includes(s.key))
+  const state = card?.state ?? stateOf(hub, page.hub)
+  const up = svcs.filter((s) => s.state === 'up')
+  const mean = (xs) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null)
+  const msNow = mean(up.map((s) => s.ms).filter((m) => num(m) != null))
+  const len = Math.max(0, ...svcs.map((s) => s.history?.length ?? 0))
+  const series = []
+  for (let i = 0; i < len; i++) {
+    const at = svcs.map((s) => s.history?.[s.history.length - len + i]?.ms).filter((m) => num(m) != null)
+    series.push(at.length ? at.reduce((a, b) => a + b, 0) / at.length : null)
+  }
+  const all = svcs.flatMap((s) => s.history ?? [])
+  const answered = all.filter((h) => num(h.ms) != null).length
+  const meanMs = mean(series.filter((x) => x != null))
+  return {
+    state,
+    word: WORD[state] ?? state,
+    value: card?.value && card.value !== '–' ? card.value : '',
+    unit: card?.unit ?? '',
+    up: hub ? `${up.length}/${svcs.length}` : '–',
+    ms: msNow == null ? '–' : `${msNow} ms`,
+    answered: all.length ? `${((answered / all.length) * 100).toFixed(1)}%` : '–',
+    meanMs: meanMs == null ? '–' : `${meanMs} ms`,
+    latency: line(series, 'Mean response time of this product, last hour'),
+    activity: page.metric === 'blocks' ? blocks(products?.chain?.recent, 'Newest Gully Chain blocks') : page.metric ? coreBars(products, page.metric) : '',
+    cells: svcs.map((s) => `<i class="c ${s.state === 'up' ? 'up' : s.state === 'coming' ? 'soon' : 'off'}" title="${s.name}: ${s.state}"></i>`).join(''),
+  }
+}
+
+/** A launch preset's fee over its window. `p`: { from, to }, percent: the opening fee, falling to the final fee. */
+export function feeCurve(p) {
+  const y = (v) => (H - 8 - (v / 50) * (H - 16)).toFixed(1)
+  return svg(`<path class="g-line" pathLength="1" d="M0 ${y(p.from)}L${p.from === p.to ? W : W * 0.8} ${y(p.to)}L${W} ${y(p.to)}" vector-effect="non-scaling-stroke"/>`, `The fee falls from ${p.from}% to ${p.to}%`, true)
 }
