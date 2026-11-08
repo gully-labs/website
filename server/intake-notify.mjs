@@ -20,12 +20,13 @@
 // TODO(email): there is no mail provider, so e-mail confirmations are not sent. Adding one (Resend, Postmark, SES)
 // means calling it from sendConfirmation() for e-mail contacts; see ops/ for the note.
 //
-// Daily digest: once a day at INTAKE_DIGEST_TIME (UTC, default 09:00) the admin chat gets the new counts per kind in
+// Daily digest: once a day at INTAKE_DIGEST_TIME (Los Angeles time, default 09:00) the admin chat gets the new counts per kind in
 // the last 24 h and the totals; nothing is sent when nothing is new. A 30 s unref'd interval checks the clock; the
 // day last sent is kept in DATA_DIR/intake-notify.json so a restart does not repeat it.
 //
 // Also here: the CSV helpers the admin exports use (csvCell prefixes = + - @ and tab/CR with a quote).
 
+import { dayLA, minuteOfDayLA, timeLA } from './time-la.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
@@ -280,11 +281,11 @@ export async function digestMessage({ now = Date.now() } = {}) {
     return `${k.emoji} ${escTg(k.label)}: <b>${n}</b> new · ${all.length} total`
   })
   if (!fresh) return null
-  const day = new Date(now).toISOString().slice(0, 10)
-  return [`📬 <b>Daily intake digest</b>`, `Last 24 h to ${day} ${new Date(now).toISOString().slice(11, 16)} UTC`, '', ...lines, '', `<b>${fresh}</b> new in total.`, `<a href="${ADMIN_BASE}">Open in admin</a>`].join('\n')
+  const day = dayLA(now)
+  return [`📬 <b>Daily intake digest</b>`, `Last 24 h to ${day} ${timeLA(now)}`, '', ...lines, '', `<b>${fresh}</b> new in total.`, `<a href="${ADMIN_BASE}">Open in admin</a>`].join('\n')
 }
 
-/** INTAKE_DIGEST_TIME as minutes after 00:00 UTC (default 09:00; a malformed value falls back to it). */
+/** INTAKE_DIGEST_TIME as minutes after midnight in Los Angeles (default 09:00; a malformed value falls back to it). */
 export function digestMinute() {
   const m = String(process.env.INTAKE_DIGEST_TIME ?? '09:00').trim().match(/^([01]?\d|2[0-3]):([0-5]\d)$/)
   return m ? Number(m[1]) * 60 + Number(m[2]) : 9 * 60
@@ -292,9 +293,8 @@ export function digestMinute() {
 
 /** One scheduler pass: sends the digest when it is due and not yet sent today. Resolves 'sent' | 'empty' | 'not-due' | 'failed'. */
 export async function digestTick({ now = Date.now() } = {}) {
-  const d = new Date(now)
-  const day = d.toISOString().slice(0, 10)
-  if (d.getUTCHours() * 60 + d.getUTCMinutes() < digestMinute()) return 'not-due'
+  const day = dayLA(now)
+  if (minuteOfDayLA(now) < digestMinute()) return 'not-due'
   const st = readState()
   if (st.lastDigestDay === day) return 'not-due'
   const text = await digestMessage({ now })

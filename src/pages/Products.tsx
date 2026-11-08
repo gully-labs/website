@@ -1,3 +1,4 @@
+import { TZ } from '../lib/time'
 import { ChartNoAxesCombined, Eye, Fingerprint, GitBranch, Link2, Rocket, ShieldCheck, Wallet, type LucideIcon } from 'lucide-react'
 import { AnalyticsPlanCards } from '../components/AnalyticsPlans'
 import { ANALYTICS_SIGNUP, usePlans } from '../lib/plans'
@@ -244,7 +245,7 @@ function LiveFrame({ title, sub, children }: { title: string; sub: string; child
 
 const DAY = 86_400
 const LIVE_DAYS = 30
-const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { timeZone: TZ, hour: '2-digit', minute: '2-digit' })
 
 /** Daily volume each Gully venue publishes (GET /api/stats), one line per venue over the last 30 days.
     A day a venue did not publish is a gap in its line, never a 0; a venue with no series is named below. */

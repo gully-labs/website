@@ -1,3 +1,4 @@
+import { dateTimePT } from '../../lib/time'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BellRing, Check, ChevronDown, Copy, Download, ExternalLink, Info, Lock, Maximize2, Minus, Pause, Play, Plus, Search, Share2, SkipForward } from 'lucide-react'
 import { Link } from 'react-router'
@@ -1094,7 +1095,7 @@ function Replay({
   }
   const last = frames.length // the slider's last stop is "now"
   const value = frame === null ? last : frame
-  const when = frameAt ? (frameAt.at ? new Date(frameAt.at).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : `block ${frameAt.block.toLocaleString('en-US')}`) : 'now'
+  const when = frameAt ? (frameAt.at ? dateTimePT(frameAt.at) : `block ${frameAt.block.toLocaleString('en-US')}`) : 'now'
   return (
     <div className={boxCls} style={boxStyle} data-replay="on">
       <div className="flex flex-wrap items-center gap-2">

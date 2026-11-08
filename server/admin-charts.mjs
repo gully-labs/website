@@ -15,6 +15,7 @@
 // Retention limits are said in `note` (alerts keep their last 50 deliveries; the ask log 90 days;
 // pay webhooks the last 1,000 finished deliveries).
 
+import { dayLA, lastDaysLA } from './time-la.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { accessStats } from './access.mjs'
@@ -27,12 +28,10 @@ import { CHAINS } from './payments.mjs'
 import { developers } from './store.mjs'
 
 const DAY = 86_400_000
-const dayKey = (t) => new Date(t).toISOString().slice(0, 10)
+const dayKey = (t) => dayLA(t)
 
 function dayList(days, now = Date.now()) {
-  const out = []
-  for (let i = days - 1; i >= 0; i--) out.push(dayKey(now - i * DAY))
-  return out
+  return lastDaysLA(days, now)
 }
 
 /** An all-zero array over `keys`, and a function that adds `n` to the day of time `t` (when in range). */

@@ -195,7 +195,7 @@ export function HmPrivacyPage() {
 
         <S n={5} title="How long we keep it">
           <L>
-            <li>View counts: reset every UTC day; the key that hashes visitors is never written down.</li>
+            <li>View counts: reset every day, Los Angeles time; the key that hashes visitors is never written down.</li>
             <li>Per-IP limits: in memory only, for about a minute.</li>
             <li>Deep checks and their reports: a cancelled check is deleted after 30 days; others are not deleted automatically today. Ask us and we delete yours.</li>
             <li>Backups of the server’s data: 7 days, on the same server.</li>

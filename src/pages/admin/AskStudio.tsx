@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { chip } from './ui'
 import { Check, Copy, LoaderCircle, RotateCcw, Wand2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -41,7 +42,7 @@ interface AskLog {
   recent: { at: string; channel: string; question: string; answered: boolean; error: string | null; citations: number; usedTools: string[]; latencyMs: number | null; model: string | null }[]
 }
 
-const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
 function Studio({ token, configured, features }: { token: string; configured: boolean; features: { id: string; name: string; status: string }[] }) {
   const [kind, setKind] = useState<Kind>('blog_post')

@@ -47,6 +47,8 @@
     "test:seo-audit": "node scripts/test-seo-audit.mjs",
     "test:brand-kit": "node --test scripts/test-brand-kit.mjs",
     "test:blog-theme": "node --test scripts/test-blog-theme.mjs",
+    "test:landing": "node --test scripts/test-landing.mjs",
+    "test:time": "node --test scripts/test-time.mjs",
     "seo:content": "node scripts/build-page-content.mjs",
     "test:security": "node scripts/test-security-engine.mjs",
     "test:security-routes": "node scripts/test-security-routes.mjs",

@@ -1,3 +1,4 @@
+import { timePT } from '../../lib/time'
 import { useEffect, useState } from 'react'
 import { ArrowUpRight, Loader2, Route } from 'lucide-react'
 import type { TrackerRow } from '../../lib/tracker'
@@ -39,7 +40,7 @@ function show(v: string | null): string {
   return n.toLocaleString('en-US', { maximumSignificantDigits: 6 })
 }
 
-const utc = (iso: string) => new Date(iso).toISOString().slice(11, 19) + ' UTC'
+const utc = (iso: string) => timePT(iso, true)
 
 export function LaunchpadQuote({ row }: { row: TrackerRow }) {
   const native = NATIVE_SYMBOL[row.chain] ?? 'native coin'

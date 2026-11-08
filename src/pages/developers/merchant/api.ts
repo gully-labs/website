@@ -1,3 +1,4 @@
+import { TZ } from '../../../lib/time'
 import { isLocalHost, PAY_URL, SITE_URL } from '../../../site-host'
 import type { PayAsset, Payment } from '../api'
 
@@ -170,5 +171,5 @@ export const KIND_TEXT: Record<WalletKind, string> = {
   undeployed: 'Contract NOT deployed on this chain',
 }
 
-export const fmtWhen = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '—')
-export const fmtDay = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—')
+export const fmtWhen = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '—')
+export const fmtDay = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', year: 'numeric' }) : '—')

@@ -435,6 +435,8 @@ function pageMetaFor(host, pathname) {
   const sm = scorePageMeta(p)
   if (sm) return sm.found ? { title: sm.title, description: sm.description, canonical: sm.canonical, found: true, noindex: sm.noindex, image: `${SITE}/social/og-score.png` } : { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
   const m = MAIN[p]
+  // The new landing's unlinked preview (server/landing.mjs): for the owner's review, never indexed.
+  if (p === '/preview/landing') return { title: MAIN['/'][0], description: MAIN['/'][1], canonical: null, found: true, noindex: true, image: `${SITE}/brand/kit/og-default-1200x630.png` }
   // Paths the app still routes (/admin locally, /docs in development) are not 404s but are not pages either.
   if (!m) return { title: 'Not found · Gully Labs', description: MAIN['/'][1], canonical: null, found: false }
   // Once gullysecurity.xyz is Security's home (SECURITY_PRIMARY), its pages name it as canonical.
@@ -520,12 +522,12 @@ function shellBody(meta) {
   return `<div data-shell style="${style}">${header}${main}${footer}</div>`
 }
 
-/** The head tags of a page drawn by the server itself. */
+/** The head tags of a page drawn by the server itself (server/landing.mjs). */
 export function headTags(meta) {
   const t = esc(meta.title)
   const d = esc(meta.description)
   const img = esc(meta.image ?? KIT_OG)
-  return `<title>${t}</title><meta name="description" content="${d}">${meta.noindex ? '<meta name="robots" content="noindex">' : ''}${meta.canonical ? `<link rel="canonical" href="${esc(meta.canonical)}"><meta property="og:url" content="${esc(meta.canonical)}">` : ''}<meta property="og:type" content="website"><meta property="og:site_name" content="Gully Labs"><meta property="og:title" content="${t}"><meta property="og:description" content="${d}"><meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@Gully_Labs"><meta name="twitter:image" content="${img}"><meta name="twitter:title" content="${t}"><meta name="twitter:description" content="${d}"><meta name="theme-color" content="#F1F3F8"><link rel="icon" type="image/png" sizes="32x32" href="/brand/kit/icon/icon-32.png"><link rel="apple-touch-icon" href="/brand/kit/icon/icon-180.png">${[meta.ld ?? []].flat().map((ld) => `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>`).join('')}`
+  return `<title>${t}</title><meta name="description" content="${d}">${meta.noindex ? '<meta name="robots" content="noindex">' : ''}${meta.canonical ? `<link rel="canonical" href="${esc(meta.canonical)}"><meta property="og:url" content="${esc(meta.canonical)}">` : ''}<meta property="og:type" content="website"><meta property="og:site_name" content="Gully Labs"><meta property="og:title" content="${t}"><meta property="og:description" content="${d}"><meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@Gully_Labs"><meta name="twitter:image" content="${img}"><meta name="twitter:title" content="${t}"><meta name="twitter:description" content="${d}"><meta name="theme-color" content="#0E1C38"><link rel="icon" type="image/png" sizes="32x32" href="/brand/kit/icon/icon-32.png"><link rel="apple-touch-icon" href="/brand/kit/icon/icon-180.png">${[meta.ld ?? []].flat().map((ld) => `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>`).join('')}`
 }
 
 /** Rewrites index.html's head for one page. */

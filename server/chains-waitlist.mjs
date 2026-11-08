@@ -6,6 +6,7 @@
 // like a success and stored nowhere, only the listed choices accepted, and every free-text value stored
 // escaped (HTML characters as entities, control characters removed), so a stored row is safe to print anywhere.
 
+import { dayLA } from './time-la.mjs'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -115,13 +116,13 @@ export function waitlistStats(now = Date.now()) {
   const list = load()
   const per = new Map()
   for (const r of list) {
-    const d = String(r.at ?? '').slice(0, 10)
+    const d = dayLA(r.at ?? 0)
     if (/^\d{4}-\d{2}-\d{2}$/.test(d)) per.set(d, (per.get(d) ?? 0) + 1)
   }
   const days = []
   if (per.size) {
     const first = [...per.keys()].sort()[0]
-    const end = new Date(now).toISOString().slice(0, 10)
+    const end = dayLA(now)
     for (let t = Date.parse(first + 'T00:00:00Z'); days.length < 400; t += 86_400_000) {
       const d = new Date(t).toISOString().slice(0, 10)
       if (d > end) break

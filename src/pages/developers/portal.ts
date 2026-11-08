@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { createContext, useContext } from 'react'
 import type { Me, MemberRole, Role } from './api'
 
@@ -112,7 +113,7 @@ export function clearInviteHash() {
 }
 
 /** Plain-words date + time. */
-export const fmtDateTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—')
+export const fmtDateTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—')
 
 /** "in 6 days", "in 3h", "expired". */
 export function untilText(iso: string): string {

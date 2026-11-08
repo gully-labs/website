@@ -49,7 +49,7 @@ check('SDK from /sdk/v1.js, then the legacy /sdk.js', GULLY_ID_SDK_PATHS.join(' 
 check('redirect return detected only with code + state', isGullyIdReturn('?code=a&state=b') && !isGullyIdReturn('?code=a') && !isGullyIdReturn(''))
 
 const page = fs.readFileSync(path.join(root, 'src/pages/developers/DevelopersPage.tsx'), 'utf8')
-check('the signed-out app page renders the Gully ID option next to Connect wallet', /<GullyIdButton onClick=\{gully\}/.test(page) && page.includes('gullyOn={session.gullyId !== false}') && page.indexOf('<GullyIdButton') > page.indexOf("'Connect wallet'"))
+check('the signed-out app page renders the Gully ID option first, Connect wallet under it', /<GullyIdButton onClick=\{gully\}/.test(page) && page.includes('gullyOn={session.gullyId !== false}') && page.indexOf('<GullyIdButton') < page.indexOf("'Connect wallet'"))
 
 // Brand kit v1 (gully-id docs/brand-kit.md): never redraw or re-export, copy byte-identically.
 const KIT_SHA = 'cba6285cfcc08f3b782f4199fec8a02665a179b85ee5b6f1d02a299047540046'

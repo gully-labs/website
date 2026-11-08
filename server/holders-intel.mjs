@@ -14,6 +14,7 @@
 //   snipers    10  wallets whose first buy came in the first blocks of trading
 //   record     15  the deployer's earlier DeepCore launches: liquidity pulled or tokens sold by the deployer
 
+import { dayLA } from './time-la.mjs'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -293,12 +294,12 @@ function loadScans() {
   } catch {
     scans = {}
   }
-  scans.day ??= new Date().toISOString().slice(0, 10)
+  scans.day ??= dayLA()
   scans.items ??= {}
   return scans
 }
 /* Visitors are counted by a keyed hash of the IP, never the IP itself. The key is random, held in memory
-   only and replaced every UTC day, so a tag cannot be turned back into an address or matched across days. */
+   only and replaced every Los Angeles day, so a tag cannot be turned back into an address or matched across days. */
 let tagKey = { day: '', key: null }
 function visitorTag(ip, day) {
   if (tagKey.day !== day) tagKey = { day, key: crypto.randomBytes(32) }
@@ -306,7 +307,7 @@ function visitorTag(ip, day) {
 }
 /** Starts a new day: yesterday's counts and visitor tags are dropped (and the file is rewritten). */
 function rollDay(s) {
-  const day = new Date().toISOString().slice(0, 10)
+  const day = dayLA()
   if (s.day !== day) {
     s.day = day
     s.items = {}
@@ -347,7 +348,7 @@ export function flushScans() {
 }
 setInterval(flushScans, 60_000).unref?.()
 export const resetScansForTest = () => {
-  scans = { day: new Date().toISOString().slice(0, 10), items: {} }
+  scans = { day: dayLA(), items: {} }
 }
 
 /* ------------------------------------------------- new launches, checked --- */

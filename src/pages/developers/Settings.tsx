@@ -1,3 +1,4 @@
+import { dayPT, lastDaysPT } from '../../lib/time'
 import { Building2, ExternalLink, Laptop, LogOut, Lock, Settings as SettingsIcon, ShieldCheck, UserRound } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { usePoll } from './poll'
@@ -317,13 +318,10 @@ function SessionsCard() {
                 { id: 'in', name: 'signed in', color: '#6f8ddf' },
                 { id: 'seen', name: 'last seen', color: '#6f8ddf' },
               ]}
-              days={Array.from({ length: 30 }, (_, i) => {
-                const d = new Date()
-                d.setDate(d.getDate() - (29 - i))
-                const key = d.toDateString()
+              days={lastDaysPT(30).map(({ key, label }) => {
                 return {
-                  label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                  values: { in: list.filter((s) => new Date(s.createdAt).toDateString() === key).length, seen: list.filter((s) => new Date(s.lastSeenAt).toDateString() === key && new Date(s.createdAt).toDateString() !== key).length },
+                  label,
+                  values: { in: list.filter((s) => dayPT(s.createdAt) === key).length, seen: list.filter((s) => dayPT(s.lastSeenAt) === key && dayPT(s.createdAt) !== key).length },
                 }
               })}
             />

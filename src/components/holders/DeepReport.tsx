@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useMemo, useState } from 'react'
 import { AlertTriangle, ChevronDown, CircleSlash, Clock3, Copy, ExternalLink, Loader2, Mail, Receipt } from 'lucide-react'
 import { EChart } from '../charts/EChart'
@@ -20,7 +21,7 @@ export const ConfPill = ({ c }: { c: Confidence }) => <StatusPill tone={CONF[c]?
 
 const pct = (n: number | null | undefined) => (typeof n === 'number' ? `${n < 0.1 && n > 0 ? '<0.1' : n >= 10 ? Math.round(n) : n.toFixed(1)}%` : 'not known')
 const short = (a: string) => (a.length > 14 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a)
-const when = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC' : '')
+const when = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' PT' : '')
 
 /** The explorer's own address and transaction URLs, derived from the token's explorer link. */
 function explorer(tokenUrl: string, chainKey: string) {

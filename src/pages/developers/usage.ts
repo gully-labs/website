@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import type { AlertsView, Range, Usage, UsagePoint } from './api'
 import type { BarColumn } from './charts'
 
@@ -37,8 +38,8 @@ export function group(usage: Usage): Grouped[] {
   return out
 }
 
-const time = (ms: number) => new Date(ms).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
-const day = (ms: number, utc = false) => new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(utc ? { timeZone: 'UTC' } : {}) })
+const time = (ms: number) => new Date(ms).toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false })
+const day = (ms: number, utc = false) => new Date(ms).toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', ...(utc ? { timeZone: 'UTC' } : {}) })
 
 export function columns(usage: Usage, grouped: Grouped[]): BarColumn[] {
   return grouped.map((b) => {
