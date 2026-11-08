@@ -670,8 +670,7 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
     font-family: var(--gl-font-display); font-weight: 600; font-size: 16px;
     background: var(--gl-gradient); -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.gl-footer-about { font-size: 14px; line-height: 1.55; color: var(--gl-dim); max-width: 320px; }
-.gl-footer-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 24px; }
+.gl-footer-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px 24px; }
 .gl-footer-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .gl-footer-head { font-family: var(--gl-font-mono); font-size: 11px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; color: var(--gl-dim); }
 .gl-footer-list { list-style: none; margin: 0; padding: 0; }
@@ -689,16 +688,22 @@ h1, h2, h3, h4, h5, h6, p, figure, blockquote, ul, ol, dl { margin: 0; }
 .gl-powered img { width: auto; height: 30px; }
 @media (max-width: 599px) { .gl-powered img { height: 26px; } }
 .gl-footer-copy { flex: none; }
-.gl-footer-disclaimer { max-width: 760px; }
+.gl-footer-legal-links { display: inline-flex; flex-wrap: wrap; gap: 0 16px; }
+.gl-footer-legal-links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--gl-dim); }
+.gl-footer-legal-links a:hover { color: var(--gl-accent); }
 .gl-footer-secondary .gl-blognav-list { flex-wrap: wrap; }
 .gl-footer-secondary .gl-blognav-link { font-size: 11px; padding: 0 8px 0 0; color: var(--gl-dim); }
 .gl-footer-secondary:empty, .gl-footer-secondary .gl-blognav-list:empty { display: none; }
-@media (min-width: 700px) { .gl-footer-cols { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-@media (min-width: 1024px) {
-    .gl-footer-main { grid-template-columns: minmax(220px, 300px) 1fr; gap: 64px; }
-    .gl-footer-legal { flex-direction: row; align-items: center; justify-content: space-between; gap: 32px; }
-    .gl-footer-disclaimer { text-align: right; }
+/* One column on phones, two on tablets, three from 1024, five from 1280: no column is more than seven rows. */
+@media (min-width: 700px) {
+    .gl-footer-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .gl-entry--footer .gl-entry-link { min-height: 32px; }
 }
+@media (min-width: 1024px) {
+    .gl-footer-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px 24px; }
+    .gl-footer-legal { flex-direction: row; align-items: center; justify-content: space-between; gap: 32px; }
+}
+@media (min-width: 1280px) { .gl-footer-cols { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 
 /* 15. Archive, author, error, empty ------------------------------------------------------------- */
 .gl-archive-head { display: grid; gap: 24px; padding-block: clamp(28px, 5vw, 56px) 8px; }
