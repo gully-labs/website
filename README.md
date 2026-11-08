@@ -13,15 +13,17 @@
 <p align="center">The source of gullylabs.xyz: the hub for every Gully product, the docs and the app.</p>
 
 <p align="center">
-  <a href="https://gullylabs.xyz"><img src="https://img.shields.io/badge/gullylabs.xyz-00D2FF?style=for-the-badge&labelColor=06050D&logo=googlechrome&logoColor=06050D" alt="Website"></a>
-  <a href="https://docs.gullylabs.xyz"><img src="https://img.shields.io/badge/Docs-0B0A16?style=for-the-badge&labelColor=06050D&logo=readthedocs&logoColor=00D2FF" alt="Docs"></a>
-  <a href="https://discord.com/invite/tY2ErsNNBp"><img src="https://img.shields.io/badge/Discord-0B0A16?style=for-the-badge&labelColor=06050D&logo=discord&logoColor=5865F2" alt="Discord"></a>
-  <a href="https://x.com/Gully_Labs"><img src="https://img.shields.io/badge/@Gully__Labs-0B0A16?style=for-the-badge&labelColor=06050D&logo=x&logoColor=white" alt="X"></a>
+  <a href="https://gullylabs.xyz"><img src="https://img.shields.io/badge/gullylabs.xyz-3754A0?style=for-the-badge&labelColor=0E1C38&logo=googlechrome&logoColor=0E1C38" alt="Website"></a>
+  <a href="https://docs.gullylabs.xyz"><img src="https://img.shields.io/badge/Docs-0E1C38?style=for-the-badge&labelColor=0E1C38&logo=readthedocs&logoColor=3754A0" alt="Docs"></a>
+  <a href="https://discord.com/invite/tY2ErsNNBp"><img src="https://img.shields.io/badge/Discord-0E1C38?style=for-the-badge&labelColor=0E1C38&logo=discord&logoColor=5865F2" alt="Discord"></a>
+  <a href="https://x.com/Gully_Labs"><img src="https://img.shields.io/badge/@Gully__Labs-0E1C38?style=for-the-badge&labelColor=0E1C38&logo=x&logoColor=white" alt="X"></a>
 </p>
 
 <p align="center"><sub>Built and run by <a href="https://gullylabs.xyz">Gully Labs</a>. You Think It, We Ship It.</sub></p>
 
 ---
+<p align="center"><sub>Community: <a href="https://t.me/GullyChain">Telegram news</a> · <a href="https://t.me/GullyChainDeploys">Deploys</a> · <a href="https://t.me/GullyBuyBot">BuyBot</a> · <a href="https://t.me/GullyChainBot">Chain Bot</a> · <a href="https://discord.com/invite/tY2ErsNNBp">Discord</a></sub></p>
+
 <!-- gully-header:end -->
 
 # Gully Labs website
