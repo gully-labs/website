@@ -35,7 +35,7 @@
       "id": "chain-tools",
       "title": "Gully Chain tools",
       "links": [
-        { "label": "Explorer", "href": "https://testnet-explorer.gullychain.xyz", "icon": "chart-line", "rank": "tool", "tile": "explorer" },
+        { "label": "Explorer", "href": "https://testnet.gullyscan.xyz", "icon": "chart-line", "rank": "tool", "tile": "explorer" },
         { "label": "Bridge", "href": "https://testnet-bridge.gullychain.xyz", "icon": "arrow-left-right", "rank": "tool", "tile": "bridge" },
         { "label": "Faucet", "href": "https://faucet.gullychain.xyz", "icon": "zap", "rank": "tool", "tile": "faucet" },
         { "label": "Sentry", "href": "/products/gully-sentry", "icon": "radar", "rank": "tool", "tile": null },
