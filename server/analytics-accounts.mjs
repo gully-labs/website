@@ -71,6 +71,60 @@ function reindex() {
 }
 reindex()
 
+/* ---------------------------------------------------------------- house --- */
+// Gully-owned websites (gullylabs.xyz, kre8, Gully Core, ...) are never plan-gated, counted or blocked, even when
+// their id sits on a self-serve account. The list is config, not data: ANALYTICS_HOUSE_FILE (default
+// DATA_DIR/analytics-house.json, a copy of gully-ops sites/_shared/analytics.json { sites: { host: websiteId } })
+// and ANALYTICS_HOUSE_IDS (comma list). The file is re-read when it changes, at most every 30 seconds.
+const HOUSE_FILE = () => process.env.ANALYTICS_HOUSE_FILE || path.join(DATA_DIR, 'analytics-house.json')
+let house = new Set()
+let houseHosts = {}
+let houseKey = ''
+let houseCheckedAt = 0
+function houseIds(now = Date.now()) {
+  if (now - houseCheckedAt < 30_000 && houseKey) return house
+  houseCheckedAt = now
+  const file = HOUSE_FILE()
+  let mtime = 0
+  try {
+    mtime = fs.statSync(file).mtimeMs
+  } catch {
+    mtime = 0
+  }
+  const env = String(process.env.ANALYTICS_HOUSE_IDS ?? '')
+  const key = `${file}:${mtime}:${env}`
+  if (key === houseKey) return house
+  const ids = new Set(env.split(',').map((x) => x.trim().toLowerCase()).filter((x) => UUID_RE.test(x)))
+  const hosts = {}
+  if (mtime) {
+    try {
+      const cfg = JSON.parse(fs.readFileSync(file, 'utf8'))
+      for (const [h, v] of Object.entries(cfg?.sites ?? {})) {
+        const id = String(typeof v === 'string' ? v : v?.id ?? '').toLowerCase()
+        if (UUID_RE.test(id)) {
+          ids.add(id)
+          hosts[h.toLowerCase()] = id
+        }
+      }
+    } catch (e) {
+      console.error('analytics house file:', e?.message ?? e)
+    }
+  }
+  house = ids
+  houseHosts = hosts
+  houseKey = key
+  return house
+}
+/** host -> website id of every Gully-owned site in the house config (what the /a.js loader serves). */
+export const houseHostMap = () => (houseIds(), houseHosts)
+/** Tests only: forget the cached house list so the next check re-reads the config. */
+export const resetHouseForTest = () => {
+  houseKey = ''
+  houseCheckedAt = 0
+}
+/** Whether a website id belongs to Gully Labs itself (exempt from plans, limits and counting). */
+export const isHouseSite = (id) => typeof id === 'string' && houseIds().has(id.toLowerCase())
+
 const findAccount = (address) => db.accounts.find((a) => a.address === address) ?? null
 
 /* ---------------------------------------------------------------- usage --- */
@@ -101,7 +155,7 @@ setInterval(flushAnalyticsUsage, 15_000).unref?.()
 export function recordEvents(counts) {
   const key = monthKey()
   for (const [id, n] of counts) {
-    if (!siteOwner.has(id) || !(n > 0)) continue
+    if (!siteOwner.has(id) || !(n > 0) || isHouseSite(id)) continue
     const m = (usage.months[key] ??= {})
     m[id] = (m[id] ?? 0) + n
     usageDirty = true
@@ -144,7 +198,7 @@ export function admitEvents(ids) {
   const pending = new Map() // address -> accepted so far in this call
   return ids.map((id) => {
     const address = typeof id === 'string' ? siteOwner.get(id) : undefined
-    if (!address) return { ok: true }
+    if (!address || isHouseSite(id)) return { ok: true }
     const acc = findAccount(address)
     if (!acc) return { ok: true }
     const st = statusOf(acc)
