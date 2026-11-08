@@ -1,6 +1,6 @@
 {{!--
     The header, one line at every width from 1024 to 1920: the brand kit's compact lockup (icon + horizontal wordmark,
-    to gullylabs.xyz, new tab) and "Blog" (this blog), the Products and App & API menus, Projects and Pricing, and the
+    to gullylabs.xyz, new tab) and "Blog" (this blog), the Products and App & API menus, Services and Pricing, and the
     signature "Launch app" button, plus (wider screens) the live pill and a ghost "Docs" pill, as on gullylabs.xyz. Below it, a hairline bar with the blog's own sections ({{navigation}} from Ghost
     admin, each with a Lucide icon) and search. No sign-in, subscribe or account buttons: the blog has no email opt-in.
 
@@ -37,8 +37,8 @@
                     </div>
                 </li>
                 <li class="gl-nav-item">
-                    <a class="gl-nav-link" href="https://gullylabs.xyz/#projects" target="_blank" rel="noopener noreferrer">
-                        {{> "icons/flask-conical"}}<span>Projects</span>{{> "ext-mark"}}
+                    <a class="gl-nav-link" href="https://gullylabs.xyz/services" target="_blank" rel="noopener noreferrer">
+                        {{> "icons/wrench"}}<span>Services</span>{{> "ext-mark"}}
                     </a>
                 </li>
                 <li class="gl-nav-item">
@@ -55,13 +55,13 @@
             <a class="gl-livepill" href="https://gullylabs.xyz" target="_blank" rel="noopener noreferrer" data-gl-livepill>
                 <span class="gl-livepill-dot" aria-hidden="true"></span><span>Live</span><span class="gl-livepill-time" data-gl-live-time></span><span class="gl-sr"> stats on gullylabs.xyz (opens in a new tab)</span>
             </a>
-            <a class="gl-btn gl-btn--ghost gl-docs" href="https://docs.gullylabs.xyz" target="_blank" rel="noopener noreferrer">
+            <a class="gk-btn gk-btn--ghost gl-docs" href="https://docs.gullylabs.xyz" target="_blank" rel="noopener noreferrer">
                 {{> "icons/book-open"}}<span>Docs</span><span class="gl-sr"> (opens in a new tab)</span>
             </a>
-            <a class="gl-btn gl-btn--primary gl-launch" href="https://app.gullylabs.xyz" target="_blank" rel="noopener noreferrer">
+            <a class="gk-btn gk-btn--primary gl-launch" href="https://app.gullylabs.xyz" target="_blank" rel="noopener noreferrer">
                 {{> "icons/rocket"}}<span>Launch app</span>{{> "btn-arrow" ext=true}}
             </a>
-            <button type="button" class="gl-btn gl-btn--ghost gl-menu-button" aria-expanded="false" aria-haspopup="dialog" aria-controls="gl-sheet" data-gl-sheet-open>
+            <button type="button" class="gk-btn gk-btn--ghost gl-menu-button" aria-expanded="false" aria-haspopup="dialog" aria-controls="gl-sheet" data-gl-sheet-open>
                 {{> "icons/menu"}}<span>Menu</span>
             </button>
         </div>

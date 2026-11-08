@@ -61,7 +61,7 @@ test('the preview is noindex, not in the sitemap, and robots does not list it', 
 })
 
 test('the Follow on X bar: a plain link in a new tab, a 44 px dismiss, a blocking script from this origin', () => {
-  assert.ok(/<a href="https:\/\/x\.com\/Gully_Labs" target="_blank" rel="noopener noreferrer">Follow @Gully_Labs on X<\/a>/.test(html))
+  assert.ok(html.includes('<a href="https://x.com/Gully_Labs" target="_blank" rel="noopener noreferrer"><svg') && html.includes('<span>Follow @Gully_Labs on X</span>'))
   assert.ok(/\.fx button\{[^}]*width:44px;height:44px/.test(html))
   assert.ok(html.indexOf('/landing/fx.js') < html.indexOf('<style>'), 'read before the first paint')
   assert.match(L.landingAsset('/landing/fx.js'), /gl-follow-x-dismissed/)
@@ -75,13 +75,24 @@ test('as the home page it carries the head of the home page: title, canonical, J
   assert.ok(/"@type":"Organization"/.test(h) && /"@type":"WebSite"/.test(h))
 })
 
+test('every image on the page is a file we hold, served at its own path', async () => {
+  const { movedPageUrl } = await import('../server/hosts.mjs')
+  const paths = new Set([...html.matchAll(/(?:src|href)="(\/[^"]+\.(?:png|svg|webp|jpg))"/g)].map((m) => m[1]))
+  assert.ok(paths.size > 15)
+  for (const f of paths) {
+    assert.ok(fs.existsSync(new URL(`../public${f}`, import.meta.url)), `${f} is not in public/`)
+    assert.equal(movedPageUrl(f), null, `${f} would redirect`)
+  }
+})
+
 test('chain states come from the config and only an open chain links to the builder', () => {
   const chains = JSON.parse(fs.readFileSync(new URL('../server/data/core-chains.json', import.meta.url), 'utf8'))
   for (const c of chains) {
     assert.ok(html.includes(`data-chain="${c.key}"`), c.key)
     if (!c.open) assert.ok(!c.cta || !c.cta.href.includes('/core/app'), c.key)
   }
-  assert.equal(chains.filter((c) => c.open).map((c) => c.key).join(), 'gully', 'Gully Core is only on the Gully Chain testnet today')
+  assert.equal(chains.filter((c) => c.open).map((c) => c.key).join(), 'gully,anubis', 'Gully Core is on the Gully Chain testnet and on Anubis today')
+  for (const c of chains) assert.ok(c.logo, `${c.key}: a real logo, no letters`)
 })
 
 test('Build links go to the real Gully Core routes; no simulated motion in the scripts', () => {

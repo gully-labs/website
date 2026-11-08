@@ -118,5 +118,11 @@
     "from": "gully-labs/gully-ops design/chains (the canonical Gully chain-logo pack; per-logo source URL and brand terms in its SOURCES.md): https://github.com/okx/xlayer-docs/blob/main/media-kit/XLayer-logo-kit.zip (XLayer_Profile_WhenLessThan40px_White.svg)",
     "terms": "OKX X Layer media kit and guideline: kit files unaltered.",
     "fetchedAt": "2026-10-28T10:00:00Z"
+  },
+  "anubis": {
+    "file": "/chains/anubis.png",
+    "from": "https://multisig.gullychain.xyz/cfg/media/chains/6714/chain_logo.png (the file Gully Multisig serves for chain 6714); the same mark as the favicon of Anubis’s own explorer, https://browser.anubispace.org/assets/favicon/android-chrome-192x192.png",
+    "terms": "Anubis Network’s own mark; nominative use only.",
+    "fetchedAt": "2026-11-07T16:20:00Z"
   }
 }

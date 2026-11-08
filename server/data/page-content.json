@@ -382,7 +382,7 @@
   ],
   "/products/gully-core": [
    "Gully Core · Gully Labs",
-   "Gully Chain’s own launchpad and DEX core: a token and its pool in one step, graduating to Gully Swap. Live charts on this page."
+   "Launch a token, run a launchpad or own a DEX on one shared core, on the chains your users already use. Live charts on this page."
   ],
   "/projects/peddleswap": [
    "PeddleSwap · Gully Labs",
@@ -1404,8 +1404,49 @@
    "name": "Gully ID",
    "line": "Passwordless sign-in for any app: passkeys, wallets and email over OpenID Connect, with per-app consent.",
    "url": "https://gullyid.xyz",
+   "urlLabel": "gullyid.xyz",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://gullyid.xyz/developers",
+   "group": "labs",
+   "hub": [
+    "gully-id"
+   ],
    "og": "/brand/web/og/gully-labs.jpg",
    "category": "SecurityApplication",
+   "features": [
+    {
+     "t": "Passkeys, wallets and email",
+     "d": "Sign in with a passkey, a wallet (SIWE) or an email code. No passwords."
+    },
+    {
+     "t": "Standard OpenID Connect",
+     "d": "Any app or website adds it like any OIDC provider, or with the Sign in with Gully SDK."
+    },
+    {
+     "t": "Per-app consent",
+     "d": "People choose what each app receives; recovery is slow and visible."
+    },
+    {
+     "t": "Developer console",
+     "d": "Register apps, set redirect URIs and see sign-ins at gullyid.xyz/developers/console."
+    }
+   ],
+   "how": [
+    [
+     "Register your app",
+     "Create it in the developer console and copy the client ID."
+    ],
+    [
+     "Add the button",
+     "Use the SDK or any OIDC library with gullyid.xyz as the issuer."
+    ],
+    [
+     "Read the claims",
+     "Get the person’s ID and only what they agreed to share."
+    ]
+   ],
+   "price": "Plans and fees are published on gullyid.xyz, in USD.",
    "faq": [
     [
      "Is it free?",
@@ -1429,8 +1470,63 @@
    "name": "Gully Chain",
    "line": "An Arbitrum Orbit L3 for launches and trading, with Gully Core built in as its launchpad and DEX core.",
    "url": "https://gullychain.xyz",
+   "urlLabel": "gullychain.xyz",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://docs.gullychain.xyz",
+   "group": "chain",
+   "hub": [
+    "chain-site",
+    "rpc-public",
+    "explorer",
+    "faucet",
+    "indexer",
+    "docs",
+    "devportal"
+   ],
    "og": "/brand/web/og/gully-chain.png",
    "category": "BlockchainNetwork",
+   "features": [
+    {
+     "t": "Arbitrum Orbit L3",
+     "d": "Settles to Arbitrum. Chain id 485590 on testnet, with its own explorer, faucet and indexer."
+    },
+    {
+     "t": "Gully Core built in",
+     "d": "The launchpad is part of the chain: a token and its pool in one step, graduation to Gully Swap."
+    },
+    {
+     "t": "Served by Gully RPC",
+     "d": "A free public RPC, plus keyed access at rpc.gullyrpc.xyz/<project>/evm/485590."
+    },
+    {
+     "t": "Two bridges",
+     "d": "The canonical Arbitrum bridge and a Hyperlane fast lane (gETH) in Gully Bridge."
+    },
+    {
+     "t": "Names and quests",
+     "d": ".gully names, on-chain Quests with ETH reward pools and the Arcade, all in kre8.fun."
+    },
+    {
+     "t": "Open data",
+     "d": "Tokens, trades, names and quests as JSON from the indexer; every figure here comes from it."
+    }
+   ],
+   "how": [
+    [
+     "Add the network",
+     "Chain 485590 with the public RPC or your Gully RPC key, and the explorer."
+    ],
+    [
+     "Get test ETH",
+     "The faucet, or bridge from Arbitrum Sepolia through Gully Bridge."
+    ],
+    [
+     "Launch or build",
+     "Launch a token on Gully Core, or deploy your contracts with the developer portal."
+    ]
+   ],
+   "price": "Free on testnet. Mainnet pricing is published when mainnet opens.",
    "faq": [
     [
      "Is Gully Chain on mainnet?",
@@ -1454,8 +1550,59 @@
    "name": "kre8.fun",
    "line": "The Gully Chain app: a social feed, five wallets per passkey, copy trading, Quests and the launchpad.",
    "url": "https://kre8.fun",
+   "urlLabel": "kre8.fun",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://docs.gullychain.xyz",
+   "group": "chain",
+   "hub": [
+    "street",
+    "social",
+    "copy"
+   ],
    "og": "/brand/web/og/gully-chain.png",
    "category": "FinanceApplication",
+   "features": [
+    {
+     "t": "Social feed",
+     "d": "Launches, trades and swaps on Gully Chain as they happen, from the indexer."
+    },
+    {
+     "t": "Passkey wallets",
+     "d": "Up to five wallets behind one passkey: no seed phrase to write down."
+    },
+    {
+     "t": "Copy trading",
+     "d": "Follow a wallet and mirror its trades with your own limits."
+    },
+    {
+     "t": "Launchpad and swap",
+     "d": "Gully Core launches and Gully Swap in the same app."
+    },
+    {
+     "t": "Quests and Arcade",
+     "d": "On-chain quests with ETH rewards, and games scored on chain."
+    },
+    {
+     "t": ".gully names",
+     "d": "A readable name for your wallet, shown across the feed."
+    }
+   ],
+   "how": [
+    [
+     "Sign in with a passkey",
+     "Your wallets are created for you, on Gully Chain testnet."
+    ],
+    [
+     "Fund a wallet",
+     "Faucet or bridge, then trade, launch or follow."
+    ],
+    [
+     "Earn on Quests",
+     "Complete quests to claim from their ETH reward pools."
+    ]
+   ],
+   "price": "Free on testnet. Mainnet pricing is published when mainnet opens.",
    "faq": [
     [
      "Is kre8.fun custodial?",
@@ -1475,8 +1622,49 @@
    "name": "Gully Bridge",
    "line": "Move ETH between Arbitrum Sepolia and Gully Chain: a Hyperlane fast lane (gETH) and the canonical bridge.",
    "url": "https://testnet-bridge.gullychain.xyz",
+   "urlLabel": "testnet-bridge.gullychain.xyz",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://docs.gullychain.xyz",
+   "group": "chain",
+   "hub": [
+    "bridge"
+   ],
    "og": "/brand/web/og/gully-chain.png",
    "category": "FinanceApplication",
+   "features": [
+    {
+     "t": "Fast lane",
+     "d": "Hyperlane warp route: ETH locked on Arbitrum Sepolia mints gETH on Gully Chain in about a minute."
+    },
+    {
+     "t": "Canonical lane",
+     "d": "The Arbitrum Orbit bridge for native ETH, with its standard withdrawal window."
+    },
+    {
+     "t": "Fully backed",
+     "d": "Every gETH is backed by ETH held by the route on Arbitrum Sepolia; both figures are on this page."
+    },
+    {
+     "t": "Our own relayer",
+     "d": "Messages are relayed and validated by Gully-run Hyperlane agents."
+    }
+   ],
+   "how": [
+    [
+     "Pick a lane",
+     "Fast (gETH) for speed, Canonical for native ETH."
+    ],
+    [
+     "Sign once",
+     "Your wallet sends the deposit on the source chain."
+    ],
+    [
+     "Receive",
+     "gETH or ETH arrives in the same wallet on the other side."
+    ]
+   ],
+   "price": "Free on testnet. Mainnet pricing is published when mainnet opens.",
    "faq": [
     [
      "What is gETH?",
@@ -1496,8 +1684,45 @@
    "name": "Gully Multisig",
    "line": "Multisig wallets for teams and treasuries on Anubis Network, built on the unmodified Safe 1.4.1 contracts.",
    "url": "https://multisig.gullychain.xyz",
+   "urlLabel": "multisig.gullychain.xyz",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://docs.gullychain.xyz/multisig/",
+   "group": "chain",
+   "hub": [
+    "safe"
+   ],
    "og": "/brand/web/og/gully-chain.png",
    "category": "FinanceApplication",
+   "features": [
+    {
+     "t": "M-of-N signing",
+     "d": "Any number of owners and a threshold you choose."
+    },
+    {
+     "t": "Team treasuries",
+     "d": "Hold launch proceeds and protocol fees under shared control."
+    },
+    {
+     "t": "On Gully Chain",
+     "d": "Deployed on chain 485590 alongside the rest of the stack."
+    }
+   ],
+   "how": [
+    [
+     "Create a Safe",
+     "Add owners and set the threshold."
+    ],
+    [
+     "Fund it",
+     "Send ETH or tokens to the Safe address."
+    ],
+    [
+     "Propose and sign",
+     "Owners sign until the threshold is met, then it executes."
+    ]
+   ],
+   "price": "Free on testnet. Mainnet pricing is published when mainnet opens.",
    "faq": [
     [
      "Is Gully Multisig live?",
@@ -1513,8 +1738,60 @@
    "name": "Gully Sentry",
    "line": "Free testnet Sentry Keys and light watchers that check every Gully Chain assertion against their own node.",
    "url": "https://sentry.gullychain.xyz/",
+   "urlLabel": "sentry.gullychain.xyz",
+   "cta": "Claim a free Sentry Key",
+   "cta2": [
+    "Run a sentry",
+    "https://sentry.gullychain.xyz/run/"
+   ],
+   "docs": "https://docs.gullychain.xyz/sentry/",
+   "group": "chain",
+   "hub": [
+    "sentry"
+   ],
    "og": "/brand/web/og/gully-chain.png",
    "category": "SecurityApplication",
+   "features": [
+    {
+     "t": "Free testnet Sentry Keys",
+     "d": "An ERC-721 licence on Gully Chain testnet (0xa24b…30Ac). Claim one free on sentry.gullychain.xyz."
+    },
+    {
+     "t": "A light watcher",
+     "d": "The gully-sentry CLI or Docker image follows its own Gully Chain node; no validator hardware."
+    },
+    {
+     "t": "Checks every assertion",
+     "d": "Each Gully Chain assertion posted to Arbitrum Sepolia is compared with what your own node computed."
+    },
+    {
+     "t": "Signed heartbeats",
+     "d": "Every 10 minutes the watcher signs an EIP-712 heartbeat, so the network can see who is watching."
+    },
+    {
+     "t": "Alarms",
+     "d": "A mismatch between an assertion and your node raises an alarm on the watcher and on the live network page."
+    },
+    {
+     "t": "Open network view",
+     "d": "Active keys, operators, heartbeats and the chain verdict are public at sentry.gullychain.xyz/network."
+    }
+   ],
+   "how": [
+    [
+     "Claim a key",
+     "Connect a wallet on sentry.gullychain.xyz and claim a free testnet Sentry Key."
+    ],
+    [
+     "Run a sentry",
+     "Start the gully-sentry CLI or Docker image with your key (sentry.gullychain.xyz/run)."
+    ],
+    [
+     "Watch the chain",
+     "It checks each assertion against its node and signs a heartbeat every 10 minutes."
+    ]
+   ],
+   "price": "Free on testnet. Mainnet pricing is published when mainnet opens.",
    "faq": [
     [
      "Do testnet keys have value?",
@@ -1538,8 +1815,55 @@
    "name": "Gully Pay",
    "line": "x402 payments, hosted checkout and a merchant OS, settled on chain to your own wallet.",
    "url": "https://gullypay.xyz",
+   "urlLabel": "gullypay.xyz",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://gullypay.xyz/docs",
+   "group": "labs",
+   "hub": [
+    "pay",
+    "x402",
+    "pay-admin"
+   ],
    "og": "/brand/web/og/gully-pay.jpg",
    "category": "FinanceApplication",
+   "features": [
+    {
+     "t": "x402 facilitator",
+     "d": "Pay-per-request for APIs and agents, Gully Chain among its networks."
+    },
+    {
+     "t": "Hosted checkout",
+     "d": "Pay links and invoices; payments go straight to the merchant wallet."
+    },
+    {
+     "t": "Merchant OS",
+     "d": "Stores, webhooks per step (paid, confirmed, settled) and receipts."
+    },
+    {
+     "t": "Gateway for every Gully product",
+     "d": "Every Gully product bills through Gully Pay."
+    },
+    {
+     "t": "USDC.e on Gully Chain",
+     "d": "Checkout and x402 on Gully Chain testnet settle in USDC.e (bridged USDC)."
+    }
+   ],
+   "how": [
+    [
+     "Open a store",
+     "Sign up and name your store; payouts go to your own wallet."
+    ],
+    [
+     "Share a link or add x402",
+     "A pay link per order, or x402 in front of an API."
+    ],
+    [
+     "Get the webhook",
+     "One signed webhook per step, with receipts."
+    ]
+   ],
+   "price": "Plans and fees are published on gullypay.xyz, in USD.",
    "faq": [
     [
      "How many payments has Gully Pay processed?",
@@ -1559,8 +1883,51 @@
    "name": "Gully RPC",
    "line": "One key for every network: the node control plane and RPC gateway behind every Gully chain.",
    "url": "https://gullyrpc.xyz",
+   "urlLabel": "gullyrpc.xyz",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://gullyrpc.xyz/docs/",
+   "group": "labs",
+   "hub": [
+    "rpc-site",
+    "rpc-app",
+    "rpc-gateway"
+   ],
    "og": "/brand/web/og/gully-rpc.jpg",
    "category": "DeveloperApplication",
+   "features": [
+    {
+     "t": "One URL shape",
+     "d": "rpc.gullyrpc.xyz/<project>/evm/<chainId> for every network we serve."
+    },
+    {
+     "t": "Gully Chain first",
+     "d": "Every Gully node is served through Gully RPC, testnet included."
+    },
+    {
+     "t": "Usage per project",
+     "d": "Requests, errors and latency per key, in the portal."
+    },
+    {
+     "t": "Billed through Gully Pay",
+     "d": "Plans paid on chain; no cards on file."
+    }
+   ],
+   "how": [
+    [
+     "Get a key",
+     "Create a project in the Gully RPC app."
+    ],
+    [
+     "Swap the URL",
+     "Use your project URL in viem, ethers or wagmi."
+    ],
+    [
+     "Watch usage",
+     "Requests, errors and latency per project."
+    ]
+   ],
+   "price": "Plans and fees are published on gullyrpc.xyz, in USD.",
    "faq": [
     [
      "Which networks are served?",
@@ -1576,8 +1943,49 @@
    "name": "HolderMaps",
    "line": "Who really holds a token: bubble maps, wallet clusters and deep checks, Gully Chain tokens included.",
    "url": "https://holdermaps.xyz",
+   "urlLabel": "holdermaps.xyz",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://docs.gullylabs.xyz/holder-map",
+   "group": "labs",
+   "hub": [
+    "holders"
+   ],
    "og": "/brand/web/og/holdermaps.jpg",
    "category": "FinanceApplication",
+   "features": [
+    {
+     "t": "Bubble maps",
+     "d": "The biggest wallets as bubbles; links are shared funding and transfers."
+    },
+    {
+     "t": "Launch health",
+     "d": "Bundled buys, snipers, the deployer’s record and liquidity, scored part by part."
+    },
+    {
+     "t": "Deep check",
+     "d": "Funding trace and shared-funder clusters in one report."
+    },
+    {
+     "t": "Embed and API",
+     "d": "A one-tag embed for launchpads and a public JSON API."
+    }
+   ],
+   "how": [
+    [
+     "Paste a token",
+     "Any contract on a supported chain, Gully Chain included."
+    ],
+    [
+     "Read the map",
+     "Clusters, insiders and the launch checks."
+    ],
+    [
+     "Go deeper",
+     "Run a Deep check or set cluster alerts."
+    ]
+   ],
+   "price": "Plans and fees are published on holdermaps.xyz, in USD.",
    "faq": [
     [
      "Which chains?",
@@ -1593,8 +2001,49 @@
    "name": "Gully Security",
    "line": "AI security scans, contract monitors and the Gully Score for any contract, Gully Chain contracts included.",
    "url": "https://gullysecurity.xyz",
+   "urlLabel": "gullysecurity.xyz",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://docs.gullylabs.xyz/gully-security",
+   "group": "labs",
+   "hub": [
+    "security"
+   ],
    "og": "/brand/web/og/gully-security.jpg",
    "category": "SecurityApplication",
+   "features": [
+    {
+     "t": "AI Security Scan",
+     "d": "A deployed contract or a repository, scanned with findings by severity, file and line."
+    },
+    {
+     "t": "Security Review",
+     "d": "People read your code; quoted per project."
+    },
+    {
+     "t": "Monitors",
+     "d": "Alerts on risky changes by Telegram or webhook."
+    },
+    {
+     "t": "Gully Score",
+     "d": "A public 0–100 score from evidence only. Nobody can pay to change it."
+    }
+   ],
+   "how": [
+    [
+     "Scan it",
+     "Paste an address or upload code."
+    ],
+    [
+     "Read the report",
+     "Findings, the tools that ran and the limits of an automated scan."
+    ],
+    [
+     "Monitor it",
+     "Turn on monitors, publish the report if you choose."
+    ]
+   ],
+   "price": "Plans and fees are published on gullysecurity.xyz, in USD.",
    "faq": [
     [
      "Is a scan an audit?",
@@ -1610,8 +2059,46 @@
    "name": "Gully AI",
    "line": "Answers about Gully with sources and live figures; the Gully AI API opens when its GPU box is up.",
    "url": "https://gullyai.xyz",
+   "urlLabel": "gullyai.xyz",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://gullyai.xyz/docs/",
+   "group": "labs",
+   "hub": [
+    "gullyai",
+    "ai-api"
+   ],
    "og": "/brand/web/og/gully-ai.jpg",
    "category": "DeveloperApplication",
+   "features": [
+    {
+     "t": "Cited answers",
+     "d": "Every answer names its sources and quotes live figures where they matter."
+    },
+    {
+     "t": "Everywhere",
+     "d": "On the site, in the docs, in the app and in Telegram."
+    },
+    {
+     "t": "API (coming)",
+     "d": "Shown as coming until the gateway answers; never as down."
+    }
+   ],
+   "how": [
+    [
+     "Ask",
+     "Ask about any Gully product, plan or doc."
+    ],
+    [
+     "Check the sources",
+     "Each answer links what it read."
+    ],
+    [
+     "Build on it",
+     "The API opens with the GPU box."
+    ]
+   ],
+   "price": "Plans and fees are published on gullyai.xyz, in USD.",
    "faq": [
     [
      "Can you add AI to our product?",
@@ -1627,8 +2114,47 @@
    "name": "Gully Studio",
    "line": "Our game studio: Unity 3D titles on Gully Chain with the Gully Game SDK, paid through Gully Pay.",
    "url": "https://gullystudio.xyz",
+   "urlLabel": "gullystudio.xyz",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://docs.gullystudio.xyz",
+   "group": "labs",
+   "hub": [
+    "studio",
+    "studio-dev",
+    "studio-docs"
+   ],
    "og": "/brand/web/og/gully-studio.jpg",
    "category": "GameApplication",
+   "features": [
+    {
+     "t": "Unity 3D",
+     "d": "Games built in Unity with the Gully Game SDK for wallets and items."
+    },
+    {
+     "t": "Scores on chain",
+     "d": "Seasons and scores on the GullyArcade contract on Gully Chain."
+    },
+    {
+     "t": "Gully Pay inside",
+     "d": "In-game purchases settle through Gully Pay."
+    }
+   ],
+   "how": [
+    [
+     "Build in Unity",
+     "The Gully Game SDK for wallets, items and scores."
+    ],
+    [
+     "Ship on Gully Chain",
+     "Items and scores on chain 485590."
+    ],
+    [
+     "Sell with Gully Pay",
+     "Purchases settled on chain."
+    ]
+   ],
+   "price": "Quoted per project. Tell us what you need below.",
    "faq": [
     [
      "Do you build games for others?",
@@ -1644,8 +2170,45 @@
    "name": "Gully IPFS",
    "line": "Our IPFS node and read-only gateway for Gully content: token art, metadata, NFT art and .gully sites.",
    "url": "https://docs.gullylabs.xyz/ipfs",
+   "urlLabel": "docs.gullylabs.xyz/ipfs",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://docs.gullylabs.xyz/ipfs",
+   "group": "labs",
+   "hub": [
+    "ipfs"
+   ],
    "og": "/brand/web/og/gully-labs.jpg",
    "category": "DeveloperApplication",
+   "features": [
+    {
+     "t": "Pinned for good",
+     "d": "Token images, metadata and NFT art pinned on our own Kubo node."
+    },
+    {
+     "t": "Read-only gateway",
+     "d": "ipfs.gullylabs.xyz/ipfs/<CID> serves only what we pin."
+    },
+    {
+     "t": ".gully sites",
+     "d": "Point a .gully name’s contenthash at a CID."
+    }
+   ],
+   "how": [
+    [
+     "We pin it",
+     "Gully content only."
+    ],
+    [
+     "Link the CID",
+     "Our gateway or any IPFS gateway."
+    ],
+    [
+     "Name it",
+     "A .gully name for a site on IPFS."
+    ]
+   ],
+   "price": "Quoted per project. Tell us what you need below.",
    "faq": [
     [
      "Can I pin my own files?",
@@ -1661,8 +2224,46 @@
    "name": "Gully Quests",
    "line": "On-chain quests on Gully Chain: tasks verified by contract, rewards paid from ETH pools.",
    "url": "https://kre8.fun/quests",
+   "urlLabel": "kre8.fun/quests",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://docs.gullychain.xyz/gully-core/",
+   "group": "chain",
+   "hub": [
+    "street",
+    "indexer"
+   ],
    "og": "/brand/web/og/gully-chain.png",
    "category": "GameApplication",
+   "features": [
+    {
+     "t": "Verified on chain",
+     "d": "Names, holdings, launchpad trades, swaps, bridging, arcade scores and referrals."
+    },
+    {
+     "t": "ETH reward pools",
+     "d": "Each quest is funded up front; claims pay from its pool."
+    },
+    {
+     "t": "Open registry",
+     "d": "Anyone can read the QuestRegistry; the indexer serves stats and completions."
+    }
+   ],
+   "how": [
+    [
+     "Pick a quest",
+     "In kre8.fun’s Quests tab."
+    ],
+    [
+     "Do it on chain",
+     "The verifier checks your wallet."
+    ],
+    [
+     "Claim",
+     "The reward is paid from the quest’s pool."
+    ]
+   ],
+   "price": "Free on testnet. Mainnet pricing is published when mainnet opens.",
    "faq": [
     [
      "Can we run quests for our launch?",
@@ -1678,8 +2279,57 @@
    "name": "Gully Offerwall",
    "line": "Advertisers fund quests through Gully Pay; players complete them on Gully Chain and earn USDC or points; publishers embed the wall and earn a share.",
    "url": "https://offers.kre8.fun/",
+   "urlLabel": "offers.kre8.fun",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://docs.gullychain.xyz/offerwall/",
+   "group": "chain",
+   "hub": [
+    "offerwall"
+   ],
    "og": "/brand/web/og/gully-chain.png",
    "category": "GameApplication",
+   "features": [
+    {
+     "t": "Built on Gully Quests",
+     "d": "OfferwallManager on Gully Chain testnet 485590 creates each offer as a quest in the Gully Quests QuestRegistry, verified on chain."
+    },
+    {
+     "t": "USDC or points",
+     "d": "Players complete offers on Gully Chain and earn USDC or points from the advertiser’s budget."
+    },
+    {
+     "t": "Publishers earn a share",
+     "d": "Any site or game embeds the wall with an iframe or offerwall.js and earns a share of every completion."
+    },
+    {
+     "t": "Sign in with Gully ID",
+     "d": "Players and advertisers sign in with Gully ID (gullyid.xyz): passkey, wallet or email."
+    },
+    {
+     "t": "Funded through Gully Pay",
+     "d": "Advertisers pay for campaigns through Gully Pay checkout (rolling out)."
+    },
+    {
+     "t": "Open stats",
+     "d": "Completions, payouts and players as public JSON at offers.kre8.fun/v1/stats; the figures on this page come from it."
+    }
+   ],
+   "how": [
+    [
+     "Advertisers fund a campaign",
+     "Create offers in the dashboard and fund the budget through Gully Pay."
+    ],
+    [
+     "Publishers embed the wall",
+     "Add a placement, then the iframe or offerwall.js on any page."
+    ],
+    [
+     "Players complete and earn",
+     "Sign in with Gully ID, do the task on Gully Chain, receive USDC or points."
+    ]
+   ],
+   "price": "Free on testnet. Mainnet pricing is published when mainnet opens.",
    "faq": [
     [
      "Which contracts run it?",
@@ -1703,8 +2353,59 @@
    "name": "Gully Social",
    "line": "The social layer of Gully Chain: posts, follows, replies and profiles tied to your wallet and .gully name, in the kre8.fun app.",
    "url": "https://kre8.fun",
+   "urlLabel": "kre8.fun",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://docs.gullychain.xyz",
+   "group": "chain",
+   "hub": [
+    "social-api",
+    "social",
+    "street"
+   ],
    "og": "/brand/web/og/gully-chain.png",
    "category": "SocialNetworkingApplication",
+   "features": [
+    {
+     "t": "Your profile is your wallet",
+     "d": "Posts, followers and points belong to your Gully Chain address and show your .gully name."
+    },
+    {
+     "t": "Posts, replies and likes",
+     "d": "Write in the Home feed beside launches, trades and swaps read live from the indexer."
+    },
+    {
+     "t": "Follows and People",
+     "d": "Follow traders and builders; Explore lists the newest, most followed and verified accounts."
+    },
+    {
+     "t": "Device keys, no pop-ups",
+     "d": "Each browser signs with its own device key, authorised once by your wallet or passkey account."
+    },
+    {
+     "t": "Get verified",
+     "d": "A verified badge for your X handle, paid in ETH or USDC.e on Gully Chain testnet and attested on chain."
+    },
+    {
+     "t": "Invites and share cards",
+     "d": "Invite codes earn points; every profile, trade and quest has a share card with live figures."
+    }
+   ],
+   "how": [
+    [
+     "Sign in with a passkey",
+     "Open kre8.fun; your wallet is your account."
+    ],
+    [
+     "Claim a .gully name",
+     "Your name shows on every post, reply and follow."
+    ],
+    [
+     "Post and follow",
+     "Write from Home and follow people from Explore or any profile."
+    ]
+   ],
+   "price": "Free on testnet. Mainnet pricing is published when mainnet opens.",
    "faq": [
     [
      "Where is Gully Social?",
@@ -1728,8 +2429,54 @@
    "name": "Copy Trading",
    "line": "Follow a Gully Chain trader and mirror their trades from your own passkey wallet, with your own limits and an on-chain fee capped at 1%.",
    "url": "https://kre8.fun/copy",
+   "urlLabel": "kre8.fun/copy",
+   "cta": null,
+   "cta2": null,
+   "docs": "https://docs.gullychain.xyz",
+   "group": "chain",
+   "hub": [
+    "copy",
+    "street"
+   ],
    "og": "/brand/web/og/gully-chain.png",
    "category": "FinanceApplication",
+   "features": [
+    {
+     "t": "Leaderboard from the chain",
+     "d": "Every leader’s trades, volume, realised PnL and followers come from indexed Gully Chain trades."
+    },
+    {
+     "t": "Your own limits",
+     "d": "A fixed size or a share of the leader’s trade, a per-trade and a daily cap, slippage, a stop, and only-these or never-these tokens. Stop at any time."
+    },
+    {
+     "t": "Your wallet, a session key",
+     "d": "Copies run from one of your passkey wallets through a scoped session key, never a custodial balance."
+    },
+    {
+     "t": "Fees on chain",
+     "d": "GullyCopyFees takes the copy fee (0.5% default, 1% hard cap) and pays the leader’s share on chain."
+    },
+    {
+     "t": "Lead and earn",
+     "d": "Traders who are copied see their followers and fees earned on their leader page (/me/leader)."
+    }
+   ],
+   "how": [
+    [
+     "Pick a leader",
+     "Open Copy trading in the kre8.fun app and compare leaders."
+    ],
+    [
+     "Set your limits",
+     "Choose a wallet, the size per trade and the per-trade and daily caps."
+    ],
+    [
+     "Copy runs on chain",
+     "The engine mirrors each new trade within your limits; your copies list every fill."
+    ]
+   ],
+   "price": "Free on testnet. Mainnet pricing is published when mainnet opens.",
    "faq": [
     [
      "Where is it?",
@@ -1751,18 +2498,67 @@
   },
   "gully-core": {
    "name": "Gully Core",
-   "line": "Gully Chain’s own launchpad and DEX core: a token and its pool in one step, graduating to Gully Swap.",
+   "line": "Launch a token, run a launchpad or own a DEX on one shared core, on the chains your users already use.",
    "url": "https://gullychain.xyz/core/",
+   "urlLabel": "gullychain.xyz/core",
+   "cta": null,
+   "cta2": [
+    "Launch on kre8.fun",
+    "https://kre8.fun/launch"
+   ],
+   "docs": "https://docs.gullychain.xyz/gully-core/",
+   "group": "chain",
+   "hub": [
+    "street",
+    "indexer"
+   ],
    "og": "/brand/web/og/gully-chain.png",
    "category": "FinanceApplication",
+   "features": [
+    {
+     "t": "One-step launch",
+     "d": "A token and its pool in a single transaction, with a fee that opens high and falls to 1%."
+    },
+    {
+     "t": "Your own site",
+     "d": "Launchpads, DEXes and stock markets on the shared core, with no contracts to deploy."
+    },
+    {
+     "t": "Checked by HolderMaps",
+     "d": "Every launch can be mapped and health-checked."
+    },
+    {
+     "t": "For outside builders",
+     "d": "A flat 0.30% of every trade on pools you create, and nothing else."
+    },
+    {
+     "t": "Its lineage",
+     "d": "Built on PancakeSwap Infinity’s audited core."
+    }
+   ],
+   "how": [
+    [
+     "Pick what to build",
+     "A token, a launchpad, a DEX, a stock market or a vault."
+    ],
+    [
+     "Set the rules",
+     "Pick a chain, your fee share and a launch preset."
+    ],
+    [
+     "Go live",
+     "It trades from the first block."
+    ]
+   ],
+   "price": "Free on testnet. Mainnet pricing is published when mainnet opens.",
    "faq": [
     [
      "Who builds Gully Core?",
-     "Gully Labs. It is our own launchpad and DEX core for Gully Chain, run as part of the chain."
+     "Gully Labs. It is our own launchpad and DEX core, built on PancakeSwap Infinity’s audited core."
     ],
     [
      "Where is it live?",
-     "On testnet: the app is at gullychain.xyz/core. Nothing is on any mainnet yet."
+     "On Anubis mainnet and on Gully Chain testnet, with more chains coming. The app is at gullychain.xyz/core."
     ],
     [
      "Does Gully Core support Gully Chain?",
@@ -1966,7 +2762,7 @@
    {
     "key": "core",
     "name": "Gully Core",
-    "line": "Built-in launchpad on Gully Chain.",
+    "line": "Launchpads and DEXes on one core.",
     "icon": "/brand/web/logos/gc-icon.svg",
     "label": "Testnet",
     "fact": "0.30% for builders",
@@ -3257,7 +4053,7 @@
       ],
       [
        "/products/gully-core",
-       "Gully Core: Gully Chain’s own launchpad and DEX core: a token and its pool in one step, graduating to Gully Swap."
+       "Gully Core: Launch a token, run a launchpad or own a DEX on one shared core, on the chains your users already use."
       ]
      ],
      "qa": []
@@ -6366,8 +7162,8 @@
      "level": 2,
      "p": [],
      "list": [
-      "One-step launch: Token, bonding curve and pool in a single transaction.",
-      "Graduation: Completed curves graduate to a Gully Swap pool.",
+      "One-step launch: A token and its pool in a single transaction, with a fee that opens high and falls to 1%.",
+      "Your own site: Launchpads, DEXes and stock markets on the shared core, with no contracts to deploy.",
       "Checked by HolderMaps: Every launch can be mapped and health-checked.",
       "For outside builders: A flat 0.30% of every trade on pools you create, and nothing else.",
       "Its lineage: Built on PancakeSwap Infinity’s audited core."
@@ -6380,9 +7176,9 @@
      "level": 2,
      "p": [],
      "list": [
-      "Launch: Name, ticker and image in kre8.fun.",
-      "Trade the curve: Buys and sells on the bonding curve.",
-      "Graduate: Liquidity moves to Gully Swap."
+      "Pick what to build: A token, a launchpad, a DEX, a stock market or a vault.",
+      "Set the rules: Pick a chain, your fee share and a launch preset.",
+      "Go live: It trades from the first block."
      ],
      "links": [],
      "qa": []
@@ -6406,11 +7202,11 @@
      "qa": [
       [
        "Who builds Gully Core?",
-       "Gully Labs. It is our own launchpad and DEX core for Gully Chain, run as part of the chain."
+       "Gully Labs. It is our own launchpad and DEX core, built on PancakeSwap Infinity’s audited core."
       ],
       [
        "Where is it live?",
-       "On testnet: the app is at gullychain.xyz/core. Nothing is on any mainnet yet."
+       "On Anubis mainnet and on Gully Chain testnet, with more chains coming. The app is at gullychain.xyz/core."
       ],
       [
        "Does Gully Core support Gully Chain?",
