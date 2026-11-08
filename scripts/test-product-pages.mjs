@@ -81,7 +81,7 @@ test('kit colours only, times in PT, script budget', async () => {
 })
 
 test('the landing keeps the home page links unless it is the preview', async () => {
-  const home = await L.renderLanding('', data)
+  const home = (await L.renderLanding('', data)).replace(/<script defer src="https:\/\/analytics[^>]*><\/script>/, '') // the home page also carries the analytics tag
   const pre = await L.renderLanding('', data, { preview: true })
   assert.ok(home.includes('href="/products/') && !pre.includes('href="/products/') && pre.includes('href="/preview/products/'))
   assert.equal(pre.replaceAll('/preview/products/', '/products/').length, home.length)

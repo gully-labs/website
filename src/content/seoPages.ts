@@ -22,8 +22,8 @@ export const fullTitle = (path: string, title: string) => (path === '/' ? `Gully
 
 export const SEO_PAGES: Record<string, SeoEntry> = {
   '/': {
-    title: 'Eleven products: ID, payments, chain, trading',
-    description: 'Gully Labs builds eleven connected products: Gully ID, Gully Pay, Gully Chain, HolderMaps and Gully Security, plus PeddleSwap and Peddles for trading.',
+    title: 'Launch a token, a launchpad or a DEX',
+    description: 'Gully Labs builds Gully Core: launch tokens, launchpads and DEXes on your chain, with Gully ID, Gully Pay, Gully RPC and live status for every product.',
   },
   '/products': {
     title: 'Products',
