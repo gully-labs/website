@@ -63,7 +63,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-padding-top: 140px; }
 /* Ghost's Code injection still holds the old brand: old body colours, uppercase condensed headings with !important, and
-   gold .gl-btn rules in the site footer. This file loads after {{ghost_head}} so it wins every tie; the two font rules
+   old yellow button rules in the site footer. This file loads after {{ghost_head}} so it wins every tie; the two font rules
    below answer the !important; the theme's buttons are .gk-btn so the footer rules match nothing, and gully.js removes
    the block the footer script adds. All of it is harmless once the injection is cleared. */
 h1, h2, h3 { font-family: var(--gl-font-display) !important; text-transform: none; letter-spacing: normal; }

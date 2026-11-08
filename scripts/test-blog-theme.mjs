@@ -61,3 +61,38 @@ test('every {{asset}} path exists', () => {
     }
   }
 })
+
+test('only kit colours: no gold, no cyan, no hex outside the kit set', () => {
+  const kit = new Set(['#0e1c38', '#3754a0', '#6f8ddf', '#f1f3f8', '#c9d2e8', '#d6dce8'])
+  for (const f of text.filter((x) => !x.includes('reframe'))) {
+    const src = fs.readFileSync(f, 'utf8')
+    for (const h of src.match(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g) || []) assert.ok(kit.has(h.toLowerCase()), `${path.relative(THEME, f)}: ${h}`)
+    assert.ok(!/\bgold\b|e8c060|00f7fc|cyan/i.test(src.replace(/--gl-cyan-unused/, '')), `${path.relative(THEME, f)} names gold or cyan`)
+  }
+})
+
+test('no old .gl-btn classes: the old Code injection styles them gold', () => {
+  for (const f of text) assert.ok(!/\bgl-btn\b/.test(fs.readFileSync(f, 'utf8')), path.relative(THEME, f))
+})
+
+test('every menu icon exists and every nav entry has one', () => {
+  for (const f of text.filter((x) => x.endsWith('.hbs'))) {
+    const src = fs.readFileSync(f, 'utf8')
+    for (const [, i] of src.matchAll(/\{\{> "icons\/([a-z0-9-]+)"/g)) assert.ok(fs.existsSync(path.join(THEME, `partials/icons/${i}.hbs`)), `${path.relative(THEME, f)}: ${i}`)
+    for (const [, i] of src.matchAll(/icon="([a-z0-9-]+)"/g)) assert.ok(fs.existsSync(path.join(THEME, `partials/icons/${i}.hbs`)), `${path.relative(THEME, f)}: ${i}`)
+    for (const m of src.matchAll(/\{\{> "nav-entry"[^}]*\}\}/g)) assert.match(m[0], /icon="/, `${path.relative(THEME, f)}: ${m[0].slice(0, 80)}`)
+  }
+})
+
+test('the Products menu names the same products and links as gullylabs.xyz', () => {
+  const cat = fs.readFileSync(path.join(ROOT, 'src/terminal/catalog.ts'), 'utf8')
+  const street = (cat.match(/const STREET = '([^']+)'/) || [])[1]
+  const site = [...cat.matchAll(/\n    name: '([^']+)',[\s\S]*?\n    url: (?:'([^']+)'|`\$\{STREET\}([^`]*)`|STREET),/g)].map((m) => [m[1], m[2] || street + (m[3] || '')])
+  assert.ok(site.length >= 15, `catalog parsed: ${site.length}`)
+  const menu = [...read('partials/links/products.hbs').matchAll(/href="([^"]+)" icon="[^"]+" label="([^"]+)"/g)].map((m) => [m[2], m[1]])
+  for (const [name, url] of site) {
+    const hit = menu.find(([n]) => n === name)
+    assert.ok(hit, `missing in the blog menu: ${name}`)
+    assert.equal(hit[1].replace(/\/$/, ''), url.replace(/\/$/, ''), name)
+  }
+})

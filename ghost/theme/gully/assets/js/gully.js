@@ -180,7 +180,7 @@
         });
     }
 
-    /* Ghost's old site-footer Code injection adds this gold block to an empty home page. */
+    /* Ghost's old site-footer Code injection adds this old block to an empty home page. */
     var oldIntro = document.querySelector('.gl-intro');
     if (oldIntro) oldIntro.parentNode.removeChild(oldIntro);
 
