@@ -20,9 +20,11 @@ const svg = (body, label, fit = false) => `<svg viewBox="0 0 ${W} ${H}" width="1
 const empty = (label) => svg(`<line x1="0" y1="${H - 1}" x2="${W}" y2="${H - 1}" class="g-axis"/>`, `${label}: no data yet`, true)
 
 /** Bars, newest on the right. */
-export function bars(values, label) {
+export function bars(values, label, none) {
   const v = values.filter((x) => num(x) != null)
   if (!v.length) return empty(label)
+  // Every hour is a real zero: keep the resting line and say so in the chart (the kre8 rule for empty charts).
+  if (none && v.every((x) => x === 0)) return `<div class="g-wrap">${svg(`<line x1="0" y1="${H - 1}" x2="${W}" y2="${H - 1}" class="g-axis g-rest"/>`, `${label}: ${none}`, true)}<span class="g-none">${none}</span></div>`
   const max = Math.max(...v, 1)
   const w = W / values.length
   const rects = values.map((x, i) => {
@@ -247,7 +249,7 @@ export const metricNote = (metric) => (metric === 'blocks' ? 'on Gully Chain tes
 export const coreBars = (products, metric) => {
   if (metric === 'blocks') return blocks(products?.chain?.recent, 'Newest Gully Chain blocks')
   const hourly = products?.activity?.hourly ?? []
-  return bars(hourly.map((h) => h[metric] ?? 0), `${METRIC[metric]} on Gully Chain testnet, last 24 hours`)
+  return bars(hourly.map((h) => h[metric] ?? 0), `${METRIC[metric]} on Gully Chain testnet, last 24 hours`, `No ${METRIC[metric].toLowerCase()} in the last 24 hours`)
 }
 
 /** The hero's board: one cell per public surface, and the figures across them. */

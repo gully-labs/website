@@ -462,6 +462,48 @@ try {
   accounts.shiftAccountForTest(B, 15 * DAY)
   r = await sendEvent(siteB.id)
   check('when the trial lapses, events are refused with 402', r.status === 402 && r.data?.error?.code === 'gully-plan-lapsed')
+  // House websites: listed in the config file, they keep recording on a lapsed self-serve account.
+  const houseFile = path.join(tmp, 'analytics-house.json')
+  fs.writeFileSync(houseFile, JSON.stringify({ sites: { 'b.example.org': siteB.id, 'gullylabs.xyz': '78f29233-0000-4000-8000-000000000000', 'app.gullylabs.xyz': '78f29233-0000-4000-8000-000000000001' }, wallets: ['app.gullylabs.xyz'] }))
+  process.env.ANALYTICS_HOUSE_FILE = houseFile
+  accounts.resetHouseForTest()
+  r = await sendEvent(siteB.id)
+  check('a house website on a lapsed account is accepted (200)', r.status === 200, JSON.stringify(r.data))
+  const loader = await proxy('/a.js')
+  check('the loader script maps the house hosts to their ids, with no query or hash sent', loader.status === 200 && loader.text.includes('"gullylabs.xyz":"78f29233-0000-4000-8000-000000000000"') && loader.text.includes('reset-password') && loader.text.includes('checkout') && loader.text.includes('data-exclude-search') && loader.text.includes('data-web3-address') && loader.text.includes('/script.js') && !loader.text.includes(siteB.id.toUpperCase()), String(loader.status))
+  const analyticsMod = await import('../server/analytics.mjs')
+  const W = '78f29233-0000-4000-8000-000000000001'
+  const item = (website, address) => ({ type: 'event', payload: { website, name: 'wallet-connect', data: { address, chainId: 1 } } })
+  const a1 = item(W, 'ABCDEF0123456789')
+  const a2 = item(W, 'abcdef0123456789')
+  const aFull = item(W, '0x' + 'ab'.repeat(20))
+  const aOther = item(siteB.id, 'abcdef0123456789')
+  const aNone = { type: 'event', payload: { website: W, name: 'x', data: { chainId: 1 } } }
+  analyticsMod.scrubWallet(a1)
+  analyticsMod.scrubWallet(a2)
+  analyticsMod.scrubWallet(aFull)
+  analyticsMod.scrubWallet(aOther)
+  check('a wallet app site gets a re-hashed identifier: 16 hex, stable, not the client hash', /^[0-9a-f]{16}$/.test(a1.payload.data.address) && a1.payload.data.address === a2.payload.data.address && a1.payload.data.address !== 'abcdef0123456789')
+  check('a full address, or an identifier on a site not on the wallets list, is dropped', !('address' in aFull.payload.data) && !('address' in aOther.payload.data))
+  check('events without an address are left alone', analyticsMod.scrubWallet(aNone) === false)
+  check('the loader sends the hash mode only for the wallets hosts', loader.text.includes('"app.gullylabs.xyz"') && loader.text.includes("w.indexOf(h)>=0?'hash':'none'"))
+  check('the loader is valid JavaScript and skips sign-in, checkout and token pages', (() => {
+    try {
+      new Function(loader.text)
+    } catch {
+      return false
+    }
+    const m = /new RegExp\(("(?:[^"\\]|\\.)*"),"i"\)/.exec(loader.text)
+    const re = m && new RegExp(JSON.parse(m[1]), 'i')
+    return !!re && ['/checkout/x', '/reset-password', '/verify-email', '/auth/callback/', '/pay/slug'].every((p) => re.test(p)) && !['/', '/pricing', '/docs/payments'].some((p) => re.test(p))
+  })())
+  fs.writeFileSync(houseFile, JSON.stringify({ sites: {} }))
+  fs.utimesSync(houseFile, new Date(Date.now() + 5000), new Date(Date.now() + 5000))
+  accounts.resetHouseForTest()
+  r = await sendEvent(siteB.id)
+  check('removed from the config, it is plan-gated again (402)', r.status === 402 && r.data?.error?.code === 'gully-plan-lapsed')
+  delete process.env.ANALYTICS_HOUSE_FILE
+  accounts.resetHouseForTest()
   r = await cb.call('/api/developer/analytics')
   check('a lapsed account stays readable with its grace date', r.data.account.state === 'lapsed' && Math.abs(Date.parse(r.data.account.readableUntil) - Date.parse(r.data.account.lapsedAt) - 30 * DAY) < 1000)
   check('a lapsed account cannot add websites', (await cb.post('/api/developer/analytics/sites', { name: 'More', domain: 'more.example.org' })).status === 402)
