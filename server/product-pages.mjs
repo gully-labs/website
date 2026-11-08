@@ -21,7 +21,7 @@ const CARD = { 'gully-id': 'id', pay: 'pay', chain: 'chain', rpc: 'rpc', holders
 const METRIC = { chain: 'blocks', 'gully-core': 'launches', street: 'trades' }
 const CHART = { launches: 'Launches on Gully Chain testnet, last 24 hours', swaps: 'Swaps on Gully Chain testnet, last 24 hours', trades: 'Trades on Gully Chain testnet, last 24 hours', blocks: 'Newest Gully Chain blocks' }
 const CHAIN_ICON = '/brand/web/logos/gc-icon.svg'
-const CORE_ICON = '/brand/products/gully-core-emblem-192.png'
+const CORE_ICON = '/brand/web/logos/gc-icon.svg'
 
 /** The Core builds' own words. `presets` mirror LaunchPresets.sol, by way of the SDK's parity-tested table. */
 const BUILDS = {
