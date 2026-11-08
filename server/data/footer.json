@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "One catalog for the footer groups on every Gully Labs surface (landing, product pages, blog theme). Data only: groups, labels, icon names, hrefs, rank. rank: product (a Gully product with its own page), tool (a Gully Chain tool), feature (part of a product, never a footer item), company, peddle (the Peddle family). tile: the key of the matching tile in the landing's Everything in orbit grid, so the two can never disagree (checked by test-landing). icon: names from server/landing-icons.mjs. Gully Core points at its product page until gullycore.xyz exists.",
+  "note": "One catalog for the footer groups on every Gully Labs surface (landing, product pages, blog theme). Data only: groups, labels, icon names, hrefs, rank. rank: product (a Gully product with its own page), tool (a Gully Chain tool), feature (part of a product, never a footer item), company, peddle (the Peddle family). tile: the key of the matching tile in the landing's Everything in orbit grid, so the two can never disagree (checked by test-landing). icon: names from server/landing-icons.mjs. Gully Core points at https://gullycore.xyz (docs: https://docs.gullycore.xyz).",
   "brand": {
     "tagline": "You Think It, We Ship It. Web3 product studio and development services",
     "copy": "© 2026 Gully Labs LLC",
@@ -11,7 +11,7 @@
       "id": "products",
       "title": "Products",
       "links": [
-        { "label": "Gully Core", "href": "/products/gully-core", "icon": "rocket", "rank": "product", "tile": "core" },
+        { "label": "Gully Core", "href": "https://gullycore.xyz", "icon": "rocket", "rank": "product", "tile": "core" },
         { "label": "Gully Chain", "href": "/products/chain", "icon": "boxes", "rank": "product", "tile": "chain" },
         { "label": "kre8", "href": "https://kre8.fun", "icon": "play", "rank": "product", "tile": "kre8" },
         { "label": "Gully ID", "href": "/products/gully-id", "icon": "fingerprint-pattern", "rank": "product", "tile": "id" },
