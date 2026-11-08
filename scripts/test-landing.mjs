@@ -99,6 +99,14 @@ test('the owl, logotype, badge and the Gully Core mark are the official files, b
   assert.ok(!html.includes('gully-core-emblem-192.png'), 'Gully Core shows gc-icon.svg')
 })
 
+test('an all-zero chart keeps its resting line and says so; a chart with activity does not', () => {
+  const zero = G.coreBars({ activity: { hourly: [{ launches: 0 }, { launches: 0 }, { launches: 0 }] } }, 'launches')
+  assert.ok(zero.includes('No launches in the last 24 hours') && zero.includes('g-rest'), 'zero series: the line and the words')
+  const some = G.coreBars({ activity: { hourly: [{ launches: 0 }, { launches: 2 }] } }, 'launches')
+  assert.ok(!some.includes('g-none') && some.includes('g-bar'), 'a series with activity draws bars')
+  assert.ok(!G.coreBars({ activity: { hourly: [] } }, 'swaps').includes('g-none'), 'an unreadable source stays an empty frame, not a claim of zero')
+})
+
 test('chain states come from the config and only an open chain links to the builder', () => {
   const chains = JSON.parse(fs.readFileSync(new URL('../server/data/core-chains.json', import.meta.url), 'utf8'))
   for (const c of chains) {
