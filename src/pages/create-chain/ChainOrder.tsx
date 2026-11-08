@@ -6,7 +6,7 @@ import { dateTimePT } from '../../lib/time'
 import { GullyIdButton, gullyIdAccessToken } from '../developers/gullyId'
 import { pillGold, pillLine } from '../developers/styles'
 import { cancelOrder, getOrder, gullyExchange, startCheckout, usd, type Order, type OrderStatus } from './chainApi'
-import { ChainShell, PriceSummary } from './parts'
+import { ChainShell, GullyIdChip, PriceSummary } from './parts'
 
 /* One order: Paid, Setting up, Live. The status moves on a verified Gully Pay webhook or a Gully admin, never from here;
    the page polls it and raises a toast the moment it changes. Times are Los Angeles time, labelled PT. */
@@ -119,8 +119,9 @@ export function ChainOrderPage() {
   if (state !== 'ready' || !order) {
     return (
       <ChainShell>
-        {state === 'loading' && <p className="m-0 font-mono text-[12px] text-faint">Loading…</p>}
-        {state === 'error' && <p className="m-0 font-mono text-[12px] text-error">This order could not be loaded. Try again.</p>}
+        <GullyIdChip />
+        {state === 'loading' && <p className="m-0 text-[13px] text-faint">Loading…</p>}
+        {state === 'error' && <p className="m-0 text-[13px] text-error">This order could not be loaded. Try again.</p>}
         {state === 'missing' && <h1 className="m-0 text-[20px] font-semibold text-ink">We could not find that order</h1>}
         {state === 'signin' && (
           <section className="flex max-w-[360px] flex-col gap-3 rounded-card border border-line bg-surface p-4">
@@ -134,6 +135,7 @@ export function ChainOrderPage() {
 
   return (
     <ChainShell>
+        <GullyIdChip />
       <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-4 max-[860px]:grid-cols-1">
         <div className="flex min-w-0 flex-col gap-4">
           <section className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-4">
@@ -141,7 +143,7 @@ export function ChainOrderPage() {
               {order.logo && <img src={order.logo} alt="" width={44} height={44} className="size-11 rounded-md object-cover" />}
               <div className="min-w-0">
                 <h1 className="m-0 text-[20px] font-semibold break-words text-ink">{order.name}</h1>
-                <p className="m-0 font-mono text-[12px] text-faint">
+                <p className="m-0 text-[13px] text-faint">
                   Chain {order.chainId} · {order.gasSymbol} · {order.parent.name}
                 </p>
               </div>
@@ -184,7 +186,7 @@ export function ChainOrderPage() {
                 <li key={`${h.at}-${h.status}`} className="flex flex-col">
                   <span className="text-[13px] text-ink-2">{stagesOf(order).find((s) => s.status === h.status)?.label ?? (h.status === 'cancelled' ? 'Cancelled' : 'Order placed')}</span>
                   {h.note && <span className="text-[13px] text-muted">{h.note}</span>}
-                  <time dateTime={h.at} className="font-mono text-[11px] text-faint">
+                  <time dateTime={h.at} className="text-[12px] text-faint">
                     {dateTimePT(h.at)}
                   </time>
                 </li>

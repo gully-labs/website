@@ -59,10 +59,10 @@ async function toPay(page, chainId, { width, first = false, due = '$1.00', tag =
   await page.getByTestId('chain-name').waitFor()
   await page.getByTestId('chain-name').fill('Acme Chain')
   await page.getByTestId('chain-id').fill('485590')
-  await page.getByText('Gully Chain Testnet uses this id.').waitFor()
+  await page.getByTestId('chain-id-check').getByText('Gully Chain Testnet uses this id.').waitFor()
   check(`${width} step 1: a taken id blocks Next`, await page.getByTestId('next').isDisabled())
   await page.getByTestId('chain-id').fill(String(chainId))
-  await page.getByText('This id is free.').waitFor()
+  await page.getByTestId('chain-id-check').getByText('This id is free.').waitFor()
   if (first) await shot(page, `${tag}1-chain-${width}`)
   await next(page)
 
@@ -76,7 +76,7 @@ async function toPay(page, chainId, { width, first = false, due = '$1.00', tag =
     check(`${width} live price: due today is ${due}`, (await page.getByTestId('due-today').innerText()) === due)
     const before = await page.getByTestId('price-summary').innerText()
     await page.getByTestId('addon-gully-core').click()
-    await page.getByTestId('price-summary').getByText('0.30% of every trade').waitFor()
+    await page.getByTestId('price-summary').getByText('0.30% of every trade').first().waitFor()
     check(`${width} live price: an add-on updates the summary`, (await page.getByTestId('price-summary').innerText()) !== before)
     await shot(page, `${tag}2-plan-${width}`)
   }
@@ -89,7 +89,7 @@ async function toPay(page, chainId, { width, first = false, due = '$1.00', tag =
   if (first) {
     check(`${width} step 4: Next waits for Gully ID`, await page.getByTestId('next').isDisabled())
     await shot(page, `${tag}4-signin-${width}`)
-    await page.getByRole('button', { name: 'Sign in with Gully ID' }).click()
+    await page.getByTestId('gully-id-signin').click()
   }
   await page.getByTestId('signed-in').waitFor()
   await page.getByTestId('chain-email').fill('team@example.com')
@@ -97,6 +97,48 @@ async function toPay(page, chainId, { width, first = false, due = '$1.00', tag =
   await page.getByTestId('pay').waitFor()
   if (first) await shot(page, `${tag}5-pay-${width}`)
 }
+
+
+/** The redesigned wizard: the site header with the Gully ID chip, a numbered stepper, helper copy, the chain diagram, saved progress, no monospace. */
+async function layoutChecks(width) {
+  const ctx = await context(width)
+  const page = await ctx.newPage()
+  const w = watch(page, `${width} layout`)
+  await page.goto(`${BASE}/create-chain`)
+  await page.getByTestId('chain-name').waitFor()
+  check(`${width} layout: the site header with its nav, and the Gully ID chip in it`, (await page.locator('header.nav nav[aria-label="Main"]').count()) === 1 && (await page.locator('header.nav').getByTestId('gully-id-chip').count()) === 1)
+  check(`${width} layout: five numbered steps, the first is current`, (await page.locator('[data-testid^="step-"]').count()) === 5 && (await page.getByTestId('step-1').getAttribute('aria-current')) === 'step' && (await page.getByTestId('step-1').innerText()).trim().startsWith('1'))
+  check(`${width} layout: the empty summary shows the owl`, await page.getByTestId('chain-empty').isVisible())
+  check(`${width} layout: helper text under the fields and a logo drop zone`, /unique|tell chains apart/i.test(await page.locator('main').innerText()) && (await page.getByRole('button', { name: 'Add a logo' }).count()) === 1 && (await page.getByRole('group', { name: 'Gas token' }).count()) === 1)
+  check(`${width} layout: Back is not drawn on the first step`, (await page.getByTestId('back').count()) === 0)
+  await page.getByTestId('chain-name').fill('x'.repeat(45))
+  await page.getByText('That name is too long').first().waitFor()
+  check(`${width} layout: a name over 40 characters says so inline and blocks Next`, (await page.getByText('Too long: keep it to 40').count()) >= 1 && (await page.getByTestId('next').isDisabled()))
+  await page.getByTestId('chain-name').fill('Acme Chain')
+  await page.getByTestId('chain-diagram').waitFor()
+  check(`${width} layout: the chain diagram names the chain, its parent and the included services`, (await page.getByTestId('chain-diagram').innerText()).includes('Acme Chain') && (await page.getByTestId('chain-diagram').innerText()).includes('Arbitrum Sepolia') && (await page.getByTestId('tile-explorer').count()) === 1)
+  await page.getByTestId('chain-id').fill('485590')
+  await page.getByText('That chain id is taken').first().waitFor()
+  check(`${width} layout: a taken chain id raises a toast`, true)
+  await page.getByTestId('chain-id').fill('7300001')
+  await page.getByTestId('chain-id-check').getByText('This id is free.').waitFor()
+  await shot(page, `layout-1-chain-${width}`)
+  await page.reload()
+  await page.getByTestId('chain-name').waitFor()
+  check(`${width} layout: a reload keeps the form`, (await page.getByTestId('chain-name').inputValue()) === 'Acme Chain' && (await page.getByTestId('chain-id').inputValue()) === '7300001')
+  await page.getByTestId('chain-id-check').getByText('This id is free.').waitFor()
+  await next(page)
+  await page.getByTestId('tier-testnet').waitFor()
+  check(`${width} layout: step 2 is current, step 1 is done with a way back`, (await page.getByTestId('step-2').getAttribute('aria-current')) === 'step' && (await page.getByTestId('step-1').isEnabled()))
+  await page.getByTestId('back').click()
+  await page.getByTestId('chain-name').waitFor()
+  const mono = await page.evaluate(() => [...document.querySelectorAll('main *')].filter((el) => /mono/i.test(getComputedStyle(el).fontFamily) && el.childNodes.length && [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())).map((el) => el.tagName + ':' + el.textContent.trim().slice(0, 20)))
+  check(`${width} layout: no monospace text on the page`, mono.length === 0, mono.slice(0, 3).join(' | '))
+  await noScroll(page, `${width} layout`)
+  w.verify()
+  await ctx.close()
+}
+for (const width of [390, 768, 1440]) await layoutChecks(width)
 
 let n = 7_200_000
 for (const width of [390, 1440]) {
@@ -213,7 +255,7 @@ for (const width of [390, 1440]) {
 const ctx = await context(1440)
 const page = await ctx.newPage()
 await page.goto(`${BASE}/create-chain/orders/co_nothinghere00`)
-await page.getByRole('button', { name: 'Sign in with Gully ID' }).waitFor()
+await page.getByTestId('gully-id-signin').waitFor()
 check('a signed-out order page asks for Gully ID', true)
 await ctx.close()
 

@@ -51,9 +51,15 @@ const payChildren = [
 ]
 
 // Create a chain: on the app host, and locally on the main host too.
+// They sit in the site Layout: the same header (with its nav) and footer as the landing, and the toasts.
 const createChainRoutes = [
-  { path: '/create-chain', lazy: () => import('./pages/create-chain/CreateChain').then((m) => ({ Component: m.CreateChainPage })) },
-  { path: '/create-chain/orders/:id', lazy: () => import('./pages/create-chain/ChainOrder').then((m) => ({ Component: m.ChainOrderPage })) },
+  {
+    element: <Layout />,
+    children: [
+      { path: '/create-chain', lazy: () => import('./pages/create-chain/CreateChain').then((m) => ({ Component: m.CreateChainPage })) },
+      { path: '/create-chain/orders/:id', lazy: () => import('./pages/create-chain/ChainOrder').then((m) => ({ Component: m.ChainOrderPage })) },
+    ],
+  },
 ]
 
 const mainRoutes = [
