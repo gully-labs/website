@@ -24,7 +24,7 @@
 // Everything else streams through untouched.
 
 import http from 'node:http'
-import { admitEvents, recordEvents } from './analytics-accounts.mjs'
+import { admitEvents, DASHBOARD_ORIGIN, houseHostMap, recordEvents } from './analytics-accounts.mjs'
 import { loginInterstitial, ssoPage } from './analytics-sso.mjs'
 import { ANALYTICS_TRIAL_DAYS } from './plans.mjs'
 
@@ -49,7 +49,7 @@ function forwardHeaders(req) {
   }
 }
 
-const isTrackerPath = (p) => p === '/api/send' || p === '/api/batch' || p === '/script.js'
+const isTrackerPath = (p) => p === '/api/send' || p === '/api/batch' || p === '/script.js' || p === '/a.js'
 
 function unavailable(req, res) {
   if (res.headersSent) return res.destroy()
@@ -265,6 +265,23 @@ async function handleEvents(req, res, batch) {
   forward(req, res, out, (status) => status < 400 && recordEvents(counts))
 }
 
+/**
+ * /a.js: one tag for every Gully page. It looks up the page's host in the house config (gully-ops
+ * sites/_shared/analytics.json) and loads the Umami tracker with that host's website id, so no page carries an id.
+ * Cookieless; Do Not Track respected by Umami (data-do-not-track); the address is sent without query or hash and sign-in
+ * callback pages are never tracked, so no code or token reaches analytics.
+ */
+export function loaderScript() {
+  const map = houseHostMap()
+  return `(function(){try{var m=${JSON.stringify(map)};var h=location.hostname.toLowerCase();var id=m[h];if(!id)return;if(/\/callback\/?$/.test(location.pathname)||document.querySelector('script[data-website-id]'))return;var s=document.createElement('script');s.defer=true;s.src=${JSON.stringify(DASHBOARD_ORIGIN + '/script.js')};s.setAttribute('data-website-id',id);s.setAttribute('data-domains',h);s.setAttribute('data-do-not-track','true');s.setAttribute('data-exclude-search','true');s.setAttribute('data-exclude-hash','true');s.setAttribute('data-web3','true');s.setAttribute('data-web3-address','none');document.head.appendChild(s)}catch(e){}})();\n`
+}
+
+function serveLoader(req, res) {
+  const js = Buffer.from(loaderScript())
+  res.writeHead(200, { ...TRACKER_CORS, 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300', 'Content-Length': String(js.length) })
+  res.end(req.method === 'HEAD' ? undefined : js)
+}
+
 function sendPage(res, page, method) {
   const html = Buffer.from(page.html)
   res.writeHead(page.status, { ...page.headers, 'Content-Length': String(html.length) })
@@ -283,6 +300,7 @@ export function handleAnalytics(req, res) {
     res.writeHead(204, TRACKER_CORS)
     return res.end()
   }
+  if (get && path === '/a.js') return serveLoader(req, res)
   if (get && path === '/sso' && url.searchParams.has('code')) return sendPage(res, ssoPage(req, url), req.method)
   if (get && path === '/login' && isDocument(req, url)) {
     if (url.searchParams.get('form') === 'password' && url.search === '?form=password') return serveLoginForm(req, res, path)

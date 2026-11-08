@@ -25,8 +25,8 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@Gully_Labs" />
     <meta name="twitter:image" content="https://gullylabs.xyz/brand/kit/og-default-1200x630.png" />
-    <!-- Gully Analytics (our Umami fork): cookie-free page views, plus wallet connects on the app (app.gullylabs.xyz) and pay pages. Only counts the production hosts. -->
-    <script defer src="https://analytics.gullylabs.xyz/script.js" data-website-id="78f29233-9f70-4c45-a440-35d1457d2207" data-domains="gullylabs.xyz,docs.gullylabs.xyz,app.gullylabs.xyz,admin.gullylabs.xyz,blog.gullylabs.xyz,holdermaps.xyz,gullysecurity.xyz" data-web3="true"></script>
+    <!-- Gully Analytics (our Umami fork): cookie-free page views, no query or hash, Do Not Track respected. One loader for every Gully host; it picks the host's website id from the shared config (gully-ops sites/_shared/analytics.json). -->
+    <script defer src="https://analytics.gullylabs.xyz/a.js"></script>
   </head>
   <body>
     <div id="root"></div>

@@ -462,6 +462,22 @@ try {
   accounts.shiftAccountForTest(B, 15 * DAY)
   r = await sendEvent(siteB.id)
   check('when the trial lapses, events are refused with 402', r.status === 402 && r.data?.error?.code === 'gully-plan-lapsed')
+  // House websites: listed in the config file, they keep recording on a lapsed self-serve account.
+  const houseFile = path.join(tmp, 'analytics-house.json')
+  fs.writeFileSync(houseFile, JSON.stringify({ sites: { 'b.example.org': siteB.id, 'gullylabs.xyz': '78f29233-0000-4000-8000-000000000000' } }))
+  process.env.ANALYTICS_HOUSE_FILE = houseFile
+  accounts.resetHouseForTest()
+  r = await sendEvent(siteB.id)
+  check('a house website on a lapsed account is accepted (200)', r.status === 200, JSON.stringify(r.data))
+  const loader = await proxy('/a.js')
+  check('the loader script maps the house hosts to their ids, with no query or hash sent', loader.status === 200 && loader.text.includes('"gullylabs.xyz":"78f29233-0000-4000-8000-000000000000"') && loader.text.includes('data-exclude-search') && loader.text.includes('data-web3-address') && loader.text.includes('/script.js') && !loader.text.includes(siteB.id.toUpperCase()), String(loader.status))
+  fs.writeFileSync(houseFile, JSON.stringify({ sites: {} }))
+  fs.utimesSync(houseFile, new Date(Date.now() + 5000), new Date(Date.now() + 5000))
+  accounts.resetHouseForTest()
+  r = await sendEvent(siteB.id)
+  check('removed from the config, it is plan-gated again (402)', r.status === 402 && r.data?.error?.code === 'gully-plan-lapsed')
+  delete process.env.ANALYTICS_HOUSE_FILE
+  accounts.resetHouseForTest()
   r = await cb.call('/api/developer/analytics')
   check('a lapsed account stays readable with its grace date', r.data.account.state === 'lapsed' && Math.abs(Date.parse(r.data.account.readableUntil) - Date.parse(r.data.account.lapsedAt) - 30 * DAY) < 1000)
   check('a lapsed account cannot add websites', (await cb.post('/api/developer/analytics/sites', { name: 'More', domain: 'more.example.org' })).status === 402)
