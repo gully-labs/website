@@ -99,7 +99,8 @@ function Kpi({ label, value, note, spark, color, i, unreadable, delta, none, pre
         ) : (
           <AnimatedNumber value={value} format={format} prefix={prefix} countUp className="font-display text-[28px] leading-none font-bold" />
         )}
-        {spark && !unreadable && (
+        {/* no sparkline beside a "none yet": the words say it, and a ghost line there overflowed the tile at 390 px */}
+        {spark && !unreadable && value !== null && !(value === 0 && none) && (
           <span className="flex min-w-0 max-w-[80px] flex-1 justify-end [&>svg]:!w-full [&>svg]:!shrink">
             {spark.some((v) => v > 0) ? <Spark values={spark} color={color} /> : <GhostSpark color={color} />}
           </span>
