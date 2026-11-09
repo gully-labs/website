@@ -12,7 +12,7 @@ import { EmptyLine, ErrorLine, Skeleton } from './parts'
 import { usePoll } from './poll'
 import { useSubTab } from './subtab'
 import { InfoTip, KpiRow, KpiTile, RefreshChip, Stepper, SubPanel, SubTabs, Unknown } from './ui'
-import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
+import { LiveStat } from '../../components/live/GlLive'
 import { ExtLink } from './ExtLink'
 import { OpenAnalytics } from './OpenAnalytics'
 import { Can } from './RoleGate'
@@ -568,13 +568,13 @@ function AnalyticsKpis({ account }: { account: AnalyticsAccount }) {
         <span className={`text-[20px] uppercase ${lapsed ? 'text-error' : account.state === 'active' ? 'text-gold' : ''}`}>{lapsed ? 'Ended' : (account.plan?.name ?? '—')}</span>
       </KpiTile>
       <KpiTile i={1} label="Events this month" icon={<Code2 size={13} aria-hidden />} note={account.plan ? `of ${n(account.plan.eventsPerMonth)}` : 'no running plan'}>
-        <AnimatedNumber value={account.eventsThisMonth} countUp />
+        <LiveStat bare small live value={account.eventsThisMonth} />
       </KpiTile>
       <KpiTile i={2} label="Websites" icon={<Globe size={13} aria-hidden />} note={account.plan ? `of ${account.plan.sites} on the plan` : 'no running plan'}>
-        <AnimatedNumber value={account.sites.length} countUp />
+        <LiveStat bare small value={account.sites.length} />
       </KpiTile>
       <KpiTile i={3} label="Days left" icon={<Receipt size={13} aria-hidden />} note={lapsed ? `readable until ${fmtDate(account.readableUntil)}` : `until ${fmtDate(account.expiresAt)}`}>
-        {lapsed || left === null ? <Unknown why={lapsed ? 'The plan has ended' : 'No end date on this plan'} /> : <AnimatedNumber value={left} countUp />}
+        {lapsed || left === null ? <Unknown why={lapsed ? 'The plan has ended' : 'No end date on this plan'} /> : <LiveStat bare small value={left} />}
       </KpiTile>
     </KpiRow>
   )

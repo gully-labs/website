@@ -1,3 +1,5 @@
 *.sh text eol=lf
 # Brand kit files stay byte-exact (no line-ending conversion).
 *.svg -text
+# Gully Live UI: vendored byte-identical, never edited (gully-ops sites/_shared/gully-live-ui).
+src/vendor/gully-live-ui/** -text

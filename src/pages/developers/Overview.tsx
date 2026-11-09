@@ -6,14 +6,14 @@ import { EventsMeter } from './Analytics'
 import { GetStarted } from './GetStarted'
 import { defaultAsset, keyColors, priceText, siteMeta } from './helpers'
 import { ago, api, shortAddress, usdOf, type Account, type ActivityPage, type AnalyticsUsage, type AnalyticsView, type BillingView, type PlanId, type Range, type UsageV2 } from './api'
-import { DoubleRing, GhostCurves, GhostSpark, Meter, Spark } from './charts'
+import { DoubleRing, GhostCurves, Meter } from './charts'
 import { ServiceHeader } from './services/ServiceHeader'
 import { docsPage } from './services/links'
 import { usePoll, type Poll } from './poll'
 import { usePortal } from './portal'
 import { useSubTab } from './subtab'
 import { InfoTip, RefreshChip, SubPanel, SubTabs, type SubTabItem } from './ui'
-import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
+import { LiveStat } from '../../components/live/GlLive'
 import { NF, type NumberFormat } from '../../components/charts/number-formats'
 import { PendingInvites } from './Invite'
 import { Can } from './RoleGate'
@@ -81,7 +81,7 @@ function Delta({ cur, prev, upIsBad = false }: { cur: number | null; prev: numbe
 }
 
 /** `none` is what a zero says in words ("none yet"): a workspace with nothing counted yet reads as that, never as a flat 0. */
-function Kpi({ label, value, note, spark, color, i, unreadable, delta, none, prefix, format = NF.int }: { label: string; value: number | null; note: ReactNode; spark?: number[]; color: string; i: number; unreadable?: string | null; delta?: ReactNode; none?: string; prefix?: string; format?: NumberFormat }) {
+function Kpi({ label, value, note, spark, i, unreadable, delta, none, prefix, format = NF.int }: { label: string; value: number | null; note: ReactNode; spark?: number[]; color: string; i: number; unreadable?: string | null; delta?: ReactNode; none?: string; prefix?: string; format?: NumberFormat }) {
   return (
     <div className="flex min-w-0 flex-col gap-[2px] rounded-[12px] border border-line bg-surface px-3 py-[10px]" style={{ animation: `gl-rise .5s ${i * 0.05}s cubic-bezier(.2,.8,.2,1) both` }} data-kpi={label}>
       <span className="text-[12px] text-dim">{label}</span>
@@ -97,13 +97,9 @@ function Kpi({ label, value, note, spark, color, i, unreadable, delta, none, pre
             {none}
           </span>
         ) : (
-          <AnimatedNumber value={value} format={format} prefix={prefix} countUp className="font-display text-[28px] leading-none font-bold" />
-        )}
-        {/* no sparkline beside a "none yet": the words say it, and a ghost line there overflowed the tile at 390 px */}
-        {spark && !unreadable && value !== null && !(value === 0 && none) && (
-          <span className="flex min-w-0 max-w-[80px] flex-1 justify-end [&>svg]:!w-full [&>svg]:!shrink">
-            {spark.some((v) => v > 0) ? <Spark values={spark} color={color} /> : <GhostSpark color={color} />}
-          </span>
+          // Gully Live UI: the number counts up and the period's sparkline draws in under it (an all-zero period
+          // has no line: the note says what happened).
+          <LiveStat bare live value={value} unit={prefix === '$' || format === NF.usd ? 'usd' : 'plain'} spark={spark && spark.some((v) => v > 0) ? spark : undefined} className="w-full" />
         )}
       </span>
       <span className={`font-mono text-[11px] [overflow-wrap:anywhere] ${unreadable ? 'text-error' : 'text-muted'}`}>{unreadable ? 'unreadable right now' : note}</span>

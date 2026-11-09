@@ -1,7 +1,6 @@
 import { Globe, HardDrive, Pin, Wrench } from 'lucide-react'
 import { useMemo } from 'react'
-import { axisTooltip, C, linePreset, areaPreset, tipHtml } from '../../components/charts/chartPresets'
-import { EChart } from '../../components/charts/EChart'
+import { LiveChart, type LivePoint } from '../../components/live/GlLive'
 import { NF } from '../../components/charts/number-formats'
 import { GhostCurves } from './charts'
 import { ExtLink } from './ExtLink'
@@ -10,7 +9,7 @@ import { ErrorLine, Skeleton } from './parts'
 import { ServiceHeader, type Status, type Tile } from './services/ServiceHeader'
 import { docsPage } from './services/links'
 import { RefreshChip } from './ui'
-import { BLUE, mono, panel, panelTitle, pillGold, pillLine, rise } from './styles'
+import { mono, panel, panelTitle, pillGold, pillLine, rise } from './styles'
 
 /* Gully IPFS (app.gullylabs.xyz/#ipfs): Gully Labs' own Kubo node, with a read-only gateway at ipfs.gullylabs.xyz that
    serves only what the node holds. Every figure is GET /api/ipfs/stats (server/ipfs.mjs, read from the node every
@@ -36,28 +35,12 @@ const gb = (b: number) => b / GB
 const sizeText = (b: number | null) => (b === null ? 'unreadable' : b >= GB ? `${(b / GB).toFixed(2)} GB` : `${Math.round(b / MB)} MB`)
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
 
-/** The node's last hour: repo size (area) and the gateway's round trip (line), one point a minute. */
+/** The node's last hour on Gully Live UI: repo size (area, GB) and the gateway's round trip (line, ms), one point a
+    minute, each its own chart with one axis. Fewer than two readings: the honest ghost says why. */
 function NodeHour({ s, onRetry }: { s: Stats; onRetry: () => void }) {
   const pts = s.history.filter((h) => h.repoBytes !== null || h.ms !== null)
-  const option = useMemo(() => {
-    const labels = pts.map((h) => time(h.t))
-    return {
-      grid: { left: 48, right: 44, top: 12, bottom: 24 },
-      xAxis: { type: 'category', boundaryGap: false, data: labels, axisLabel: { hideOverlap: true } },
-      yAxis: [
-        { type: 'value', name: 'GB', nameTextStyle: { padding: [0, 0, 0, -20] }, splitNumber: 3, axisLabel: { formatter: (v: number) => v.toFixed(2) } },
-        { type: 'value', name: 'ms', splitNumber: 3, splitLine: { show: false }, axisLabel: { formatter: (v: number) => `${Math.round(v)}` } },
-      ],
-      tooltip: axisTooltip((ps: { dataIndex: number; seriesName: string; value: number | null; color: string }[]) => {
-        const i = ps[0]?.dataIndex ?? -1
-        return i < 0 ? '' : tipHtml({ title: labels[i], rows: ps.map((p) => ({ name: p.seriesName, value: p.value === null ? '—' : p.seriesName === 'repo size' ? `${(p.value as number).toFixed(3)} GB` : `${Math.round(p.value as number)} ms`, color: p.color })) })
-      }, 'cross'),
-      series: [
-        { id: 'repo', name: 'repo size', yAxisIndex: 0, ...areaPreset({ color: C.gold, fill: 0.22 }), data: pts.map((h) => (h.repoBytes === null ? null : Number(gb(h.repoBytes).toFixed(4)))) },
-        { id: 'ms', name: 'gateway round trip', yAxisIndex: 1, ...linePreset({ color: BLUE }), data: pts.map((h) => h.ms) },
-      ],
-    }
-  }, [pts])
+  const repo = useMemo(() => pts.filter((h) => h.repoBytes !== null).map((h) => [Date.parse(h.t), Number(gb(h.repoBytes as number).toFixed(4))] as LivePoint), [pts])
+  const ms = useMemo(() => pts.filter((h) => h.ms !== null).map((h) => [Date.parse(h.t), h.ms as number] as LivePoint), [pts])
   if (pts.length < 2)
     return (
       <GhostCurves height={170} title="The node's last hour will draw here">
@@ -70,16 +53,9 @@ function NodeHour({ s, onRetry }: { s: Stats; onRetry: () => void }) {
       </GhostCurves>
     )
   return (
-    <div className="flex flex-col gap-2" data-testid="ipfs-chart">
-      <EChart option={option} height={170} label={`The node over the last ${pts.length} minutes: repo size in GB and the gateway's round trip in milliseconds, one point a minute.`} />
-      <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 font-mono text-[11px] text-muted" aria-label="Legend">
-        <li className="flex items-center gap-[6px]">
-          <span className="size-[9px] rounded-[2px]" style={{ background: C.gold }} aria-hidden /> repo size (GB)
-        </li>
-        <li className="flex items-center gap-[6px]">
-          <span className="size-[9px] rounded-[2px]" style={{ background: BLUE }} aria-hidden /> gateway round trip (ms)
-        </li>
-      </ul>
+    <div className="grid gap-3 min-[1100px]:grid-cols-2" data-testid="ipfs-chart">
+      <LiveChart kind="area" title="Repo size" unit="GB" height={150} series={repo} empty="The repo size was not readable this hour." label={`Repo size in GB over the last ${repo.length} minutes, one point a minute.`} />
+      <LiveChart kind="line" title="Gateway round trip" unit="ms" height={150} series={ms} empty={s.gatewayUp === false ? 'The gateway is down: no round trip to chart.' : 'No round trip was measured this hour.'} label={`The gateway's round trip in milliseconds over the last ${ms.length} minutes.`} />
     </div>
   )
 }
