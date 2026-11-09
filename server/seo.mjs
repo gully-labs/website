@@ -236,8 +236,8 @@ const TRACKER_LD = {
   distribution: [{ '@type': 'DataDownload', encodingFormat: 'application/json', contentUrl: `${SITE}/api/tracker` }],
 }
 
-export const APP_TITLE = 'Gully Labs App · keys, alerts, analytics, payments'
-const APP_DESCRIPTION = 'Sign in with your wallet to create Gully Labs API keys instantly, set gap and launch alerts, run Gully Analytics, and pay for plans and invoices in crypto, with your team in one workspace.'
+export const APP_TITLE = 'Gully Labs App · chains, IPFS, analytics, keys, billing'
+const APP_DESCRIPTION = 'Your Gully Labs account: order a chain, follow Gully IPFS, run Gully Analytics on your sites, request development work, create API keys and pay through Gully Pay, with your team in one workspace.'
 const isLocal = (host) => /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host)
 
 /** Pay pages are noindex, but name their own host as canonical (links are shared on pay.gullylabs.xyz). */

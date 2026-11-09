@@ -1,54 +1,52 @@
-import { ArrowUpRight, BellRing, ChartNoAxesCombined, ShieldCheck, Store } from 'lucide-react'
+import { ArrowUpRight, ShieldCheck, Store } from 'lucide-react'
 import { securityPrimary } from '../../site-host'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ActivityTab } from './Activity'
-import { Alerts } from './Alerts'
 import { AnalyticsPanel } from './Analytics'
 import { type Account, type PlanId } from './api'
 import { AppShell, type NavItem, type WalletGo } from './AppShell'
 import { Billing, type CheckoutIntent } from './Billing'
+import { ChainsTab } from './Chains'
 import { InviteLanding } from './Invite'
+import { IpfsTab } from './Ipfs'
 import { KeysTab } from './Keys'
 import { MerchantTab } from './merchant/MerchantTab'
 import { Overview } from './Overview'
 import { PortalReceipt } from './PortalReceipt'
 import { APP_NAME, APP_TITLE, inviteTokenFromHash, usePortal } from './portal'
-import { Products } from './Products'
-import { AI_TAB, APP_GROUPS, HANDOFF_TABS, isHandoffTab, isServiceTab, LEGACY_CHAIN_HASHES, redirectFor, SERVICE_TABS, SIDEBAR, type HandoffTab, type ServiceTab, type SidebarTab } from './services/nav'
-import { ServiceView } from './services/ServiceView'
+import { ServicesTab } from './Services'
+import { AI_TAB, HANDOFF_TABS, isHandoffTab, isRemovedTab, leavingFor, LEGACY_CHAIN_HASHES, redirectFor, REMOVED_TABS, SIDEBAR, type HandoffTab, type RemovedTab, type SidebarTab } from './services/nav'
 import { SecurityTab } from './security/SecurityTab'
 import { SettingsTab } from './Settings'
 import { Team } from './Team'
 import { openAsk } from '../../components/ask/openAsk'
 import { pillSm } from './styles'
 
-/* The signed-in Gully Labs App (portal v2, app.gullylabs.xyz): the AppShell frame (a seven-item sidebar with the
-   workspace switcher and the wallet menu; a slim header with the breadcrumb; Gully AI as a floating assistant on
-   every page) around one page at a time.
+/* The signed-in Gully Labs App (app.gullylabs.xyz): the AppShell frame (a ten-item sidebar with the workspace
+   switcher and the wallet menu; a slim header with the breadcrumb; Gully AI as a floating assistant on every page)
+   around one page at a time. Only the services Gully Labs itself offers are pages here (owner, 2026-11-08); the
+   other Gully products are on the web (gullylabs.xyz/products) and in their own apps.
 
-   Pages are deep-linkable by hash. The sidebar's seven: #overview (the home), #activity, #products, #keys, #billing,
-   #team, #settings. The tools (HolderMaps / Gully Security features) have no sidebar entry and are reached from
-   Products: #tracker, #score, #widgets, #telegram, #alerts, #analytics. Old hashes (#quickstart, #requests, #widget)
-   open Keys at that section; #security-new, #security-reports and #security-review open Security there; #profile,
-   #company and #sessions open Settings there. #invite=<token> shows the invite landing above the page; #receipt=<chain>:<tx>
-   a printable receipt. #ai opens the Gully AI drawer over the Overview.
+   Pages are deep-linkable by hash. The sidebar's ten: #overview (the home), #activity, #chains, #ipfs, #analytics,
+   #services, #keys, #billing, #team, #settings. Old hashes (#quickstart, #requests, #widget) open Keys at that
+   section; #security-new, #security-reports and #security-review open Security there; #profile, #company and
+   #sessions open Settings there. #invite=<token> shows the invite landing above the page; #receipt=<chain>:<tx> a
+   printable receipt. #ai opens the Gully AI drawer over the Overview.
 
-   Products on their own domains (2026-10-26, slimmed 2026-11-03): a product hash (#chain, #pay, #rpc, #ipfs,
-   #holders, #security, #studio, and the old #chains, #chain-kit, #deepcore) leaves for the product's own app
-   (services/nav.ts redirectFor). What was built here before the move stays reachable without a sidebar entry: a
-   merchant store (#merchant, from Gully Pay) and, once Gully Security is its own app (SECURITY_PRIMARY), the scans
-   and monitors made here (#scans). */
+   Hashes that leave (services/nav.ts redirectFor): the pages this app no longer has (#products, #tracker, #alerts,
+   #score, #widgets, #telegram) go to the page on the web where the feature lives now; a product hash (#chain, #pay,
+   #rpc, #holders, #security, #studio, and the old #chains/launch, #chain-kit, #deepcore) goes to the product's own
+   app. What was built here before the products moved stays reachable by hash, without a sidebar entry: a merchant
+   store (#merchant, from Gully Pay; Billing points at it) and, once Gully Security is its own app
+   (SECURITY_PRIMARY), the scans and monitors made here (#scans). */
 
-export type Tab = SidebarTab | 'alerts' | 'analytics' | 'merchant' | 'scans'
+export type Tab = SidebarTab | 'merchant' | 'scans'
 
 const ICON = 16
 const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
-  // The sidebar's seven pages, in order (services/nav.ts SIDEBAR) ...
+  // The sidebar's ten pages, in order (services/nav.ts SIDEBAR) ...
   ...SIDEBAR.map((s) => ({ id: s.id, label: s.label, icon: <s.icon size={ICON} aria-hidden /> })),
-  // ... and the pages without a sidebar entry: two tools (opened from Products) and what Gully Pay and Gully Security
-  // left behind (opened from their product cards).
-  { id: 'alerts', label: 'Alerts', icon: <BellRing size={ICON} aria-hidden /> },
-  { id: 'analytics', label: 'Analytics', icon: <ChartNoAxesCombined size={ICON} aria-hidden /> },
+  // ... and the two pages without a sidebar entry: what Gully Pay and Gully Security left behind.
   { id: 'merchant', label: 'Merchant store', icon: <Store size={ICON} aria-hidden /> },
   { id: 'scans', label: 'Security scans', icon: <ShieldCheck size={ICON} aria-hidden /> },
 ]
@@ -56,9 +54,9 @@ const SIDEBAR_IDS = new Set<string>(SIDEBAR.map((s) => s.id))
 // Old hashes: Keys and Settings sections, Security's sections, and the Gully Chain features that moved to gullychain.xyz.
 const LEGACY: Record<string, AppTab> = { quickstart: 'keys', requests: 'keys', widget: 'keys', profile: 'settings', company: 'settings', sessions: 'settings', 'security-new': 'security', 'security-reports': 'security', 'security-monitors': 'security', 'security-review': 'security', ...Object.fromEntries(LEGACY_CHAIN_HASHES.map((h) => [h, 'chain'])) }
 
-/** Every page: the tabs above plus the service pages, the old Gully AI page and the product hand-offs (services/nav.ts). */
-type AppTab = Tab | ServiceTab | HandoffTab | typeof AI_TAB.id
-const ALL_TABS: { id: AppTab; label: string; icon: ReactNode }[] = [...TABS, ...[...SERVICE_TABS, AI_TAB, ...HANDOFF_TABS].map((s) => ({ id: s.id, label: s.label, icon: <s.icon size={ICON} aria-hidden /> }))]
+/** Every page: the tabs above plus the hashes that leave (services/nav.ts) and the old Gully AI page. */
+type AppTab = Tab | RemovedTab | HandoffTab | typeof AI_TAB.id
+const ALL_TABS: { id: AppTab; label: string; icon: ReactNode }[] = [...TABS, ...[...REMOVED_TABS, AI_TAB, ...HANDOFF_TABS].map((s) => ({ id: s.id, label: s.label, icon: <s.icon size={ICON} aria-hidden /> }))]
 
 type View = { tab: AppTab; section: string | null; receipt: string | null; invite: string | null }
 
@@ -74,6 +72,7 @@ function readHash(): View {
   }
   // #<page>/<sub-tab> (e.g. #merchant/links): the page; the page's own useSubTab reads the rest.
   const page = h.split('/')[0]
+  if (h.includes('/') && LEGACY[h]) return { tab: LEGACY[h], ...none, section: h }
   if (h.includes('/') && ALL_TABS.some((t) => t.id === page)) return { tab: page as AppTab, ...none }
   if (LEGACY[h]) return { tab: LEGACY[h], ...none, section: h }
   const r = h.match(/^receipt=(\d{1,10}:0x[0-9a-fA-F]{64})$/)
@@ -96,39 +95,18 @@ function useView(): [View, (t: AppTab, section?: string | null) => void, () => v
   return [state, set, reread]
 }
 
-/** `?alert=<chain>:<TICKER>` with #alerts (the stock pages' "Set an alert" links): that stock, or null.
-    `?alert=holders:<chain>:<token>` (the Holder Map's "Alert me") opens a holder alert for that token. */
-function alertFromUrl(): string | null {
-  if (window.location.hash !== '#alerts') return null
-  const v = new URLSearchParams(window.location.search).get('alert') ?? ''
-  const h = v.match(/^holders:([a-z]{2,12}):([A-Za-z0-9.]{1,64})$/)
-  if (h) return `holders:${h[1]}:${h[2]}`
-  const m = v.match(/^([a-z]{2,12}):([A-Za-z.]{1,8})$/)
-  return m ? `${m[1]}:${m[2].toUpperCase()}` : null
-}
-
-/** `&pct=<n>&dir=above|below|both` beside ?alert= (Gully AI's "Set an alert at 2% above"): the gap the
-    New gap alert dialog opens with. The user still saves it themselves. */
-function alertGapFromUrl(): { pct: string; dir: 'above' | 'below' | 'both' } | null {
-  if (window.location.hash !== '#alerts') return null
-  const q = new URLSearchParams(window.location.search)
-  const pct = Number(q.get('pct'))
-  const dir = q.get('dir')
-  if (!Number.isFinite(pct) || pct <= 0 || pct > 50) return null
-  return { pct: String(pct), dir: dir === 'above' || dir === 'below' ? dir : 'both' }
-}
-
-/** A product hash: the app leaves for the product's own app at once; this line shows meanwhile (and is the way on when
-    the browser blocks the navigation). */
-function Leaving({ tab }: { tab: HandoffTab }) {
-  const h = HANDOFF_TABS.find((x) => x.id === tab)!
+/** A hash that left the app: the browser goes to the page where the feature lives now, at once (replace, so Back
+    does not bounce); this line shows meanwhile (and is the way on when the browser blocks the navigation). */
+function Leaving({ tab }: { tab: RemovedTab | HandoffTab }) {
+  const h = leavingFor(tab)!
   useEffect(() => {
-    window.location.assign(h.href)
+    window.location.replace(h.href)
   }, [h.href])
+  const product = isHandoffTab(tab)
   return (
-    <div className="flex flex-col items-start gap-3 py-6" data-testid="product-redirect" data-product={tab}>
+    <div className="flex flex-col items-start gap-3 py-6" data-testid="product-redirect" data-product={tab} data-href={h.href}>
       <p className="m-0 text-[14px] text-muted">
-        {h.label} lives in its own app now. Opening <span className="font-mono text-ink">{h.href.replace(/^https:\/\//, '')}</span>…
+        {product ? `${h.label} lives in its own app now.` : `${h.label} is on the web now.`} Opening <span className="font-mono text-ink">{h.href.replace(/^https:\/\//, '').replace(/\/$/, '')}</span>…
       </p>
       <a href={h.href} className={pillSm} rel="noopener">
         Open {h.label} <ArrowUpRight size={14} aria-hidden />
@@ -143,25 +121,9 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
   const { me } = usePortal()
   const [intent, setIntent] = useState<CheckoutIntent>(null)
   const [newKey, setNewKey] = useState(false)
-  // Arriving from a stock page opens the New gap alert dialog with that stock chosen.
-  const [alertFor, setAlertFor] = useState(alertFromUrl)
-  const [alertGap] = useState(alertGapFromUrl)
-  const [newAlert, setNewAlert] = useState(() => alertFor !== null)
-  useEffect(() => {
-    if (!new URLSearchParams(window.location.search).has('alert')) return
-    const q = new URLSearchParams(window.location.search)
-    q.delete('alert')
-    q.delete('pct')
-    q.delete('dir')
-    history.replaceState(null, '', window.location.pathname + (q.size ? `?${q}` : '') + window.location.hash)
-  }, [])
 
   const clearIntent = useCallback(() => setIntent(null), [])
   const clearNewKey = useCallback(() => setNewKey(false), [])
-  const clearNewAlert = useCallback(() => {
-    setNewAlert(false)
-    setAlertFor(null)
-  }, [])
   const go = useCallback(
     (t: AppTab, s: string | null = null) => {
       setTab(t, s)
@@ -183,29 +145,12 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
   }, [tab, go])
 
   const liveKeys = account.keys.filter((k) => !k.revokedAt).length
+  // The sidebar: the ten pages as one flat list (Keys carries its live-key count).
   const items: NavItem<AppTab>[] = useMemo(
-    () => {
-      const [home, ...rest] = ALL_TABS.filter((t) => SIDEBAR_IDS.has(t.id)).map((t) => (t.id === 'keys' && liveKeys > 0 ? { ...t, badge: <span className="rounded-full bg-surface-deep px-[6px] font-mono text-[11px] text-faint">{liveKeys}</span> } : t))
-      // Overview, then Trade, Build and Manage (the Gully Core features), then Account (the hub's own pages).
-      const core = APP_GROUPS.flatMap((g) => g.links.map((l) => ({ id: `core-${g.title}-${l.label}` as AppTab, label: l.label, icon: <l.icon size={ICON} aria-hidden />, href: l.href, group: g.title })))
-      return [home, ...core, ...rest.map((t) => ({ ...t, group: 'Account' }))]
-    },
+    () => ALL_TABS.filter((t) => SIDEBAR_IDS.has(t.id)).map((t) => (t.id === 'keys' && liveKeys > 0 ? { ...t, badge: <span className="rounded-full bg-surface-deep px-[6px] font-mono text-[11px] text-faint">{liveKeys}</span> } : t)),
     [liveKeys],
   )
   const page = ALL_TABS.find((t) => t.id === tab)?.label ?? 'Overview'
-  // What the service pages get: the account, navigation by page id, and "add alert" for a stock.
-  const service = useMemo(
-    () => ({
-      account,
-      go: (t: string, s: string | null = null) => go((ALL_TABS.some((x) => x.id === t) ? t : (LEGACY[t] ?? 'overview')) as AppTab, s),
-      createAlert: (stock: string | null = null) => {
-        setAlertFor(stock)
-        setNewAlert(true)
-        go('alerts')
-      },
-    }),
-    [account, go],
-  )
 
   // The tab title names the page: "Billing · Gully Labs App"; the home page carries the app's full title.
   useEffect(() => {
@@ -214,8 +159,9 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
 
   if (view.receipt) return <PortalReceipt id={view.receipt} onBack={() => go('billing')} />
 
-  // Gully Security stays a page here until gullysecurity.xyz is its home (SECURITY_PRIMARY); every other product hash leaves.
-  const leaving = isHandoffTab(tab) && !(tab === 'security' && !securityPrimary()) && redirectFor(tab) !== null
+  // Gully Security stays a page here until gullysecurity.xyz is its home (SECURITY_PRIMARY); every other product hash
+  // and every removed page leaves.
+  const leaving = (isRemovedTab(tab) || (isHandoffTab(tab) && !(tab === 'security' && !securityPrimary()))) && redirectFor(tab) !== null
   const wsKey = me?.active.id ?? account.address
   return (
     <AppShell items={items} current={tab} go={goTab} account={account} pageLabel={page} wallet={wallet} onSignOut={onSignOut}>
@@ -234,19 +180,16 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
               setNewKey(true)
               go('keys')
             }}
-            createAlert={() => {
-              setNewAlert(true)
-              go('alerts')
-            }}
             checkout={(plan: PlanId, asset: string | null) => {
               setIntent({ plan, asset })
               go('billing')
             }}
           />
         )}
-        {tab === 'products' && <Products go={go} />}
+        {tab === 'chains' && <ChainsTab />}
+        {tab === 'ipfs' && <IpfsTab go={go} />}
+        {tab === 'services' && <ServicesTab account={account} />}
         {tab === 'keys' && <KeysTab account={account} reload={reload} creating={newKey} onCreateDone={clearNewKey} section={section} />}
-        {tab === 'alerts' && <Alerts goBilling={() => go('billing')} creating={newAlert} onCreateDone={clearNewAlert} prefill={alertFor} prefillGap={alertGap} />}
         {tab === 'analytics' && <AnalyticsPanel />}
         {tab === 'security' && !securityPrimary() && <SecurityTab section={section} />}
         {tab === 'scans' && <SecurityTab section={section} />}
@@ -255,8 +198,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
         {tab === 'team' && <Team />}
         {tab === 'activity' && <ActivityTab />}
         {tab === 'settings' && <SettingsTab section={section} />}
-        {isServiceTab(tab) && <ServiceView id={tab} ctx={service} />}
-        {leaving && <Leaving tab={tab as HandoffTab} />}
+        {leaving && <Leaving tab={tab as RemovedTab | HandoffTab} />}
       </main>
     </AppShell>
   )

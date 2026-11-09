@@ -1,5 +1,5 @@
 import { dayPT, lastDaysPT } from '../../lib/time'
-import { Building2, ExternalLink, Laptop, LogOut, Lock, Settings as SettingsIcon, ShieldCheck, UserRound } from 'lucide-react'
+import { Building2, ExternalLink, Fingerprint, Laptop, LogOut, Lock, Settings as SettingsIcon, ShieldCheck, UserRound } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { usePoll } from './poll'
 import { useSubTab } from './subtab'
@@ -15,6 +15,7 @@ import { StackedDays } from './vcharts'
 import { input, mono, panel, panelTitle, pillGold, pillSm, rise } from './styles'
 import { ExtLink } from './ExtLink'
 import { ServiceHeader } from './services/ServiceHeader'
+import { GULLY_ID_URL } from './gullyId'
 
 /* The Settings tab (portal v2):
    - Profile (this wallet, every role): display name, contact email, the ENS / Basename found by the
@@ -40,7 +41,7 @@ export function SettingsTab({ section }: { section: string | null }) {
   }, [section, setSub])
   return (
     <div className="flex flex-col gap-4">
-      <ServiceHeader icon={SettingsIcon} title="Settings" desc="Your profile, this workspace's company details, signed-in devices and privacy." />
+      <ServiceHeader icon={SettingsIcon} title="Settings" desc="Your profile and Gully ID, this workspace's company details, signed-in devices and privacy." />
       <SubTabs
         label="Settings sections"
         idBase="settings"
@@ -54,7 +55,12 @@ export function SettingsTab({ section }: { section: string | null }) {
         ]}
       />
       <SubPanel idBase="settings" value={sub}>
-        {sub === 'profile' && <ProfileCard />}
+        {sub === 'profile' && (
+          <>
+            <ProfileCard />
+            <GullyIdCard />
+          </>
+        )}
         {sub === 'company' && <CompanyCard />}
         {sub === 'sessions' && <SessionsCard />}
         {sub === 'privacy' && <PrivacyCard />}
@@ -64,6 +70,28 @@ export function SettingsTab({ section }: { section: string | null }) {
 }
 
 const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
+
+/** The account's Gully ID: passkeys, recovery and the apps signed in with it are managed at gullyid.xyz (the sessions of
+    this app are under Sessions). */
+function GullyIdCard() {
+  return (
+    <section id="settings-gully-id" className={`${panel} scroll-mt-4`} style={rise(1)} aria-labelledby="gid-title" data-testid="gully-id-card">
+      <div className="flex flex-wrap items-center gap-3">
+        <Fingerprint size={18} className="text-gold" aria-hidden />
+        <div className="flex flex-col gap-[2px]">
+          <h2 id="gid-title" className={panelTitle}>
+            Gully ID
+          </h2>
+          <span className={mono}>one sign-in for every Gully app</span>
+        </div>
+      </div>
+      <p className="m-0 text-[14px] leading-[1.6] text-ink-2">Passkeys, account recovery and the apps connected to your Gully ID are managed at gullyid.xyz. Signing in there with a passkey signs you in here too; the devices signed into this app are listed under Sessions.</p>
+      <ExtLink href={GULLY_ID_URL} className={`${pillSm} self-start`}>
+        Manage Gully ID <ExternalLink size={12} aria-hidden />
+      </ExtLink>
+    </section>
+  )
+}
 
 /** Where the privacy policy is, and how to get your data out or deleted (there is no self-service delete yet). */
 function PrivacyCard() {

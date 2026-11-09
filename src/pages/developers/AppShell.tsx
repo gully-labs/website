@@ -1,4 +1,4 @@
-import { Activity, BookOpen, Building2, Check, ChevronDown, ChevronsLeft, ChevronsRight, ChevronsUpDown, Copy, Ellipsis, History, House, LogOut, Mail, Menu as MenuIcon, ShieldCheck, UserRound, Users, X } from 'lucide-react'
+import { Activity, BookOpen, Boxes, Building2, Check, ChevronDown, ChevronsLeft, ChevronsRight, ChevronsUpDown, Copy, Ellipsis, History, House, LogOut, Mail, Menu as MenuIcon, ShieldCheck, UserRound, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import { Mascot, Wordmark } from '../../components/brand'
 import { copyWithToast } from '../../components/ui/toast'
@@ -15,20 +15,19 @@ import { declinedInvites, restoreFocus, usePortal } from './portal'
 import { ExtLink } from './ExtLink'
 import { StatusPill as KitPill, type PillTone } from '../../components/ui/StatusPill'
 import { BadgeFooterRow } from '../../components/PoweredByBadge'
-import { HUB_NAV_IDS } from './services/nav'
-import CORE_CHAINS from '../../../server/data/core-chains.json'
-import { toastInfo } from '../../components/ui/toast'
+import { HUB_NAV_IDS, PRODUCTS_URL, TAB_BAR_IDS } from './services/nav'
 
 /* The Gully Labs App's frame (app.gullylabs.xyz): a left sidebar and a slim header around the page.
 
    Sidebar, top to bottom: the Gully mark (home), the workspace switcher and the collapse button in one row,
-   the seven pages (services/nav.ts SIDEBAR: Overview, Activity, Products, Keys, Billing, Team, Settings) as one
-   flat list of 40px rows with 16px Lucide icons, and the wallet menu. From 1280px it is open (212px); from 860px
-   to 1279px it starts as an icon rail (64px, each row with a tooltip); the chevron toggles it at any width and
-   the choice is remembered. Under 860px there is no sidebar: a bottom tab bar holds Overview, Activity, Products
-   and Keys, and "More" (or the header's Menu button) opens every page as a bottom sheet (a modal dialog: focus
-   moves in, Tab stays in, Escape closes). Gully AI is the floating assistant button at the bottom right of every
-   page (AskLauncher: the drawer, ⌘K / Ctrl+K).
+   the ten pages (services/nav.ts SIDEBAR: Overview, Activity, Chains, IPFS, Analytics, Services, Keys, Billing,
+   Team, Settings) as one flat list of 40px rows with 16px Lucide icons, one "All Gully products ↗" link (the other
+   products are on the web, gullylabs.xyz/products; nothing else of them is in this app), and the wallet menu. From
+   1280px it is open (212px); from 860px to 1279px it starts as an icon rail (64px, each row with a tooltip); the
+   chevron toggles it at any width and the choice is remembered. Under 860px there is no sidebar: a bottom tab bar
+   holds Overview, Activity, Analytics and Billing, and "More" (or the header's Menu button) opens every page as a
+   bottom sheet (a modal dialog: focus moves in, Tab stays in, Escape closes). Gully AI is the floating assistant
+   button at the bottom right of every page (AskLauncher: the drawer, ⌘K / Ctrl+K).
 
    Header: a Menu button and the Gully mark linking home (narrow screens, so home is one tap away at every
    width), the breadcrumb (workspace / page), Docs ↗ / Status / gullylabs.xyz as icon buttons (wide
@@ -326,7 +325,7 @@ function NavList<T extends string>({ items, current, go, compact, dense }: { ite
   )
 }
 
-/** The pages under their group headings (Workspace, Services, Developer, Account). A heading folds its group
+/** The pages under their group headings, when the items carry a `group`; a flat list otherwise. A heading folds its group
     (remembered); a folded group still shows the page you are on. In the icon rail a group is a thin rule,
     its name kept for screen readers, and nothing folds. */
 function NavLinks<T extends string>({ items, current, go, compact, dense }: { items: NavItem<T>[]; current: T; go: (t: T) => void; compact: boolean; dense: boolean }) {
@@ -379,6 +378,11 @@ function FooterLinks({ compact, health, onStatus }: { compact: boolean; health: 
       <li>
         <ExtLink href={`${DOCS_URL}/api`} arrow={false} className={footItem(compact)} title={compact ? 'Docs (opens in a new tab)' : undefined}>
           <BookOpen size={ICON} aria-hidden /> {txt('Docs ↗')}
+        </ExtLink>
+      </li>
+      <li>
+        <ExtLink href={PRODUCTS_URL} arrow={false} className={footItem(compact)} title={compact ? 'All Gully products (opens in a new tab)' : undefined} data-testid="products-link">
+          <Boxes size={ICON} aria-hidden /> {txt('All Gully products ↗')}
         </ExtLink>
       </li>
       <li>
@@ -500,42 +504,11 @@ function Sheet({ open, onClose, children }: { open: boolean; onClose: () => void
   )
 }
 
-/* ------------------------------------------------------------- chain picker --- */
-
-/** The chain the Gully Core links act on. States come from server/data/core-chains.json, so a chain flips there when
-    Gully Core deploys on it; until then picking it says so and the selection stays where it was. */
-function ChainPicker() {
-  const [key, setKey] = useState(CORE_CHAINS.find((c) => c.open)?.key ?? CORE_CHAINS[0].key)
-  return (
-    <label className="shrink-0" data-testid="chain-picker">
-      <span className="sr-only">Chain</span>
-      <select
-        value={key}
-        onChange={(e) => {
-          const c = CORE_CHAINS.find((x) => x.key === e.target.value)
-          if (!c) return
-          if (c.open) setKey(c.key)
-          else toastInfo(`${c.name}: ${c.state.toLowerCase()}`, { detail: 'Gully Core is not on this chain yet.' })
-        }}
-        className="min-h-11 max-w-[170px] rounded-[10px] border border-line bg-bg-alt px-2 text-[13px] font-semibold text-ink max-[520px]:max-w-[108px]"
-      >
-        {CORE_CHAINS.map((c) => (
-          <option key={c.key} value={c.key}>
-            {c.name} · {c.state}
-          </option>
-        ))}
-      </select>
-    </label>
-  )
-}
-
 /* ------------------------------------------------------------ phone tab bar --- */
 
-const TAB_BAR_IDS = ['overview', 'activity', 'products', 'keys']
-
-/** Under 860px: the four key pages as a bottom tab bar, plus "More" for the full menu sheet. */
+/** Under 860px: the four key pages (services/nav.ts TAB_BAR_IDS) as a bottom tab bar, plus "More" for the full menu sheet. */
 function TabBar<T extends string>({ items, current, go, more, sheetOpen }: { items: NavItem<T>[]; current: T; go: (t: T) => void; more: () => void; sheetOpen: boolean }) {
-  const tabs = TAB_BAR_IDS.map((id) => items.find((i) => i.id === id)).filter((x): x is NavItem<T> => !!x)
+  const tabs = (TAB_BAR_IDS as string[]).map((id) => items.find((i) => i.id === id)).filter((x): x is NavItem<T> => !!x)
   const inMore = !tabs.some((t) => t.id === current)
   const cell = (on: boolean) => `relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-[11px] font-medium transition-colors ${on ? 'text-gold' : 'text-dim hover:text-ink'}`
   const bar = <span className="absolute top-0 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-gold" style={{ animation: 'gl-fade .25s ease both' }} aria-hidden />
@@ -642,11 +615,21 @@ export function AppShell<T extends string>({
               {compact ? <ChevronsRight size={ICON} aria-hidden /> : <ChevronsLeft size={ICON} aria-hidden />}
             </button>
           </div>
-          {/* The seven pages: one flat list (it fits any window; the icon rail never clips its tooltips). */}
+          {/* The ten pages: one flat list (it fits any window; the icon rail never clips its tooltips). */}
           <nav aria-label="App pages" className={`-mx-1 min-h-0 flex-1 px-1 pt-1 ${compact ? '' : 'overflow-y-auto [scrollbar-width:thin]'}`} data-testid="app-nav" data-nav-ids={HUB_NAV_IDS}>
             <NavLinks items={compact ? items.filter((i) => !i.href) : items} current={current} go={go} compact={compact} dense />
           </nav>
-          <div className="border-t border-line pt-[6px]">
+          {/* The sidebar footer: the one link to the other Gully products (they live on the web), then the wallet. */}
+          <div className="flex flex-col gap-[6px] border-t border-line pt-[6px]" data-testid="sidebar-footer">
+            <ExtLink href={PRODUCTS_URL} arrow={false} className={`group/row relative flex min-h-10 items-center gap-[10px] rounded-md text-[13px] font-medium text-dim transition-colors hover:bg-surface-hover hover:text-ink ${compact ? 'justify-center px-0' : 'px-[10px]'}`} aria-label="All Gully products (opens in a new tab)" data-testid="products-link">
+              <Boxes size={ICON} aria-hidden />
+              <span className={compact ? 'sr-only' : 'flex-1 truncate'}>All Gully products ↗</span>
+              {compact && (
+                <span className="pointer-events-none absolute top-1/2 left-[calc(100%+10px)] z-50 -translate-y-1/2 rounded-[8px] border border-line-strong bg-surface-deep px-[10px] py-[5px] text-[12px] whitespace-nowrap text-ink opacity-0 shadow-[0_8px_24px_rgba(0,0,0,.45)] transition-opacity duration-150 group-hover/row:opacity-100 group-focus-visible/row:opacity-100" aria-hidden data-tooltip>
+                  All Gully products ↗
+                </span>
+              )}
+            </ExtLink>
             <WalletMenu onSignOut={onSignOut} go={wallet} compact={compact} placement="up" />
           </div>
         </aside>
@@ -676,7 +659,6 @@ export function AppShell<T extends string>({
                 </li>
               </ol>
             </nav>
-            {!narrow && <ChainPicker />}
             {!narrow && <HeaderLinks health={health} onStatus={status} />}
             <PlanPill account={account} />
             {narrow && <WalletMenu onSignOut={onSignOut} go={wallet} />}
@@ -716,7 +698,6 @@ export function AppShell<T extends string>({
 
       <Sheet open={sheet} onClose={() => setSheet(false)}>
         <WorkspaceList onDone={() => setSheet(false)} />
-        <ChainPicker />
         <nav aria-label="App pages">
           <NavLinks items={items} current={current} go={pick} compact={false} dense={false} />
         </nav>

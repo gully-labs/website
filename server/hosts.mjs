@@ -1,7 +1,7 @@
 // The app host, in one place for the server (src/site-host.ts holds the same names for the browser).
 //
-//   app.gullylabs.xyz         the Gully Labs App (the app dashboard: keys, alerts, analytics, payments,
-//                             and every service: tracker, Gully Pay, Chain Kit, Gully AI, widgets).
+//   app.gullylabs.xyz         the Gully Labs App (the account dashboard for the services Gully Labs itself offers:
+//                             chains, Gully IPFS, Gully Analytics, development services, API keys, billing).
 //
 // The dashboard's old host (developers.*) was retired on 2026-10-17: its DNS record is gone and nothing
 // here routes it any more. The main site's /app and /developers paths still answer 301 to the app.
@@ -13,10 +13,12 @@ export const APP_URL = `https://${APP_HOST}`
 export const isAppHost = (host) => host.startsWith('app.')
 
 /* The dashboard is one page at app.gullylabs.xyz/; its pages are hashes (#keys, #settings/profile). The ids are
-   src/pages/developers/Dashboard.tsx TABS plus services/nav.ts SERVICE_TABS and HANDOFF_TABS (scripts/test-hosts.mjs
-   checks they agree). A typed or old path for one of them (app.gullylabs.xyz/keys, /billing/plans) answers 301 to that
-   page instead of leaving for gullylabs.xyz, where no such page exists. */
-export const APP_TABS = ['overview', 'products', 'keys', 'alerts', 'analytics', 'billing', 'merchant', 'scans', 'team', 'activity', 'settings', 'tracker', 'ai', 'score', 'widgets', 'telegram', 'chain', 'pay', 'rpc', 'ipfs', 'holders', 'security', 'studio']
+   src/pages/developers/Dashboard.tsx TABS plus services/nav.ts REMOVED_TABS, AI_TAB and HANDOFF_TABS
+   (scripts/test-hosts.mjs checks they agree). A typed or old path for one of them (app.gullylabs.xyz/keys,
+   /billing/plans) answers 301 to that page instead of leaving for gullylabs.xyz, where no such page exists. The
+   removed pages (products, tracker, alerts, score, widgets, telegram) stay listed: their hashes leave for the web
+   from the app (nav.ts redirectFor), so an old /alerts link still lands somewhere sensible. */
+export const APP_TABS = ['overview', 'activity', 'chains', 'ipfs', 'analytics', 'services', 'keys', 'billing', 'team', 'settings', 'merchant', 'scans', 'products', 'tracker', 'alerts', 'score', 'widgets', 'telegram', 'ai', 'chain', 'pay', 'rpc', 'holders', 'security', 'studio']
 // Paths people use for the dashboard home.
 const APP_HOME_PATHS = new Set(['dashboard', 'home', 'app', 'developers'])
 // Tabs whose bare path is also a public gullylabs.xyz page (the tracker, Gully Score, Analytics, the products hub, the

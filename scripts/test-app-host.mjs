@@ -75,7 +75,7 @@ try {
   {
     const home = await get(APP, '/')
     check('app /: 200 with the dashboard shell', home.status === 200 && home.text.includes('<div id="root">'), String(home.status))
-    check('app /: title "Gully Labs App · keys, alerts, analytics, payments"', home.text.includes('<title>Gully Labs App · keys, alerts, analytics, payments</title>'))
+    check('app /: title "Gully Labs App · chains, IPFS, analytics, keys, billing"', home.text.includes('<title>Gully Labs App · chains, IPFS, analytics, keys, billing</title>'))
     check('app /: canonical is the app', home.text.includes(`<link rel="canonical" href="https://${APP}/" />`))
     check("app /: CSP frame-ancestors 'none' and X-Frame-Options DENY", /frame-ancestors 'none'/.test(home.headers['content-security-policy'] ?? '') && home.headers['x-frame-options'] === 'DENY')
     check('app /: HSTS on', /max-age=31536000/.test(home.headers['strict-transport-security'] ?? ''))

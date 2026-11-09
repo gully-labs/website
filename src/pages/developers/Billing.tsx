@@ -205,7 +205,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                   <Limits p={cur} />
                 </div>
               </div>
-              <PlanUsage account={account} payments={view.payments} />
+              <PlanUsage account={account} payments={view.payments} periodDays={offer.periodDays} />
               <div className="flex items-center gap-2 border-t border-line pt-2" data-testid="workspace-pays">
                 <Users size={14} className="shrink-0 text-gold" aria-hidden />
                 <InfoTip summary={<><b className="font-semibold text-ink-2">This workspace pays</b> · {me ? me.active.name : 'the workspace'}</>}>
