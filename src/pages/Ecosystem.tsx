@@ -11,7 +11,7 @@ import { IntegrationLogo } from '../components/logos/IntegrationLogo'
 import { VenueLogo } from '../components/logos/VenueLogo'
 import { Segmented } from '../components/ui/Segmented'
 import { btnGold, btnOutline, eyebrow } from '../components/ui'
-import { projects, type Project } from '../content/projects'
+import { projectPath, projects, type Project } from '../content/projects'
 import { integrationKinds, integrations, type Integration, type IntegrationKind } from '../content/ecosystem'
 import { fmtDate, fmtTime, fmtUsd, sourceHost, type Venue, type VenueOk } from '../lib/stats'
 import { getJson } from '../lib/holders'
@@ -133,7 +133,7 @@ function ProjectCard({ p, venue, loading, col }: { p: Project; venue: Venue | un
         </span>
       </div>
       <div className="mt-auto flex flex-wrap gap-2">
-        <Link to={`/projects/${p.slug}`} className={`${btnOutline} inline-flex min-h-11 items-center px-4 text-[13px]`}>
+        <Link to={projectPath(p)} className={`${btnOutline} inline-flex min-h-11 items-center px-4 text-[13px]`}>
           Details
         </Link>
         <a href={p.url} target="_blank" rel="noopener noreferrer" className={`${btnOutline} inline-flex min-h-11 items-center gap-1 px-4 text-[13px]`}>

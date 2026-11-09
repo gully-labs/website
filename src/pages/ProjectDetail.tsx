@@ -4,7 +4,7 @@ import { DailyLine, EmptySeries } from '../components/LiveChart'
 import { Seo } from '../components/Seo'
 import { ShareMenu } from '../components/Share'
 import { btnOutline, statusPill } from '../components/ui'
-import { projectNumber, projects, TOTAL_SLOTS } from '../content/projects'
+import { projectNumber, projectPath, projects, TOTAL_SLOTS } from '../content/projects'
 import { projectSeo } from '../content/seoPages'
 import { useStats } from '../hooks/useStats'
 import { ChainLogo } from '../components/logos/ChainLogo'
@@ -159,7 +159,7 @@ export function ProjectDetail() {
       {(p.key === 'peddles' || p.key === 'peddlequest') && <OnchainPanel venue={p.key} accent={p.accent} />}
 
       <Link
-        to={`/projects/${next.slug}`}
+        to={projectPath(next)}
         className="flex flex-wrap items-center justify-between gap-6 rounded-card border border-line bg-surface p-7 text-ink transition-colors hover:border-line-hover hover:text-ink"
       >
         <span className="font-mono text-[12px] text-dim">NEXT PROJECT</span>

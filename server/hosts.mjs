@@ -284,6 +284,8 @@ export function movedPageUrl(pathname) {
   const p = String(pathname ?? '').replace(/(.)\/+$/, '$1')
   // The DeepCore partnership ended on 2026-10-29: its old pages open Gully Core, Gully Chain's own launchpad and DEX core.
   if (p === '/products/deepcore' || p === '/projects/deepcore') return 'https://gullylabs.xyz/products/gully-core'
+  // Gully Chain is a product (/products/chain), never a /projects page: old links to /projects/gullychain land there.
+  if (p === '/projects/gullychain') return 'https://gullylabs.xyz/products/chain'
   // Gully Chain: the L3 offer, its launch flow and Chain Kit.
   // The chain logos in public/chains are files, not the old /chains pages.
   if (/^\/chains\/[a-z0-9-]+\.(?:svg|png)$/.test(p)) return null

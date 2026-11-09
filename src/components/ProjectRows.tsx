@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { motion } from 'motion/react'
 import { ArrowUpRight } from 'lucide-react'
-import { comingSoon, projects, type Project } from '../content/projects'
+import { comingSoon, projectPath, projects, type Project } from '../content/projects'
 import { fmtTime, fmtUsd, sourceHost, type Point, type Stats, type Venue } from '../lib/stats'
 import { NotifyMe } from './NotifyMe'
 import { MiniSpark } from './charts/MiniSpark'
@@ -162,7 +162,7 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
               <div className="flex items-start gap-3">
                 <VenueLogo venue={p.key} name={p.name} size={40} decorative className="ring-1 ring-line-strong transition-transform duration-200 group-hover:scale-105" />
                 <span className="flex min-w-0 flex-1 flex-col leading-[1.25]">
-                  <Link to={`/projects/${p.slug}`} className="relative w-fit font-semibold text-ink before:absolute before:-inset-y-3 before:inset-x-0 before:content-[''] hover:text-gold">
+                  <Link to={projectPath(p)} className="relative w-fit font-semibold text-ink before:absolute before:-inset-y-3 before:inset-x-0 before:content-[''] hover:text-gold">
                     {p.name}
                   </Link>
                   <span className="text-[12px] text-dim">{p.tagline}</span>
