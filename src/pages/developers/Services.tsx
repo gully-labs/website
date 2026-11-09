@@ -192,7 +192,7 @@ export function ServicesTab({ account }: { account: Account }) {
         </ul>
         <p className={`${mono} px-1`}>
           Case studies and the process are on the{' '}
-          <ExtLink href={SITE_SERVICES} className="text-gold underline-offset-4 hover:underline">
+          <ExtLink href={SITE_SERVICES} className="inline-flex min-h-11 items-center text-gold underline-offset-4 hover:underline">
             services page
           </ExtLink>
           .

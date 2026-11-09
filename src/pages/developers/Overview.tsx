@@ -85,7 +85,7 @@ function Kpi({ label, value, note, spark, color, i, unreadable, delta, none, pre
   return (
     <div className="flex min-w-0 flex-col gap-[2px] rounded-[12px] border border-line bg-surface px-3 py-[10px]" style={{ animation: `gl-rise .5s ${i * 0.05}s cubic-bezier(.2,.8,.2,1) both` }} data-kpi={label}>
       <span className="text-[12px] text-dim">{label}</span>
-      <span className="flex min-h-[28px] items-end justify-between gap-2">
+      <span className="flex min-h-[28px] min-w-0 items-end justify-between gap-2">
         {unreadable ? (
           <span className="font-display text-[28px] leading-none font-bold text-faint" title={unreadable}>
             —
@@ -93,13 +93,17 @@ function Kpi({ label, value, note, spark, color, i, unreadable, delta, none, pre
         ) : value === null ? (
           <Skeleton h={28} w="55%" />
         ) : value === 0 && none ? (
-          <span className="flex h-[28px] items-end font-mono text-[13px] text-faint" data-none>
+          <span className="flex h-[28px] shrink-0 items-end font-mono text-[13px] whitespace-nowrap text-faint" data-none>
             {none}
           </span>
         ) : (
           <AnimatedNumber value={value} format={format} prefix={prefix} countUp className="font-display text-[28px] leading-none font-bold" />
         )}
-        {spark && !unreadable && (spark.some((v) => v > 0) ? <Spark values={spark} color={color} /> : <GhostSpark color={color} />)}
+        {spark && !unreadable && (
+          <span className="flex min-w-0 max-w-[80px] flex-1 justify-end [&>svg]:!w-full [&>svg]:!shrink">
+            {spark.some((v) => v > 0) ? <Spark values={spark} color={color} /> : <GhostSpark color={color} />}
+          </span>
+        )}
       </span>
       <span className={`font-mono text-[11px] [overflow-wrap:anywhere] ${unreadable ? 'text-error' : 'text-muted'}`}>{unreadable ? 'unreadable right now' : note}</span>
       {delta && !unreadable && <span>{delta}</span>}
@@ -141,9 +145,9 @@ const SERVICES: { id: OverviewGo; label: string; icon: LucideIcon; line: string 
 ]
 function ServicesRow({ go }: { go: (t: OverviewGo) => void }) {
   return (
-    <section aria-labelledby="ov-services" data-testid="services-row" className="flex flex-col gap-2">
+    <section aria-labelledby="ov-services" data-testid="services-row" className="@container flex flex-col gap-2">
       <h2 id="ov-services" className="m-0 px-1 text-[14px] font-semibold text-ink">Gully Labs services</h2>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,200px),1fr))] gap-2">
+      <div className="grid grid-cols-1 gap-2 @min-[440px]:grid-cols-2 @min-[740px]:grid-cols-4">
         {SERVICES.map((s, i) => (
           <button key={s.id} type="button" onClick={() => go(s.id)} className="group/sv flex min-h-[76px] flex-col justify-center gap-[4px] rounded-card border border-line bg-surface p-3 text-left transition-colors hover:border-gold" style={rise(i)} data-service-card={s.id}>
             <span className="flex items-center gap-2 text-[14px] font-semibold text-ink">

@@ -788,7 +788,7 @@ await step('app pages', async () => {
   check('app at 390: a bottom tab bar with Overview, Activity, Analytics, Billing and More', JSON.stringify(await bar.locator('a, button').evaluateAll((els) => els.map((e) => e.textContent.trim()))) === JSON.stringify(['Overview', 'Activity', 'Analytics', 'Billing', 'More']))
   await bar.getByRole('link', { name: 'Analytics' }).tap()
   await mp.locator('main[data-page="analytics"]').waitFor({ timeout: 15_000 })
-  check('app at 390: a tab opens its page', new URL(mp.url()).hash === '#analytics')
+  check('app at 390: a tab opens its page', /^#analytics(\/|$)/.test(new URL(mp.url()).hash), new URL(mp.url()).hash)
   await bar.getByRole('link', { name: 'Overview' }).tap()
   await mp.getByTestId('tab-more').tap()
   await mp.getByTestId('app-sheet').waitFor()

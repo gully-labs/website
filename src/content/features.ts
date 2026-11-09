@@ -161,8 +161,7 @@ export const features: Feature[] = [
     source: [
       "website:server/alerts.mjs",
       "website:server/plans.mjs",
-      "website:src/docs/pages/PlansAlerts.tsx",
-      "website:src/pages/developers/Alerts.tsx"
+      "website:src/docs/pages/PlansAlerts.tsx"
     ]
   },
   {
@@ -812,7 +811,7 @@ export const features: Feature[] = [
     url: "https://gullychain.xyz/",
     source: [
       "website:server/developer.mjs",
-      "website:src/pages/developers/Products.tsx"
+      "website:src/pages/Products.tsx"
     ]
   },
   {
