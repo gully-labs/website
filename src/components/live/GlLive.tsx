@@ -6,8 +6,19 @@
    at module load: node tests and the prerender stay clean). Everything is set as ATTRIBUTES before the element is
    defined, and `data` only after customElements.whenDefined, so an early property never shadows the element's own
    accessor. Tokens: .gl-live in ./gl-labs.css (the Gully Labs navy kit row). */
-import { createElement, useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, type CSSProperties, type Ref } from 'react'
 import './gl-labs.css'
+
+type GlElementProps = { ref?: Ref<HTMLElement>; className?: string; style?: CSSProperties; 'data-live-stat'?: string; 'data-live-chart'?: string }
+declare module 'react' {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace JSX {
+    interface IntrinsicElements {
+      'gl-stat': GlElementProps
+      'gl-chart': GlElementProps
+    }
+  }
+}
 
 let loading: Promise<unknown> | null = null
 function loadLiveUi() {
@@ -37,7 +48,7 @@ export function LiveStat({ value, label = '', unit = '', spark, live = false, lo
     if (!el) return
     setAttrs(el, { label, unit: unit || null, live, loading: isLoading, full, spark: sparkKey || null, value: value === null || !Number.isFinite(value) ? '' : String(value) })
   }, [label, unit, live, isLoading, full, sparkKey, value])
-  return createElement('gl-stat', { ref, className: `gl-live${bare ? ' gl-bare' : ''}${small ? ' gl-sm' : ''}${className ? ` ${className}` : ''}`, 'data-live-stat': '' })
+  return <gl-stat ref={ref} className={`gl-live${bare ? ' gl-bare' : ''}${small ? ' gl-sm' : ''}${className ? ` ${className}` : ''}`} data-live-stat="" />
 }
 
 export type LivePoint = [number, number]
@@ -66,5 +77,5 @@ export function LiveChart({ series, kind = 'area', title = '', unit = '', height
     // `key` stands for `series`
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, isLoading])
-  return createElement('gl-chart', { ref, className: `gl-live${className ? ` ${className}` : ''}`, 'data-live-chart': '', style: { minHeight: Math.min(height, 96) } })
+  return <gl-chart ref={ref} className={`gl-live${className ? ` ${className}` : ''}`} data-live-chart="" style={{ minHeight: Math.min(height, 96) }} />
 }
