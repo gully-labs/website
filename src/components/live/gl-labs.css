@@ -1,0 +1,21 @@
+/* Gully Live UI tokens on the Gully Labs navy surfaces: the `.gl-kit-labs.gl-dark` row of gully-live-ui tokens.css
+   (1.0.0, dataviz validator ALL PASS in dark mode), scoped to `.gl-live` so the console's own --gl-* names
+   (src/console/console.css: --gl-ink, --gl-surface, --gl-line, --gl-font) keep their values everywhere else. Charts use
+   --gl-series-1..3 in that order, never the brand accent. --gl-surface follows the card it sits on (the site's navy
+   steps sit inside the validated band). */
+.gl-live {
+  --gl-font: 500 14px/1.4 Figtree, system-ui, sans-serif;
+  --gl-font-num: 700 28px/1 Figtree, system-ui, sans-serif;
+  --gl-ink: #F1F3F8; --gl-ink-2: #F1F3F8; --gl-muted: #A9B4CF;
+  --gl-surface: var(--color-surface, #0E1C38); --gl-surface-2: #17284D; --gl-line: #2A3B63;
+  --gl-accent: #3754A0;
+  --gl-series-1: #4C6BD6; --gl-series-2: #D0702A; --gl-series-3: #1E9C74;
+  --gl-up: #1E9E5A; --gl-down: #D23B2B; --gl-warn: #B98900;
+  --gl-radius: 12px; --gl-pill: 999px;
+}
+/* A stat inside one of our own tiles: the tile keeps its chrome, label and note; gl-stat draws the number + sparkline. */
+gl-stat.gl-bare { border: 0; padding: 0; background: transparent; border-radius: 0; min-width: 0; }
+gl-stat.gl-bare::part(label) { display: none; }
+gl-stat.gl-bare::part(value) { font: var(--gl-font-num); }
+gl-stat.gl-sm { --gl-font-num: 700 24px/1 Figtree, system-ui, sans-serif; }
+gl-stat:not(:defined), gl-chart:not(:defined) { display: block; min-height: 28px; }

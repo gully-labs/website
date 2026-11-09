@@ -2,6 +2,7 @@ import { BookOpen, Globe, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { AnimatedNumber } from '../../../components/charts/AnimatedNumber'
 import { NF, type NumberFormat } from '../../../components/charts/number-formats'
+import { LiveStat, type LiveUnit } from '../../../components/live/GlLive'
 import { StatusPill as KitPill, type PillTone } from '../../../components/ui/StatusPill'
 import { ExtLink } from '../ExtLink'
 import { pageTitle, pillSm } from '../styles'
@@ -39,12 +40,24 @@ export function StatusPill({ s }: { s: Status }) {
   )
 }
 
+/** The gl-stat unit for a tile, or null when the tile needs a format gl-stat does not print (a tone, a % suffix, a
+    fixed number of decimals on a plain count): those keep the site's own count-up. */
+function liveUnit(t: Tile): string | null {
+  if (t.tone || (t.prefix && t.prefix !== '$')) return null
+  if (t.prefix === '$') return t.suffix ? null : 'usd'
+  if (!t.suffix) return t.format && t.format !== NF.int ? null : 'plain'
+  return t.suffix === ' GB' || t.suffix === ' ms' ? t.suffix.trim() : null
+}
+
 export function KpiTile({ t, i }: { t: Tile; i: number }) {
   const known = typeof t.value === 'number' && Number.isFinite(t.value)
   return (
     <div className="group relative flex min-w-0 flex-col gap-1 bg-surface px-4 py-3 shadow-[1px_0_0_var(--color-line),0_1px_0_var(--color-line)]" style={{ animation: `gl-rise .4s ${i * 0.04}s ease both` }} data-tile={t.label} title={t.title} tabIndex={t.title ? 0 : undefined}>
       <span className="font-mono text-[11px] tracking-[1px] [overflow-wrap:anywhere] text-faint">{t.label}</span>
-      {known ? (
+      {known && liveUnit(t) !== null ? (
+        // Gully Live UI: the number counts up in the kit's live stat (units it prints itself: $, GB, ms, plain).
+        <LiveStat bare small value={t.value as number} unit={liveUnit(t) as LiveUnit} />
+      ) : known ? (
         <AnimatedNumber className="font-display text-[26px] leading-none font-bold" style={{ color: t.tone }} value={t.value} format={t.format ?? NF.int} prefix={t.prefix} suffix={t.suffix} countUp />
       ) : (
         <span className="flex h-[26px] items-center font-mono text-[12px] text-faint">{t.unknown ?? 'not tracked yet'}</span>

@@ -13,7 +13,8 @@ import { Activity, ArrowDown, ArrowRight, ArrowUpRight, Blocks, Briefcase, Chart
 import { Seo } from '../../components/Seo'
 import { useLive } from '../../console/live'
 import { consoleToast } from '../../console/toast'
-import { Count, Spark } from '../../console/ui'
+import { Spark } from '../../console/ui'
+import { LiveStat } from '../../components/live/GlLive'
 import '../../terminal/terminal.css'
 import { A, TChart, UptimeGrid, useHubProducts, type ChartTab } from '../../terminal/kit'
 import { ContactForm, Process, ServicesList } from '../../terminal/sections'
@@ -428,15 +429,21 @@ function Directory({ R, open, stats }: { R: Record<ProductKey, Reading>; open: (
                 </div>
                 <p className="cst-what">{p.line}</p>
                 <div className="read" data-reading={p.key}>
-                  {r.kpi ? (
+                  {r.kpi && r.kpi.of == null ? (
+                    // Gully Live UI: the count and its series in one live stat (count-up, sparkline drawing in).
+                    <div className="fig fig-live">
+                      <LiveStat bare small live full={p.key === 'chain'} value={r.kpi.v} spark={vals.length >= 2 ? vals : undefined} />
+                      <small>{r.kpi.label}</small>
+                    </div>
+                  ) : r.kpi ? (
                     <div className="fig">
-                      {r.kpi.of != null ? <b className="num">{kpiText(r.kpi)}</b> : <Count as="b" className="num" value={r.kpi.v} fmt={fmtNum} />}
+                      <b className="num">{kpiText(r.kpi)}</b>
                       <small>{r.kpi.label}</small>
                     </div>
                   ) : (
                     <small className="why">{r.why ?? 'No live reading yet'}</small>
                   )}
-                  {vals.length >= 2 && (
+                  {vals.length >= 2 && !(r.kpi && r.kpi.of == null) && (
                     <div className="sp" aria-hidden>
                       <Spark values={vals} color={p.color} h={28} />
                     </div>
@@ -622,12 +629,12 @@ export function Constellation() {
               </div>
               <div>
                 <span className="gt-k">Sign-ins 24 h</span>
-                <Count as="b" className="num" value={R.id.kpi?.v ?? null} fmt={fmtNum} />
+                <LiveStat bare live value={R.id.kpi?.v ?? null} loading={!R.id.kpi && !R.id.why} />
                 <small>gullyid.xyz</small>
               </div>
               <div>
                 <span className="gt-k">Gully Chain block</span>
-                <Count as="b" className="num" value={R.chain.kpi?.v ?? null} fmt={fmtNum} />
+                <LiveStat bare live full value={R.chain.kpi?.v ?? null} loading={!R.chain.kpi && !R.chain.why} />
                 <small>testnet 485590</small>
               </div>
             </div>

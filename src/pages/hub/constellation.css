@@ -258,3 +258,8 @@
 @media (max-width: 760px) { .cst-seg button { height: 44px; } .cst-tabs [role='tab'] { height: 44px; } .cst-events li:nth-child(n + 5) { display: none; } }
 @media (max-width: 1023px) { .cst .gt-tab { min-height: 44px; } .cst-cell .gt-uptime .nm a { display: inline-flex; align-items: center; min-height: 44px; } .cst .gt-chart .gt-head { flex-wrap: wrap; } }
 @media (max-width: 1023px) { .cst-sendline a, .cst-sendline .cst-linkbtn { display: inline-flex; align-items: center; min-height: 44px; } }
+/* Gully Live UI stats on the landing (src/components/live): the site's mono numerals on the card's own surface. */
+.cst gl-stat.gl-live { --gl-surface: var(--gt-surface); --gl-font-num: 500 22px/1.1 var(--gt-mono); }
+.cst-card gl-stat.gl-live { --gl-font-num: 500 20px/1.1 var(--gt-mono); }
+.cst-kpis gl-stat.gl-live { --gl-surface: var(--gt-bg); }
+.cst-card .fig-live { grid-column: 1 / -1; }

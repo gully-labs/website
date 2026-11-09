@@ -1,8 +1,8 @@
 import { dayPT, lastDaysPT } from '../../lib/time'
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
-import { areaPreset, axisTooltip, C, linePreset, tipHtml } from '../../components/charts/chartPresets'
-import { EChart } from '../../components/charts/EChart'
+import { C } from '../../components/charts/chartPresets'
+import { LiveChart, type LivePoint } from '../../components/live/GlLive'
 import { api, daysLeft, type Account, type AnalyticsAccount, type AnalyticsSeries, type GapAlert, type Payment, type Usage } from './api'
 import { GhostCurves } from './charts'
 import { ErrorLine, Skeleton } from './parts'
@@ -179,23 +179,6 @@ export function AnalyticsTraffic({ account }: { account: AnalyticsAccount }) {
   const readable = data ? data.sites.some((x) => x.ok) : false
   const pv = data ? data.days.reduce((a, d) => a + d.pageviews, 0) : null
   const vis = data ? data.days.reduce((a, d) => a + d.visitors, 0) : null
-  const option = useMemo(() => {
-    if (!data) return null
-    const labels = data.days.map((d) => new Date(d.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }))
-    return {
-      grid: { left: 40, right: 10, top: 12, bottom: 24 },
-      xAxis: { type: 'category', boundaryGap: false, data: labels, axisLabel: { hideOverlap: true } },
-      yAxis: { type: 'value', minInterval: 1, splitNumber: 3 },
-      tooltip: axisTooltip((ps: { dataIndex: number; seriesName: string; value: number; color: string }[]) => {
-        const i = ps[0]?.dataIndex ?? -1
-        return i < 0 ? '' : tipHtml({ title: `${labels[i]} (UTC)`, rows: ps.map((p) => ({ name: p.seriesName, value: fmt(p.value), color: p.color })) })
-      }, 'cross'),
-      series: [
-        { id: 'pv', name: 'page views', ...areaPreset({ color: C.gold, fill: 0.28 }), data: data.days.map((d) => d.pageviews) },
-        { id: 'vis', name: 'visitors', ...linePreset({ color: BLUE }), data: data.days.map((d) => d.visitors) },
-      ],
-    }
-  }, [data])
 
   return (
     <section className={panel} style={rise(1)} aria-labelledby="ga-traffic" data-testid="analytics-traffic">
@@ -236,8 +219,11 @@ export function AnalyticsTraffic({ account }: { account: AnalyticsAccount }) {
         </GhostCurves>
       ) : (
         <div className={`flex flex-col gap-2 transition-opacity ${stale ? 'opacity-60' : ''}`} aria-busy={stale}>
-          <EChart option={option!} height={160} skeleton="line" label={`Page views and visitors per day over the last ${range === '7d' ? '7' : '30'} days: ${pv == null ? 'views not tracked yet' : `${fmt(pv)} views`}, ${vis == null ? 'visitors not tracked yet' : `${fmt(vis)} visitors`}.`} />
-          <Legend kinds={[{ id: 'pv', name: 'page views', color: C.gold, total: pv ?? undefined }, { id: 'vis', name: 'visitors', color: BLUE, total: vis ?? undefined }]} />
+          {/* Gully Live UI: one chart per measure, one axis each (UTC days). */}
+          <div className="grid gap-3 min-[1100px]:grid-cols-2">
+            <LiveChart kind="area" title="Page views a day" height={150} series={data!.days.map((d) => [Date.parse(d.t), d.pageviews] as LivePoint)} empty="Page views chart from the second recorded day." label={`Page views per day over the last ${range === '7d' ? '7' : '30'} days: ${pv == null ? 'not tracked yet' : `${fmt(pv)} in all`}.`} />
+            <LiveChart kind="bars" title="Visitors a day" height={150} series={data!.days.map((d) => [Date.parse(d.t), d.visitors] as LivePoint)} empty="Visitors chart from the second recorded day." label={`Visitors per day over the last ${range === '7d' ? '7' : '30'} days: ${vis == null ? 'not tracked yet' : `${fmt(vis)} in all`}.`} />
+          </div>
         </div>
       )}
     </section>
