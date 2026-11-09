@@ -85,7 +85,7 @@ function Kpi({ label, value, note, spark, color, i, unreadable, delta, none, pre
   return (
     <div className="flex min-w-0 flex-col gap-[2px] rounded-[12px] border border-line bg-surface px-3 py-[10px]" style={{ animation: `gl-rise .5s ${i * 0.05}s cubic-bezier(.2,.8,.2,1) both` }} data-kpi={label}>
       <span className="text-[12px] text-dim">{label}</span>
-      <span className="flex min-h-[28px] min-w-0 items-end justify-between gap-2">
+      <span className="flex min-h-[28px] min-w-0 flex-wrap items-end justify-between gap-x-2 gap-y-1">
         {unreadable ? (
           <span className="font-display text-[28px] leading-none font-bold text-faint" title={unreadable}>
             —

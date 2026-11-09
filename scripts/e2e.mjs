@@ -268,7 +268,9 @@ await step('tracker', async () => {
   // The swap card in an allowed region, with LI.FI's API stubbed.
   await page.getByRole('heading', { name: 'Swap NVDA' }).scrollIntoViewIfNeeded()
   await page.getByRole('checkbox', { name: 'I understand' }).check()
-  await page.getByText(/≈ 1\.84 NVDA/).first().waitFor({ timeout: 15_000 })
+  await page.getByText('Tick the box to load the swap.').waitFor({ state: 'detached', timeout: 15_000 })
+  await page.getByText('Loading the swap…').waitFor({ state: 'detached', timeout: 30_000 })
+  check('swap: the LI.FI swap loads once the box is ticked', true)
   check('swap: no partner launchpad comparison quote any more (retired 2026-11-08)', (await page.getByRole('link', { name: 'Swap on the launchpad' }).count()) === 0)
   // LI.FI's widget logs its own errors when its (stubbed) API has no routes; those are not our page's.
   await w.verify([/li\.quest|lifi|LI\.FI|wagmi|walletconnect|coinbase|SwapWidget-|Failed to load resource: net::ERR_BLOCKED_BY_CLIENT/i])

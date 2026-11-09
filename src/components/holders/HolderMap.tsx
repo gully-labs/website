@@ -1189,7 +1189,7 @@ function Panel({ n, m, pct, frames, idx, recent, onClose, onPick }: { n: HolderN
     id: string
     d: WalletDetail | null
   } | null>(null)
-  const wantDetail = m.kind === 'deepcore-launch' && !(n.label && INFRA.has(n.label.kind))
+  const wantDetail = (m.kind === 'launch' || m.kind === 'deepcore-launch') && !(n.label && INFRA.has(n.label.kind))
   useEffect(() => {
     if (!wantDetail) return
     let alive = true

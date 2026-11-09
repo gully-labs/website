@@ -597,7 +597,7 @@ export const features: Feature[] = [
     product: "Telegram bot",
     name: "@GullyLabsBot commands and alerts",
     status: "live",
-    summary: "A Telegram bot with a menu for gaps, movers, new launchpad launches, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.",
+    summary: "A Telegram bot with a menu for gaps, movers, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.",
     facts: [
       "Private-chat commands: start, app, gap, top, movers, launches, holders, alerts, security, score, ask, help, stop. Groups get gap, top, launches and help.",
       "Alerts can be paused, muted for 24 hours, tested or deleted from the chat.",
@@ -632,7 +632,7 @@ export const features: Feature[] = [
     product: "Mini App",
     name: "Telegram Mini App",
     status: "live",
-    summary: "The Gully app inside Telegram, with stock gaps, launchpad launches and alerts for the account linked to your chat.",
+    summary: "The Gully app inside Telegram, with stock gaps and alerts for the account linked to your chat.",
     facts: [
       "Served at gullylabs.xyz/tg; each request carries Telegram initData, validated with HMAC-SHA256 and refused after 24 hours.",
       "Routes: /api/tg/me, /sparks, /launches, /alerts and /announcements."
@@ -669,7 +669,7 @@ export const features: Feature[] = [
     product: "App",
     name: "Gully Labs App dashboard",
     status: "live",
-    summary: "A wallet-signed-in dashboard at app.gullylabs.xyz for keys, alerts, usage, billing, analytics, security, Gully Pay and the other services.",
+    summary: "A wallet-signed-in dashboard at app.gullylabs.xyz for the services Gully Labs runs: chain orders, Gully IPFS, Gully Analytics, development requests, keys, usage, billing, team and settings. Other Gully products live in their own apps.",
     facts: [
       "Sign-in is Sign-In with Ethereum (EIP-4361), including smart-contract wallets via EIP-1271 and ERC-6492.",
       "The old developers host was retired on 2026-10-17; /app and /developers on the main site redirect to the app."
