@@ -1,7 +1,7 @@
-# Vendored: Gully Live UI 1.0.0
+# Vendored: Gully Live UI 1.0.2
 
 `gl-core.js`, `gl-stat.js`, `gl-chart.js` and `README.md` are byte-identical copies of gully-ops
-`sites/_shared/gully-live-ui/` at main 09fc3b25 (git blob hashes match; `.gitattributes` keeps them `-text`). Never edit
+`sites/_shared/gully-live-ui/` at main 150f89a2 (git blob hashes match; `.gitattributes` keeps them `-text`). Never edit
 them: update by copying the canonical files again. `*.d.ts` and this note are ours.
 
 `tokens.css` is NOT loaded here: its `:root` block would overwrite the console's own `--gl-*` names
