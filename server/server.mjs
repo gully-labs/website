@@ -9,7 +9,7 @@ import { handlePeddlesOnchain, startPeddlesLoop } from './peddles.mjs'
 import { onSnapshot, readGapIndex, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
 import { shapeMovers } from './movers.mjs'
 import { evaluateAlerts, evaluateLaunchAlerts, startHolderAlerts } from './alerts.mjs'
-import { handleDeepcoreLaunches, handleDeepcoreQuote, onLaunches, startDeepcore } from './deepcore.mjs'
+import { handleDeepcoreLaunches, handleDeepcoreQuote, onLaunches } from './deepcore.mjs' // retired 2026-11-08: both handlers answer 410, onLaunches never fires
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { handleMiniApp } from './telegram-miniapp.mjs'
 import { handleHolders } from './holders.mjs'
@@ -418,9 +418,8 @@ async function handleRequest(req, res) {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return send(res, 200, JSON.stringify(await alertChannels()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'Access-Control-Allow-Origin': '*' })
   }
-  // DeepCore router quote for the stock pages' comparison panel (deepcore.mjs): cached and rate limited here.
+  // /api/deepcore/*: RETIRED 2026-11-08 (owner). Both answer 410 with a pointer to gullycore.xyz; kept so old clients get a clear answer.
   if (url.pathname === '/api/deepcore/quote') return void (await handleDeepcoreQuote(req, res, url, geoFor(req, isLocal)))
-  // DeepCore's latest launches from the poller's cache (the app dashboard's DeepCore view). Public.
   if (url.pathname === '/api/deepcore/launches') return void (await handleDeepcoreLaunches(req, res, url))
   if (url.pathname.startsWith('/api/logo/') || url.pathname === '/api/logo') return void (await (await import('./token-logos.mjs')).handleLogo(req, res, url)) // token logos (token-logos.mjs), public, cached
   // Solana (solana-routes.mjs): the RPC proxy, Solana Pay reference lookup and the geo-gated Jupiter quote/swap proxy.
@@ -694,7 +693,7 @@ function startLoops() {
   if (process.env.TRACKER_LOOP !== 'off') startTrackerLoop()
   // Peddles and PeddleQuest read on chain: backfill once, then every 30 s (peddles.mjs). PEDDLES_LOOP=off skips it.
   startPeddlesLoop()
-  startDeepcore()
+  // startDeepcore(): retired 2026-11-08, no DeepCore poll
   // Holder Map alerts: each watched token's map is re-read every ten minutes (alerts.mjs).
   startHolderAlerts()
   // The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.

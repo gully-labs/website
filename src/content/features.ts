@@ -580,7 +580,7 @@ export const features: Feature[] = [
     summary: "Answers questions about Gully Labs from its own docs and live data, cites its sources and says it does not know when it does not.",
     facts: [
       "Retrieval is hybrid: BM25, a synonym-expanded BM25 and, when VOYAGE_API_KEY is set, embeddings, fused by reciprocal-rank fusion.",
-      "Live tools include get_plans, get_stock, get_top_gaps, deepcore_launches, deepcore_pool, get_holders, get_gully_score, get_published_reports, get_pay_chains, get_status and get_pay_gas; signed-in users also get get_my_store, get_my_usage and get_my_alerts.",
+      "Live tools include get_plans, get_stock, get_top_gaps, get_holders, get_gully_score, get_published_reports, get_pay_chains, get_status and get_pay_gas; signed-in users also get get_my_store, get_my_usage and get_my_alerts.",
       "Default answer model is claude-haiku-5-5 (ASK_MODEL); the log keeps a salted IP hash only, for 90 days.",
       "Per-visitor limits default to 6 a minute and 60 a day; ASK_DAILY_LIMIT caps all surfaces at 2000 a day.",
       "It runs on the site (/ask), the docs, the app, ⌘K and Telegram (/ask)."
@@ -643,21 +643,6 @@ export const features: Feature[] = [
       "website:server/telegram-miniapp.mjs",
       "website:src/pages/tg/TgApp.tsx",
       "website:src/docs/pages/TelegramMiniAppDocs.tsx"
-    ]
-  },
-  {
-    id: "telegram-deepcore-launch-alerts",
-    product: "Telegram bot",
-    name: "New launch alerts",
-    status: "live",
-    summary: "Alerts when a new token launches on the launchpad, on any chain or one you pick.",
-    facts: [
-      "Launchpad chains: BNB Chain (56), HyperEVM (999), Robinhood Chain (4663) and Base (8453)."
-    ],
-    url: "https://docs.gullylabs.xyz/telegram",
-    source: [
-      "website:server/deepcore.mjs",
-      "website:server/telegram-miniapp.mjs"
     ]
   },
   {
@@ -1132,7 +1117,7 @@ export const features: Feature[] = [
     status: "building",
     summary: "The home page product console gains a Holder Map tab showing the live mini map of the newest launchpad launch with the latest launches under it.",
     facts: [
-      "Data comes from GET /api/deepcore/launches; a quiet feed is said to be quiet.",
+      "The launch feed source is being moved to Gully Core (the DeepCore feed, GET /api/deepcore/launches, was retired on 2026-11-08); a quiet feed is said to be quiet.",
       "The Security tab also gains a ring chart of the Gully Score weights read from /api/score.",
       "The tracker tab is renamed 'Stock tracker' with the button 'Open the Stock tracker'."
     ],

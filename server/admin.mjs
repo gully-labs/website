@@ -95,7 +95,6 @@ import * as holdersMod from './holders.mjs'
 import * as secMon from './sec-monitor.mjs'
 import * as tgMod from './telegram.mjs'
 import * as storeMod from './store.mjs'
-import { deepcoreHealth, pollMs as deepcorePollMs } from './deepcore.mjs'
 import { status as scanEngineStatus } from './security-engine.mjs'
 import { askStatus } from './ask.mjs'
 import { embedStatus } from './ask-embed.mjs'
@@ -212,9 +211,9 @@ function monitorPart(now) {
   return { ...base, lastTickAt: null, lastTickMs: null, lagMs: null, ticks: null, errors: errs.length, lastError: errs.find((c) => c.lastErrorAt === last)?.lastError ?? null, lastErrorAt: last, detail: 'chains' }
 }
 
-function deepcorePart(now) {
-  const h = safe(() => deepcoreHealth(), {}) ?? {}
-  return { lastOkAt: iso(h.lastOkAt), lagMs: ageMs(h.lastOkAt, now), pollMs: safe(() => deepcorePollMs(), 90_000), lastError: h.lastError ? String(h.lastError?.message ?? h.lastError).slice(0, 200) : null, baselineAt: iso(h.baselineAt), seen: h.seen ?? null, cached: h.cached ?? null }
+function deepcorePart() {
+  // DeepCore retired 2026-11-08: no poller, nothing cached
+  return { retired: true, lastOkAt: null, lagMs: null, pollMs: null, lastError: null, cached: 0 }
 }
 
 function botPart(now) {
@@ -300,7 +299,7 @@ const hostOf = (u) => safe(() => new URL(u).host, null)
 const conditionLabel = (x) => {
   const c = x.condition ?? {}
   if (c.type === 'gap') return `gap ${c.direction === 'above' ? '≥ +' : c.direction === 'below' ? '≤ −' : '± '}${c.pct}%`
-  if (c.type === 'deepcore-launch') return `DeepCore launch${c.chainId ? ` · chain ${c.chainId}` : ''}`
+  if (c.type === 'deepcore-launch') return 'DeepCore launch (retired 2026-11-08)'
   if (c.type === 'holders') return `holders · ${c.symbol ?? c.token ?? ''}`
   if (c.type === 'status') return `status ${c.status}`
   return c.type ?? null

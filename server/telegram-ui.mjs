@@ -162,7 +162,7 @@ export const callbackDataOf = (kb) => (kb ?? []).flat().map((b) => b.callback_da
 
 export const MENU_KEYBOARD = [
   [btn('📈 Stocks', 'stk'), btn('🔥 Top gaps', 'top')],
-  [btn('🚀 Movers', 'mv:24h'), btn('🛰 DeepCore launches', 'dc:0')],
+  [btn('🚀 Movers', 'mv:24h')],
   [btn('🔔 My alerts', 'ma'), btn('🤖 Gully AI', 'ai')],
   [btn('👥 Holder Map', 'hm'), btn('🛡 Security', 'sec')],
   [ubtn('💼 App dashboard ↗', PORTAL), btn('🧭 More', 'more'), btn('⚙️ Settings', 'set')],
@@ -198,7 +198,6 @@ export function helpView(linked) {
     '/gap NVDA · one stock (add <code>bsc</code>, <code>robinhood</code> or <code>solana</code>)',
     '/top · biggest gaps right now',
     '/movers · biggest changes',
-    '/launches · newest tokens on DeepCore',
     '/holders · 👥 Holder Map: who holds a token, and which wallets belong together',
     '/security · 🛡 Gully Security: contract scans, Gully Score and monitors',
     '/score 0x… · the Gully Score of a contract (add <code>base</code>, <code>ethereum</code>…)',
@@ -231,9 +230,9 @@ export function holderMapView(stockChains = []) {
       'Who holds a token, drawn as a map. Wallets that sent the token to each other are joined into a <b>connected cluster</b>: joined wallets are often one person or team. The <b>deployer</b> is the wallet that created the token.',
       '',
       names.length ? `Maps are ready for every new DeepCore launch and for stock tokens on ${esc(names.join(', '))}.` : 'Maps are ready for every new DeepCore launch. Stock tokens follow soon.',
-      'Open a launch below and tap 👥 Holders, or browse every map on the site.',
+      'Browse every map on the site.',
     ].join('\n'),
-    keyboard: [[btn('🛰 DeepCore launches', 'dc:0')], [ubtn('👥 Open Holder Map ↗', holderHomeUrl())], nav('m')],
+    keyboard: [[ubtn('👥 Open Holder Map ↗', holderHomeUrl())], nav('m')],
   }
 }
 
@@ -715,7 +714,7 @@ export function myAlertsView(data, page, chains, now = Date.now()) {
   const list = data.alerts
   const lim = data.limits
   const head = `<b>🔔 My alerts</b> · ${list.length} of ${lim.max} on ${esc(lim.planName)}`
-  if (!list.length) return { text: `${head}\nNo alerts yet. Open a stock card and press 🔔 Alert me, or alert on new DeepCore launches.`, keyboard: [[btn('📈 Stocks', 'stk'), btn('🛰 Launches', 'dc:0')], nav('m')] }
+  if (!list.length) return { text: `${head}\nNo alerts yet. Open a stock card and press 🔔 Alert me.`, keyboard: [[btn('📈 Stocks', 'stk')], nav('m')] }
   const pages = Math.max(1, Math.ceil(list.length / ALERTS_PAGE))
   const p = Math.min(Math.max(1, page), pages)
   const shown = list.slice((p - 1) * ALERTS_PAGE, p * ALERTS_PAGE)

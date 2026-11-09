@@ -5,7 +5,7 @@
 //   0. gullychain   Gully Chain (485590) only: the hosted Uniswap-standard token list
 //                   (gullychain.xyz/tokenlist-extended.json, logoURI), cached 10 min; the bundled copy
 //                   server/data/gully-tokenlist.json answers when the hosted list cannot be read
-//   1. deepcore     DeepCore's launch token list (GET /v1/chains/:id/tokenlists/launches.json, logoURI)
+//   1. deepcore     (retired 2026-11-08: no chain lists DeepCore any more; the source stays wired but never runs)
 //   2. dexscreener  DexScreener pairs where the token is the BASE token (info.imageUrl belongs to the base)
 //   3. jupiter      Solana: Jupiter's token API (lite-api.jup.ag tokens v2, `icon`)
 //      xstocks      tokenised stocks the tracker follows (server/data/*-stocks.json): Backed's official
@@ -65,10 +65,10 @@ const ACCEPT_IMAGE = 'image/png,image/jpeg;q=0.9,image/gif;q=0.8,image/webp;q=0.
 
 /** Our chain keys and each source's id for them (null = that source does not cover the chain). */
 export const LOGO_CHAINS = {
-  robinhood: { evm: true, deepcore: 4663, dexscreener: 'robinhood', coingecko: 'robinhood', trustwallet: null },
-  bsc: { evm: true, deepcore: 56, dexscreener: 'bsc', coingecko: 'binance-smart-chain', trustwallet: 'smartchain' },
-  base: { evm: true, deepcore: 8453, dexscreener: 'base', coingecko: 'base', trustwallet: 'base' },
-  hyperevm: { evm: true, deepcore: 999, dexscreener: 'hyperevm', coingecko: 'hyperevm', trustwallet: 'hyperevm' },
+  robinhood: { evm: true, deepcore: null, dexscreener: 'robinhood', coingecko: 'robinhood', trustwallet: null },
+  bsc: { evm: true, deepcore: null, dexscreener: 'bsc', coingecko: 'binance-smart-chain', trustwallet: 'smartchain' },
+  base: { evm: true, deepcore: null, dexscreener: 'base', coingecko: 'base', trustwallet: 'base' },
+  hyperevm: { evm: true, deepcore: null, dexscreener: 'hyperevm', coingecko: 'hyperevm', trustwallet: 'hyperevm' },
   solana: { evm: false, deepcore: null, dexscreener: 'solana', coingecko: 'solana', trustwallet: 'solana' },
   gully: { evm: true, deepcore: null, dexscreener: null, coingecko: null, trustwallet: null },
   ethereum: { evm: true, deepcore: null, dexscreener: 'ethereum', coingecko: 'ethereum', trustwallet: 'ethereum' },

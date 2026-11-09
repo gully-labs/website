@@ -5,7 +5,6 @@
 // closes incidents on state changes. Every check is real and read-only:
 //   - the API itself (this process answering, and the tracker's cached read time);
 //   - tracker freshness per chain (when its pools were last read; fresh within 15 min);
-//   - the DeepCore launch poller (last good poll vs its interval);
 //   - the Telegram bot webhook (Telegram's getWebhookInfo: pending updates and the last delivery error);
 //   - Gully Pay RPC per payment chain (eth_blockNumber / Solana getSlot, timed);
 //   - Gully AI (configured, index size, retrieval mode);
@@ -24,7 +23,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
 import { trackerHealth } from './tracker.mjs'
-import { deepcoreHealth, pollMs as deepcorePollMs } from './deepcore.mjs'
 import { requiredChannel, telegramToken } from './telegram.mjs'
 import { feeProxyView } from './fee-proxy-monitor.mjs'
 import { CHAIN_LIST, publicChains, rpc } from './payments.mjs'
@@ -123,15 +121,6 @@ export function trackerComponents(h, now = Date.now()) {
 
 function checkTracker() {
   return trackerComponents(trackerHealth())
-}
-
-function checkDeepcore() {
-  const h = deepcoreHealth()
-  const every = deepcorePollMs()
-  if (!h.lastOkAt) return [r('deepcore', 'deepcore', 'DeepCore launch poller', h.lastError ? 'down' : 'unknown', h.lastError ? 'DeepCore could not be read yet.' : 'No poll yet since this server started.')]
-  const age = Date.now() - Date.parse(h.lastOkAt)
-  const state = age <= every * 3 ? 'up' : age <= every * 10 ? 'degraded' : 'down'
-  return [r('deepcore', 'deepcore', 'DeepCore launch poller', state, `Last good poll ${agoWords(age)} (every ${Math.round(every / 1000)} s); ${h.cached} launches cached.`)]
 }
 
 function telegramBase() {
@@ -306,7 +295,7 @@ async function checkGullyChain() {
 }
 
 function checkHolders() {
-  const out = [r('holders-deepcore', 'holders', 'Holder Map: DeepCore launches', 'up', 'Read from DeepCore’s own log index.'), r('holders-gully', 'holders', 'Holder Map: Gully Chain Testnet', 'up', 'Read from the chain’s own archive node (every Transfer) and our indexer.')]
+  const out = [r('holders-gully', 'holders', 'Holder Map: Gully Chain Testnet', 'up', 'Read from the chain’s own archive node (every Transfer) and our indexer.')]
   for (const [key, label] of [['robinhood', 'Robinhood Chain'], ['bsc', 'BNB Chain'], ['solana', 'Solana']]) {
     out.push(holderChainAvailable(key) ? r(`holders-${key}`, 'holders', `Holder Map: ${label} stock tokens`, 'up', 'Holder data source configured.') : r(`holders-${key}`, 'holders', `Holder Map: ${label} stock tokens`, 'off', `Holder data is not available on ${label} yet.`))
   }
@@ -327,7 +316,7 @@ async function settle(name, fn) {
 export async function runChecks({ now = Date.now(), record = true } = {}) {
   if (running) return running
   running = (async () => {
-    const groups = await Promise.all([settle('api', checkApi), settle('tracker', checkTracker), settle('deepcore', checkDeepcore), settle('telegram', checkTelegram), settle('telegram-gate', checkNewsGate), settle('payments', checkPayments), settle('pay-feeproxy', checkFeeProxy), settle('ai', checkAi), settle('security', checkSecurity), settle('monitors', checkMonitors), settle('holders', checkHolders), settle('gullychain', checkGullyChain)])
+    const groups = await Promise.all([settle('api', checkApi), settle('tracker', checkTracker), settle('telegram', checkTelegram), settle('telegram-gate', checkNewsGate), settle('payments', checkPayments), settle('pay-feeproxy', checkFeeProxy), settle('ai', checkAi), settle('security', checkSecurity), settle('monitors', checkMonitors), settle('holders', checkHolders), settle('gullychain', checkGullyChain)])
     const results = groups.flat()
     if (record) recordResults(results, now)
     lastRun = { at: now, results }

@@ -338,7 +338,6 @@ const COMMANDS = {
   gap: '📈 One stock token, e.g. /gap NVDA',
   top: '🔥 Furthest from the real share price',
   movers: '🚀 Biggest gap moves in 24 hours',
-  launches: '🛰 Newest tokens launched on DeepCore',
   holders: '👥 Holder Map: who holds a token',
   alerts: '🔔 Your alerts: pause, mute, test or delete',
   security: '🛡 Contract scans, Gully Score and monitors',
@@ -349,8 +348,8 @@ const COMMANDS = {
   stop: '🔕 Stop announcements, or unlink this chat',
 }
 const SCOPE_COMMANDS = {
-  private: ['start', 'app', 'gap', 'top', 'movers', 'launches', 'holders', 'alerts', 'security', 'score', 'ask', 'contact', 'help', 'stop'],
-  group: ['gap', 'top', 'launches', 'help'],
+  private: ['start', 'app', 'gap', 'top', 'movers', 'holders', 'alerts', 'security', 'score', 'ask', 'contact', 'help', 'stop'],
+  group: ['gap', 'top', 'help'],
 }
 /** The command list for one scope ('private' or 'group'). */
 export const commandList = (scope = 'private') => SCOPE_COMMANDS[scope].map((command) => ({ command, description: COMMANDS[command] }))
@@ -674,6 +673,7 @@ const blocked = (link) => !!getAccount(link.address)?.blocked
 /* ---------------------------------------------------------------- views --- */
 
 const NO_CHANGE = Symbol('no change')
+const RETIRED_LAUNCHES = 'DeepCore launch feeds were retired on 2026-11-08. Gully Core, Gully Labs’ own launchpad and DEX core, is at https://gullycore.xyz'
 
 /** The stock card for one chain, with its 24h sparkline. Null for a stock the tracker does not follow. */
 async function stockCard(cc, ticker, from) {
@@ -902,12 +902,8 @@ async function onMessage(msg) {
   else if (cmd === 'gap') view = await gapScreen(args)
   else if (cmd === 'top') view = ui.topView(await rowsOrNull())
   else if (cmd === 'movers') view = await moversScreen('24h')
-  else if (cmd === 'launches') {
-    const a = args.split(/\s+/).filter(Boolean)[0]?.toLowerCase().slice(0, 20)
-    const chainId = a ? (LAUNCH_CHAIN_ALIASES[a] ?? (DEEPCORE_CHAINS[Number(a)] ? Number(a) : undefined)) : 0
-    if (chainId === undefined) view = { text: `DeepCore runs on ${Object.values(DEEPCORE_CHAINS).map((c) => esc(c.name)).join(', ')}. Try <code>/launches</code> or <code>/launches base</code>, or pick a chain below.`, keyboard: [[btn('🛰 DeepCore launches', 'dc:0')], ui.nav('m')] }
-    else view = await launchesScreen(chainId)
-  } else if (cmd === 'ask') {
+  else if (cmd === 'launches') view = { text: RETIRED_LAUNCHES, keyboard: ui.MENU_KEYBOARD }
+  else if (cmd === 'ask') {
     const q = rawArgs.trim().slice(0, MAX_QUESTION + 1)
     if (!q) return void (await prompt(chatId, ui.AI_PROMPT, { kind: 'ai' }, 'How do gap alerts work?'))
     view = await aiAnswer(chatId, q)
@@ -1022,6 +1018,8 @@ async function routeView(route, c) {
   }
   if (route === 'top') return c.answer(), ui.topView(await rowsOrNull())
   if ((m = route.match(/^mv:(24h|1h)$/))) return c.answer(), moversScreen(m[1])
+  // DeepCore launch screens and launch alerts: retired 2026-11-08 (old buttons in old messages land here)
+  if (/^(dc|dl|dla|dlk):/.test(route)) return c.answer(), { text: RETIRED_LAUNCHES, keyboard: ui.MENU_KEYBOARD }
   if ((m = route.match(/^dc:(\d{1,5})$/)) && (m[1] === '0' || DEEPCORE_CHAINS[Number(m[1])])) return c.answer(), launchesScreen(m[1])
   if ((m = route.match(/^dl:(\d{1,5}):([0-9a-f]{40}):(\d{1,5})$/))) {
     c.answer()

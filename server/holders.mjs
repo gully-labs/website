@@ -48,7 +48,6 @@
 import { clientIp, json } from './http.mjs'
 import { holderMapFeatures } from './plans.mjs'
 import { enrichLaunch, readLaunchFeed, readLive, readWalletDetail, recordScan, resolveHolders, setMapPeek, topScans } from './holders-intel.mjs'
-import { DEEPCORE_CHAINS } from './deepcore.mjs'
 import { FEE_PROXY_REGISTRY } from './fee-proxy-guard.mjs'
 import { readHistory, readTracker } from './tracker.mjs'
 import { isOnCurve, b58decode, isSolanaAddress, solanaRpc } from './solana.mjs'
@@ -116,7 +115,7 @@ const SOURCE_ENV = { blockscout: 'BLOCKSCOUT_API_KEY', moralis: 'MORALIS_API_KEY
 const solanaRpcSet = () => String(process.env.GULLY_RPC_SOLANA ?? '').trim() !== ''
 
 /** The words users see when a chain's holder source is not set up yet: no env names, no jargon. */
-export const comingSoonReason = (chainKey) => `Holder history is not available yet on ${HOLDER_CHAINS[chainKey]?.name ?? chainKey}. DeepCore launches already have live maps.`
+export const comingSoonReason = (chainKey) => `Holder history is not available yet on ${HOLDER_CHAINS[chainKey]?.name ?? chainKey}.`
 
 /**
  * Whether the Holder Map can draw tokens of `kind` on a chain right now.
@@ -131,7 +130,7 @@ export function holdersAvailable(chain, kind = 'stock') {
   if (!ck) return false
   const c = HOLDER_CHAINS[ck]
   if (kind === 'token') kind = 'stock' // any token follows the same sources as a stock token
-  if (kind === 'deepcore-launch') return ck !== 'solana' && !!DEEPCORE_CHAINS[c.id]
+  if (kind === 'deepcore-launch') return false // DeepCore launch maps retired 2026-11-08
   if (c.holders === 'solana-rpc') return solanaRpcSet()
   return archiveKnown(ck) || blockscoutFor(ck) || moralisFor(ck)
 }

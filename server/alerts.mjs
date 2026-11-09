@@ -53,7 +53,7 @@ import { planOf } from './plans.mjs'
 import { getAccount, randomToken } from './store.mjs'
 import { FLAG_PCT, trackedStocks } from './tracker.mjs'
 import { linkedChat, sendAlertTelegram, telegramEnabled, telegramInfo } from './telegram.mjs'
-import { DEEPCORE_CHAINS, deepcoreAlertChains } from './deepcore.mjs'
+import { DEEPCORE_CHAINS } from './deepcore.mjs' // retired 2026-11-08: only names legacy alerts' chains
 import { chainKeyOf, findStock, HOLDER_CHAINS, readHolderMap } from './holders.mjs'
 import { holderMapFeatures } from './plans.mjs'
 import { isSolanaAddress } from './solana.mjs'
@@ -569,7 +569,6 @@ export async function alertsOf(address) {
     // The alert kinds this server offers, for the create dialog.
     kinds: [
       { id: 'gap', label: 'Gap alert', target: 'stock' },
-      { id: 'deepcore-launch', label: 'DeepCore new launch', target: 'deepcore-chain', chains: deepcoreAlertChains(), cooldownMinutes: LAUNCH_COOLDOWN_MS / 60_000 },
       { id: 'holders', label: 'Holder Map: cluster or top-10 share', target: 'token', chains: Object.entries(HOLDER_CHAINS).map(([key, c]) => ({ key, name: c.name })), everyMinutes: HOLDER_ALERTS_MS / 60_000, available: holderMapFeatures(plan.id).alerts },
     ],
   }
@@ -615,6 +614,7 @@ export async function handleAlerts(req, res, url, address) {
     let chain = null
     let ticker = null
     const launchKind = body?.condition?.type === 'deepcore-launch'
+    if (launchKind) return json(res, 410, { error: 'DeepCore launch alerts were retired on 2026-11-08. Gully Core, Gully Labs’ own launchpad, is at https://gullycore.xyz', code: 'RETIRED' }), true
     const holdersKind = body?.condition?.type === 'holders'
     if (holdersKind && (body?.chain || body?.ticker)) return json(res, 400, { error: 'A holder alert names its token in condition.chain and condition.token, not as a stock target.' }), true
     if (launchKind && (body?.chain || body?.ticker)) return json(res, 400, { error: 'A DeepCore launch alert has no stock; limit it to a chain with condition.chainId, or leave that empty for every chain.' }), true
@@ -651,11 +651,7 @@ export async function handleAlerts(req, res, url, address) {
       if ((above !== null && !(above >= 1 && above <= 100)) || (dropPts !== null && !(dropPts >= 0.1 && dropPts <= 100)) || (sellPct !== null && !(sellPct >= 1 && sellPct <= 100))) return json(res, 400, { error: 'above and sellPct must be from 1 to 100, dropPts from 0.1 to 100.' }), true
       const symbol = typeof c.symbol === 'string' && /^[\p{L}\p{N} ._$-]{1,24}$/u.test(c.symbol) ? c.symbol : (stock?.ticker ?? null)
       condition = { type: 'holders', chain: hc, token: stock ? stock.ticker : hc === 'solana' ? tok : tok.toLowerCase(), symbol, metric, above: above === null ? null : Math.round(above * 100) / 100, dropPts: dropPts === null ? null : Math.round(dropPts * 100) / 100, sellPct: sellPct === null ? null : Math.round(sellPct * 100) / 100 }
-    } else if (launchKind) {
-      const id = c.chainId === undefined || c.chainId === null || c.chainId === '' ? null : Number(c.chainId)
-      if (id !== null && !DEEPCORE_CHAINS[id]) return json(res, 400, { error: `DeepCore runs on ${deepcoreAlertChains().map((x) => `${x.name} (${x.chainId})`).join(', ')}; pick one of those, or none for every chain.` }), true
-      condition = { type: 'deepcore-launch', chainId: id }
-    } else return json(res, 400, { error: 'Choose a condition: a gap of at least X%, a status (premium, discount or either), a new DeepCore launch, or a holder share (holders).' }), true
+        } else return json(res, 400, { error: 'Choose a condition: a gap of at least X%, a status (premium, discount or either), or a holder share (holders).' }), true
 
     let webhook = null
     let secret = null

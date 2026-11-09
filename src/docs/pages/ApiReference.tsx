@@ -404,17 +404,9 @@ export function ApiReference() {
         </P>
       </Section>
 
-      <Section id="launchpad" title="Launchpad: /api/deepcore">
-        <Fields
-          head={['Path', 'Answers', 'Limits and cache']}
-          variant="routes"
-          rows={[
-            ['GET /api/deepcore/launches?chain=&limit=', <>The launchpad’s newest launches from the server’s poller: <C>{'{ state (ok, stale, unreadable), launches[], asOf, chains[], error, pollSeconds }'}</C>. Each launch: <C>key</C>, <C>chainId</C>, <C>chainName</C>, <C>token</C>, <C>symbol</C>, <C>createdAt</C>, <C>creator</C>, <C>totalSupply</C>, <C>legs[]</C> (pools, lock), <C>links</C>, <C>locked</C>. <C>chain</C> is 56, 999, 4663 or 8453; <C>limit</C> 1–50, default 50.</>, 'public, max-age=30; no key'],
-            ['GET /api/deepcore/quote?chain=&token=&amount=', <>A launchpad router quote for buying a stock token with the native coin, for comparison only (nothing is signed): <C>{'{ quote }'}</C> with <C>pay</C>, <C>out</C> (amount, minimum), <C>priceImpactPct</C>, <C>fee</C>, <C>route</C> (venues, hops), <C>alternatives</C>, <C>expiresAt</C>, <C>links</C>. <C>chain</C> is <C>robinhood</C> or <C>bsc</C>; <C>token</C> a tracked stock token; <C>amount</C> up to 1000 of the native coin.</>, <>10 a minute per address (<C>429</C>, <C>RATE_LIMITED</C>); answers cached 20 s (<C>cached: true</C>). Region-gated (<C>451</C>).</>],
-          ]}
-        />
+      <Section id="launchpad" title="Launchpad: /api/deepcore (retired)">
         <P>
-          Quote errors carry a <C>code</C>: <C>BAD_CHAIN</C>, <C>BAD_TOKEN</C>, <C>BAD_AMOUNT</C> (400), <C>NO_ROUTE</C> (404), <C>BUSY</C> (429, the launchpad’s own limit), <C>UNREADABLE</C> (502).
+          <C>GET /api/deepcore/launches</C> and <C>GET /api/deepcore/quote</C> answer <C>410</C> since 2026-11-08: the DeepCore integrations were retired. Gully Core, Gully Labs’ own launchpad and DEX core, publishes its own data at gullycore.xyz (docs.gullycore.xyz).
         </P>
       </Section>
 

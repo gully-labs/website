@@ -1,37 +1,11 @@
-// DeepCore (deepcore.fun), read through its public API at https://api.deepcore.fun. Two jobs:
-//
-// 1. New launches. GET /v1/launches?limit=50 (every chain, newest first) is polled every POLL_MS
-//    (90 s; DEEPCORE_POLL_MS may set 60–120 s). Launches not seen before go to the listeners
-//    (alerts.mjs: the "DeepCore new launch" alert kind). The first good read after a fresh start only
-//    records what exists (no alert storm for the backlog). Seen keys and the last good read are kept in
-//    DATA_DIR/deepcore.json, so a restart neither re-alerts nor forgets. A read that fails or answers
-//    an unexpected shape is "unreadable": the last good list is kept and labelled with its time, a
-//    chain the API says it could not read is named as such, and nothing is ever shown as zero.
-//    The Telegram bot's /launches reads the same cache (readLaunches).
-//
-// 2. Router quotes, for comparison only. GET /api/deepcore/quote?chain=&token=&amount= proxies
-//    DeepCore's GET /v1/chains/:chainId/quote (tokenIn = the native coin, as the LI.FI widget defaults
-//    to; tokenOut = a stock token the tracker follows; amount in native units). The browser only ever
-//    talks to this site (CSP connect-src 'self'). Answers are cached QUOTE_CACHE_MS per (chain, token,
-//    amount), amounts are rounded to 4 significant digits so neighbours share a cache entry, each IP may
-//    ask PER_IP_PER_MIN times a minute, and the whole site at most QUOTE_PER_MIN upstream quotes a
-//    minute (DeepCore allows 20 a minute per IP without a key). Nothing is ever executed through
-//    DeepCore from here: the page links out to deepcore.fun's own swap.
-//
-// 3. Market reads for Gully AI (ask.mjs tools deepcore_launches / deepcore_pool). The launch list is
-//    the poller's cache above (no extra call). Price, liquidity and activity come from DeepCore's own
-//    pool view (GET /v1/chains/:id/pools/:poolId: state and price from CLPoolManager.getSlot0, read by
-//    DeepCore's indexer at a stated block, so no RPC call is made from here), market cap is that price
-//    times the launch's total supply, and dollars only where DeepCore states a Chainlink USD price for
-//    the quote token (GET /v1/chains/:id/tokens/:address) or the quote is a dollar stable. Every read
-//    is cached (POOL_CACHE_MS, USD_CACHE_MS; at most MARKET_CACHE_MAX entries) and runs on its own
-//    per-minute budget (ASK_PER_MIN), so questions can never starve the launch poller or the quotes.
-//
-// Budget: DeepCore's anonymous limit is 60 requests a minute per IP. Data reads here stay under
-// DATA_PER_MIN (30) + ASK_PER_MIN (12), and a 429's Retry-After is honoured before the next call.
-//
-// Env: DEEPCORE_API (tests: a local stub), DEEPCORE_POLL_MS, DEEPCORE_LOOP=off (no background poll;
-// also off when TRACKER_LOOP=off, as in the tests, unless DEEPCORE_LOOP=on).
+// DeepCore: RETIRED 2026-11-08 (owner: "retire deepcore"). Nothing here reads deepcore.fun or api.deepcore.fun any more:
+// the launch poller, its store (DATA_DIR/deepcore.json), the "DeepCore new launch" alert kind, the router-quote proxy, the
+// Gully AI tools and the Holder Map's DeepCore launch source are gone. The exports stay so every former caller degrades
+// honestly (state 'retired', empty lists, 410 on the two public endpoints) instead of failing: alerts.mjs, status.mjs,
+// admin.mjs, ask.mjs, gully-score.mjs, holders*.mjs and the Telegram modules import from here. The pure shaping helpers
+// (units, toRaw, sig, shapePool, venueName, normaliseLaunch, deepcoreLinks) are kept because holders-intel.mjs and the
+// tests still shape data with them. DeepCore's contracts remain credited (MIT) where the site documents Gully Core's lineage.
+// Gully Core, Gully Labs' own launchpad and DEX core, is at https://gullycore.xyz (app.gullycore.xyz, docs.gullycore.xyz).
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -40,6 +14,8 @@ import { readTokenDecimals, stockByToken } from './tracker.mjs'
 
 const API = () => String(process.env.DEEPCORE_API ?? 'https://api.deepcore.fun').replace(/\/+$/, '')
 export const DEEPCORE_SITE = 'https://deepcore.fun'
+export const RETIRED = "DeepCore integrations were retired on 2026-11-08. Gully Core is Gully Labs' own launchpad and DEX core: https://gullycore.xyz"
+const gone = (res) => (json(res, 410, { error: 'gone', code: 'RETIRED', message: RETIRED, gullyCore: 'https://gullycore.xyz' }, { 'Cache-Control': 'public, max-age=3600' }), true)
 const FILE = path.join(DATA_DIR, 'deepcore.json')
 const UA = 'gullylabs/1 (+https://gullylabs.xyz)'
 const TIMEOUT_MS = 12_000
@@ -56,12 +32,7 @@ const KEEP_LAUNCHES = 50
 export const NATIVE = '0x0000000000000000000000000000000000000000'
 
 /** DeepCore's chains (GET /v1/chains): id, deepcore.fun's ?net= key, name, native coin. */
-export const DEEPCORE_CHAINS = {
-  56: { key: 'bsc', name: 'BNB Chain', native: 'BNB' },
-  999: { key: 'hyperevm', name: 'HyperEVM', native: 'HYPE' },
-  4663: { key: 'robinhood', name: 'Robinhood Chain', native: 'ETH' },
-  8453: { key: 'base', name: 'Base', native: 'ETH' },
-}
+export const DEEPCORE_CHAINS = {} // retired 2026-11-08: no DeepCore chain is read any more
 /** The tracker's chain keys to chain ids (the quote panel serves only these). */
 const TRACKER_CHAIN_ID = { robinhood: 4663, bsc: 56 }
 
@@ -72,12 +43,7 @@ export const pollMs = () => {
 
 /* ----------------------------------------------------------------- store --- */
 
-let db
-try {
-  db = JSON.parse(fs.readFileSync(FILE, 'utf8'))
-} catch {
-  db = {}
-}
+let db = {} // retired: never read from or written to disk
 db.seen ??= [] // launch keys "<chainId>:<token>", newest last
 db.launches ??= [] // the last good read, normalised
 db.baselineAt ??= null // when the first good read was recorded (no alerts for what existed then)
@@ -89,13 +55,7 @@ let seen = new Set(db.seen)
 function save() {
   db.seen = [...seen].slice(-KEEP_SEEN)
   seen = new Set(db.seen)
-  try {
-    fs.mkdirSync(path.dirname(FILE), { recursive: true })
-    fs.writeFileSync(FILE + '.tmp', JSON.stringify(db))
-    fs.renameSync(FILE + '.tmp', FILE)
-  } catch (e) {
-    console.error('deepcore save:', e?.message ?? e)
-  }
+  // retired: nothing is written
 }
 
 /* ---------------------------------------------------------------- budget --- */
@@ -113,19 +73,8 @@ function take(kind, max) {
 }
 
 /** One GET to DeepCore. Returns { ok, status, body, error }; never throws. */
-async function get(pathAndQuery, kind = 'data') {
-  if (!take(kind, kind === 'quote' ? QUOTE_PER_MIN : kind === 'ask' ? ASK_PER_MIN : DATA_PER_MIN)) return { ok: false, status: 429, body: null, error: 'local budget for DeepCore requests is spent; try again shortly' }
-  try {
-    const r = await fetch(API() + pathAndQuery, { headers: { accept: 'application/json', 'user-agent': UA }, redirect: 'error', signal: AbortSignal.timeout(TIMEOUT_MS) })
-    if (r.status === 429) {
-      const wait = Math.min(300, Number(r.headers.get('retry-after')) || 60)
-      blockedUntil = Date.now() + wait * 1_000
-    }
-    const body = await r.json().catch(() => null)
-    return { ok: r.ok && !!body, status: r.status, body, error: r.ok ? (body ? null : 'not JSON') : String(body?.error?.message ?? `HTTP ${r.status}`).slice(0, 200) }
-  } catch (e) {
-    return { ok: false, status: null, body: null, error: String(e?.name === 'TimeoutError' ? `timed out after ${TIMEOUT_MS / 1000} s` : (e?.message ?? e)).slice(0, 200) }
-  }
+async function get() {
+  return { ok: false, status: 410, body: null, error: RETIRED }
 }
 
 /* -------------------------------------------------------------- launches --- */
@@ -192,10 +141,7 @@ export function onLaunches(fn) {
 let inflight = null
 /** One poll of /v1/launches. Exported for tests (pollLaunchesNow). Returns { ok, fresh, error }. */
 export function pollLaunchesNow() {
-  inflight ??= pollOnce().finally(() => {
-    inflight = null
-  })
-  return inflight
+  return Promise.resolve({ ok: false, fresh: [], error: RETIRED })
 }
 
 async function pollOnce() {
@@ -242,13 +188,8 @@ function emit(fresh, at) {
  * The latest launches for the bot: { state: 'ok' | 'stale' | 'unreadable', launches, asOf, chains, error }.
  * Reads the cache; when it is older than one poll, polls once first (within the budget).
  */
-export async function readLaunches({ chainId = null, limit = 5 } = {}) {
-  const age = db.lastOkAt ? Date.now() - Date.parse(db.lastOkAt) : Infinity
-  if (age > pollMs()) await pollLaunchesNow()
-  const okAge = db.lastOkAt ? Date.now() - Date.parse(db.lastOkAt) : Infinity
-  const state = !db.lastOkAt ? 'unreadable' : okAge > 3 * pollMs() || db.lastError ? 'stale' : 'ok'
-  const launches = db.launches.filter((l) => chainId === null || l.chainId === chainId).slice(0, limit)
-  return { state, launches, asOf: db.lastOkAt, chains: db.chains, error: db.lastError?.error ?? null }
+export async function readLaunches() {
+  return { state: 'retired', launches: [], asOf: null, chains: [], error: RETIRED }
 }
 
 /**
@@ -256,35 +197,20 @@ export async function readLaunches({ chainId = null, limit = 5 } = {}) {
  * dashboard's DeepCore view and the site's launch list (with Holder Maps), { state: 'ok' | 'stale' | 'unreadable', launches, asOf, chains, error }.
  * Reads the same cache as the bot (readLaunches): no extra upstream call while the cache is fresh.
  */
-export async function handleDeepcoreLaunches(req, res, url) {
-  if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
-  const c = url.searchParams.get('chain')
-  const chainId = c === null || c === '' ? null : Number(c)
-  if (chainId !== null && !DEEPCORE_CHAINS[chainId]) return json(res, 400, { error: `chain must be one of ${Object.keys(DEEPCORE_CHAINS).join(', ')}`, code: 'BAD_CHAIN' }), true
-  const l = Number(url.searchParams.get('limit') ?? KEEP_LAUNCHES)
-  if (!Number.isInteger(l) || l < 1 || l > KEEP_LAUNCHES) return json(res, 400, { error: `limit must be a whole number from 1 to ${KEEP_LAUNCHES}`, code: 'BAD_LIMIT' }), true
-  const r = await readLaunches({ chainId, limit: l })
-  // `locked` per launch (true when any leg's liquidity is locked, false when none is, null when unknown) for
-  // the site's launch list with Holder Maps.
-  const launches = r.launches.map((x) => ({ ...x, locked: x.legs.some((g) => g.locked === true) ? true : x.legs.length && x.legs.every((g) => g.locked === false) ? false : null }))
-  return json(res, 200, { ...r, launches, pollSeconds: Math.round(pollMs() / 1000) }, { 'Cache-Control': 'public, max-age=30' }), true
+export async function handleDeepcoreLaunches(req, res) {
+  return gone(res)
 }
 
 /** For alerts: the chains a launch alert may be limited to. */
 export const deepcoreAlertChains = () => Object.entries(DEEPCORE_CHAINS).map(([id, c]) => ({ chainId: Number(id), name: c.name }))
 
 /** Admin/health: the poller's state. */
-export const deepcoreHealth = () => ({ lastOkAt: db.lastOkAt, lastError: db.lastError, baselineAt: db.baselineAt, seen: seen.size, cached: db.launches.length })
+export const deepcoreHealth = () => ({ retired: true, lastOkAt: null, lastError: null, baselineAt: null, seen: 0, cached: 0 })
 
 let timer = null
 /** Starts the background poll (off with DEEPCORE_LOOP=off). */
 export function startDeepcore() {
-  // Tests run with TRACKER_LOOP=off; they get no DeepCore polling either unless DEEPCORE_LOOP=on.
-  if (process.env.DEEPCORE_LOOP === 'off' || (process.env.TRACKER_LOOP === 'off' && process.env.DEEPCORE_LOOP !== 'on') || timer) return
-  const tick = () => pollLaunchesNow().catch(() => undefined)
-  tick()
-  timer = setInterval(tick, pollMs())
-  timer.unref?.()
+  // retired: no background poll
 }
 
 /** Test hook: forget everything (seen keys, cache, baseline) as on a first start. */
@@ -388,59 +314,8 @@ export function shapeQuote(d, { chainKey, chainId, stock, amount, decimalsOut })
  * GET /api/deepcore/quote?chain=robinhood&token=0x…&amount=0.1
  * Same-chain quote, native coin in, the stock token out. Answers { quote } or { error, code }.
  */
-export async function handleDeepcoreQuote(req, res, url, geo = { allowed: false, reason: 'unknown' }) {
-  if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
-  // The same gate as the swap card (geo.mjs): no quote for a region where swapping is not offered.
-  if (!geo?.allowed) return json(res, 451, { error: geo?.reason === 'blocked' ? 'Swapping this token isn’t available in your region.' : 'Your region could not be determined.', code: 'REGION' }), true
-  const chainKey = String(url.searchParams.get('chain') ?? '').toLowerCase()
-  const chainId = TRACKER_CHAIN_ID[chainKey]
-  if (!chainId) return json(res, 400, { error: 'chain must be robinhood or bsc', code: 'BAD_CHAIN' }), true
-  const stock = stockByToken(chainKey, url.searchParams.get('token'))
-  if (!stock) return json(res, 400, { error: 'token must be a stock token the tracker follows on that chain', code: 'BAD_TOKEN' }), true
-  const amt = toRaw(url.searchParams.get('amount'), 18)
-  if (!amt || Number(amt.amount) > 1_000) return json(res, 400, { error: 'amount must be a positive number of the native coin, at most 1000', code: 'BAD_AMOUNT' }), true
-
-  // The per-IP limit comes first: a cache hit still counts, so the cache cannot be used to get around it.
-  const now = Date.now()
-  const ip = clientIp(req)
-  const list = (ipHits.get(ip) ?? []).filter((t) => now - t < 60_000)
-  if (list.length >= PER_IP_PER_MIN) return json(res, 429, { error: 'Too many quotes from this address. Wait a minute.', code: 'RATE_LIMITED' }, { 'Retry-After': '30' }), true
-  ipHits.set(ip, [...list, now])
-
-  const key = `${chainId}:${stock.token.toLowerCase()}:${amt.raw}`
-  const hit = quoteCache.get(key)
-  if (hit && now - hit.at < QUOTE_CACHE_MS) {
-    const done = hit.promise ? await hit.promise : hit
-    // Only good quotes are cached; an in-flight request that failed is answered as it is, never marked cached.
-    if (done.status === 200) return json(res, 200, { ...done.body, cached: true }, { 'Cache-Control': 'public, max-age=10' }), true
-    return json(res, done.status, done.body, { 'Cache-Control': 'no-store' }), true
-  }
-
-  const promise = (async () => {
-    let decimalsOut
-    try {
-      decimalsOut = await readDecimals(chainKey, stock.token)
-    } catch {
-      return { status: 502, body: { error: 'The token’s decimals could not be read on chain just now.', code: 'UNREADABLE' } }
-    }
-    const q = new URLSearchParams({ tokenIn: NATIVE, tokenOut: stock.token, amount: amt.raw, slippageBps: '50' })
-    const r = await get(`/v1/chains/${chainId}/quote?${q}`, 'quote')
-    if (r.status === 404 || r.body?.error?.code === 'NO_ROUTE') return { status: 404, body: { error: 'DeepCore’s router has no route for this pair right now.', code: 'NO_ROUTE', links: deepcoreLinks(chainId, stock.token) } }
-    if (r.status === 429) return { status: 429, body: { error: 'DeepCore’s quote limit is reached for the moment. Try again in a minute.', code: 'BUSY' } }
-    const d = r.body?.data
-    if (!r.ok || !d || !/^\d+$/.test(String(d.amountOut ?? ''))) {
-      console.warn(`deepcore quote: unreadable answer (${r.status ?? 'no status'}): ${String(r.error ?? 'unexpected answer shape').slice(0, 200)}`)
-      return { status: 502, body: { error: 'DeepCore’s quote could not be read just now.', code: 'UNREADABLE' } }
-    }
-    return { status: 200, body: { quote: shapeQuote(d, { chainKey, chainId, stock, amount: amt.amount, decimalsOut }) } }
-  })()
-  quoteCache.set(key, { at: now, promise })
-  const done = await promise
-  // Only a good quote is cached. Errors are not: the next ask tries again (the site-wide upstream budget and the
-  // per-IP limit above still keep a refusing upstream from being hammered).
-  if (done.status === 200) quoteCache.set(key, { at: now, ...done })
-  else quoteCache.delete(key)
-  return json(res, done.status, done.body, { 'Cache-Control': done.status === 200 ? 'public, max-age=10' : 'no-store' }), true
+export async function handleDeepcoreQuote(req, res) {
+  return gone(res)
 }
 
 /* ---------------------------------------------------------------- market --- */
@@ -576,27 +451,8 @@ export function deepcoreChainId(x) {
  * Gully AI: the newest, or the most traded recent, DeepCore launches with price, market cap, liquidity
  * and activity. `sort` is 'newest' or 'trending'; at most 5 launches. Never throws.
  */
-export async function readDeepcoreMarkets({ chain, limit = 5, sort = 'newest' } = {}) {
-  const chainId = deepcoreChainId(chain)
-  if (chainId === undefined) return { error: `DeepCore runs on ${chainList()}.` }
-  const order = sort === 'trending' ? 'trending' : 'newest'
-  const n = Math.min(5, Math.max(1, Number.isInteger(limit) ? limit : 5))
-  const list = await readLaunches({ chainId, limit: KEEP_LAUNCHES })
-  if (list.state === 'unreadable') return { error: 'DeepCore’s launches could not be read just now.', detail: list.error }
-  const candidates = list.launches.slice(0, order === 'trending' ? NEWEST_TRENDING : n)
-  let rows = await Promise.all(candidates.map(launchMarket))
-  if (order === 'trending') rows = rows.sort((a, b) => (b.swaps ?? -1) - (a.swaps ?? -1) || String(b.lastSwapAt ?? '').localeCompare(String(a.lastSwapAt ?? ''))).slice(0, n)
-  const fetched = rows.flatMap((r) => r.pools.map((p) => p.fetchedAt)).filter(Boolean).sort()
-  return {
-    source: 'api.deepcore.fun',
-    sort: order,
-    ...(order === 'trending' ? { trendingMeans: `the most swaps among the ${NEWEST_TRENDING} newest launches${chainId ? ` on ${DEEPCORE_CHAINS[chainId].name}` : ''}; DeepCore publishes no trending list` } : {}),
-    freshness: { launchListAsOf: list.asOf, launchListState: list.state, marketReadOldest: fetched[0] ?? null, cachedForSeconds: POOL_CACHE_MS / 1000 },
-    unreadableChains: (list.chains ?? []).filter((c) => c.status !== 'ok').map((c) => c.name),
-    launches: rows,
-    notes: [LIQUIDITY_NOTE, PRICE_NOTE],
-    page: `${DEEPCORE_SITE}/tokens`,
-  }
+export async function readDeepcoreMarkets() {
+  return { state: 'retired', launches: [], chains: [], asOf: null, error: RETIRED }
 }
 
 /**
@@ -604,23 +460,6 @@ export async function readDeepcoreMarkets({ chain, limit = 5, sort = 'newest' } 
  * looked up in the latest launches. An address that is not a recent launch needs a chain and is read
  * through DeepCore's pool list for that token. Never throws.
  */
-export async function readDeepcorePool({ token, chain } = {}) {
-  const chainId = deepcoreChainId(chain)
-  if (chainId === undefined) return { error: `DeepCore runs on ${chainList()}.` }
-  const q = String(token ?? '').trim().replace(/^\$/, '')
-  const byAddr = isAddr(q)
-  if (!byAddr && !/^[A-Za-z0-9._-]{1,24}$/.test(q)) return { error: 'Give a token address (0x…) or a launch symbol.' }
-  const list = await readLaunches({ chainId, limit: KEEP_LAUNCHES })
-  const freshness = { launchListAsOf: list.asOf, launchListState: list.state, cachedForSeconds: POOL_CACHE_MS / 1000 }
-  const hits = list.launches.filter((l) => (byAddr ? l.token.toLowerCase() === q.toLowerCase() : String(l.symbol ?? '').toLowerCase() === q.toLowerCase())).slice(0, 3)
-  if (hits.length) return { source: 'api.deepcore.fun', freshness, matches: await Promise.all(hits.map(launchMarket)), notes: [LIQUIDITY_NOTE, PRICE_NOTE, ...(hits.length > 1 ? ['More than one launch has this symbol; tell them apart by chain and address.'] : [])] }
-  if (!byAddr) return { error: `${q} is not among DeepCore’s ${list.launches.length} latest launches. Ask with the token’s address and chain.`, freshness }
-  if (!chainId) return { error: 'That address is not among DeepCore’s latest launches; say which chain it is on.', freshness }
-  const a = q.toLowerCase()
-  const r = await cachedAsk(`pools:${chainId}:${a}`, POOL_CACHE_MS, `/v1/chains/${chainId}/pools?token=${a}&limit=4`)
-  const items = Array.isArray(r.body?.data?.items) ? r.body.data.items : null
-  if (!r.ok || !items) return { error: `DeepCore’s pools could not be read just now (${r.error ?? 'unexpected answer'}).` }
-  if (!items.length) return { error: `DeepCore indexes no pool for ${a} on ${DEEPCORE_CHAINS[chainId].name}.` }
-  const pools = await Promise.all(items.slice(0, 4).map((d) => withUsd(chainId, shapePool(d, a), r.at)))
-  return { source: 'api.deepcore.fun', freshness: { ...freshness, marketReadAt: new Date(r.at).toISOString() }, chain: DEEPCORE_CHAINS[chainId].name, token: a, pools, notes: [LIQUIDITY_NOTE, PRICE_NOTE, 'Not a recent launch: market cap is not stated here.'], page: deepcoreLinks(chainId, a).token }
+export async function readDeepcorePool() {
+  return { state: 'retired', matches: [], pools: [], asOf: null, error: RETIRED }
 }
