@@ -107,6 +107,19 @@ test('an all-zero chart keeps its resting line and says so; a chart with activit
   assert.ok(!G.coreBars({ activity: { hourly: [] } }, 'swaps').includes('g-none'), 'an unreadable source stays an empty frame, not a claim of zero')
 })
 
+test('the footer and the orbit grid come from one catalog (server/data/footer.json): same products, no column over seven rows', () => {
+  const F = JSON.parse(fs.readFileSync(new URL('../server/data/footer.json', import.meta.url), 'utf8'))
+  assert.equal(F.columns.length, 4)
+  for (const c of F.columns) assert.ok(c.links.length <= 7, `${c.title}: ${c.links.length} rows`)
+  const all = [...F.columns.flatMap((c) => c.links), ...F.peddle.links]
+  for (const l of all) assert.ok(['product', 'tool', 'company', 'peddle'].includes(l.rank), `${l.label}: rank ${l.rank} is not a footer item`)
+  const tiles = new Set(all.map((l) => l.tile).filter(Boolean))
+  assert.deepEqual([...tiles].sort(), L.TILES.map((t) => t.key).sort(), 'every tile is in the footer and every footer tile is in the grid')
+  assert.equal(all.find((l) => l.label === 'Gully Core').href, 'https://gullycore.xyz')
+  for (const l of all) assert.ok(html.includes(`<span>${l.label}</span>`), `${l.label} is in the footer`)
+  assert.ok(!/Offerwall|Copy Trading|Gully Social/.test(html.slice(html.indexOf('<footer'))), 'features are not footer items')
+})
+
 test('chain states come from the config and only an open chain links to the builder', () => {
   const chains = JSON.parse(fs.readFileSync(new URL('../server/data/core-chains.json', import.meta.url), 'utf8'))
   for (const c of chains) {
@@ -118,7 +131,7 @@ test('chain states come from the config and only an open chain links to the buil
 })
 
 test('Build links go to the real Gully Core routes; no simulated motion in the scripts', () => {
-  for (const r of ['launch/v2/new', 'pads/new', 'dexes/new?kind=dex', 'pads/new?kind=stocks', 'vaults/new', 'locks/new']) assert.ok(html.includes(`https://gullychain.xyz/core/app/${r}`), r)
+  for (const r of ['launch/v2/new', 'pads/new', 'dexes/new?kind=dex', 'pads/new?kind=stocks', 'vaults/new', 'locks/new']) assert.ok(html.includes(`https://app.gullycore.xyz/${r}`), r)
   const js = L.landingAsset('/landing/live.js') + L.landingAsset('/landing/graphs.mjs')
   assert.ok(!/Math\.random/.test(js) && !/Math\.sin/.test(L.landingAsset('/landing/live.js')))
 })

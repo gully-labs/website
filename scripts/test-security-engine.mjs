@@ -373,7 +373,7 @@ console.log('\n# Gully Chain Testnet: bytecode-only (no verification service)')
 {
   const { resolveChain, CHAINS: SC } = await import('../server/security/chains.mjs')
   const { SCAN_CHAINS, normaliseInput } = await import('../server/security-contract.mjs')
-  check('gully and 485590 resolve to Gully Chain Testnet; offered in the scan form', resolveChain('gully') === 485590 && resolveChain(485590) === 485590 && SC[485590].explorer === 'https://testnet-explorer.gullychain.xyz' && SCAN_CHAINS.some((c) => c.key === 'gully') && normaliseInput({ kind: 'address', chain: 'gully', address: ADDR_UNVERIFIED }).ok)
+  check('gully and 485590 resolve to Gully Chain Testnet; offered in the scan form', resolveChain('gully') === 485590 && resolveChain(485590) === 485590 && SC[485590].explorer === 'https://testnet.gullyscan.xyz' && SCAN_CHAINS.some((c) => c.key === 'gully') && normaliseInput({ kind: 'address', chain: 'gully', address: ADDR_UNVERIFIED }).ok)
   const n = hits.etherscan
   const g = await fetchAddress(485590, ADDR_UNVERIFIED)
   check('a Gully Chain contract: Etherscan skipped (it does not cover the chain), bytecode read over the RPC, not verified', !g.verified && g.bytecode === BYTECODE && hits.etherscan === n && g.attempts.find((a) => a.provider === 'etherscan')?.outcome === 'skipped: Etherscan does not cover this chain', JSON.stringify(g.attempts))

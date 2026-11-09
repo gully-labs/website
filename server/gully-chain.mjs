@@ -44,7 +44,7 @@ export const GULLY_CHAIN = {
   name: 'Gully Chain Testnet',
   testnet: true,
   rpc: 'https://testnet-rpc.gullychain.xyz',
-  explorer: 'https://testnet-explorer.gullychain.xyz',
+  explorer: 'https://testnet.gullyscan.xyz',
   indexer: 'https://indexer.gullychain.xyz',
   site: 'https://gullychain.xyz',
   weth: '0x26acccb2e98ca9e067e58668aa3b101bef432754',

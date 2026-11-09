@@ -144,7 +144,7 @@ Not public, so the owner exports them if wanted:
   - App: https://app.gullylabs.xyz
   - Analytics: https://analytics.gullylabs.xyz
   - Blog: https://blog.gullylabs.xyz
-  - GitHub: https://github.com/gully-labs (SDK: https://github.com/gully-labs/sdk; explorer: https://testnet-explorer.gullychain.xyz)
+  - GitHub: https://github.com/gully-labs (SDK: https://github.com/gully-labs/sdk; explorer: https://testnet.gullyscan.xyz)
   - X: https://x.com/Gully_Labs
   - Telegram news: https://t.me/GullyLabsNews
   - Bot: https://t.me/GullyLabsBot

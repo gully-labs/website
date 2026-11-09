@@ -249,7 +249,7 @@
     var ev = []
     if (all.hub.state === 'ok' && all.hub.data.quests) (all.hub.data.quests.recent || []).forEach(function (q) { ev.push({ at: q.at, p: 'chain', t: 'Quest completed: ' + q.title, who: q.who }) })
     if (all.id.state === 'ok') (all.id.data.recent || []).slice(0, 5).forEach(function (s) { ev.push({ at: s.at, p: 'id', t: 'Gully ID sign-in with ' + ({ passkey: 'a passkey', wallet: 'a wallet', email: 'an email code', social: 'Google / X' }[s.method] || s.method) }) })
-    if (all.feed.state === 'ok') (all.feed.data.items || []).slice(0, 6).forEach(function (f) { var kind = { trade: 'Trade', launch: 'Token launch', swap: 'Swap', wrap: 'ETH wrapped', unwrap: 'ETH unwrapped', transfer: 'Transfer' }[f.kind] || f.kind; ev.push({ at: new Date(Number(f.timestamp) * 1000).toISOString(), p: 'chain', t: kind + ' on Gully Chain, block ' + f.block, href: 'https://testnet-explorer.gullychain.xyz/tx/' + f.txHash }) })
+    if (all.feed.state === 'ok') (all.feed.data.items || []).slice(0, 6).forEach(function (f) { var kind = { trade: 'Trade', launch: 'Token launch', swap: 'Swap', wrap: 'ETH wrapped', unwrap: 'ETH unwrapped', transfer: 'Transfer' }[f.kind] || f.kind; ev.push({ at: new Date(Number(f.timestamp) * 1000).toISOString(), p: 'chain', t: kind + ' on Gully Chain, block ' + f.block, href: 'https://testnet.gullyscan.xyz/tx/' + f.txHash }) })
     return ev.sort(function (a, b) { return Date.parse(b.at) - Date.parse(a.at) }).slice(0, 8)
   }
 

@@ -34,7 +34,7 @@ export const HUB_NAV_IDS = 'overview,activity,products,keys,billing,team,setting
 
 /** The Gully Core app. Its routes are the real features behind the sidebar's Trade, Build and Manage groups and the
     home page's Create tiles (gully-core-app apps/web/src/routes/dapp/data/shell.ts). */
-export const CORE_APP = 'https://gullychain.xyz/core/app'
+export const CORE_APP = 'https://app.gullycore.xyz'
 export type AppLink = { label: string; href: string; icon: LucideIcon }
 export const APP_GROUPS: { title: string; links: AppLink[] }[] = [
   {

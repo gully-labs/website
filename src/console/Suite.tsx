@@ -15,7 +15,7 @@ import { Btn, Count, ic, Spark } from './ui'
 
 type Icon = ComponentType<LucideProps>
 export const STREET = 'https://kre8.fun'
-export const EXPLORER = 'https://testnet-explorer.gullychain.xyz'
+export const EXPLORER = 'https://testnet.gullyscan.xyz'
 
 /** kre8.fun's features (its own nav, read from app.gullychain.xyz on 2026-10-26). */
 export const STREET_FEATURES: { label: string; path: string; icon: Icon }[] = [

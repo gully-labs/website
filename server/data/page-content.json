@@ -2227,7 +2227,7 @@
    "urlLabel": "kre8.fun/quests",
    "cta": null,
    "cta2": null,
-   "docs": "https://docs.gullychain.xyz/gully-core/",
+   "docs": "https://docs.gullycore.xyz/",
    "group": "chain",
    "hub": [
     "street",
@@ -2499,14 +2499,14 @@
   "gully-core": {
    "name": "Gully Core",
    "line": "Launch a token, run a launchpad or own a DEX on one shared core, on the chains your users already use.",
-   "url": "https://gullychain.xyz/core/",
-   "urlLabel": "gullychain.xyz/core",
+   "url": "https://gullycore.xyz",
+   "urlLabel": "gullycore.xyz",
    "cta": null,
    "cta2": [
     "Launch on kre8.fun",
     "https://kre8.fun/launch"
    ],
-   "docs": "https://docs.gullychain.xyz/gully-core/",
+   "docs": "https://docs.gullycore.xyz",
    "group": "chain",
    "hub": [
     "street",
@@ -2558,7 +2558,7 @@
     ],
     [
      "Where is it live?",
-     "On Anubis mainnet and on Gully Chain testnet, with more chains coming. The app is at gullychain.xyz/core."
+     "On Anubis, Robinhood Chain, BNB Chain and Base mainnets and on Gully Chain testnet. The home is gullycore.xyz; the app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet)."
     ],
     [
      "Does Gully Core support Gully Chain?",
@@ -6675,7 +6675,7 @@
        "Open kre8.fun/quests"
       ],
       [
-       "https://docs.gullychain.xyz/gully-core/",
+       "https://docs.gullycore.xyz/",
        "Gully Quests docs"
       ]
      ],
@@ -7143,15 +7143,15 @@
      "list": [],
      "links": [
       [
-       "https://gullychain.xyz/core/",
-       "Open gullychain.xyz/core"
+       "https://gullycore.xyz",
+       "Open gullycore.xyz"
       ],
       [
        "https://kre8.fun/launch",
        "Launch on kre8.fun"
       ],
       [
-       "https://docs.gullychain.xyz/gully-core/",
+       "https://docs.gullycore.xyz",
        "Gully Core docs"
       ]
      ],
@@ -7206,7 +7206,7 @@
       ],
       [
        "Where is it live?",
-       "On Anubis mainnet and on Gully Chain testnet, with more chains coming. The app is at gullychain.xyz/core."
+       "On Anubis, Robinhood Chain, BNB Chain and Base mainnets and on Gully Chain testnet. The home is gullycore.xyz; the app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet)."
       ],
       [
        "Does Gully Core support Gully Chain?",

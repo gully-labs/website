@@ -17,7 +17,7 @@
   "planned": [],
   "cta": {
    "label": "Build here",
-   "href": "https://gullychain.xyz/core/app"
+   "href": "https://app.gullycore.xyz/"
   }
  },
  {
@@ -39,7 +39,7 @@
   ],
   "cta": {
    "label": "Read the docs",
-   "href": "https://docs.gullychain.xyz/gully-core/"
+   "href": "https://docs.gullycore.xyz/"
   }
  },
  {

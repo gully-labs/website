@@ -1259,14 +1259,14 @@ export const features: Feature[] = [
     summary: "Gully Explorer, our own MIT-licensed block explorer, branded for your EVM chain and run by Gully Labs. It runs Gully Chain's testnet explorer today; per-chain deployments for Chain Kit are being built.",
     facts: [
       "Gully Explorer (gully-labs/gully-explorer, MIT) replaces Blockscout in Chain Kit: Blockscout has been under a proprietary licence since 2026-04-22 that forbids hosted use without a commercial licence",
-      "Live for Gully Chain Testnet (chain 485590) at testnet-explorer.gullychain.xyz",
+      "Live for Gully Chain Testnet (chain 485590) at testnet.gullyscan.xyz",
       "Pages: blocks, transactions with decoded calls, addresses, tokens, contracts and network details, plus search",
       "Reads the chain's RPC (with fallbacks) and Gully's own Ponder indexer (gully-indexer) for tokens, holders and names",
       "Arbitrum Orbit chains: shows whether each block is in a batch posted to the parent chain",
       "Today it is configured for Gully Chain only; per-chain config (chain ID, RPC, indexer, branding) for Chain Kit customers is coming soon",
       "Chain Kit is on a waitlist and cannot be ordered yet"
     ],
-    url: "https://testnet-explorer.gullychain.xyz/",
+    url: "https://testnet.gullyscan.xyz/",
     source: [
       "gully-explorer:README.md",
       "gully-explorer:LICENSE",
@@ -1415,9 +1415,9 @@ export const features: Feature[] = [
     status: "planned",
     summary: "A token, its pool and locked liquidity created in one transaction, with a decaying anti-snipe fee at the open.",
     facts: [
-      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
+      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
     ],
-    url: "https://gullychain.xyz/core/",
+    url: "https://gullycore.xyz/",
     source: [
       "deepcore:README.md",
       "deepcore:packages/launchpad/src/LaunchpadKitV2.sol",
@@ -1433,9 +1433,9 @@ export const features: Feature[] = [
     status: "planned",
     summary: "Builders open their own launchpad or DEX on Gully Core.",
     facts: [
-      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
+      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
     ],
-    url: "https://gullychain.xyz/core/",
+    url: "https://gullycore.xyz/",
     source: [
       "deepcore:README.md",
       "deepcore:packages/launchpad/src/pad",
@@ -1450,9 +1450,9 @@ export const features: Feature[] = [
     status: "planned",
     summary: "Swaps routed across Gully Core pools and other venues.",
     facts: [
-      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
+      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
     ],
-    url: "https://gullychain.xyz/core/",
+    url: "https://gullycore.xyz/",
     source: [
       "deepcore:README.md",
       "deepcore:packages/routing/src",
@@ -1466,9 +1466,9 @@ export const features: Feature[] = [
     status: "planned",
     summary: "Utility contracts for locking liquidity or tokens, distributing tokens and splitting revenue.",
     facts: [
-      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
+      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
     ],
-    url: "https://gullychain.xyz/core/",
+    url: "https://gullycore.xyz/",
     source: [
       "deepcore:README.md",
       "deepcore:packages/launchpad/src/lock",
@@ -1484,9 +1484,9 @@ export const features: Feature[] = [
     status: "planned",
     summary: "On-chain range (limit) orders and dollar-cost averaging contracts.",
     facts: [
-      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
+      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
     ],
-    url: "https://gullychain.xyz/core/",
+    url: "https://gullycore.xyz/",
     source: [
       "deepcore:packages/orders/src",
       "deepcore:packages/sdk/src/deployments/index.ts",
@@ -1500,9 +1500,9 @@ export const features: Feature[] = [
     status: "planned",
     summary: "Gully Core on Anubis Network and other chains, as a service for builders.",
     facts: [
-      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
+      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
     ],
-    url: "https://gullychain.xyz/core/",
+    url: "https://gullycore.xyz/",
     source: [
       "deepcore:README.md",
       "deepcore:packages/sdk/src/deployments/index.ts",
@@ -1516,9 +1516,9 @@ export const features: Feature[] = [
     status: "planned",
     summary: "An SDK, swap widgets and project scaffolders for builders.",
     facts: [
-      "Planned for Gully Core. Its app runs on testnet at gullychain.xyz/core/; nothing is on any mainnet yet."
+      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
     ],
-    url: "https://gullychain.xyz/core/",
+    url: "https://gullycore.xyz/",
     source: [
       "deepcore:README.md",
       "deepcore:packages/sdk/src/deployments/index.ts",
