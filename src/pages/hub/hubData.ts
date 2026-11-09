@@ -391,7 +391,7 @@ export function liveEvents(src: Sources, max = 8): LiveEvent[] {
   for (const f of (src.live?.feed?.items ?? []).slice(0, 6)) {
     const at = Number(f.timestamp)
     if (!Number.isFinite(at)) continue
-    ev.push({ at: new Date(at * 1000).toISOString(), p: 'chain', kind: 'chain', t: `${KIND[f.kind] ?? f.kind} on Gully Chain, block ${f.block}`, href: f.txHash ? `https://testnet-explorer.gullychain.xyz/tx/${f.txHash}` : undefined })
+    ev.push({ at: new Date(at * 1000).toISOString(), p: 'chain', kind: 'chain', t: `${KIND[f.kind] ?? f.kind} on Gully Chain, block ${f.block}`, href: f.txHash ? `https://testnet.gullyscan.xyz/tx/${f.txHash}` : undefined })
   }
   return ev.filter((e) => Number.isFinite(Date.parse(e.at))).sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, max)
 }

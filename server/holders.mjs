@@ -101,7 +101,7 @@ export const HOLDER_CHAINS = {
   // Gully Chain Testnet (our own L3). No holder API indexes it, so maps come only from our own Transfer-log index
   // (holders-logs.mjs). Its public RPC is our own archive node, so it counts as an owner RPC (`ownArchive`):
   // GULLY_RPC_485590 still overrides it. The explorer is our own (address and token pages; no verification API).
-  gully: { id: 485590, name: 'Gully Chain Testnet', explorer: 'https://testnet-explorer.gullychain.xyz', holders: 'own-rpc', testnet: true, ownArchive: true, rpcs: ['https://testnet-rpc.gullychain.xyz'], span: 10_000 },
+  gully: { id: 485590, name: 'Gully Chain Testnet', explorer: 'https://testnet.gullyscan.xyz', holders: 'own-rpc', testnet: true, ownArchive: true, rpcs: ['https://testnet-rpc.gullychain.xyz'], span: 10_000 },
 }
 const CHAIN_BY_ID = Object.fromEntries(Object.entries(HOLDER_CHAINS).map(([k, c]) => [c.id, k]))
 export const chainKeyOf = (x) => {

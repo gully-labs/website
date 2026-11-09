@@ -16,7 +16,7 @@ export const CHAINS = {
   // Our own L3 testnet. Its explorer has no verification API and Etherscan V2 does not cover it, so source is read
   // from Sourcify only (it does not list the chain today, so in practice every scan runs in bytecode-only mode).
   // Bytecode and proxy slots come over its RPC (payments.mjs READ_CHAINS, GULLY_RPC_485590 overrides).
-  485590: { key: 'gully', name: 'Gully Chain Testnet', explorer: 'https://testnet-explorer.gullychain.xyz', blockscout: null, etherscan: false, testnet: true },
+  485590: { key: 'gully', name: 'Gully Chain Testnet', explorer: 'https://testnet.gullyscan.xyz', blockscout: null, etherscan: false, testnet: true },
 }
 
 const BY_KEY = Object.fromEntries(Object.entries(CHAINS).map(([id, c]) => [c.key, Number(id)]))

@@ -179,7 +179,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
               <Empty state={hlState === 'loading' ? 'loading' : 'offline'} text="sentry.gullychain.xyz/api/v1/chain/health unreadable right now · retrying" />
             )}
             <p className="gt-note">
-              Sentry Key (ERC-721, testnet) <A href={`https://testnet-explorer.gullychain.xyz/address/${KEY}`}><code>{KEY.slice(0, 6)}…{KEY.slice(-4)}</code></A> · testnet keys have no value and do not convert to mainnet keys · not offered to US persons or sanctioned regions (<A href="https://sentry.gullychain.xyz/risk/">risk</A>, <A href="https://sentry.gullychain.xyz/terms/">terms</A>)
+              Sentry Key (ERC-721, testnet) <A href={`https://testnet.gullyscan.xyz/address/${KEY}`}><code>{KEY.slice(0, 6)}…{KEY.slice(-4)}</code></A> · testnet keys have no value and do not convert to mainnet keys · not offered to US persons or sanctioned regions (<A href="https://sentry.gullychain.xyz/risk/">risk</A>, <A href="https://sentry.gullychain.xyz/terms/">terms</A>)
             </p>
           </Panel>
         ),
@@ -530,7 +530,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
         { id: 'paid', label: 'USDC paid', title: 'USDC paid to players per hour, last 24 h (UTC)', series: [{ name: 'USDC', color: S[1], values: ser.map((x) => x.paid) }], labels, fmt: (v) => (v == null ? '—' : `${v.toFixed(2)} USDC`), state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? `${sum(ser.map((x) => x.paid)).toFixed(2)} USDC` : '—', sub: 'testnet USDC on Gully Chain · no USD value' },
         { id: 'pts', label: 'Points', title: 'Points awarded per hour, last 24 h (UTC)', series: [{ name: 'Points', color: S[2], values: ser.map((x) => x.points) }], labels, fmt: (v) => fmtInt(v), integer: true, state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? fmtInt(sum(ser.map((x) => x.points))) : '—', sub: 'points awarded, last 24 h' },
       ]
-      const EXP = 'https://testnet-explorer.gullychain.xyz/address/'
+      const EXP = 'https://testnet.gullyscan.xyz/address/'
       const contracts: [string, string, string][] = [
         ['OfferwallManager', '0xD6a8c4151a7ED9865a540D20BDD42073DC9c74Bf', 'creates offers, holds budgets, pays players and publishers'],
         ['QuestRegistry (Gully Quests)', '0xE3E57e15A9973281A8de2B3bedd512BE8C3813Bb', 'every offer is a quest here, verified on chain'],
@@ -603,7 +603,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
     case 'copy-trading': {
       // The copy-trading engine's public health (copy.kre8.fun/health via /api/hub/live) and the indexer's trades.
       const c = hl?.copy ?? null
-      const EXP = 'https://testnet-explorer.gullychain.xyz/address/'
+      const EXP = 'https://testnet.gullyscan.xyz/address/'
       const FEES = '0xA9d429eb1b137764B0d4964e437AF50989bdFea3'
       return {
         kpis: [
