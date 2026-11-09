@@ -25,12 +25,20 @@ export interface Project {
   telegram?: string
   chains: string[]
   built: string[]
+  /** The product family it belongs to: PeddleSwap, Peddles and PeddleQuest are the Peddle family (owner, 2026-11-05). */
+  family?: 'Peddle'
+  /** This site's page for it when it is not a /projects page (a Gully product has a /products page instead). */
+  page?: string
 }
+
+/** The page on this site a project row links to: its /projects page, or its product page when it has one. */
+export const projectPath = (p: Pick<Project, 'slug' | 'page'>) => p.page ?? `/projects/${p.slug}`
 
 export const projects: Project[] = [
   {
     slug: 'peddleswap',
     key: 'peddleswap',
+    family: 'Peddle',
     name: 'PeddleSwap',
     tag: 'DEX',
     status: 'Live',
@@ -50,6 +58,7 @@ export const projects: Project[] = [
   {
     slug: 'peddles',
     key: 'peddles',
+    family: 'Peddle',
     name: 'Peddles',
     tag: 'Launchpad',
     status: 'Live',
@@ -70,6 +79,7 @@ export const projects: Project[] = [
   {
     slug: 'peddlequest',
     key: 'peddlequest',
+    family: 'Peddle',
     name: 'PeddleQuest',
     tag: 'Quest to earn',
     status: 'Live',
@@ -90,6 +100,7 @@ export const projects: Project[] = [
   {
     slug: 'gullychain',
     key: 'gullychain',
+    page: '/products/chain',
     name: 'Gully Chain',
     tag: 'L3 chain',
     status: 'Beta',

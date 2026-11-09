@@ -4,7 +4,7 @@ import { usePortal, useWrite } from './portal'
 import { Can } from './RoleGate'
 import { ChainLogo } from '../../components/logos/ChainLogo'
 import { TokenLogo } from '../../components/logos/TokenLogo'
-import { StackedDays } from './vcharts'
+import { LiveChart, type LivePoint } from '../../components/live/GlLive'
 import { GhostCurves } from './charts'
 import { PlanUsage } from './tabcharts'
 import { useCallback, useEffect, useState } from 'react'
@@ -20,6 +20,26 @@ import { ErrorLine, Skeleton } from './parts'
 import { PayFlow } from './PayFlow'
 import { mono, panel, panelTitle, pillGold, pillLine, pillSm, rise } from './styles'
 import { StatusPill as KitPill } from '../../components/ui/StatusPill'
+import { ConsentLine } from '../../components/legal/ConsentLine'
+
+
+const DAY = 86_400_000
+/** USD paid per UTC day as [day start in ms, USD] (cents rounded), every day from the first payment to today (a day
+    with no payment is a real 0), the last 90 days at most. */
+function paidPerDay(rows: { at: string; usd: number }[], now = Date.now()): LivePoint[] {
+  const by = new Map<number, number>()
+  for (const r of rows) {
+    const t = Date.parse(r.at)
+    if (!Number.isFinite(t)) continue
+    const d = Math.floor(t / DAY) * DAY
+    by.set(d, (by.get(d) ?? 0) + r.usd)
+  }
+  if (!by.size) return []
+  const today = Math.floor(now / DAY) * DAY
+  const out: LivePoint[] = []
+  for (let d = Math.max(Math.min(...by.keys()), today - 89 * DAY); d <= today; d += DAY) out.push([d, Math.round((by.get(d) ?? 0) * 100) / 100])
+  return out
+}
 
 /* Billing, as sub-tabs that show one section at a time (#billing/plan, #billing/plans, #billing/history,
    remembered): the plan in force with its usage rings and the payments chart (and the CSV exports); the
@@ -119,6 +139,7 @@ function PlanCheckout({ plan, view, initialAsset, autoQuote, onPaid, onCancel }:
           onPaid()
         }}
       />
+      <ConsentLine />
     </section>
   )
 }
@@ -188,7 +209,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex max-w-[560px] min-w-0 flex-col gap-1">
                   <span className="flex items-center gap-2 text-[12px] text-dim">
-                    <span className="size-2 rounded-full" style={{ background: cur.id === 'free' ? '#9398b5' : '#00d2ff' }} aria-hidden /> Current plan
+                    <span className="size-2 rounded-full" style={{ background: cur.id === 'free' ? '#9398b5' : '#6f8ddf' }} aria-hidden /> Current plan
                     <RefreshChip error={poll.error} onRetry={load} />
                   </span>
                   <h2 id="plan-title" className="m-0 font-display text-[30px] leading-none font-bold uppercase">
@@ -203,7 +224,7 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
                   <Limits p={cur} />
                 </div>
               </div>
-              <PlanUsage account={account} payments={view.payments} />
+              <PlanUsage account={account} payments={view.payments} periodDays={offer.periodDays} />
               <div className="flex items-center gap-2 border-t border-line pt-2" data-testid="workspace-pays">
                 <Users size={14} className="shrink-0 text-gold" aria-hidden />
                 <InfoTip summary={<><b className="font-semibold text-ink-2">This workspace pays</b> · {me ? me.active.name : 'the workspace'}</>}>
@@ -240,11 +261,15 @@ export function Billing({ account, reload, intent, onIntentDone }: { account: Ac
               </div>
               {known.length ? (
                 <div data-testid="payments-chart">
-                  <StackedDays
+                  {/* Gully Live UI: USD paid per UTC day (the plan of each payment is in Payment history below). */}
+                  <LiveChart
+                    kind="bars"
+                    unit="usd"
                     height={130}
-                    label={`Payments over time: ${known.length} payments with a USD value${known.length < view.payments.length ? ' (partial)' : ''}.`}
-                    kinds={[...new Set(known.map((p) => p.plan ?? p.kind))].map((k, i) => ({ id: String(k), name: `${k} (USD)`, color: ['#00d2ff', '#248bff', '#3ddc97', '#9578e8'][i % 4] }))}
-                    days={[...known].sort((a, b) => a.at.localeCompare(b.at)).map((p) => ({ label: fmtDate(p.at), values: { [String(p.plan ?? p.kind)]: Math.round((usdOf(p) ?? 0) * 100) / 100 } }))}
+                    title="Paid per day"
+                    empty="Paid today: the chart draws from tomorrow."
+                    label={`Payments over time: ${known.length} payments with a USD value${known.length < view.payments.length ? ' (partial)' : ''}, summed per day.`}
+                    series={paidPerDay(known.map((p) => ({ at: p.at, usd: usdOf(p) ?? 0 })))}
                   />
                 </div>
               ) : view.payments.length ? (

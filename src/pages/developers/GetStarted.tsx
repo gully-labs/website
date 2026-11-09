@@ -1,17 +1,14 @@
-import { BellRing, ChartNoAxesCombined, KeyRound, Send, Terminal } from 'lucide-react'
+import { TZ } from '../../lib/time'
+import { ChartNoAxesCombined, KeyRound, Terminal } from 'lucide-react'
 import { Stepper } from './ui'
 import type { ReactNode } from 'react'
-import { isLocalHost, SITE_URL } from '../../site-host'
-import type { Account, AlertsView, AnalyticsView } from './api'
-import { ExtLink } from './ExtLink'
+import type { Account, AnalyticsView } from './api'
 
-/* The Overview's "Get started" checklist and "Tools" row. Every tick comes from account data the console
-   already reads (the account's keys, /api/developer/alerts, /api/developer/analytics); a step the server
-   cannot see (embedding the widget needs no account) says so instead of pretending. */
+/* The Overview's "Get started" checklist: the three steps of a Gully Labs account (a key, a first call, a Gully
+   Analytics site). Every tick comes from account data the console already reads (the account's keys,
+   /api/developer/analytics); a product not switched on on this server is left out instead of counting as undone. */
 
-const site = (path: string) => (isLocalHost() ? path : `${SITE_URL}${path}`)
-
-type StepState = 'done' | 'todo' | 'na' | 'untracked' | 'loading'
+type StepState = 'done' | 'todo' | 'na' | 'loading'
 interface Step {
   id: string
   title: string
@@ -22,8 +19,7 @@ interface Step {
 
 const actionCls = 'inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full px-3 text-[13px] text-gold hover:text-gold-hover hover:underline'
 
-
-export function GetStarted({ account, alerts, analytics, go, createKey, createAlert }: { account: Account; alerts: AlertsView | null; analytics: AnalyticsView | null | 'error'; go: (tab: 'keys' | 'alerts' | 'analytics' | 'billing') => void; createKey: () => void; createAlert: () => void }) {
+export function GetStarted({ account, analytics, go, createKey }: { account: Account; analytics: AnalyticsView | null | 'error'; go: (tab: 'keys' | 'analytics' | 'billing') => void; createKey: () => void }) {
   const ga = analytics === 'error' ? null : analytics
   const hasKey = account.keys.length > 0
   const called = account.keys.some((k) => !!k.lastUsed)
@@ -42,34 +38,12 @@ export function GetStarted({ account, alerts, analytics, go, createKey, createAl
     {
       id: 'call',
       title: 'Call the API with it',
-      note: called ? `last call ${new Date(account.keys.map((k) => k.lastUsed ?? '').sort().at(-1)!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'send it as Authorization: Bearer',
+      note: called ? `last call ${new Date(account.keys.map((k) => k.lastUsed ?? '').sort().at(-1)!).toLocaleDateString('en-US', { timeZone: TZ, month: 'short', day: 'numeric' })}` : 'send it as Authorization: Bearer',
       state: called ? 'done' : 'todo',
       action: !called && (
         <a href="#quickstart" className={actionCls}>
           Quickstart
         </a>
-      ),
-    },
-    {
-      id: 'alert',
-      title: 'Set a gap alert',
-      note: alerts ? (alerts.alerts.length ? `${alerts.alerts.length} of ${alerts.limits.max} on ${alerts.limits.planName}` : 'webhook or Telegram when a gap crosses your line') : 'reading alerts…',
-      state: !alerts ? 'loading' : alerts.alerts.length ? 'done' : 'todo',
-      action: alerts && !alerts.alerts.length && (
-        <button type="button" onClick={createAlert} className={actionCls}>
-          New alert
-        </button>
-      ),
-    },
-    {
-      id: 'telegram',
-      title: 'Connect Telegram',
-      note: !alerts ? 'reading alerts…' : !alerts.telegram.enabled ? 'the bot is not switched on on this server' : alerts.telegram.linked ? `linked to ${alerts.telegram.linked.chatType === 'private' ? 'a private chat' : 'a group'}` : 'alerts as messages, with a Mute button',
-      state: !alerts ? 'loading' : !alerts.telegram.enabled ? 'na' : alerts.telegram.linked ? 'done' : 'todo',
-      action: alerts?.telegram.enabled && !alerts.telegram.linked && (
-        <button type="button" onClick={() => go('alerts')} className={actionCls}>
-          Connect
-        </button>
       ),
     },
     {
@@ -83,21 +57,9 @@ export function GetStarted({ account, alerts, analytics, go, createKey, createAl
         </button>
       ),
     },
-    {
-      id: 'widget',
-      title: 'Embed the widget',
-      note: 'no key needed, so we cannot see it from your account',
-      state: 'untracked',
-      action: (
-        <ExtLink href={site('/widget')} className={actionCls}>
-          Builder
-        </ExtLink>
-      ),
-    },
   ]
-  // The stepper shows the steps the account can see; the ones it cannot (the widget needs no key; a
-  // product not switched on here) are left out instead of counting as undone.
-  const tracked = steps.filter((s) => s.state !== 'na' && s.state !== 'untracked')
+  // The stepper shows the steps the account can see; a product not switched on here is left out instead of counting as undone.
+  const tracked = steps.filter((s) => s.state !== 'na')
   return (
     <div className="flex flex-col gap-1">
       <Stepper
@@ -130,8 +92,5 @@ export function GetStarted({ account, alerts, analytics, go, createKey, createAl
 const STEP_ICON: Record<string, ReactNode> = {
   key: <KeyRound size={13} aria-hidden />,
   call: <Terminal size={13} aria-hidden />,
-  alert: <BellRing size={13} aria-hidden />,
-  telegram: <Send size={13} aria-hidden />,
   analytics: <ChartNoAxesCombined size={13} aria-hidden />,
 }
-

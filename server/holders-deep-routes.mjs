@@ -37,6 +37,17 @@
 //   POST /api/holders/deep/:id/cancel   before payment: cancels the invoice; a queued free check: drops it.
 //                                       -> 200 { check } · 409 when it is paid, running or finished.
 //
+// GULLY PAY CHECKOUT (2026-11-04, owner: "switching on billing for HolderMaps checks"): when Gully Pay is configured
+// (gullypay.mjs: the HolderMaps merchant's store id, API key and webhook signing key, from the box secret file) a paid
+// check gets a Gully Pay HOSTED CHECKOUT session instead of an in-house invoice: payment.provider 'gullypay',
+// payment.sessionId, payment.payUrl = the absolute checkout URL (open it in a new tab). The session's
+// clientReferenceId is `hd:<check id>:<chain id>:<token>`. The check unlocks ONLY on a verified Gully Pay webhook
+// (POST /api/gullypay/webhook, timestamped HMAC, deduped on the event id) `checkout.session.completed` for that
+// session, with the check's exact amount in USD, paid in crypto on a mainnet (no testnet coins; cards only with
+// HOLDER_DEEP_ACCEPT_CARDS=1 once Gully Pay's cards are live); reading the check never unlocks it. `checkout.session.expired`
+// cancels an unpaid check; a completed session that arrives after a cancel still runs the check (it was paid).
+// Without Gully Pay configured the in-house invoice path below is used (GET /api/holders/deep: checkout.provider).
+//
 // REFUNDS (owner decision): a PAID check that ends 'failed' gives its buyer one credit for a free re-run (never an
 // on-chain refund; they can also write to team@gullylabs.xyz). Credits are counted per buyer (the workspace, else
 // the address the buyer paid from) and are spent before the price: a quote or check made with a credit is free and
@@ -58,7 +69,7 @@
 //   budget: { limits: { rpcCalls, logSpans, explorerCalls, ms, holders, hops }, used: { rpcCalls, logSpans, explorerCalls, ms } },
 //   base: { mapState, kind, note, sources?, holders? },
 //   sections: {
-//     trading:  { state, method: 'deepcore-launch-forensics' | 'inferred-from-transfers', source, confidence,
+//     trading:  { state, method: 'launch-forensics' | 'inferred-from-transfers', source, confidence,
 //                 launchBlock?, firstLiquidityBlock?, firstTradeBlock, window: { blocks }, pool?, snipers: { count, pctOfSupply, wallets },
 //                 bundled: { count, pctOfSupply, … }, bundles?: [{ block, wallets, count }], reason? },
 //     funding:  { state, reason, wallets, hopsMax, sources: [string],
@@ -69,7 +80,7 @@
 //     clusters: { state, reason, direct: { clusters }, sharedFunder: { clusters }, combined: [{ id, wallets, count,
 //                 pctOfSupply, basis: 'direct-transfers'|'shared-funder'|'direct-transfers+shared-funder', confidence }] },
 //     deployer: { state, reason, address, source, tokens: [{ chain, address, symbol, outcome, source, confidence }],
-//                 chains: [{ chain, name, state, reason, created, tokens }], deepcore, otherLaunchpads },
+//                 chains: [{ chain, name, state, reason, created, tokens }], launchpad, otherLaunchpads },
 //   },
 //   findings: [{ id, section, text, confidence: 'high'|'medium'|'low', source }],   every one has both
 //   unavailable: [{ section, what, reason }],                                       what could not be read, and why
@@ -88,6 +99,7 @@ import { HOLDER_DEEP, holderDeepPriceCents, planOf, treasury } from './plans.mjs
 import { randomToken } from './store.mjs'
 import { findJob as findScanJob } from './security-store.mjs'
 import { anyCoverage, coverage, liveDeps, runDeepCheck } from './holders-deep.mjs'
+import { createHostedCheckout, gullyPayEnabled, gullyPayHandlers } from './gullypay.mjs'
 import { chainKeyOf, findStock, HOLDER_CHAINS } from './holders.mjs'
 import { isSolanaAddress } from './solana.mjs'
 
@@ -101,6 +113,13 @@ const MAX_ATTEMPTS = 3
 /** Holder chain key -> Gully Security scan chain key (a bundle needs a scan of the same contract on the same chain). */
 const SCAN_CHAIN = { base: 'base', bsc: 'bnb' }
 const USER_ROLES = ['owner', 'admin', 'developer']
+/** Where Gully Pay sends the buyer back: the check's own page on holdermaps.xyz (hosts.mjs SHORT_HOLDER /deep/<id>). */
+const RETURN_BASE = () => String(process.env.HOLDER_DEEP_RETURN_URL || 'https://holdermaps.xyz/deep/').replace(/\/?$/, '/')
+/** A paid check that waits on Gully Pay is cancelled this long after its session expired (late payments revive it). */
+const GP_GRACE_MS = 2 * 3_600_000
+/** How a paid check is bought right now: Gully Pay hosted checkout when configured, else the in-house invoice. */
+const provider = () => (gullyPayEnabled() ? 'gullypay' : 'invoice')
+const checkoutOn = () => (provider() === 'gullypay' ? true : !!treasury())
 
 /* ------------------------------------------------------------------ store --- */
 
@@ -221,9 +240,10 @@ export function deepQuotaOf(workspace) {
 /* ------------------------------------------------------------------ views --- */
 
 function paymentView(job) {
+  if (job.gp) return { provider: 'gullypay', invoiceId: null, sessionId: job.gp.sessionId, status: job.gp.status, usd: usd(job.priceCents), payUrl: job.gp.checkoutUrl, expiresAt: job.gp.expiresAt ?? null }
   if (!job.invoiceId) return null
   const inv = adminInvoice(job.invoiceId)
-  return { invoiceId: job.invoiceId, status: inv?.status ?? 'unknown', usd: usd(job.priceCents), payUrl: `/pay/${job.invoiceId}`, expiresAt: inv?.expiresAt ?? null }
+  return { provider: 'invoice', invoiceId: job.invoiceId, sessionId: null, status: inv?.status ?? 'unknown', usd: usd(job.priceCents), payUrl: `/pay/${job.invoiceId}`, expiresAt: inv?.expiresAt ?? null }
 }
 
 function view(job, { full = false } = {}) {
@@ -303,7 +323,7 @@ function queue(job) {
 }
 
 function reconcile(job) {
-  if (job.state === 'awaiting_payment' && job.invoiceId && adminInvoice(job.invoiceId)?.status === 'paid') queue(job)
+  if (job.state === 'awaiting_payment' && !job.gp && job.invoiceId && adminInvoice(job.invoiceId)?.status === 'paid') queue(job)
 }
 
 // The moment a check's invoice is paid, the check starts.
@@ -311,6 +331,54 @@ invoicePaidHooks.push((inv) => {
   const job = jobs().find((j) => j.invoiceId === inv.id)
   if (job) reconcile(job)
 })
+
+/** The check a Gully Pay session belongs to: its clientReferenceId names it and the session id must be the job's. */
+function gpJobOf(object) {
+  const m = String(object?.clientReferenceId ?? '').match(/^hd:(hd_[A-Za-z0-9_-]{16})(?::|$)/)
+  if (!m) return null
+  const job = findJob(m[1])
+  return job?.gp && job.gp.sessionId === String(object.id ?? '') ? job : null
+}
+
+/**
+ * Gully Pay's verified webhook (gullypay.mjs checked the signature and that the event is new). Only a completed
+ * session of exactly this check's price in USD unlocks it. Returns 'handled' or 'ignored'.
+ */
+export function onGullyPayEvent({ type, eventId, object }) {
+  const job = gpJobOf(object)
+  if (!job) return 'ignored'
+  if (type === 'checkout.session.completed') {
+    const amountOk = Number(object.amount) === Number(job.priceCents) && String(object.currency ?? '').toUpperCase() === 'USD'
+    // Real money only: a crypto payment on a mainnet (never a testnet coin), or a card once cards are live
+    // (HOLDER_DEEP_ACCEPT_CARDS=1; Gully Pay's cards run on a Stripe mock until the owner adds live keys).
+    const chainName = String(object.crypto?.chain ?? '')
+    const realMoney = object.crypto ? chainName !== '' && !/testnet|sepolia|devnet|goerli|holesky/i.test(chainName) : process.env.HOLDER_DEEP_ACCEPT_CARDS === '1'
+    if (!amountOk || !realMoney || (object.status && object.status !== 'completed')) {
+      console.error(`holders-deep ${job.id}: Gully Pay session ${object.id} completed with ${object.amount} ${object.currency} (${object.status}, ${chainName || object.paymentMethod || 'no method'}), want ${job.priceCents} USD: not unlocked`)
+      job.gp.mismatch = { eventId, amount: object.amount ?? null, currency: object.currency ?? null, chain: chainName || null, method: object.paymentMethod ?? null, at: new Date().toISOString() }
+      save()
+      return 'ignored'
+    }
+    if (job.gp.status === 'paid') return 'handled'
+    Object.assign(job.gp, { status: 'paid', eventId, paidAt: object.occurredAt ?? new Date().toISOString(), method: object.paymentMethod ?? null, crypto: object.crypto ?? null })
+    if (job.state === 'cancelled') {
+      // Paid after we gave up on it (expired, or cancelled by the buyer): the buyer paid, so the check runs.
+      Object.assign(job, { state: 'awaiting_payment', status: 'awaiting_payment', cancelReason: null, cancelledAt: null, paidAfterCancel: true })
+    }
+    if (job.state === 'awaiting_payment') queue(job)
+    else save()
+    return 'handled'
+  }
+  if (type === 'checkout.session.expired') {
+    if (job.state !== 'awaiting_payment' || job.gp.status === 'paid') return 'ignored'
+    job.gp.status = 'expired'
+    Object.assign(job, { state: 'cancelled', status: 'cancelled', cancelledAt: new Date().toISOString(), cancelReason: 'unpaid-expired' })
+    save()
+    return 'handled'
+  }
+  return 'ignored'
+}
+gullyPayHandlers.push(onGullyPayEvent)
 
 /**
  * Cancels the unpaid checks whose invoice expired or was cancelled (and any still open after the invoice window),
@@ -320,6 +388,15 @@ export function sweepDeep({ now = Date.now() } = {}) {
   const done = []
   for (const job of jobs()) {
     if (job.state !== 'awaiting_payment') continue
+    if (job.gp) {
+      // Only the webhook unlocks a Gully Pay check; the sweep only gives up on one long after its session expired.
+      const until = (job.gp.expiresAt ? Date.parse(job.gp.expiresAt) : Date.parse(job.createdAt) + INVOICE_TTL_MS) + GP_GRACE_MS
+      if (now < until) continue
+      if (job.gp.status === 'open') job.gp.status = 'expired'
+      Object.assign(job, { state: 'cancelled', status: 'cancelled', cancelledAt: new Date(now).toISOString(), cancelReason: 'unpaid-expired' })
+      done.push(job.id)
+      continue
+    }
     const inv = job.invoiceId ? adminInvoice(job.invoiceId) : null
     if (inv?.status === 'paid') {
       queue(job)
@@ -413,7 +490,7 @@ function quoteOf({ chainKey, token, symbol = null, ctx, bundle, d }) {
     quota: d.quota,
     coverage: coverage(chainKey, { deps: engine.deps }),
     budgets: HOLDER_DEEP.budgets,
-    checkout: { enabled: !!treasury() },
+    checkout: { enabled: checkoutOn(), provider: provider() },
     signedIn: !!ctx,
     symbol,
   }
@@ -448,7 +525,7 @@ async function create(req, res) {
   const same = jobs().find((j) => j.owner === owner && j.chain.key === chainKey && j.token === token && ACTIVE.includes(j.status))
   if (same) return json(res, 200, { check: view(same), payment: paymentView(same), duplicate: true }), true
   if (Number(body.expect.priceUsd) !== d.priceUsd) return json(res, 409, { error: d.priceUsd ? `This check costs $${d.priceUsd}. Confirm again.` : 'This check is free after all. Confirm again.', code: 'price-changed', quote }), true
-  if (!d.free && !treasury()) return json(res, 402, { error: 'Checks cannot be bought yet: no treasury wallet is configured. Nothing was charged.', code: 'checkout-off' }), true
+  if (!d.free && !checkoutOn()) return json(res, 402, { error: 'Checks cannot be bought yet: no treasury wallet is configured. Nothing was charged.', code: 'checkout-off' }), true
   if (ctx?.usable && d.quota.active >= d.quota.maxActive) return json(res, 429, { error: `${d.quota.active} checks are already running or waiting in this workspace. Wait for one to finish.`, code: 'too-many-active' }), true
   if (!ctx?.usable && jobs().filter((j) => j.owner === owner && ACTIVE.includes(j.status)).length >= HOLDER_DEEP.maxActive) return json(res, 429, { error: 'Several checks from this address are already waiting. Wait for one to finish.', code: 'too-many-active' }), true
 
@@ -470,7 +547,14 @@ async function create(req, res) {
     status: d.free ? 'queued' : 'awaiting_payment',
     attempts: 0,
   }
-  if (!d.free) {
+  if (!d.free && provider() === 'gullypay') {
+    try {
+      const s = await createHostedCheckout({ amountCents: Number(job.priceCents), currency: 'USD', clientReferenceId: `hd:${job.id}:${job.chain.id}:${token}`, successUrl: RETURN_BASE() + job.id, cancelUrl: RETURN_BASE() + job.id })
+      job.gp = { sessionId: s.sessionId, checkoutUrl: s.checkoutUrl, expiresAt: s.expiresAt, status: 'open' }
+    } catch (e) {
+      return json(res, 502, { error: e?.message ?? 'Gully Pay could not open a checkout. Nothing was charged.', code: 'checkout-unavailable' }), true
+    }
+  } else if (!d.free) {
     const inv = createInvoiceRecord({ title: `${HOLDER_DEEP.name}: ${token.slice(0, 6)}…${token.slice(-4)} on ${job.chain.name}`, note: `Holder Map Deep check ${job.id}. The check starts as soon as this invoice is paid. Payment buys the computation only.`, usdCents: BigInt(job.priceCents), assets: ASSET_IDS, ttlMs: INVOICE_TTL_MS })
     job.invoiceId = inv.id
   }
@@ -496,7 +580,7 @@ export async function handleHolderDeep(req, res, url) {
     if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'GET or POST only' }), true
     const ctx = await whoIs(req)
     const chains = Object.fromEntries(Object.keys(HOLDER_CHAINS).map((k) => [k, coverage(k, { deps: engine.deps })]))
-    return json(res, 200, { offer: HOLDER_DEEP, checkout: { enabled: !!treasury() }, coverage: chains, signedIn: !!ctx, quota: ctx?.usable ? { ...deepQuotaOf(ctx.workspace), credits: creditsOf(ownerOf(req, ctx)) } : null, credits: creditsOf(ownerOf(req, ctx)), contact: CONTACT }), true
+    return json(res, 200, { offer: HOLDER_DEEP, checkout: { enabled: checkoutOn(), provider: provider() }, coverage: chains, signedIn: !!ctx, quota: ctx?.usable ? { ...deepQuotaOf(ctx.workspace), credits: creditsOf(ownerOf(req, ctx)) } : null, credits: creditsOf(ownerOf(req, ctx)), contact: CONTACT }), true
   }
 
   const m = p.match(/^\/api\/holders\/deep\/([^/]+?)(\/cancel)?$/)
@@ -515,6 +599,13 @@ export async function handleHolderDeep(req, res, url) {
   // Reading a check by its id is open (the link is shareable); cancelling it is for whoever asked for it: the same
   // workspace, or for anonymous checks the same network (leak sweep 2026-11-02).
   if (ownerOf(req, await whoIs(req)) !== job.owner) return json(res, 403, { error: 'Only whoever asked for this check can cancel it.', code: 'not-owner' }), true
+  if (job.state === 'awaiting_payment' && job.gp) {
+    if (job.gp.status === 'paid') return json(res, 409, { error: 'This check is paid for already; it is starting.' }), true
+    // The Gully Pay session simply expires unpaid; if it is paid anyway the webhook runs the check.
+    Object.assign(job, { state: 'cancelled', status: 'cancelled', cancelledAt: new Date().toISOString(), cancelReason: 'cancelled' })
+    save()
+    return json(res, 200, { check: view(job) }), true
+  }
   if (job.state === 'awaiting_payment') {
     if (adminInvoice(job.invoiceId)?.status === 'paid') {
       queue(job)

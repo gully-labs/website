@@ -5,6 +5,7 @@
    - NetworkChips: Gully Pay's x402 networks or Gully RPC's gateway networks, Gully Chain included;
    - LabsBoard: every other Gully Labs surface and the status page's own reading.
    A source that cannot be read says so ("not reachable", "reading"); nothing is drawn as zero that was not read. */
+import { TZ } from '../lib/time'
 import { ArrowUpRight, Blocks, BookOpen, Code2, Coins, Copy, Droplets, Gamepad2, Globe, Repeat, Rocket, ScrollText, Search, Server, Share2, Tag, Trophy, Users, Vault } from 'lucide-react'
 import type { ComponentType } from 'react'
 import type { LucideProps } from 'lucide-react'
@@ -14,7 +15,7 @@ import { Btn, Count, ic, Spark } from './ui'
 
 type Icon = ComponentType<LucideProps>
 export const STREET = 'https://kre8.fun'
-export const EXPLORER = 'https://testnet-explorer.gullychain.xyz'
+export const EXPLORER = 'https://testnet.gullyscan.xyz'
 
 /** kre8.fun's features (its own nav, read from app.gullychain.xyz on 2026-10-26). */
 export const STREET_FEATURES: { label: string; path: string; icon: Icon }[] = [
@@ -128,7 +129,7 @@ const CHAIN_ORDER: { k: string; name: string; url: string }[] = [
   { k: 'devportal', name: 'Developer portal', url: 'https://dev.gullychain.xyz' },
   { k: 'rpc-public', name: 'Public RPC', url: 'https://testnet-rpc.gullychain.xyz' },
   { k: 'copy', name: 'Copy trading', url: 'https://copy.kre8.fun' },
-  { k: 'safe', name: 'Gully Safe', url: 'https://safe.gullychain.xyz' },
+  { k: 'safe', name: 'Gully Multisig', url: 'https://multisig.gullychain.xyz' },
 ]
 
 /** Every Gully Chain surface, live: kre8.fun with its features, then explorer, faucet, bridge, docs, developer portal, public RPC. */
@@ -266,7 +267,7 @@ export function NetworkChips({ kind }: { kind: 'x402' | 'gateway' }) {
 
 const LABS: { k: string; name: string; url: string }[] = [
   { k: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz' },
-  { k: 'x402', name: 'x402 facilitator', url: 'https://gullypay.xyz/x402/status' },
+  { k: 'x402', name: 'x402 facilitator', url: 'https://gullypay.xyz/api/x402/status' },
   { k: 'pay-admin', name: 'Gully Pay admin', url: 'https://admin.gullypay.xyz' },
   { k: 'rpc-site', name: 'Gully RPC', url: 'https://gullyrpc.xyz' },
   { k: 'rpc-app', name: 'Gully RPC app', url: 'https://app.gullyrpc.xyz' },
@@ -278,7 +279,7 @@ const LABS: { k: string; name: string; url: string }[] = [
   { k: 'studio', name: 'Gully Studio', url: 'https://gullystudio.xyz' },
   { k: 'studio-dev', name: 'Studio dev portal', url: 'https://dev.gullystudio.xyz' },
   { k: 'studio-docs', name: 'Studio docs', url: 'https://docs.gullystudio.xyz' },
-  { k: 'ipfs', name: 'Gully IPFS gateway', url: 'https://ipfs.gullylabs.xyz' },
+  { k: 'ipfs', name: 'Gully IPFS gateway', url: 'https://docs.gullylabs.xyz/ipfs' },
   { k: 'status', name: 'Status page', url: 'https://status.gullylabs.xyz' },
 ]
 
@@ -291,7 +292,7 @@ export function LabsBoard() {
     <div className="board card" data-testid="labs-board">
       <div className="qh">
         <span className="lab cy">Live across Gully Labs</span>
-        <span className="lab">{hub ? `checked ${new Date(hub.generatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : 'checking…'}</span>
+        <span className="lab">{hub ? `checked ${new Date(hub.generatedAt).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })}` : 'checking…'}</span>
       </div>
       <ul className="rows">
         {LABS.map((r) => {

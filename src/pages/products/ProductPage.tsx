@@ -3,6 +3,7 @@
    product; features, how it works, pricing (read live from /api/plans where we publish prices), FAQ and links.
    Every figure is read live: GET /api/hub, /api/hub/products, /api/stats, /api/products/status, /api/ipfs/stats and the
    Gully Chain RPC. A source that cannot be read says so; nothing is invented. */
+import { timePT } from '../../lib/time'
 import { useMemo, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { ArrowRight, ArrowUpRight, BookOpen, Check } from 'lucide-react'
@@ -10,7 +11,8 @@ import { Seo } from '../../components/Seo'
 import { fmtInt, fmtPct, fmtUsd } from '../../console/charts'
 import { chainHead, useLive, type Live } from '../../console/live'
 import '../../terminal/terminal.css'
-import { PRODUCTS, productBySlug, SERVICES, type ProductDef } from '../../terminal/catalog'
+import { pricingNote, PRODUCT_SECTIONS, productFaq, PRODUCTS, productBySlug, SERVICE_FOR, SERVICES, type ProductDef } from '../../terminal/catalog'
+import { productSeo } from '../../content/seoPages'
 import { A, ACCENT, BlockStrip, Dot, Empty, fmtCompact, fmtEth, fmtMs, HBars, hourLabel, Kpi, latencySeries, Logo, minLabel, Panel, S, SecHead, stateOf, sum, TChart, UptimeGrid, useHubProducts, usePlans, useReveal, type ChartTab, type HubProducts, type Plans } from '../../terminal/kit'
 import { chainTabs } from '../../terminal/liveTabs'
 import type { HubLive } from '../hub/hubData'
@@ -127,7 +129,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
         label: 'Watchers',
         title: 'Sentry Keys heard per 10-minute slot, last 24 h (UTC)',
         series: [{ name: 'Keys heard', color: '#00B2FA', values: slots.map((x) => x.keys) }],
-        labels: slots.map((x) => `${new Date(x.t * 1000).toISOString().slice(11, 16)} UTC`),
+        labels: slots.map((x) => timePT(x.t * 1000)),
         fmt: (v) => fmtInt(v),
         integer: true,
         state: netSt,
@@ -177,7 +179,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
               <Empty state={hlState === 'loading' ? 'loading' : 'offline'} text="sentry.gullychain.xyz/api/v1/chain/health unreadable right now · retrying" />
             )}
             <p className="gt-note">
-              Sentry Key (ERC-721, testnet) <A href={`https://testnet-explorer.gullychain.xyz/address/${KEY}`}><code>{KEY.slice(0, 6)}…{KEY.slice(-4)}</code></A> · testnet keys have no value and do not convert to mainnet keys · not offered to US persons or sanctioned regions (<A href="https://sentry.gullychain.xyz/risk/">risk</A>, <A href="https://sentry.gullychain.xyz/terms/">terms</A>)
+              Sentry Key (ERC-721, testnet) <A href={`https://testnet.gullyscan.xyz/address/${KEY}`}><code>{KEY.slice(0, 6)}…{KEY.slice(-4)}</code></A> · testnet keys have no value and do not convert to mainnet keys · not offered to US persons or sanctioned regions (<A href="https://sentry.gullychain.xyz/risk/">risk</A>, <A href="https://sentry.gullychain.xyz/terms/">terms</A>)
             </p>
           </Panel>
         ),
@@ -528,7 +530,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
         { id: 'paid', label: 'USDC paid', title: 'USDC paid to players per hour, last 24 h (UTC)', series: [{ name: 'USDC', color: S[1], values: ser.map((x) => x.paid) }], labels, fmt: (v) => (v == null ? '—' : `${v.toFixed(2)} USDC`), state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? `${sum(ser.map((x) => x.paid)).toFixed(2)} USDC` : '—', sub: 'testnet USDC on Gully Chain · no USD value' },
         { id: 'pts', label: 'Points', title: 'Points awarded per hour, last 24 h (UTC)', series: [{ name: 'Points', color: S[2], values: ser.map((x) => x.points) }], labels, fmt: (v) => fmtInt(v), integer: true, state: oSt, empty: 'Offerwall stats unreadable right now · retrying', head: o ? fmtInt(sum(ser.map((x) => x.points))) : '—', sub: 'points awarded, last 24 h' },
       ]
-      const EXP = 'https://testnet-explorer.gullychain.xyz/address/'
+      const EXP = 'https://testnet.gullyscan.xyz/address/'
       const contracts: [string, string, string][] = [
         ['OfferwallManager', '0xD6a8c4151a7ED9865a540D20BDD42073DC9c74Bf', 'creates offers, holds budgets, pays players and publishers'],
         ['QuestRegistry (Gully Quests)', '0xE3E57e15A9973281A8de2B3bedd512BE8C3813Bb', 'every offer is a quest here, verified on chain'],
@@ -601,7 +603,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
     case 'copy-trading': {
       // The copy-trading engine's public health (copy.kre8.fun/health via /api/hub/live) and the indexer's trades.
       const c = hl?.copy ?? null
-      const EXP = 'https://testnet-explorer.gullychain.xyz/address/'
+      const EXP = 'https://testnet.gullyscan.xyz/address/'
       const FEES = '0xA9d429eb1b137764B0d4964e437AF50989bdFea3'
       return {
         kpis: [
@@ -633,8 +635,8 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
       }
     }
     case 'gully-core': {
-      // Gully Core (our fork of the DeepCore contracts, partnership ended 2026-10-29): Gully Chain's own launchpad and
-      // DEX core. Only Gully Chain figures, from the indexer; DeepCore's own cross-chain API is not shown here.
+      // Gully Core (our fork of the former partner's launchpad contracts, partnership ended 2026-10-29): Gully Chain's own launchpad and
+      // DEX core. Only Gully Chain figures, from the indexer; the former partner's own cross-chain API is not shown here.
       return {
         kpis: [
           { label: 'Launches · 24 h', value: hp?.activity ? sum(a.map((x) => x.launches)) : null, spark: a.map((x) => x.launches), sub: 'Gully Core, from the indexer' },
@@ -647,7 +649,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
       }
     }
     default:
-      // Gully Safe and Gully AI: their surfaces' uptime and response time, from /api/hub.
+      // Gully Multisig and Gully AI: their surfaces' uptime and response time, from /api/hub.
       return { kpis: surfaceKpis(live, p.hub), main: lat, side: <Panel label="Surfaces · last hour">{<UptimeGrid hub={hub} keys={p.hub} compact />}</Panel> }
   }
 }
@@ -693,11 +695,9 @@ function Pricing({ p, plans }: { p: ProductDef; plans: Plans | null }) {
       </table>
     )
   }
-  const text = p.pricing === 'free-testnet' ? 'Free on testnet. Mainnet pricing is published when mainnet opens.' : p.pricing === 'quoted' ? 'Quoted per project. Tell us what you need below.' : `Plans and fees are published on ${p.urlLabel}, in USD.`
-  return <p className="gt-p">{text}</p>
+  return <p className="gt-p">{pricingNote(p)}</p>
 }
 
-const SERVICE_FOR: Partial<Record<string, string>> = { 'gully-sentry': 'security', chain: 'chain', street: 'apps', bridge: 'chain', safe: 'contracts', pay: 'payments', rpc: 'infra', holders: 'apps', security: 'security', ai: 'ai', studio: 'games', ipfs: 'infra', quests: 'launch', offerwall: 'launch', 'gully-social': 'apps', 'copy-trading': 'apps', 'gully-core': 'launch' }
 
 export function ProductView({ p }: { p: ProductDef }) {
   const live = useLive()
@@ -711,7 +711,7 @@ export function ProductView({ p }: { p: ProductDef }) {
   const idx = PRODUCTS.findIndex((x) => x.slug === p.slug)
   return (
     <div className="lcp gt" ref={ref}>
-      <Seo title={p.name} description={`${p.line} Live charts on this page.`} />
+      <Seo {...productSeo(p)} />
       <section className="gt-hero gt-phero" aria-labelledby="p-h">
         <div className="gt-wrap">
           <div className="gt-hero-copy rise">
@@ -778,7 +778,7 @@ export function ProductView({ p }: { p: ProductDef }) {
 
       <section className="gt-sec" aria-labelledby="feat-h">
         <div className="gt-wrap">
-          <SecHead n="02" label="Features" title="What it does" id="feat-h" />
+          <SecHead n="02" label="Features" title={PRODUCT_SECTIONS.features} id="feat-h" />
           <ul className="gt-feats">
             {p.features.map((f, i) => (
               <li key={f.t} className="rv" style={{ transitionDelay: `${(i % 3) * 50}ms` }}>
@@ -794,7 +794,7 @@ export function ProductView({ p }: { p: ProductDef }) {
       <section className="gt-sec" aria-labelledby="how-h">
         <div className="gt-wrap gt-cols">
           <div>
-            <SecHead n="03" label="How it works" title="Three steps" id="how-h" />
+            <SecHead n="03" label="How it works" title={PRODUCT_SECTIONS.how} id="how-h" />
             <ol className="gt-steps">
               {p.how.map(([t, x], i) => (
                 <li key={t} className="rv">
@@ -808,7 +808,7 @@ export function ProductView({ p }: { p: ProductDef }) {
             </ol>
           </div>
           <div>
-            <SecHead n="04" label="Pricing" title="Prices in USD" />
+            <SecHead n="04" label="Pricing" title={PRODUCT_SECTIONS.pricing} />
             <div className="rv">
               <Pricing p={p} plans={plans} />
             </div>
@@ -819,22 +819,18 @@ export function ProductView({ p }: { p: ProductDef }) {
       <section className="gt-sec" aria-labelledby="faq-h">
         <div className="gt-wrap gt-cols">
           <div>
-            <SecHead n="05" label="FAQ" title="Questions" id="faq-h" />
+            <SecHead n="05" label="FAQ" title={PRODUCT_SECTIONS.faq} id="faq-h" />
             <div className="gt-faq">
-              {p.faq.map(([q, a]) => (
+              {productFaq(p).map(([q, a]) => (
                 <details key={q} className="rv">
                   <summary>{q}</summary>
                   <p>{a}</p>
                 </details>
               ))}
-              <details className="rv">
-                <summary>Does {p.name} support Gully Chain?</summary>
-                <p>Yes. Every Gully product supports Gully Chain (chain 485590 on testnet today).</p>
-              </details>
             </div>
           </div>
           <div>
-            <SecHead n="06" label="Links" title="Go further" />
+            <SecHead n="06" label="Links" title={PRODUCT_SECTIONS.links} />
             <ul className="gt-links rv">
               <li>
                 <A href={p.url}>

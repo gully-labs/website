@@ -36,8 +36,8 @@ const pixel = (b, x, y) => {
   return [...p.data.subarray(i, i + 4)]
 }
 
-const EP = { gullychain: 'https://gc.test/tokenlist-extended.json', deepcore: 'https://dc.test', dexscreener: 'https://ds.test', jupiter: 'https://jup.test', xstocks: 'https://xs.test', coingecko: 'https://cg.test', trustwallet: 'https://tw.test' }
-const A = '0x1111111111111111111111111111111111111111' // DeepCore launch with a logo (also on DexScreener)
+const EP = { gullychain: 'https://gc.test/tokenlist-extended.json', dexscreener: 'https://ds.test', jupiter: 'https://jup.test', xstocks: 'https://xs.test', coingecko: 'https://cg.test', trustwallet: 'https://tw.test' }
+const A = '0x1111111111111111111111111111111111111111' // on DexScreener only (was a partner launchpad launch until 2026-11-08)
 const B = '0x2222222222222222222222222222222222222222' // only DexScreener (and Trust Wallet)
 const C = '0x3333333333333333333333333333333333333333' // only CoinGecko and Trust Wallet
 const U = '0x4444444444444444444444444444444444444444' // known nowhere
@@ -75,8 +75,6 @@ function service(w, extra = {}) {
 }
 
 const goodRoutes = () => ({
-  'https://dc.test/v1/chains/8453/tokenlists/launches.json': jsonr({ tokens: [{ chainId: 8453, address: A.toUpperCase().replace('0X', '0x'), symbol: 'LAUNCH', logoURI: 'https://img.dc.test/a.png' }] }),
-  'https://img.dc.test/a.png': img(png(200, 200, [217, 181, 99])),
   [`https://ds.test/tokens/v1/base/${A}`]: jsonr([dsPair(A, 'https://img.ds.test/a.png')]),
   'https://img.ds.test/a.png': img(png(100, 100, [10, 10, 200])),
   [`https://ds.test/tokens/v1/base/${B}`]: jsonr([dsPair(B, 'https://img.ds.test/quote-side.png', { base: false }), dsPair(B, 'https://img.ds.test/b.png', { liq: 5 })]),
@@ -94,15 +92,15 @@ const goodRoutes = () => ({
 test('sources are tried in order and the first valid image wins', async () => {
   const w = world(goodRoutes())
   const { svc } = service(w)
-  assert.deepEqual(svc.sources, ['gullychain', 'deepcore', 'dexscreener', 'jupiter', 'xstocks', 'coingecko', 'trustwallet'])
+  assert.deepEqual(svc.sources, ['gullychain', 'dexscreener', 'jupiter', 'xstocks', 'coingecko', 'trustwallet'], 'no partner launchpad list since 2026-11-08')
   const a = await svc.getLogo('base', A, { size: 64 })
-  assert.equal(a.source, 'deepcore')
-  assert.deepEqual(pixel(a.png, 32, 32), [217, 181, 99, 255])
-  assert.ok(!w.calls.some((c) => c.url.startsWith('https://ds.test')), 'DexScreener is not asked once DeepCore answered')
+  assert.equal(a.source, 'dexscreener')
+  assert.deepEqual(pixel(a.png, 32, 32), [10, 10, 200, 255])
+  assert.ok(!w.calls.some((c) => /deepcore|dc\.test/.test(c.url)), 'nothing is asked of the partner API')
   const c = await svc.getLogo('base', C, { size: 64 })
   assert.equal(c.source, 'coingecko')
   const order = w.calls.filter((x) => !x.url.includes('img.')).map((x) => new URL(x.url).host)
-  assert.deepEqual(order.slice(-3), ['ds.test', 'ds.test', 'cg.test'], 'C: DexScreener (both endpoints), then CoinGecko; DeepCore list served from cache')
+  assert.deepEqual(order.slice(-3), ['ds.test', 'ds.test', 'cg.test'], 'C: DexScreener (both endpoints), then CoinGecko')
 })
 
 test('DexScreener: only pairs where the token is the base token; GIF decodes', async () => {
@@ -113,17 +111,6 @@ test('DexScreener: only pairs where the token is the base token; GIF decodes', a
   assert.ok(!w.calls.some((c) => c.url.includes('quote-side')), 'the quote-side pair image is never fetched')
   assert.deepEqual(dims(b.png), { w: 128, h: 128 })
   assert.deepEqual(pixel(b.png, 64, 64), [47, 107, 53, 255])
-})
-
-test('DeepCore path: launch token list logoURI, list cached across tokens', async () => {
-  const w = world(goodRoutes())
-  const { svc } = service(w)
-  await svc.getLogo('base', A)
-  await svc.getLogo('base', U)
-  assert.equal(w.calls.filter((c) => c.url.includes('tokenlists')).length, 1)
-  // Chains DeepCore does not run on never ask it.
-  await svc.getLogo('ethereum', U)
-  assert.ok(!w.calls.some((c) => c.url.includes('/v1/chains/1/')))
 })
 
 test('Gully Chain: hosted token list logoURI, cached 10 min, shape-checked, bundled copy as fallback', async () => {
@@ -174,9 +161,10 @@ test('Solana: Jupiter icon; xStocks: tracked stock gets the official Backed logo
 
 test('SVG is refused even when served as image/png; the next source is used', async () => {
   const r = goodRoutes()
-  r['https://img.dc.test/a.png'] = img(Buffer.from('<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'), 'image/png')
+  r['https://img.ds.test/a.png'] = img(Buffer.from('<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'), 'image/png')
+  r[`https://tw.test/trustwallet/assets/master/blockchains/base/assets/${checksum(A)}/logo.png`] = img(png(256, 256))
   const { svc } = service(world(r))
-  assert.equal((await svc.getLogo('base', A)).source, 'dexscreener')
+  assert.equal((await svc.getLogo('base', A)).source, 'trustwallet')
   assert.throws(() => checkImage(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'), 'image/svg+xml'), /svg/)
   assert.equal(sniffImage(Buffer.from('﻿  <svg>')), 'svg')
 })
@@ -184,8 +172,8 @@ test('SVG is refused even when served as image/png; the next source is used', as
 test('oversized images are refused (stated length and streamed bytes)', async () => {
   const big = Buffer.concat([png(64, 64), Buffer.alloc(2 * 1024 * 1024)])
   const r = goodRoutes()
-  r['https://img.dc.test/a.png'] = img(big)
-  r['https://img.ds.test/a.png'] = { status: 200, headers: { 'content-type': 'image/png' }, body: (async function* () { for (let i = 0; i < 40; i++) yield Buffer.alloc(64 * 1024) })() }
+  r['https://img.ds.test/a.png'] = img(big)
+  r[`https://tw.test/trustwallet/assets/master/blockchains/base/assets/${checksum(A)}/logo.png`] = { status: 200, headers: { 'content-type': 'image/png' }, body: (async function* () { for (let i = 0; i < 40; i++) yield Buffer.alloc(64 * 1024) })() }
   const { svc } = service(world(r))
   const a = await svc.getLogo('base', A)
   assert.equal(a.source, null, 'both candidates refused, nothing else covers A')
@@ -196,9 +184,10 @@ test('oversized images are refused (stated length and streamed bytes)', async ()
 
 test('a non-image is refused despite an image content type', async () => {
   const r = goodRoutes()
-  r['https://img.dc.test/a.png'] = img(Buffer.from('<html><body>not found</body></html>'), 'image/png')
+  r['https://img.ds.test/a.png'] = img(Buffer.from('<html><body>not found</body></html>'), 'image/png')
+  r[`https://tw.test/trustwallet/assets/master/blockchains/base/assets/${checksum(A)}/logo.png`] = img(png(256, 256))
   const { svc } = service(world(r))
-  assert.equal((await svc.getLogo('base', A)).source, 'dexscreener')
+  assert.equal((await svc.getLogo('base', A)).source, 'trustwallet')
   assert.equal(svc.logoCoverage().since.rejected['not-image'], 1)
   // A real image behind a non-image content type is refused too.
   assert.throws(() => checkImage(png(64, 64), 'text/html'), /not-image/)
@@ -208,8 +197,8 @@ test('SSRF guard: private addresses and redirects to them are blocked before con
   for (const ip of ['10.0.0.5', '172.16.0.1', '192.168.1.1', '127.0.0.1', '169.254.169.254', '100.64.0.1', '::1', 'fd00::1', 'fe80::1', '::ffff:10.0.0.1']) assert.ok(isPrivateAddress(ip), ip)
   for (const ip of ['93.184.216.34', '1.1.1.1', '2606:4700::1111']) assert.ok(!isPrivateAddress(ip), ip)
   const r = goodRoutes()
-  r['https://img.dc.test/a.png'] = { status: 302, headers: { location: 'https://metadata.internal.test/latest' } }
-  r['https://img.ds.test/a.png'] = { status: 301, headers: { location: 'http://img.ds.test/plain.png' } }
+  r['https://img.ds.test/a.png'] = { status: 302, headers: { location: 'https://metadata.internal.test/latest' } }
+  r[`https://tw.test/trustwallet/assets/master/blockchains/base/assets/${checksum(A)}/logo.png`] = { status: 301, headers: { location: 'http://img.ds.test/plain.png' } }
   const w = world(r, { hosts: { 'metadata.internal.test': '169.254.169.254', 'evil.test': '10.0.0.5' } })
   const { svc } = service(w)
   assert.equal((await svc.getLogo('base', A)).source, null)
@@ -221,7 +210,7 @@ test('SSRF guard: private addresses and redirects to them are blocked before con
   await assert.rejects(svc.guardedGet('https://evil.test/x.png', { accept: '*/*', max: 100 }), /private/)
   await assert.rejects(svc.guardedGet('https://10.1.2.3/x.png', { accept: '*/*', max: 100 }), /private/)
   await assert.rejects(svc.guardedGet('https://localhost/x.png', { accept: '*/*', max: 100 }), /private/)
-  await assert.rejects(svc.guardedGet('http://img.dc.test/x.png', { accept: '*/*', max: 100 }), /not-https/)
+  await assert.rejects(svc.guardedGet('http://img.ds.test/x.png', { accept: '*/*', max: 100 }), /not-https/)
   // More than 3 redirects is refused.
   const loop = world({ 'https://r.test/0': { status: 302, headers: { location: '/1' } }, 'https://r.test/1': { status: 302, headers: { location: '/2' } }, 'https://r.test/2': { status: 302, headers: { location: '/3' } }, 'https://r.test/3': { status: 302, headers: { location: '/4' } }, 'https://r.test/4': img(png(32, 32)) })
   const { svc: s2 } = service(loop)
@@ -382,7 +371,7 @@ test('cache is bounded (LRU by last use)', async () => {
   await svc.getLogo('base', C)
   const cov = svc.logoCoverage()
   assert.equal(cov.cache.entries, 2)
-  assert.equal(cov.sources.dexscreener, undefined, 'B (least recently used) was evicted')
+  assert.equal(cov.sources.dexscreener, 1, 'B (least recently used) was evicted; A stays')
   assert.equal(cov.resolved, 2)
 })
 
@@ -394,8 +383,8 @@ test('logoCoverage reports per chain and source', async () => {
   const c = svc.logoCoverage()
   assert.equal(c.resolved, 2)
   assert.equal(c.fallback, 1)
-  assert.deepEqual(c.chains.base.sources, { deepcore: 1, coingecko: 1 })
-  assert.deepEqual(c.sources, { deepcore: 1, coingecko: 1 })
+  assert.deepEqual(c.chains.base.sources, { dexscreener: 1, coingecko: 1 })
+  assert.deepEqual(c.sources, { dexscreener: 1, coingecko: 1 })
 })
 
 /* ------------------------------------------------------- integration logos --- */

@@ -1,3 +1,4 @@
+import { dateTimePT } from '../../lib/time'
 import { useCallback, useEffect, useRef, useState, type JSX } from 'react'
 import { ExternalLink, Send, Webhook } from 'lucide-react'
 import { useReducedMotion } from '../charts/chart-utils'
@@ -60,7 +61,7 @@ const usd0 = (n: unknown) => (finite(n) ? `$${Math.round(n).toLocaleString('en-U
 const toneOf = (n: number): Tone => (n > 0 ? 'up' : n < 0 ? 'down' : 'plain')
 /** The clock, read only from event handlers. */
 const now = () => Date.now()
-const utc = (ms: number) => new Date(ms).toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
+const utc = (ms: number) => dateTimePT(ms)
 
 type Row = TrackerRow & { sessionOpen: boolean | null }
 

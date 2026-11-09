@@ -1,0 +1,109 @@
+[
+ {
+  "key": "gully",
+  "name": "Gully Chain",
+  "short": "GC",
+  "logo": "/chains/gully-chain.svg",
+  "state": "Testnet live",
+  "open": true,
+  "note": "Our own chain. Mainnet comes later.",
+  "live": [
+   "Launch tokens",
+   "Launchpads",
+   "DEXes",
+   "Gas sponsored by Gully",
+   "Gully Multisig"
+  ],
+  "planned": [],
+  "cta": {
+   "label": "Build here",
+   "href": "https://app.gullycore.xyz/"
+  }
+ },
+ {
+  "key": "anubis",
+  "name": "Anubis",
+  "short": "AN",
+  "logo": "/chains/anubis.png",
+  "state": "Contracts live",
+  "open": true,
+  "note": "Gully Core contracts are live for builders. No pools yet. Gas is gasDAI, which pays gas only, so pools quote in DAI.",
+  "live": [
+   "Launchpads by contract",
+   "DEXes by contract",
+   "Gully Multisig"
+  ],
+  "planned": [
+   "Gully Core app",
+   "First pools"
+  ],
+  "cta": {
+   "label": "Read the docs",
+   "href": "https://docs.gullycore.xyz/"
+  }
+ },
+ {
+  "key": "base",
+  "name": "Base",
+  "short": "BA",
+  "logo": "/chains/base.svg",
+  "state": "Coming",
+  "open": false,
+  "note": "Gully Core for builders.",
+  "live": [],
+  "planned": [
+   "Launchpads",
+   "DEXes",
+   "Stock markets"
+  ],
+  "cta": null
+ },
+ {
+  "key": "bnb",
+  "name": "BNB Chain",
+  "short": "BN",
+  "logo": "/chains/bnb-chain.svg",
+  "state": "Coming",
+  "open": false,
+  "note": "Gully Core for builders.",
+  "live": [],
+  "planned": [
+   "Launchpads",
+   "DEXes",
+   "Stock markets"
+  ],
+  "cta": null
+ },
+ {
+  "key": "robinhood",
+  "name": "Robinhood",
+  "short": "RH",
+  "logo": "/chains/robinhood.png",
+  "state": "Coming",
+  "open": false,
+  "note": "Gully Core for builders.",
+  "live": [],
+  "planned": [
+   "Launchpads",
+   "DEXes",
+   "Stock markets"
+  ],
+  "cta": null
+ },
+ {
+  "key": "hyperevm",
+  "name": "HyperEVM",
+  "short": "HY",
+  "logo": "/chains/hyperevm.png",
+  "state": "Coming",
+  "open": false,
+  "note": "Gully Core for builders.",
+  "live": [],
+  "planned": [
+   "Launchpads",
+   "DEXes",
+   "Stock markets"
+  ],
+  "cta": null
+ }
+]

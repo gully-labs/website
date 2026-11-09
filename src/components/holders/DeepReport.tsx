@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useMemo, useState } from 'react'
 import { AlertTriangle, ChevronDown, CircleSlash, Clock3, Copy, ExternalLink, Loader2, Mail, Receipt } from 'lucide-react'
 import { EChart } from '../charts/EChart'
@@ -20,7 +21,7 @@ export const ConfPill = ({ c }: { c: Confidence }) => <StatusPill tone={CONF[c]?
 
 const pct = (n: number | null | undefined) => (typeof n === 'number' ? `${n < 0.1 && n > 0 ? '<0.1' : n >= 10 ? Math.round(n) : n.toFixed(1)}%` : 'not known')
 const short = (a: string) => (a.length > 14 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a)
-const when = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC' : '')
+const when = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' PT' : '')
 
 /** The explorer's own address and transaction URLs, derived from the token's explorer link. */
 function explorer(tokenUrl: string, chainKey: string) {
@@ -58,14 +59,27 @@ export function DeepStatusPanel({ check, onChange }: { check: DeepCheck; onChang
       </ol>
       {check.status === 'awaiting_payment' && pay && (
         <div className="flex flex-col gap-2">
-          <p className="m-0 text-[14px] leading-[1.55] text-muted">
-            Pay <b className="text-ink">${pay.usd}</b> to start the check. It runs the moment the invoice is paid, and this page updates by itself.
-            {pay.expiresAt && <> The invoice is open until {when(pay.expiresAt)}; an unpaid check is cancelled then.</>}
-          </p>
+          {pay.provider === 'gullypay' ? (
+            <p className="m-0 text-[14px] leading-[1.55] text-muted">
+              Pay <b className="text-ink">${pay.usd}</b> with Gully Pay (USDC or USDT) to start the check. It runs the moment Gully Pay confirms the payment, and this page updates by itself.
+              {pay.expiresAt && <> The checkout is open until {when(pay.expiresAt)}; an unpaid check is cancelled after that.</>}
+            </p>
+          ) : (
+            <p className="m-0 text-[14px] leading-[1.55] text-muted">
+              Pay <b className="text-ink">${pay.usd}</b> to start the check. It runs the moment the invoice is paid, and this page updates by itself.
+              {pay.expiresAt && <> The invoice is open until {when(pay.expiresAt)}; an unpaid check is cancelled then.</>}
+            </p>
+          )}
           <span className="flex flex-wrap items-center gap-2">
-            <a href={payHref(pay.payUrl)} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[14px]`} data-deep-pay>
-              <Receipt className="icon-md" aria-hidden /> Open the invoice · ${pay.usd}
-            </a>
+            {pay.provider === 'gullypay' ? (
+              <a href={pay.payUrl} {...ext} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[14px]`} data-deep-pay="gullypay">
+                <Receipt className="icon-md" aria-hidden /> Pay with Gully Pay · ${pay.usd} <ExternalLink className="icon-sm" aria-hidden />
+              </a>
+            ) : (
+              <a href={payHref(pay.payUrl)} className={`${btnGold} inline-flex min-h-11 items-center gap-2 px-5 text-[14px]`} data-deep-pay>
+                <Receipt className="icon-md" aria-hidden /> Open the invoice · ${pay.usd}
+              </a>
+            )}
             <button
               type="button"
               disabled={busy}
@@ -219,7 +233,7 @@ function Trading({ r, ex }: { r: DeepReport; ex: ReturnType<typeof explorer> }) 
   if (!t || t.state === 'unavailable' || t.state === 'skipped') return <Card id="deep-trading" title={PART_NAMES.trading} state={t?.state ?? 'unavailable'}><Unavailable reason={t?.reason ?? r.unavailable.find((u) => u.section === 'trading')?.reason} /></Card>
   return (
     <Card id="deep-trading" title={PART_NAMES.trading} state={t.state} source={t.source} confidence={t.confidence}>
-      {t.method && <span className="font-mono text-[11px] text-dim">Method: {t.method === 'deepcore-launch-forensics' ? 'DeepCore launch forensics' : 'inferred from the token’s transfers'}{t.window ? ` · first ${t.window.blocks} blocks` : ''}</span>}
+      {t.method && <span className="font-mono text-[11px] text-dim">Method: {t.method === 'deepcore-launch-forensics' ? 'Gully Core launch forensics' : 'inferred from the token’s transfers'}{t.window ? ` · first ${t.window.blocks} blocks` : ''}</span>}
       {t.reason && <p className="m-0 text-[12px] text-muted">{t.reason}</p>}
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[8px] border border-line bg-line">
         <Tile k="SNIPERS" v={t.snipers ? `${t.snipers.count}` : '—'} sub={t.snipers ? `${pct(t.snipers.pctOfSupply)} of supply` : undefined} tone="warn" />

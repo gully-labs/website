@@ -1,10 +1,11 @@
-import { Activity, BookOpen, Building2, Check, ChevronDown, ChevronsLeft, ChevronsRight, ChevronsUpDown, Copy, Ellipsis, History, House, LogOut, Mail, Menu as MenuIcon, ShieldCheck, UserRound, Users, X } from 'lucide-react'
+import { Activity, BookOpen, Boxes, Building2, Check, ChevronDown, ChevronsLeft, ChevronsRight, ChevronsUpDown, Copy, Ellipsis, History, House, LogOut, Mail, Menu as MenuIcon, ShieldCheck, UserRound, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import { Mascot, Wordmark } from '../../components/brand'
 import { copyWithToast } from '../../components/ui/toast'
 import { DOCS_URL, SITE_URL } from '../../site-host'
 import { daysLeft, shortAddress, type Account, type Role } from './api'
 import { AskLauncher } from '../../components/ask/AskLauncher'
+import { FollowBar } from '../../components/FollowBar'
 import { PwaCards } from '../../components/pwa/PwaCards'
 import { healthOfStatus, useAppStatus, type Health } from './services/health'
 import { StatusDialog } from './services/StatusDialog'
@@ -14,17 +15,19 @@ import { declinedInvites, restoreFocus, usePortal } from './portal'
 import { ExtLink } from './ExtLink'
 import { StatusPill as KitPill, type PillTone } from '../../components/ui/StatusPill'
 import { BadgeFooterRow } from '../../components/PoweredByBadge'
+import { HUB_NAV_IDS, PRODUCTS_URL, TAB_BAR_IDS } from './services/nav'
 
 /* The Gully Labs App's frame (app.gullylabs.xyz): a left sidebar and a slim header around the page.
 
    Sidebar, top to bottom: the Gully mark (home), the workspace switcher and the collapse button in one row,
-   every page in one
-   full-height list under folding group headings (Workspace, Services, Developer, Account; 34px rows with
-   16px icons, the fold remembered), and the wallet menu. All 19 pages fit at 800px tall, so it has no inner
-   scrollbar. From 1280px it is open (212px); from 860px to 1279px it starts as an icon rail (64px, each row
-   with a tooltip); the chevron toggles it at any width and the choice is remembered. Under 860px there is
-   no sidebar: a bottom tab bar holds Overview, Tracker, Keys and Alerts, and "More" (or the header's Menu
-   button) opens every page as a bottom sheet (a modal dialog: focus moves in, Tab stays in, Escape closes).
+   the ten pages (services/nav.ts SIDEBAR: Overview, Activity, Chains, IPFS, Analytics, Services, Keys, Billing,
+   Team, Settings) as one flat list of 40px rows with 16px Lucide icons, one "All Gully products ↗" link (the other
+   products are on the web, gullylabs.xyz/products; nothing else of them is in this app), and the wallet menu. From
+   1280px it is open (212px); from 860px to 1279px it starts as an icon rail (64px, each row with a tooltip); the
+   chevron toggles it at any width and the choice is remembered. Under 860px there is no sidebar: a bottom tab bar
+   holds Overview, Activity, Analytics and Billing, and "More" (or the header's Menu button) opens every page as a
+   bottom sheet (a modal dialog: focus moves in, Tab stays in, Escape closes). Gully AI is the floating assistant
+   button at the bottom right of every page (AskLauncher: the drawer, ⌘K / Ctrl+K).
 
    Header: a Menu button and the Gully mark linking home (narrow screens, so home is one tap away at every
    width), the breadcrumb (workspace / page), Docs ↗ / Status / gullylabs.xyz as icon buttons (wide
@@ -32,7 +35,7 @@ import { BadgeFooterRow } from '../../components/PoweredByBadge'
    wallet menu on narrow screens (wide screens have it at the foot of the sidebar). */
 
 /** One sidebar page. Items with a `group` are drawn under that group's heading, in the order given. */
-export type NavItem<T extends string> = { id: T; label: string; icon: ReactNode; badge?: ReactNode; group?: string }
+export type NavItem<T extends string> = { id: T; label: string; icon: ReactNode; badge?: ReactNode; group?: string; href?: string }
 
 const ICON = 16
 const NARROW = '(max-width: 859.98px)'
@@ -248,7 +251,7 @@ function PlanPill({ account }: { account: Account }) {
   const soon = left !== null && left <= 7
   return (
     <span className="flex min-h-[30px] shrink-0 items-center gap-2 rounded-full border border-line px-[10px] text-[13px] whitespace-nowrap max-[419px]:px-[9px]" title={account.plan.expiresAt ? `Runs until ${new Date(account.plan.expiresAt).toLocaleString()}` : undefined} data-testid="plan-pill">
-      <span className="size-2 rounded-full" style={{ background: !paid ? '#9398b5' : soon ? '#ff8a7a' : '#00d2ff' }} aria-hidden />
+      <span className="size-2 rounded-full" style={{ background: !paid ? '#9398b5' : soon ? '#ff8a7a' : '#6f8ddf' }} aria-hidden />
       <span className="max-[419px]:sr-only">{account.plan.name} plan</span>
       {left !== null && <span className={`${soon ? 'text-error' : 'text-muted'} max-[520px]:hidden`}>· {left === 0 ? 'ends today' : `${left} day${left === 1 ? '' : 's'} left`}</span>}
     </span>
@@ -294,15 +297,16 @@ function NavList<T extends string>({ items, current, go, compact, dense }: { ite
         return (
           <li key={t.id}>
             <a
-              href={`#${t.id}`}
-              id={`nav-${t.id}`}
+              href={t.href ?? `#${t.id}`}
+              {...(t.href?.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              id={`nav-${t.id.replace(/\W+/g, '-')}`}
               aria-current={on ? 'page' : undefined}
               onClick={(e) => {
-                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+                if (t.href || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
                 e.preventDefault()
                 go(t.id)
               }}
-              className={`group/row relative flex items-center gap-[10px] rounded-[8px] font-medium transition-colors ${dense ? 'min-h-[30px] text-[13px] [@media(max-height:820px)]:min-h-7' : 'min-h-11 text-[14px]'} ${compact ? 'justify-center px-0' : 'px-[10px]'} ${on ? 'bg-surface text-ink' : 'text-dim hover:bg-surface-hover hover:text-ink'}`}
+              className={`group/row relative flex items-center gap-[10px] rounded-md font-medium transition-colors ${dense ? 'min-h-10 text-[13px]' : 'min-h-11 text-[14px]'} ${compact ? 'min-h-11 justify-center px-0' : 'px-[10px]'} ${on ? 'bg-surface text-ink' : 'text-dim hover:bg-surface-hover hover:text-ink'}`}
             >
               {on && <span className="absolute top-[8px] bottom-[8px] left-0 w-[3px] rounded-full bg-gold" aria-hidden />}
               <span className={on ? 'text-gold' : ''}>{t.icon}</span>
@@ -321,7 +325,7 @@ function NavList<T extends string>({ items, current, go, compact, dense }: { ite
   )
 }
 
-/** The pages under their group headings (Workspace, Services, Developer, Account). A heading folds its group
+/** The pages under their group headings, when the items carry a `group`; a flat list otherwise. A heading folds its group
     (remembered); a folded group still shows the page you are on. In the icon rail a group is a thin rule,
     its name kept for screen readers, and nothing folds. */
 function NavLinks<T extends string>({ items, current, go, compact, dense }: { items: NavItem<T>[]; current: T; go: (t: T) => void; compact: boolean; dense: boolean }) {
@@ -343,7 +347,7 @@ function NavLinks<T extends string>({ items, current, go, compact, dense }: { it
         const rows = shut ? g.items.filter((it) => it.id === current) : g.items
         return (
           <div key={g.name || i} role="group" aria-labelledby={id} data-nav-group={g.name} data-folded={shut || undefined} className={dense ? '[@media(max-height:840px)]:not-first:mt-1 [@media(max-height:840px)]:not-first:border-t [@media(max-height:840px)]:not-first:border-line' : undefined}>
-            {compact ? (
+            {!g.name ? null : compact ? (
               <span id={id} className="mx-auto my-[3px] block h-px w-6 bg-line-strong" aria-label={g.name} role="heading" aria-level={2}>
                 <span className="sr-only">{g.name}</span>
               </span>
@@ -374,6 +378,11 @@ function FooterLinks({ compact, health, onStatus }: { compact: boolean; health: 
       <li>
         <ExtLink href={`${DOCS_URL}/api`} arrow={false} className={footItem(compact)} title={compact ? 'Docs (opens in a new tab)' : undefined}>
           <BookOpen size={ICON} aria-hidden /> {txt('Docs ↗')}
+        </ExtLink>
+      </li>
+      <li>
+        <ExtLink href={PRODUCTS_URL} arrow={false} className={footItem(compact)} title={compact ? 'All Gully products (opens in a new tab)' : undefined} data-testid="products-link">
+          <Boxes size={ICON} aria-hidden /> {txt('All Gully products ↗')}
         </ExtLink>
       </li>
       <li>
@@ -425,7 +434,7 @@ function HeaderLinks({ health, onStatus }: { health: Health; onStatus: () => voi
 function Brand({ compact, onHome }: { compact: boolean; onHome: () => void }) {
   return (
     <button type="button" onClick={onHome} className={`flex min-h-11 min-w-0 items-center gap-[10px] text-ink ${compact ? 'justify-center' : ''}`} aria-label="Gully Labs App: overview" data-testid="app-brand">
-      <Mascot size={24} decorative />
+      {compact && <Mascot size={24} decorative />}
       {!compact && (
         <span className="flex min-w-0 items-center gap-2">
           <Wordmark height={18} />
@@ -497,11 +506,9 @@ function Sheet({ open, onClose, children }: { open: boolean; onClose: () => void
 
 /* ------------------------------------------------------------ phone tab bar --- */
 
-const TAB_BAR_IDS = ['overview', 'tracker', 'keys', 'alerts']
-
-/** Under 860px: the four key pages as a bottom tab bar, plus "More" for the full menu sheet. */
+/** Under 860px: the four key pages (services/nav.ts TAB_BAR_IDS) as a bottom tab bar, plus "More" for the full menu sheet. */
 function TabBar<T extends string>({ items, current, go, more, sheetOpen }: { items: NavItem<T>[]; current: T; go: (t: T) => void; more: () => void; sheetOpen: boolean }) {
-  const tabs = TAB_BAR_IDS.map((id) => items.find((i) => i.id === id)).filter((x): x is NavItem<T> => !!x)
+  const tabs = (TAB_BAR_IDS as string[]).map((id) => items.find((i) => i.id === id)).filter((x): x is NavItem<T> => !!x)
   const inMore = !tabs.some((t) => t.id === current)
   const cell = (on: boolean) => `relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-[3px] text-[11px] font-medium transition-colors ${on ? 'text-gold' : 'text-dim hover:text-ink'}`
   const bar = <span className="absolute top-0 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-gold" style={{ animation: 'gl-fade .25s ease both' }} aria-hidden />
@@ -593,11 +600,12 @@ export function AppShell<T extends string>({
   const ws = me?.active.name ?? 'Your workspace'
 
   return (
+    <>
+    <FollowBar />
     <div className="flex min-h-dvh" data-testid="app-shell" data-sidebar={narrow ? 'sheet' : compact ? 'icons' : 'open'}>
       {!narrow && (
         <aside aria-label="App" className={`sticky top-0 z-40 flex h-dvh shrink-0 flex-col gap-[6px] border-r border-line bg-bg-alt py-[6px] transition-[width] duration-200 print:hidden ${compact ? 'w-16 px-2' : 'w-[212px] px-[10px]'}`} data-testid="app-sidebar">
-          {/* The Gully mark (home), the workspace switcher and the collapse button share one row, so every page
-              still fits the full-height list as the app grows (19 pages fit at 800 px). */}
+          {/* The Gully mark (home), the workspace switcher and the collapse button share one row. */}
           <div className={`flex items-center gap-1 ${compact ? 'flex-col' : ''}`}>
             <Brand compact onHome={() => go(first)} />
             <div className={compact ? 'w-full' : 'min-w-0 flex-1'}>
@@ -607,12 +615,21 @@ export function AppShell<T extends string>({
               {compact ? <ChevronsRight size={ICON} aria-hidden /> : <ChevronsLeft size={ICON} aria-hidden />}
             </button>
           </div>
-          {/* One full-height list: it fits at 800px and up, so it scrolls only on short windows (and the icon
-              rail never clips its tooltips). */}
-          <nav aria-label="App pages" className={`-mx-1 min-h-0 flex-1 px-1 ${compact ? '' : 'overflow-y-auto [scrollbar-width:thin]'}`} data-testid="app-nav">
-            <NavLinks items={items} current={current} go={go} compact={compact} dense />
+          {/* The ten pages: one flat list (it fits any window; the icon rail never clips its tooltips). */}
+          <nav aria-label="App pages" className={`-mx-1 min-h-0 flex-1 px-1 pt-1 ${compact ? '' : 'overflow-y-auto [scrollbar-width:thin]'}`} data-testid="app-nav" data-nav-ids={HUB_NAV_IDS}>
+            <NavLinks items={compact ? items.filter((i) => !i.href) : items} current={current} go={go} compact={compact} dense />
           </nav>
-          <div className="border-t border-line pt-[6px]">
+          {/* The sidebar footer: the one link to the other Gully products (they live on the web), then the wallet. */}
+          <div className="flex flex-col gap-[6px] border-t border-line pt-[6px]" data-testid="sidebar-footer">
+            <ExtLink href={PRODUCTS_URL} arrow={false} className={`group/row relative flex min-h-10 items-center gap-[10px] rounded-md text-[13px] font-medium text-dim transition-colors hover:bg-surface-hover hover:text-ink ${compact ? 'justify-center px-0' : 'px-[10px]'}`} aria-label="All Gully products (opens in a new tab)" data-testid="products-link">
+              <Boxes size={ICON} aria-hidden />
+              <span className={compact ? 'sr-only' : 'flex-1 truncate'}>All Gully products ↗</span>
+              {compact && (
+                <span className="pointer-events-none absolute top-1/2 left-[calc(100%+10px)] z-50 -translate-y-1/2 rounded-[8px] border border-line-strong bg-surface-deep px-[10px] py-[5px] text-[12px] whitespace-nowrap text-ink opacity-0 shadow-[0_8px_24px_rgba(0,0,0,.45)] transition-opacity duration-150 group-hover/row:opacity-100 group-focus-visible/row:opacity-100" aria-hidden data-tooltip>
+                  All Gully products ↗
+                </span>
+              )}
+            </ExtLink>
             <WalletMenu onSignOut={onSignOut} go={wallet} compact={compact} placement="up" />
           </div>
         </aside>
@@ -652,6 +669,17 @@ export function AppShell<T extends string>({
           <div className="flex min-w-0 flex-1 flex-col">{children}</div>
           {/* The app's footer row: the "Powered by Gully Labs" badge (owner rule 2026-10-26). */}
           <footer className="border-t border-line px-6 py-4 max-[480px]:px-4 print:hidden">
+            <nav aria-label="Legal" className="flex flex-wrap items-center gap-x-4 font-mono text-[12px] text-muted" data-testid="footer-legal">
+              <ExtLink href={`${SITE_URL}/terms`} arrow={false} className="inline-flex min-h-11 items-center hover:text-ink">
+                Terms
+              </ExtLink>
+              <ExtLink href={`${SITE_URL}/privacy`} arrow={false} className="inline-flex min-h-11 items-center hover:text-ink">
+                Privacy
+              </ExtLink>
+              <ExtLink href={`${SITE_URL}/legal`} arrow={false} className="inline-flex min-h-11 items-center hover:text-ink">
+                Legal
+              </ExtLink>
+            </nav>
             <BadgeFooterRow />
           </footer>
         </div>
@@ -659,10 +687,9 @@ export function AppShell<T extends string>({
 
       {narrow && <TabBar items={items} current={current} go={pick} more={() => setSheet(true)} sheetOpen={sheet} />}
 
-      {/* Gully AI everywhere in the app: the floating button (bottom right) and ⌘K / Ctrl+K. On the Gully AI
-          page itself the chat is the page, so only the shortcut stays. */}
+      {/* Gully AI everywhere in the app: the floating assistant button (bottom right, opens the drawer) and ⌘K / Ctrl+K. */}
       <div className={`pointer-events-none fixed right-5 z-40 max-[600px]:right-4 print:hidden ${narrow ? 'bottom-[calc(76px+env(safe-area-inset-bottom))]' : 'bottom-5'}`} data-testid="corner-dock">
-        <AskLauncher variant="floating" hideButton={current === ('ai' as T)} />
+        <AskLauncher variant="floating" />
       </div>
 
       <PwaCards kind="app" lift={narrow} />
@@ -679,5 +706,6 @@ export function AppShell<T extends string>({
         </div>
       </Sheet>
     </div>
+    </>
   )
 }

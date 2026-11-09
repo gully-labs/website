@@ -3,6 +3,7 @@
 // failed shows as unreachable, an unread value as "not tracked yet", never as 0. ECharts itself loads
 // on demand inside EChart, so a docs page paints before any chart code arrives.
 
+import { dateTimePT, timePT } from '../lib/time'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { PlanLimits } from '../components/charts/PlanLimits'
 import { ChartBox } from '../components/charts/ChartSkeleton'
@@ -84,7 +85,7 @@ function useProbe(path: string, everyMs = 10_000, keep = 30, onBody?: (b: unknow
   return list
 }
 
-const hhmmss = (t: number) => new Date(t).toISOString().slice(11, 19) + ' UTC'
+const hhmmss = (t: number) => timePT(t, true)
 
 /* ---------------------------------------------------- latency sparkline --- */
 
@@ -194,13 +195,13 @@ function WidestGaps({ rows, at, failed }: { rows: Row[] | null; at: string | nul
       yAxis: { type: 'category', data: top.map((r) => `${r.ticker} · ${r.chain === 'bsc' ? 'BNB' : 'RH'}`), axisTick: { show: false } },
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
         const r = top[ps[0]?.dataIndex ?? -1]
-        return r ? tipHtml({ title: `${r.ticker} on ${r.chain === 'bsc' ? 'BNB Chain' : 'Robinhood Chain'}`, rows: [{ name: 'gap to fair', value: signed(r.gapPct as number), valueColor: (r.gapPct as number) >= 0 ? C.gold : '#248bff' }, { name: 'status', value: r.status }] }) : ''
+        return r ? tipHtml({ title: `${r.ticker} on ${r.chain === 'bsc' ? 'BNB Chain' : 'Robinhood Chain'}`, rows: [{ name: 'gap to fair', value: signed(r.gapPct as number), valueColor: (r.gapPct as number) >= 0 ? C.gold : '#6f8ddf' }, { name: 'status', value: r.status }] }) : ''
       }, 'shadow'),
       series: [
         {
           id: 'gaps',
           ...barsPreset({ horizontal: true }),
-          data: top.map((r) => ({ value: Math.round((r.gapPct as number) * 100) / 100, itemStyle: { color: (r.gapPct as number) >= 0 ? C.gold : '#248bff' } })),
+          data: top.map((r) => ({ value: Math.round((r.gapPct as number) * 100) / 100, itemStyle: { color: (r.gapPct as number) >= 0 ? C.gold : '#6f8ddf' } })),
           label: { show: true, position: 'right', color: C.ink2, fontFamily: 'IBM Plex Mono', fontSize: 11, formatter: (p: { value: number }) => signed(p.value) },
         },
       ],
@@ -471,7 +472,7 @@ export function GasCostChart() {
           title: c.name,
           rows: [
             { name: `payment (${intText(data?.gas.pay)} gas)`, value: usdSmall(c.payUsd as number), color: C.gold },
-            { name: `transfer (${intText(data?.gas.transfer)} gas)`, value: usdSmall(c.transferUsd as number), color: '#248bff' },
+            { name: `transfer (${intText(data?.gas.transfer)} gas)`, value: usdSmall(c.transferUsd as number), color: '#6f8ddf' },
             ...(typeof c.approveUsd === 'number' ? [{ name: `approve (${intText(data?.gas.approve)} gas)`, value: usdSmall(c.approveUsd) }] : []),
             { name: 'gas price', value: typeof c.gasPriceGwei === 'number' ? `${c.gasPriceGwei} gwei` : 'unreadable' },
             { name: `${c.symbol ?? 'coin'} price`, value: typeof c.coinUsd === 'number' ? `$${c.coinUsd.toLocaleString('en-US')}` : 'unreadable' },
@@ -482,7 +483,7 @@ export function GasCostChart() {
       }, 'shadow'),
       series: [
         { id: 'pay', name: 'Fee-proxy payment', ...barsPreset({ horizontal: true, focus: 'series' }), color: C.gold, data: priced.map((c) => c.payUsd), label: { show: true, position: 'right', color: C.ink2, fontFamily: 'IBM Plex Mono', fontSize: 11, formatter: (p: { value: number }) => usdSmall(p.value) } },
-        { id: 'transfer', name: 'Token transfer', ...barsPreset({ horizontal: true, focus: 'series' }), color: '#248bff', data: priced.map((c) => c.transferUsd) },
+        { id: 'transfer', name: 'Token transfer', ...barsPreset({ horizontal: true, focus: 'series' }), color: '#6f8ddf', data: priced.map((c) => c.transferUsd) },
       ],
     }),
     [priced, data],
@@ -536,7 +537,7 @@ interface TrackerDoc {
   rows?: Row[]
 }
 
-const STATUS_COLOR: Record<string, string> = { premium: C.gold, discount: '#248bff', drifting: '#9578e8', 'in-line': C.green }
+const STATUS_COLOR: Record<string, string> = { premium: C.gold, discount: '#6f8ddf', drifting: '#9578e8', 'in-line': C.green }
 const chainShort = (c: string) => (c === 'bsc' ? 'BNB' : c === 'solana' ? 'SOL' : c === 'robinhood' ? 'RH' : c.toUpperCase())
 
 /**
@@ -607,7 +608,7 @@ export function GapHistoryChart({ chain = 'robinhood', ticker = 'NVDA' }: { chai
   const path = `/api/tracker/history?chain=${encodeURIComponent(chain)}&ticker=${encodeURIComponent(ticker)}`
   const { data, failed } = useLive<{ points: HistPoint[] }>(path, 300_000, (b) => Array.isArray((b as { points?: unknown })?.points))
   const pts = useMemo(() => (data?.points ?? []).filter((p) => typeof p[1] === 'number'), [data])
-  const labels = useMemo(() => pts.map((p) => new Date(p[0] * 1000).toISOString().slice(5, 16).replace('T', ' ')), [pts])
+  const labels = useMemo(() => pts.map((p) => dateTimePT(p[0] * 1000).replace(' PT', '')), [pts])
   const option = useMemo(() => {
     const last = pts.length - 1
     const r3 = (v: number) => Math.round(v * 1000) / 1000
@@ -618,7 +619,7 @@ export function GapHistoryChart({ chain = 'robinhood', ticker = 'NVDA' }: { chai
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
         const i = ps[0]?.dataIndex ?? -1
         const p = pts[i]
-        return p ? tipHtml({ title: `${labels[i]} UTC`, rows: [{ name: 'gap', value: signed(p[1]), color: C.gold }, { name: 'onchain', value: typeof p[2] === 'number' ? `$${p[2].toFixed(2)}` : 'unreadable' }, { name: 'fair', value: typeof p[3] === 'number' ? `$${p[3].toFixed(2)}` : 'unreadable' }] }) : ''
+        return p ? tipHtml({ title: `${labels[i]} PT`, rows: [{ name: 'gap', value: signed(p[1]), color: C.gold }, { name: 'onchain', value: typeof p[2] === 'number' ? `$${p[2].toFixed(2)}` : 'unreadable' }, { name: 'fair', value: typeof p[3] === 'number' ? `$${p[3].toFixed(2)}` : 'unreadable' }] }) : ''
       }),
       series: [
         { id: 'gap', ...areaPreset({ color: C.gold, width: 1.75, fill: 0.2 }), data: pts.map((p) => r3(p[1])), markLine: { silent: true, symbol: 'none', lineStyle: { color: C.lineHover, type: 'dashed' }, label: { color: C.faint, fontSize: 11, formatter: 'fair' }, data: [{ yAxis: 0 }] } },
@@ -714,10 +715,10 @@ export function WorkspaceLimitsChart() {
       yAxis: { type: 'category', data: plans.map((p) => p.name), axisTick: { show: false } },
       tooltip: axisTooltip((ps: { dataIndex: number }[]) => {
         const p = plans[ps[0]?.dataIndex ?? -1]
-        return p ? tipHtml({ title: `${p.name} plan`, rows: [{ name: 'limit per key', value: `${p.perMin.toLocaleString('en-US')} / min`, color: C.gold }, { name: 'usage.threshold at 80%', value: `${Math.round(p.perMin * 0.8).toLocaleString('en-US')} / min`, color: '#248bff' }, { name: 'keys per workspace', value: String(p.maxKeys) }] }) : ''
+        return p ? tipHtml({ title: `${p.name} plan`, rows: [{ name: 'limit per key', value: `${p.perMin.toLocaleString('en-US')} / min`, color: C.gold }, { name: 'usage.threshold at 80%', value: `${Math.round(p.perMin * 0.8).toLocaleString('en-US')} / min`, color: '#6f8ddf' }, { name: 'keys per workspace', value: String(p.maxKeys) }] }) : ''
       }, 'shadow'),
       series: [
-        { id: 'warn', name: '80% warning', ...barsPreset({ horizontal: true, focus: 'series' }), color: '#248bff', data: plans.map((p) => Math.round(p.perMin * 0.8)) },
+        { id: 'warn', name: '80% warning', ...barsPreset({ horizontal: true, focus: 'series' }), color: '#6f8ddf', data: plans.map((p) => Math.round(p.perMin * 0.8)) },
         { id: 'limit', name: 'Limit', ...barsPreset({ horizontal: true, focus: 'series' }), color: C.gold, data: plans.map((p) => p.perMin), label: { show: true, position: 'right', color: C.ink2, fontFamily: 'IBM Plex Mono', fontSize: 11, formatter: (q: { dataIndex: number }) => `${plans[q.dataIndex]?.maxKeys ?? '?'} keys` } },
       ],
     }),
@@ -787,7 +788,7 @@ interface LaunchRow {
 const LEVEL_COLOR: Record<string, string> = { good: C.green, mixed: C.gold, poor: C.error }
 
 /**
- * The newest DeepCore launches and their launch health score, from GET /api/holders/launches. A launch whose map
+ * The newest launchpad launches and their launch health score, from GET /api/holders/launches. A launch whose map
  * is still being built, or cannot be built, is listed with that state, never scored 0.
  */
 export function LaunchHealthChart() {
@@ -816,8 +817,8 @@ export function LaunchHealthChart() {
   )
   return (
     <Frame
-      caption="NEWEST DEEPCORE LAUNCHES, HEALTH SCORE · LIVE FROM /api/holders/launches"
-      note={readNote(data, failed, data && <LiveDot on={!data.state || data.state === 'ok'}>{!data.state || data.state === 'ok' ? 'DeepCore read' : `DeepCore ${data.state}`}{data.asOf ? ` ${hhmmss(Date.parse(data.asOf))}` : ''}</LiveDot>)}
+      caption="NEWEST LAUNCHPAD LAUNCHES, HEALTH SCORE · LIVE FROM /api/holders/launches"
+      note={readNote(data, failed, data && <LiveDot on={!data.state || data.state === 'ok'}>{!data.state || data.state === 'ok' ? 'Launch list read' : `Launch list ${data.state}`}{data.asOf ? ` ${hhmmss(Date.parse(data.asOf))}` : ''}</LiveDot>)}
       foot={rest.length ? `Not scored yet: ${rest.map((l) => `${l.symbol ?? l.token.slice(0, 8)} (${l.state === 'checking' ? 'map being built' : l.state === 'unavailable' ? 'holder data unavailable' : 'no score'})`).join(', ')}.` : undefined}
     >
       {!data ? (
@@ -825,7 +826,7 @@ export function LaunchHealthChart() {
       ) : !scored.length ? (
         <Scanning text={data.launches.length ? 'The maps are still being built: no score yet.' : 'No launch read yet: not tracked yet.'} />
       ) : (
-        <EChart option={option} height={Math.max(160, scored.length * 30 + 20)} label="Launch health score, 0 to 100, for the newest DeepCore launches" skeleton="bars" steps={{ count: scored.length }} />
+        <EChart option={option} height={Math.max(160, scored.length * 30 + 20)} label="Launch health score, 0 to 100, for the newest launchpad launches" skeleton="bars" steps={{ count: scored.length }} />
       )}
     </Frame>
   )

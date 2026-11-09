@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { ArrowRight, CircleCheck, CircleSlash, Gauge, Loader2, ShieldCheck } from 'lucide-react'
@@ -5,10 +6,11 @@ import { deepConfirm, deepPagePath, deepQuote, PART_NAMES, PART_ORDER, rememberC
 import { APP_URL, holderHref, isLocalHost } from '../../site-host'
 import { btnGold, btnOutline } from '../ui'
 import { StatusPill } from '../ui/StatusPill'
+import { ConsentLine } from '../legal/ConsentLine'
 
 /* The Deep check offer on a Holder Map page: what it is, what can run on THIS chain (from GET /api/holders/deep),
    the price (free quota and credits first), and a two-step purchase: a quote, then a confirmation that sends the
-   price the buyer saw (`expect`), so a changed price is never charged silently. Payment is Gully Pay's own invoice
+   price the buyer saw (`expect`), so a changed price is never charged silently. Payment is Gully Pay checkout (the in-house invoice when Gully Pay is not configured)
    page; this card only links to it (through the check page). A chain where no part can run is not sold. */
 
 const WHAT: Record<PartKey, string> = {
@@ -88,7 +90,7 @@ export function DeepCheckCard({ chain, token, symbol }: { chain: string; token: 
           </span>
           {sellable && credits > 0 && <StatusPill tone="ok">{credits} free re-run credit{credits === 1 ? '' : 's'}</StatusPill>}
           {sellable && credits === 0 && quota && quota.freePerMonth > 0 && (
-            <StatusPill tone={quota.left > 0 ? 'ok' : 'neutral'} title={`Resets ${new Date(quota.resetsAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`}>
+            <StatusPill tone={quota.left > 0 ? 'ok' : 'neutral'} title={`Resets ${new Date(quota.resetsAt).toLocaleDateString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short' })}`}>
               {quota.left} of {quota.freePerMonth} free this month · {quota.plan.name}
             </StatusPill>
           )}
@@ -168,8 +170,9 @@ export function DeepCheckCard({ chain, token, symbol }: { chain: string; token: 
             <button type="button" onClick={() => setQuote(null)} className={`${btnOutline} inline-flex min-h-11 items-center px-4 text-[13px]`}>
               Change
             </button>
-            {quote.priceUsd > 0 && <span className="font-mono text-[11px] text-dim">You pay on the next page, through a Gully Pay invoice.</span>}
+            {quote.priceUsd > 0 && <span className="font-mono text-[11px] text-dim">You pay on the next page, through Gully Pay checkout (USDC or USDT).</span>}
           </span>
+          <ConsentLine terms="https://holdermaps.xyz/terms" privacy="https://holdermaps.xyz/privacy" />
         </div>
       )}
 

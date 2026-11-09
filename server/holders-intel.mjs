@@ -2,24 +2,25 @@
 // clusters seen in other launches, one wallet's trading on a launch, live updates, the "new launches,
 // checked" feed, "most scanned today", the search resolver and the facts Gully AI is given.
 //
-// Every figure comes from DeepCore's API (account activity, launches, pools), the chain's Transfer logs or
-// the map itself, with the time it was read. Where a part cannot be read it is left out and said so: the
+// Every figure comes from the chain's Transfer logs, the Gully Launchpad indexer or the map itself, with the
+// time it was read (the former partner launchpad's API was retired on 2026-11-08). Where a part cannot be read it is left out and said so: the
 // score is computed over the parts that are known (`counted` says how many points of weight that is).
 //
 // Launch Health (0-100, launches only; never gated):
-//   liquidity  20  launch liquidity in DeepCore's launch lock (DeepCore's lock record for each pool)
+//   liquidity  20  launch liquidity in the launchpad's lock (the lock record for each pool)
 //   bundle     20  share held now by wallets that bought together in the first block of trading
 //   deployer   20  share held by the deployer and the wallets it funded
 //   top10      15  share held by the 10 biggest wallets (pools, locks, burn and exchanges not counted)
 //   snipers    10  wallets whose first buy came in the first blocks of trading
-//   record     15  the deployer's earlier DeepCore launches: liquidity pulled or tokens sold by the deployer
+//   record     15  the deployer's earlier launches: liquidity pulled or tokens sold by the deployer (not read since 2026-11-08)
 
+import { dayLA } from './time-la.mjs'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
-import { readLaunches, shapePool } from './deepcore.mjs'
-import { dcGet, decodeTransfer, evmRpc, findStock, flowSide, HOLDER_CHAINS, readHolderMap, readLaunch, short, TRANSFER_TOPIC } from './holders.mjs'
+import { decodeTransfer, evmRpc, findStock, flowSide, HOLDER_CHAINS, readHolderMap, short, TRANSFER_TOPIC } from './holders.mjs'
+import { allLaunches as gullyLaunches, GULLY_CHAIN } from './gully-chain.mjs'
 import { isSolanaAddress } from './solana.mjs'
 import { detectChains } from './holders-any.mjs'
 import { holderPageUrl } from './hosts.mjs'
@@ -59,7 +60,7 @@ export function launchHealth(map) {
   let rec = { points: null, value: 'Not checked', reason: h?.reason ?? 'The deployer’s earlier launches could not be read.' }
   if (h?.checked) {
     const bad = h.launches.filter((l) => l.outcome === 'liquidity-pulled' || l.outcome === 'deployer-sold').length
-    if (!h.total) rec = { points: null, value: 'First launch', reason: 'This is the first DeepCore launch we have seen from this deployer: no record either way, so this part is left out.' }
+    if (!h.total) rec = { points: null, value: 'First launch', reason: 'This is the first launch we have seen from this deployer: no record either way, so this part is left out.' }
     else rec = { points: Math.round(W.record * clamp01(1 - bad / Math.max(1, Math.min(h.total, 3))) * (h.serial ? 0.6 : 1)), value: `${h.total} earlier${bad ? `, ${bad} bad` : ''}`, reason: `${h.total} earlier DeepCore ${h.total === 1 ? 'launch' : 'launches'} from this deployer${bad ? `; in ${bad} the liquidity was pulled or the deployer sold` : ', none with liquidity pulled or a deployer sell-off'}.${h.serial ? ' Serial launcher: three or more launches.' : ''}` }
   }
   parts.push({ id: 'record', label: 'Deployer track record', weight: W.record, ...rec, wallets: f.deployer ? [f.deployer] : [] })
@@ -73,153 +74,26 @@ export function launchHealth(map) {
 
 /* -------------------------------------------------------- deployer history --- */
 
-/** A launch's outcome from DeepCore's pool view and the deployer's own sells. */
-async function launchOutcome(chainId, tokenAddr, sellsOfDeployer, supplyRaw) {
-  const l = await readLaunch(chainId, tokenAddr)
-  if (!l) return { outcome: 'unknown', note: 'Launch record unreadable.' }
-  const poolId = l.legs?.[0]?.poolId ?? l.poolIds?.[0]
-  let liquidity = null
-  if (poolId) {
-    const r = await dcGet(`/v1/chains/${chainId}/pools/${poolId}`)
-    const raw = r.body?.data?.state?.activeLiquidityRaw
-    if (r.ok && /^\d+$/.test(String(raw ?? ''))) liquidity = BigInt(raw)
-  }
-  const sold = supplyRaw > 0n ? Number((sellsOfDeployer * 10_000n) / supplyRaw) / 100 : null
-  if (liquidity === 0n) return { outcome: 'liquidity-pulled', note: 'The pool has no active liquidity left.' }
-  if (sold !== null && sold >= 2) return { outcome: 'deployer-sold', note: `The deployer sold ${fmt(sold)} of the supply.` }
-  if (liquidity === null) return { outcome: 'unknown', note: 'The pool could not be read.' }
-  return { outcome: 'trading', note: 'Liquidity is still in the pool.' }
-}
+const RETIRED_RECORD = 'The deployer’s earlier launches are not read any more: the former partner launchpad’s record was retired on 2026-11-08.'
 
-/** One account's DeepCore activity (launches and swaps), newest first; null when unreadable. */
-async function activity(address, limit = 100) {
-  const r = await dcGet(`/v1/accounts/${address}/activity?limit=${limit}`)
-  return r.ok && Array.isArray(r.body?.data?.items) ? r.body.data.items : null
-}
-
-/** The deployer's other DeepCore launches and how each ended. `max` bounds the outcome reads. */
-export async function readDeployerHistory(chainId, deployer, token, { max = 3 } = {}) {
-  const items = await activity(deployer)
-  if (!items) return { checked: false, reason: 'DeepCore could not be read for the deployer’s other launches.', total: 0, serial: false, launches: [] }
-  const launches = items.filter((i) => i.kind === 'launch' && isAddr(i.token?.address) && lower(i.token.address) !== lower(token))
-  const sells = new Map()
-  for (const i of items) if (i.kind === 'swap' && i.side === 'sell' && isAddr(i.launchToken?.address) && /^\d+$/.test(String(i.amountIn ?? ''))) sells.set(lower(i.launchToken.address), (sells.get(lower(i.launchToken.address)) ?? 0n) + BigInt(i.amountIn))
-  const out = []
-  for (const l of launches.slice(0, max)) {
-    const ck = keyById(l.chainId)
-    const supply = /^\d+$/.test(String(l.totalSupply ?? '')) ? BigInt(l.totalSupply) : 0n
-    const o = await launchOutcome(l.chainId, lower(l.token.address), sells.get(lower(l.token.address)) ?? 0n, supply)
-    out.push({ chainKey: ck, token: lower(l.token.address), symbol: l.token.symbol ?? null, createdAt: l.blockTimestamp ?? null, ...o, path: pagePath(ck, lower(l.token.address)) })
-  }
-  return { checked: true, reason: null, total: launches.length, serial: launches.length + 1 >= 3, launches: out, more: Math.max(0, launches.length - out.length) }
-}
-
-/* ------------------------------------------------------ cross-token clusters --- */
-
-/** Other DeepCore launches the biggest cluster (or the bundled buyers) bought. */
-export async function readCrossToken(map, { maxWallets = 6 } = {}) {
-  const c = map.clusters?.[0]
-  const wallets = c ? c.wallets.slice(0, maxWallets) : map.nodes.filter((n) => n.flags.includes('bundled')).slice(0, maxWallets).map((n) => n.id)
-  if (!wallets.length) return null
-  const tokens = new Map()
-  let checked = 0
-  for (const w of wallets) {
-    const items = await activity(w, 100)
-    if (!items) continue
-    checked++
-    const mine = new Set()
-    for (const i of items) {
-      const t = lower(i.launchToken?.address)
-      if (i.kind !== 'swap' || i.side !== 'buy' || !isAddr(t) || t === lower(map.token.address) || mine.has(t)) continue
-      mine.add(t)
-      const ck = keyById(i.chainId)
-      const e = tokens.get(t) ?? { chainKey: ck, token: t, symbol: i.launchToken.symbol ?? null, wallets: 0, path: pagePath(ck, t) }
-      e.wallets++
-      tokens.set(t, e)
-    }
-  }
-  if (!checked) return null
-  const list = [...tokens.values()].sort((a, b) => b.wallets - a.wallets).slice(0, 12)
-  const who = c ? 'This cluster' : 'The bundled buyers'
-  return { cluster: c?.id ?? null, checkedWallets: checked, tokens: list, line: list.length ? `${who} also bought ${list.length} other DeepCore ${list.length === 1 ? 'launch' : 'launches'}.` : `${who} bought no other DeepCore launch that we can see.` }
-}
-
-/** Adds the deployer history, cross-token clusters and the health score to a launch map (in place). */
-export async function enrichLaunch(map, { chainId, launch, tier }) {
-  if (!map.forensics || !launch?.creator) return map
-  map.deployerHistory = await readDeployerHistory(chainId, lower(launch.creator), map.token.address, { max: tier === 'pro' ? 10 : 3 }).catch(() => null)
-  map.crossToken = await readCrossToken(map).catch(() => null)
-  map.health = launchHealth(map)
-  if (map.health?.score !== null && map.health) map.summary.plain.unshift(`Launch Health ${map.health.score} out of 100: ${map.health.verdict}`)
-  if (map.deployerHistory?.serial) map.summary.plain.push('The deployer is a serial launcher: three or more DeepCore launches.')
-  if (map.crossToken?.tokens?.length) map.summary.plain.push(map.crossToken.line)
-  return map
+/** The deployer's other launches. Not read since 2026-11-08 (the partner launchpad's account activity was the only source). */
+export async function readDeployerHistory() {
+  return { checked: false, reason: RETIRED_RECORD, total: 0, serial: false, launches: [], more: 0 }
 }
 
 /* ------------------------------------------------------------- one wallet --- */
 
-const walletCache = new Map()
-/** One wallet's trading on a launch, from DeepCore's account activity: first buy, entry price and P&L. */
+/** One wallet's trading on a launch. The only source (the partner launchpad's account activity) was retired on 2026-11-08. */
 export async function readWalletDetail(chainKey, token, address) {
-  const c = HOLDER_CHAINS[chainKey]
-  if (chainKey === 'solana' || !isAddr(address)) return { state: 'unsupported', reason: 'Wallet details are read for DeepCore launches on EVM chains.' }
-  const key = `${chainKey}:${lower(token)}:${lower(address)}`
-  const hit = walletCache.get(key)
-  if (hit && Date.now() - hit.at < 300_000) return hit.body
-  const items = await activity(lower(address), 100)
-  if (!items) return { state: 'error', reason: 'DeepCore could not be read just now.' }
-  const mine = items.filter((i) => i.kind === 'swap' && lower(i.launchToken?.address) === lower(token) && i.chainId === c.id).reverse()
-  const buys = mine.filter((i) => i.side === 'buy')
-  const sells = mine.filter((i) => i.side === 'sell')
-  const units = (raw, d) => (/^\d+$/.test(String(raw ?? '')) ? Number(BigInt(raw)) / 10 ** (d ?? 18) : null)
-  const first = buys[0] ?? null
-  let paid = 0
-  let got = 0
-  for (const b of buys) {
-    paid += units(b.amountIn, b.tokenIn?.decimals) ?? 0
-    got += units(b.amountOut, b.tokenOut?.decimals) ?? 0
-  }
-  const entryPrice = got > 0 ? paid / got : null
-  let priceNow = null
-  let quote = first?.tokenIn?.symbol ?? null
-  const l = await readLaunch(c.id, lower(token))
-  const poolId = l?.legs?.[0]?.poolId ?? l?.poolIds?.[0]
-  if (poolId) {
-    const r = await dcGet(`/v1/chains/${c.id}/pools/${poolId}`)
-    // The launch token priced in the pool's quote coin (deepcore.mjs shapePool: the same reading Gully AI uses).
-    const sp = r.ok && r.body?.data ? shapePool(r.body.data, lower(token)) : null
-    if (sp?.priceInQuote > 0) priceNow = sp.priceInQuote
-    quote ??= sp?.quote?.symbol ?? null
-  }
-  const others = [...new Set(items.filter((i) => i.kind === 'swap' && i.side === 'buy' && isAddr(i.launchToken?.address) && lower(i.launchToken.address) !== lower(token)).map((i) => `${i.chainId}|${lower(i.launchToken.address)}|${i.launchToken.symbol ?? ''}`))].slice(0, 8).map((k) => {
-    const [cid, t, sym] = k.split('|')
-    const ck = keyById(cid)
-    return { chainKey: ck, token: t, symbol: sym || null, path: pagePath(ck, t) }
-  })
-  const body = {
-    state: 'ok',
-    firstBuy: first ? { at: first.blockTimestamp ?? null, block: Number(first.blockNumber) || null, tokens: units(first.amountOut, first.tokenOut?.decimals), paid: { amount: units(first.amountIn, first.tokenIn?.decimals), symbol: first.tokenIn?.symbol ?? null } } : null,
-    buys: buys.length,
-    sells: sells.length,
-    entryPrice,
-    priceNow,
-    quote,
-    pnlPct: entryPrice && priceNow ? round1((priceNow / entryPrice - 1) * 100) : null,
-    otherLaunches: others,
-    asOf: new Date().toISOString(),
-    note: 'Swaps through DeepCore’s pools that this wallet signed, as DeepCore indexes them. Transfers in from other wallets are not buys.',
-  }
-  walletCache.set(key, { at: Date.now(), body })
-  if (walletCache.size > 500) walletCache.delete(walletCache.keys().next().value)
-  return body
+  if (chainKey === 'solana' || !isAddr(address)) return { state: 'unsupported', reason: 'Wallet details are not available for this token.' }
+  return { state: 'unsupported', reason: 'Wallet trading details were read from the former partner launchpad’s index, which was retired on 2026-11-08.' }
 }
 
 /* ------------------------------------------------------------------ live --- */
 
 const liveCache = new Map()
 /**
- * Transfers since `since` (a block) for an open map: DeepCore's log index for launches, our RPCs for EVM
- * tokens. Shared per token for 10 s. Returns { state, cursor, transfers: [{ from, to, pct, block, at }], pcts }.
+ * Transfers since `since` (a block) for an open map, from our RPCs (EVM tokens). Shared per token for 10 s. Returns { state, cursor, transfers: [{ from, to, pct, block, at }], pcts }.
  */
 export async function readLive(chainKey, tokenIn, sinceIn) {
   const map = await readHolderMap(chainKey, tokenIn, { tier: 'free' })
@@ -231,27 +105,19 @@ export async function readLive(chainKey, tokenIn, sinceIn) {
   const c = HOLDER_CHAINS[chainKey]
   let logs = null
   let cursor = since
-  if (map.kind === 'deepcore-launch') {
-    const r = await dcGet(`/v1/chains/${c.id}/logs?address=${map.token.address}&topic0=${TRANSFER_TOPIC}&fromBlock=${since + 1}&toBlock=latest&limit=200`)
-    if (r.ok && Array.isArray(r.body?.data?.logs)) {
-      logs = r.body.data.logs
-      cursor = Number(r.body.data.toBlock) || cursor
-    }
-  } else {
-    try {
-      const head = Number(BigInt(await evmRpc(chainKey, 'eth_blockNumber', [])))
-      const from = Math.max(since + 1, head - 5_000)
-      // No new block since the last poll (quiet chains such as Gully Chain testnet only make blocks on demand, and a
-      // lagging RPC can report a head below the cursor): nothing new, not an RPC error. fromBlock > toBlock is
-      // rejected by the RPC and surfaced as a 502 on every idle poll.
-      if (from > head) {
-        logs = []
-        cursor = head
-      } else logs = await evmRpc(chainKey, 'eth_getLogs', [{ address: map.token.address, topics: [TRANSFER_TOPIC], fromBlock: '0x' + from.toString(16), toBlock: '0x' + head.toString(16) }])
-      if (from <= head) cursor = head
-    } catch {
-      logs = null
-    }
+  try {
+    const head = Number(BigInt(await evmRpc(chainKey, 'eth_blockNumber', [])))
+    const from = Math.max(since + 1, head - 5_000)
+    // No new block since the last poll (quiet chains such as Gully Chain testnet only make blocks on demand, and a
+    // lagging RPC can report a head below the cursor): nothing new, not an RPC error. fromBlock > toBlock is
+    // rejected by the RPC and surfaced as a 502 on every idle poll.
+    if (from > head) {
+      logs = []
+      cursor = head
+    } else logs = await evmRpc(chainKey, 'eth_getLogs', [{ address: map.token.address, topics: [TRANSFER_TOPIC], fromBlock: '0x' + from.toString(16), toBlock: '0x' + head.toString(16) }])
+    if (from <= head) cursor = head
+  } catch {
+    logs = null
   }
   if (!Array.isArray(logs)) return { state: 'error', reason: 'New transfers could not be read just now.', cursor: since }
   const supply = map.token.supply
@@ -293,12 +159,12 @@ function loadScans() {
   } catch {
     scans = {}
   }
-  scans.day ??= new Date().toISOString().slice(0, 10)
+  scans.day ??= dayLA()
   scans.items ??= {}
   return scans
 }
 /* Visitors are counted by a keyed hash of the IP, never the IP itself. The key is random, held in memory
-   only and replaced every UTC day, so a tag cannot be turned back into an address or matched across days. */
+   only and replaced every Los Angeles day, so a tag cannot be turned back into an address or matched across days. */
 let tagKey = { day: '', key: null }
 function visitorTag(ip, day) {
   if (tagKey.day !== day) tagKey = { day, key: crypto.randomBytes(32) }
@@ -306,7 +172,7 @@ function visitorTag(ip, day) {
 }
 /** Starts a new day: yesterday's counts and visitor tags are dropped (and the file is rewritten). */
 function rollDay(s) {
-  const day = new Date().toISOString().slice(0, 10)
+  const day = dayLA()
   if (s.day !== day) {
     s.day = day
     s.items = {}
@@ -347,14 +213,18 @@ export function flushScans() {
 }
 setInterval(flushScans, 60_000).unref?.()
 export const resetScansForTest = () => {
-  scans = { day: new Date().toISOString().slice(0, 10), items: {} }
+  scans = { day: dayLA(), items: {} }
 }
 
 /* ------------------------------------------------- new launches, checked --- */
 
-/** The newest DeepCore launches with their health score; maps not built yet are started (a few per call). */
+/**
+ * The newest Gully Launchpad launches (Gully Chain, from the indexer) as the Holder Map checks them; maps not built yet
+ * are started (a few per call). The former partner launchpad's feed was retired on 2026-11-08. { state: 'ok' |
+ * 'unreadable', asOf, launches }.
+ */
 export async function readLaunchFeed({ limit = 12 } = {}) {
-  const r = await readLaunches({ limit })
+  const r = await gullyLaunchFeed(limit)
   let started = 0
   const launches = []
   for (const l of r.launches) {
@@ -374,6 +244,18 @@ export async function readLaunchFeed({ limit = 12 } = {}) {
     launches.push({ ...base, state: 'checking', health: null, riskLine: null })
   }
   return { state: r.state, asOf: r.asOf, launches }
+}
+/** Gully Launchpad tokens from the indexer, newest first, in the feed's launch shape. */
+async function gullyLaunchFeed(limit) {
+  const all = await gullyLaunches()
+  if (!Array.isArray(all)) return { state: 'unreadable', asOf: null, launches: [] }
+  const ck = Object.entries(HOLDER_CHAINS).find(([, c]) => c.id === GULLY_CHAIN.id)?.[0] ?? 'gully'
+  const launches = all
+    .filter((x) => x && x.source === 'launchpad' && isAddr(x.address))
+    .sort((a, b) => Number(b.createdAt ?? 0) - Number(a.createdAt ?? 0))
+    .slice(0, limit)
+    .map((x) => ({ chainKey: ck, chainName: HOLDER_CHAINS[ck]?.name ?? 'Gully Chain', token: lower(x.address), symbol: x.symbol ?? null, createdAt: Number(x.createdAt) > 0 ? new Date(Number(x.createdAt) * 1000).toISOString() : null }))
+  return { state: 'ok', asOf: new Date().toISOString(), launches }
 }
 const LIVE_INFRA = new Set(['pool', 'lock', 'burn', 'token', 'deepcore', 'router', 'gully', 'exchange'])
 /**
@@ -407,8 +289,6 @@ export async function resolveHolders(qIn, { ip = null } = {}) {
       const s = findStock(ck, q)
       if (s) out.push({ chain: ck, chainName: HOLDER_CHAINS[ck].name, token: s.ticker, symbol: s.ticker, name: s.name ?? null, kind: 'stock', path: pagePath(ck, s.ticker) })
     }
-    const r = await readLaunches({ limit: 50 })
-    for (const l of r.launches) if (String(l.symbol ?? '').toUpperCase() === q.toUpperCase() && HOLDER_CHAINS[l.chainKey]) out.push({ chain: l.chainKey, chainName: l.chainName, token: lower(l.token), symbol: l.symbol, kind: 'deepcore-launch', path: pagePath(l.chainKey, lower(l.token)) })
     return { matches: out }
   }
   if (isAddr(q)) {
@@ -417,9 +297,8 @@ export async function resolveHolders(qIn, { ip = null } = {}) {
       if (s) out.push({ chain: ck, chainName: HOLDER_CHAINS[ck].name, token: s.ticker, symbol: s.ticker, kind: 'stock', path: pagePath(ck, s.ticker) })
     }
     if (out.length) return { matches: out, checked: [] }
-    // No chain given: every supported chain is checked at once (DeepCore's launch list and the token itself).
-    const [found, det] = await Promise.all([Promise.all(['robinhood', 'bsc', 'base', 'hyperevm'].map(async (ck) => [ck, await readLaunch(HOLDER_CHAINS[ck].id, lower(q)).catch(() => undefined)])), detectChains(q, { ip })])
-    return fromChecks(out, det, new Map(found.filter(([, l]) => l)), q)
+    // No chain given: every supported chain is checked at once (the token itself).
+    return fromChecks(out, await detectChains(q, { ip }), new Map(), q)
   }
   if (isSolanaAddress(q)) {
     const s = findStock('solana', q)
@@ -449,7 +328,7 @@ export function holdersFacts(map) {
   if (map.state !== 'ok') return { state: map.state, reason: map.reason ?? null }
   return {
     token: `${map.token.symbol ?? short(map.token.address)} on ${map.chain.name}`,
-    kind: map.kind === 'deepcore-launch' ? 'DeepCore launch' : map.kind === 'launch' ? `${map.venue ?? 'launchpad'} launch` : map.kind === 'token' ? 'token' : 'tokenised stock',
+    kind: map.kind === 'deepcore-launch' ? 'launchpad launch' : map.kind === 'launch' ? `${map.venue ?? 'launchpad'} launch` : map.kind === 'token' ? 'token' : 'tokenised stock',
     coverage: map.coverage?.level === 'top' ? `top holders only: ${map.coverage.reason}` : 'every holder',
     asOf: map.asOf,
     summary: map.summary.line,

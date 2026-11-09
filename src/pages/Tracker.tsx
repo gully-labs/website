@@ -1,3 +1,4 @@
+import { TZ } from '../lib/time'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowRight, BookOpen, KeyRound, Puzzle } from 'lucide-react'
@@ -107,7 +108,7 @@ export function Tracker() {
 
   return (
     <>
-      <Seo title="Stock token tracker" description="Live: every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price, with the gap, pool depth and feed time. Read from Chainlink (or, for some Solana xStocks, the issuer) and the pools themselves." />
+      <Seo page="/tracker" />
 
       <section className="flex flex-col gap-4 px-page pt-10 pb-5">
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -313,7 +314,7 @@ export function Tracker() {
               </div>
             </div>
             <p className="m-0 mt-6 font-mono text-[11px] leading-[1.6] text-faint">
-              Read at {new Date(data.generatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })} UTC, refreshed every minute; history every five minutes. Pool prices now from {[...new Set(data.chains.map((c) => c.poolSource).filter(Boolean))].join(' and ') || 'no source'}. Sources: {data.sources.fair}; {data.sources.onchain}.
+              Read at {new Date(data.generatedAt).toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false })} PT, refreshed every minute; history every five minutes. Pool prices now from {[...new Set(data.chains.map((c) => c.poolSource).filter(Boolean))].join(' and ') || 'no source'}. Sources: {data.sources.fair}; {data.sources.onchain}.
             </p>
           </section>
         </>

@@ -66,6 +66,7 @@
 //
 // Env: GULLY_PAY_MERCHANT_FEE_BPS (50), GULLY_PAY_MERCHANT_FREE_USD (5000), GULLY_MERCHANT_TICK_MS (600000; 0 = off, tests drive it)
 
+import { dayLA, lastDaysLA } from './time-la.mjs'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import http from 'node:http'
@@ -860,7 +861,7 @@ function warn(st, kind, now = Date.now()) {
   if (st.warned[kind]) return false
   st.warned[kind] = new Date(now).toISOString()
   const usd = fmtUsd(st.usdCents)
-  const due = new Date(st.dueAt).toUTCString().slice(0, 16)
+  const due = new Date(st.dueAt).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
   const text = {
     issue: `Your Gully Pay fee statement ${st.number} is ready: $${usd} for the week. Pay it within ${PAUSE_AFTER_DAYS} days (by ${due}) to keep your checkout running: ${payBase()}/pay/${st.invoiceId}`,
     day5: `Reminder: Gully Pay fee statement ${st.number} ($${usd}) is unpaid. Your checkout pauses on ${due} unless it is paid: ${payBase()}/pay/${st.invoiceId}`,
@@ -981,15 +982,15 @@ const RANGES = { '30d': 30, '90d': 90, '365d': 365 }
 /** Payments dashboard: daily volume by chain and by asset, count, average ticket, conversion, top links. */
 export function statsOf(ws, range = '30d', now = Date.now()) {
   const days = RANGES[range] ?? 30
-  const start = Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate()) - (days - 1) * DAY
+  const dates = lastDaysLA(days, now)
+  const start = Date.parse(`${dates[0]}T00:00:00Z`)
   const pays = db.payments.filter((p) => p.ws === ws && Date.parse(p.at) >= start)
-  const dates = Array.from({ length: days }, (_, i) => new Date(start + i * DAY).toISOString().slice(0, 10))
   const idx = new Map(dates.map((d, i) => [d, i]))
   const chains = {}
   const assets = {}
   const count = Array(days).fill(0)
   for (const p of pays) {
-    const i = idx.get(p.at.slice(0, 10))
+    const i = idx.get(dayLA(p.at))
     if (i == null) continue
     const usd = usdNum(p.usdCents)
     const cn = CHAINS[p.chainId]?.name ?? String(p.chainId)
@@ -1509,12 +1510,11 @@ export function adminMerchants(now = Date.now()) {
   const c = feeConfig()
   const total = (k) => Math.round(rows.reduce((a, r) => a + r[k], 0) * 100) / 100
   // Daily volume and fees across every store, for the admin chart (last 30 days).
-  const start = Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate()) - 29 * DAY
-  const dates = Array.from({ length: 30 }, (_, i) => new Date(start + i * DAY).toISOString().slice(0, 10))
+  const dates = lastDaysLA(30, now)
   const volume = Array(30).fill(0)
   const fee = Array(30).fill(0)
   for (const p of db.payments) {
-    const i = dates.indexOf(p.at.slice(0, 10))
+    const i = dates.indexOf(dayLA(p.at))
     if (i < 0) continue
     volume[i] += usdNum(p.usdCents)
     fee[i] += usdNum(centsOfMicros(BigInt(p.feeMicros ?? '0')))
@@ -1528,6 +1528,27 @@ export function adminMerchants(now = Date.now()) {
 }
 
 /** /api/admin/merchants*; admin.mjs has checked the token. */
+/** Invoice ids that are fee statements, so the billing ledger's copy of a statement payment is not counted twice. */
+export const merchantStatementInvoiceIds = () => new Set(db.statements.map((s) => s.invoiceId).filter(Boolean))
+
+/** Fees Gully has actually received: on chain at payment time, and statements paid. [{ t, usd, chainId }] for server/revenue.mjs. */
+export function merchantFeeEvents(now = Date.now()) {
+  const chainOf = new Map(db.payments.map((p) => [p.id, p.chainId]))
+  const out = []
+  for (const f of db.fees) {
+    const micros = collectedOf(f)
+    if (micros > 0n) out.push({ t: Math.floor(Date.parse(f.at) / 1000), usd: Number(micros) / 1e6, chainId: chainOf.get(f.paymentId) ?? null })
+  }
+  for (const s of db.statements) {
+    if (statementState(s, now) !== 'paid') continue
+    const inv = ledger().invoices.find((i) => i.id === s.invoiceId)
+    const pay = ledger().payments.find((p) => p.invoiceId === s.invoiceId)
+    const at = s.paidAt ?? inv?.paidAt ?? pay?.at ?? s.issuedAt
+    out.push({ t: Math.floor(Date.parse(at) / 1000), usd: Number(s.usdCents) / 100, chainId: pay?.chainId ?? null })
+  }
+  return out
+}
+
 export function handleMerchantsAdmin(req, res, url) {
   const p = url.pathname
   if (p === '/api/admin/merchants') return req.method === 'GET' ? json(res, 200, adminMerchants()) : json(res, 405, { error: 'GET only' }), true

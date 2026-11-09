@@ -1,7 +1,6 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router'
 import { Seo } from '../../components/Seo'
-import { eyebrow } from '../../components/ui'
 import { EChart } from '../../components/charts/EChart'
 import { GhostChart } from '../../components/charts/GhostChart'
 import { axisTooltip, barsPreset, C, PALETTE, tipHtml } from '../../components/charts/chartPresets'
@@ -9,36 +8,21 @@ import { EngineStatus } from '../../components/security/EngineStatus'
 import { usePlans } from '../../lib/plans'
 import { SCAN_APP_URL } from '../security/shared'
 import { securityHref } from '../../site-host'
+import { Intro, L, LEGAL, LegalPage, link as a, Mail, P, S } from './kit'
 
-/* /legal/scan-terms (also /security/terms): the terms for the AI Security Scan, in plain words. Every rule here is
-   what the code does today, checked on 2026-10-20 against server/security-routes.mjs (quota, price check, invoice,
+/* gullylabs.xyz/legal/scan-terms (also /security/terms): the terms for the AI Security Scan that the Gully Labs App runs
+   (the scan engine is server/security-routes.mjs on this server), in plain words, laid out on the Basecamp template
+   (src/pages/legal/kit.tsx; LICENSES/POLICIES.md). Every rule here is
+   what the code does today, checked on 2026-11-03 against server/security-routes.mjs (quota, price check, invoice,
    re-run credits, the unpaid-upload sweep), server/security/config.mjs (the 30-minute scan limit), server/security/
    index.mjs (the 180-day prune), server/plans.mjs SECURITY and the privacy policy's Gully Security section.
    The price and the free scans per plan are read live from GET /api/plans; nothing numeric about them is typed here.
-   When one of those rules changes, change this page and SCAN_TERMS_VERSION. Section ids s1…s10 (Gully AI cites them). */
+   When one of those rules changes, change this page. Section ids s1…s10 (Gully AI cites them). */
 
-export const SCAN_TERMS_VERSION = '2026-10-20'
+export const SCAN_TERMS_VERSION = LEGAL.updatedIso
 const SECTIONS = ['What a scan is', 'What it is not', 'Prices and free scans', 'How long it takes', 'Refunds and re-run credits', 'Your code', 'Your part', 'Publishing a report', 'Disclaimer and liability', 'Changes and contact']
 
-function S({ n, title, children }: { n: number; title: string; children: ReactNode }) {
-  return (
-    <section id={`s${n}`} aria-labelledby={`s${n}-h`} className="flex scroll-mt-24 flex-col gap-3">
-      <h2 id={`s${n}-h`} className="m-0 font-display text-[clamp(24px,3.4vw,30px)] leading-none font-bold uppercase text-ink">
-        <span className="mr-2 font-mono text-[15px] font-normal text-gold">{n}.</span>
-        {title}
-      </h2>
-      {children}
-    </section>
-  )
-}
-const P = ({ children }: { children: ReactNode }) => <p className="m-0 text-[16px] leading-[1.7] text-ink-2">{children}</p>
-const L = ({ children }: { children: ReactNode }) => <ul className="m-0 flex list-disc flex-col gap-2 pl-5 text-[16px] leading-[1.65] text-ink-2 marker:text-gold">{children}</ul>
-const a = 'text-gold underline decoration-gold-line underline-offset-2'
 
-/** Renders an HTML comment into the page (visible to anyone reading the source, never on screen). */
-function HtmlComment({ text }: { text: string }) {
-  return <div hidden aria-hidden dangerouslySetInnerHTML={{ __html: `<!-- ${text.replace(/--/g, '—')} -->` }} />
-}
 
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1)
 
@@ -77,25 +61,28 @@ export function ScanTermsPage() {
   const maxMb = offer ? Math.round(offer.scan.maxUploadBytes / 1_000_000) : 2
   return (
     <>
-      <Seo title="AI Security Scan terms" description="The terms for the AI Security Scan: what an automated scan is and is not, free scans and prices, re-run credits instead of refunds, how long your code is kept, and the limits of our liability." />
-      <HtmlComment text="Draft: review by counsel before relying on it." />
-      <article className="relative px-page pt-[64px] pb-24 max-[600px]:pt-10" data-testid="scan-terms">
-        <div className="mx-auto flex max-w-[820px] flex-col gap-10">
-          <header className="flex flex-col gap-4" style={{ animation: 'gl-rise .5s ease both' }}>
-            <span className={eyebrow}>LEGAL · GULLY SECURITY</span>
-            <h1 className="m-0 font-display text-[clamp(40px,7vw,72px)] leading-[.92] font-extrabold uppercase">Scan terms</h1>
-            <p className="m-0 font-mono text-[12px] text-faint">Version {SCAN_TERMS_VERSION}</p>
+      <Seo page="/legal/scan-terms" />
+      <LegalPage
+        kicker="Legal · Gully Security"
+        title="Scan terms"
+        product="Gully Labs"
+        sections={SECTIONS}
+        testId="scan-terms"
+        related={[
+          { href: SCAN_APP_URL, label: 'Start a scan in the app' },
+          { href: securityHref('/security/sample'), label: 'Sample report' },
+          { href: '/terms', label: 'Terms of Service' },
+          { href: '/privacy', label: 'Privacy Policy' },
+          { href: '/legal', label: 'All Gully legal pages' },
+        ]}
+        intro={
+          <Intro>
             <P>
-              These terms cover the AI Security Scan (“<b>a scan</b>”) that Gully Labs (“<b>we</b>”) runs from the Gully Labs App. You accept them when you start a scan. The short version: a scan is automated software, not an audit; it can miss things; a paid scan that fails gives you a free re-run, not a refund; and we delete your code within 180 days.
+              These terms cover the AI Security Scan (“<b>a scan</b>”) that Gully Labs LLC, Oregon, USA (“<b>Gully Labs</b>”, “<b>we</b>”) runs from the Gully Labs App. You accept them when you start a scan. The short version: a scan is automated software, not an audit; it can miss things; a paid scan that fails gives you a free re-run, not a refund; and we delete your code within 180 days.
             </P>
-            <nav aria-label="Sections" className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-[12px]">
-              {SECTIONS.map((t, i) => (
-                <a key={t} href={`#s${i + 1}`} className="inline-flex min-h-11 items-center text-dim hover:text-gold">
-                  {i + 1}. {t}
-                </a>
-              ))}
-            </nav>
-          </header>
+          </Intro>
+        }
+      >
 
           <S n={1} title="What a scan is">
             <P>
@@ -169,7 +156,7 @@ export function ScanTermsPage() {
             </L>
             <P>
               The{' '}
-              <Link to="/legal/privacy#s6" className={a}>
+              <Link to="/privacy#s6" className={a}>
                 privacy policy
               </Link>{' '}
               says in full what is stored, who sees it and for how long.
@@ -198,34 +185,16 @@ export function ScanTermsPage() {
             </P>
           </S>
 
-          <S n={10} title="Changes and contact">
+          <S n={10} title="Changes, law and contact">
             <P>
-              We may change these terms; the version above changes with them, and a change applies to scans started after it is published. Questions:{' '}
-              <a href="mailto:team@gullylabs.xyz" className={a}>
-                team@gullylabs.xyz
-              </a>
-              .
+              We may change these terms; the “Last updated” date above changes with them, and a change applies to scans started after it is published. These terms sit alongside the Gully Labs <Link to="/terms" className={a}>Terms of Service</Link>, which cover everything else about the app. They are governed by the laws of the State of Oregon, USA, and any dispute goes to the state and federal courts located in Oregon, except where consumer law gives you the right to bring a claim where you live. You must be at least 18 years old to run a scan.
+            </P>
+            <P>
+              Questions: Gully Labs LLC, Oregon, USA, <Mail />.
             </P>
           </S>
 
-          <footer className="flex flex-col gap-3 border-t border-line pt-6 font-mono text-[12px] leading-[1.7] text-faint">
-            <p className="m-0 flex flex-wrap gap-x-4">
-              <a href={SCAN_APP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-gold hover:underline">
-                Start a scan in the app ↗<span className="sr-only"> (opens in a new tab)</span>
-              </a>
-              <Link to={securityHref('/security/sample')} className="inline-flex min-h-11 items-center hover:text-gold">
-                Sample report
-              </Link>
-              <Link to={securityHref('/security')} className="inline-flex min-h-11 items-center hover:text-gold">
-                Gully Security
-              </Link>
-              <Link to="/legal/privacy" className="inline-flex min-h-11 items-center hover:text-gold">
-                Privacy
-              </Link>
-            </p>
-          </footer>
-        </div>
-      </article>
+      </LegalPage>
     </>
   )
 }

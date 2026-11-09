@@ -39,7 +39,7 @@ function stats() {
     const dl = { name: 'DefiLlama', url: 'https://api.llama.fi', fallback: true }
     const own = (n) => ({ name: n, url: `https://${n}.example`, fallback: false })
     const peddlesVol = days(60, (i) => (i < 48 ? 300 + ((i * 37) % 500) : 0))
-    Object.assign(v[0], { series: { volume: zeros(9), fees: [], tvl: tvl(1200) }, sources: { volume: own('DeepCore API'), fees: null, tvl: dl }, lastActivity: null })
+    Object.assign(v[0], { series: { volume: zeros(9), fees: [], tvl: tvl(1200) }, sources: { volume: own('venue API'), fees: null, tvl: dl }, lastActivity: null })
     Object.assign(v[1], { series: { volume: zeros(30), fees: [], tvl: [] }, sources: { volume: own('PeddleSwap API'), fees: null, tvl: null }, lastActivity: null })
     Object.assign(v[2], { daily: peddlesVol, series: { volume: peddlesVol, fees: peddlesVol.map((p) => ({ t: p.t, v: p.v / 100 })), tvl: tvl(70000) }, sources: { volume: dl, fees: dl, tvl: dl }, lastActivity: new Date((today - 12 * DAY) * 1000).toISOString() })
     Object.assign(v[3], { series: { volume: [], fees: days(40, (i) => (i % 5 === 0 ? 1.5 : 0)), tvl: tvl(1100) }, sources: { volume: null, fees: dl, tvl: dl }, lastActivity: null })

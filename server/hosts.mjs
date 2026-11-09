@@ -1,7 +1,7 @@
 // The app host, in one place for the server (src/site-host.ts holds the same names for the browser).
 //
-//   app.gullylabs.xyz         the Gully Labs App (the app dashboard: keys, alerts, analytics, payments,
-//                             and every service: tracker, Gully Pay, Chain Kit, Gully AI, DeepCore, widgets).
+//   app.gullylabs.xyz         the Gully Labs App (the account dashboard for the services Gully Labs itself offers:
+//                             chains, Gully IPFS, Gully Analytics, development services, API keys, billing).
 //
 // The dashboard's old host (developers.*) was retired on 2026-10-17: its DNS record is gone and nothing
 // here routes it any more. The main site's /app and /developers paths still answer 301 to the app.
@@ -13,10 +13,12 @@ export const APP_URL = `https://${APP_HOST}`
 export const isAppHost = (host) => host.startsWith('app.')
 
 /* The dashboard is one page at app.gullylabs.xyz/; its pages are hashes (#keys, #settings/profile). The ids are
-   src/pages/developers/Dashboard.tsx TABS plus services/nav.ts SERVICE_TABS and HANDOFF_TABS (scripts/test-hosts.mjs
-   checks they agree). A typed or old path for one of them (app.gullylabs.xyz/keys, /billing/plans) answers 301 to that
-   page instead of leaving for gullylabs.xyz, where no such page exists. */
-export const APP_TABS = ['overview', 'products', 'keys', 'alerts', 'analytics', 'billing', 'merchant', 'scans', 'team', 'activity', 'settings', 'tracker', 'ai', 'score', 'widgets', 'telegram', 'chain', 'pay', 'rpc', 'ipfs', 'holders', 'security', 'studio']
+   src/pages/developers/Dashboard.tsx TABS plus services/nav.ts REMOVED_TABS, AI_TAB and HANDOFF_TABS
+   (scripts/test-hosts.mjs checks they agree). A typed or old path for one of them (app.gullylabs.xyz/keys,
+   /billing/plans) answers 301 to that page instead of leaving for gullylabs.xyz, where no such page exists. The
+   removed pages (products, tracker, alerts, score, widgets, telegram) stay listed: their hashes leave for the web
+   from the app (nav.ts redirectFor), so an old /alerts link still lands somewhere sensible. */
+export const APP_TABS = ['overview', 'activity', 'chains', 'ipfs', 'analytics', 'services', 'keys', 'billing', 'team', 'settings', 'merchant', 'scans', 'products', 'tracker', 'alerts', 'score', 'widgets', 'telegram', 'ai', 'chain', 'pay', 'rpc', 'holders', 'security', 'studio']
 // Paths people use for the dashboard home.
 const APP_HOME_PATHS = new Set(['dashboard', 'home', 'app', 'developers'])
 // Tabs whose bare path is also a public gullylabs.xyz page (the tracker, Gully Score, Analytics, the products hub, the
@@ -133,6 +135,19 @@ export function holderPageUrl(chain, token) {
 /** The Holder Map's home page, for links the server writes. */
 export const holderHomeUrl = () => (holderMapsPrimary() ? `${HOLDERMAPS_URL}/` : `${MAIN_URL}/holders`)
 
+/* The policies' canonical short addresses (2026-11-03). gullylabs.xyz/terms and /privacy are the Gully Labs Terms and
+   Privacy Policy, /legal lists every Gully product's; the old /legal/terms and /legal/privacy answer 301 to them (the
+   merchant and scan terms keep their /legal/ paths). holdermaps.xyz/terms and /privacy are HolderMaps' own. */
+export const HOLDERMAPS_LEGAL = ['/terms', '/privacy']
+const LEGAL_MOVED = { '/legal/terms': '/terms', '/legal/privacy': '/privacy' }
+/** The canonical path of a policy path (/terms for /terms, /terms/ and /legal/terms), or null when it is not one. */
+export function legalCanonicalPath(pathname) {
+  const p = String(pathname ?? '').replace(/(.)\/+$/, '$1')
+  return LEGAL_MOVED[p] ?? (HOLDERMAPS_LEGAL.includes(p) ? p : null)
+}
+/** On holdermaps.xyz: the path of HolderMaps' own policy page for a request path (itself when it is one), or null. */
+export const holderMapsLegalPath = (pathname) => legalCanonicalPath(pathname)
+
 /**
  * Where a request on holdermaps.xyz goes: { kind: 'allow' }, { kind: 'deny' } (JSON 404) or
  * { kind: 'redirect', location } (301). Static files and every /api/ path the main host serves (minus the
@@ -145,6 +160,10 @@ export function holderMapsRoute(host, pathname, search = '') {
   if (pathname.startsWith('/api/')) return API_DENIED.test(pathname) ? { kind: 'deny' } : { kind: 'allow' }
   if (pathname.startsWith('/assets/') || /\.[a-z0-9]+$/i.test(pathname)) return { kind: 'allow' }
   if (holderInternalPath(pathname)) return { kind: 'allow' }
+  // HolderMaps' own Terms and Privacy Policy (2026-11-03); the old /legal/terms and /legal/privacy links move to them.
+  const legal = holderMapsLegalPath(pathname)
+  if (legal === pathname) return { kind: 'allow' }
+  if (legal) return { kind: 'redirect', location: `${legal}${search}` }
   // The old long form on this host: the short path.
   const short = holderShortPath(pathname)
   if (short) return { kind: 'redirect', location: `${short}${search}` }
@@ -247,7 +266,7 @@ export function currentPageUrl(url) {
      Gully Studio    gullystudio.xyz
    Gully Security (gullysecurity.xyz) and HolderMaps (holdermaps.xyz) keep their own switches above (SECURITY_PRIMARY,
    HOLDERMAPS_PRIMARY). What never moves: pay.gullylabs.xyz (Gully Labs' own checkout: plans, paid scans, live
-   invoices), /legal/*, every /api/* path, /embed/*, widget.js and the badges: other sites and the SDK call them. */
+   invoices), /terms, /privacy, /legal and /legal/*, every /api/* path, /embed/*, widget.js and the badges: other sites and the SDK call them. */
 export const CHAIN_URL = 'https://gullychain.xyz'
 /** The Gully Chain app (kre8.fun since 2026-10-29, was app.gullychain.xyz). GULLY_APP_URL overrides it. */
 export const CHAIN_APP_URL = String(process.env.GULLY_APP_URL || 'https://kre8.fun').replace(/\/+$/, '')
@@ -265,7 +284,11 @@ export function movedPageUrl(pathname) {
   const p = String(pathname ?? '').replace(/(.)\/+$/, '$1')
   // The DeepCore partnership ended on 2026-10-29: its old pages open Gully Core, Gully Chain's own launchpad and DEX core.
   if (p === '/products/deepcore' || p === '/projects/deepcore') return 'https://gullylabs.xyz/products/gully-core'
+  // Gully Chain is a product (/products/chain), never a /projects page: old links to /projects/gullychain land there.
+  if (p === '/projects/gullychain') return 'https://gullylabs.xyz/products/chain'
   // Gully Chain: the L3 offer, its launch flow and Chain Kit.
+  // The chain logos in public/chains are files, not the old /chains pages.
+  if (/^\/chains\/[a-z0-9-]+\.(?:svg|png)$/.test(p)) return null
   if (p === '/chains/launch') return `${CHAIN_APP_URL}/`
   if (/^\/(chains|chain-kit|gully-chain|gully-chains|l3)(\/|$)/.test(p)) return `${CHAIN_URL}/`
   // /pay alone is not a checkout (those are /pay/<id>, /pay/l/<id>, /pay/m/<id> on pay.gullylabs.xyz): it was Gully

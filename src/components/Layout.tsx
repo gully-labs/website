@@ -13,6 +13,7 @@ import { scrollBehavior } from './LayoutNav'
 import { BackToTop } from './LayoutScroll'
 import { AskLauncher } from './ask/AskLauncher'
 import { PwaCards } from './pwa/PwaCards'
+import { FollowBar } from './FollowBar'
 import { scrollToAnchor } from '../lib/anchors'
 import { prefetchPath } from '../pages/routeChunks'
 
@@ -103,6 +104,7 @@ export function Layout() {
           >
             Skip to content
           </a>
+          <FollowBar />
           {hm ? <HmHeader /> : <ConsoleHeader />}
           <main id="main" key={pathname} tabIndex={-1} className="animate-[gl-fade_.25s_ease-out_both] outline-none">
             <Outlet />

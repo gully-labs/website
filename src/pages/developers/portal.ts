@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { createContext, useContext } from 'react'
 import type { Me, MemberRole, Role } from './api'
 
@@ -28,8 +29,8 @@ export const ROLE_TEXT: Record<Role, string> = {
 
 export const APP_NAME = 'Gully Labs App'
 /** The app's home title; the server sends the same one (server/seo.mjs APP_TITLE). */
-export const APP_TITLE = `${APP_NAME} · keys, alerts, analytics, payments`
-export const APP_DESCRIPTION = 'Sign in with your wallet to create Gully Labs API keys instantly, set gap and launch alerts, run Gully Analytics, and pay for plans and invoices in crypto, with your team in one workspace.'
+export const APP_TITLE = `${APP_NAME} · chains, IPFS, analytics, keys, billing`
+export const APP_DESCRIPTION = 'Your Gully Labs account: order a chain, follow Gully IPFS, run Gully Analytics on your sites, request development work, create API keys and pay through Gully Pay, with your team in one workspace.'
 
 export const MEMBER_ROLES: MemberRole[] = ['admin', 'developer', 'billing', 'viewer']
 
@@ -112,7 +113,7 @@ export function clearInviteHash() {
 }
 
 /** Plain-words date + time. */
-export const fmtDateTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—')
+export const fmtDateTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—')
 
 /** "in 6 days", "in 3h", "expired". */
 export function untilText(iso: string): string {

@@ -210,7 +210,7 @@ export function renderHolderCardSvg(map) {
   ctx.fillText(title, X, 188)
   ctx.font = '500 18px "IBM Plex Mono"'
   ctx.fillStyle = K.muted
-  ctx.fillText(`${map.kind === 'deepcore-launch' ? 'DeepCore launch' : map.kind === 'launch' ? `${map.venue ?? 'Launchpad'} launch` : map.kind === 'token' ? 'Token' : 'Stock token'} · ${map.chain?.name ?? ''}`, X, 226)
+  ctx.fillText(`${map.kind === 'deepcore-launch' ? 'Launchpad launch' : map.kind === 'launch' ? `${map.venue ?? 'Launchpad'} launch` : map.kind === 'token' ? 'Token' : 'Stock token'} · ${map.chain?.name ?? ''}`, X, 226)
   ctx.font = '800 27px "Poppins"'
   ctx.fillStyle = K.pale
   let y = 278
@@ -292,7 +292,7 @@ export function renderHolderStatusCardSvg(body = {}) {
   ctx.fillText(head, X, 300)
   ctx.font = '500 18px "IBM Plex Mono"'
   ctx.fillStyle = K.bone
-  const line = body.state === 'not-found' ? 'The Holder Map covers DeepCore launches and the tokenised stocks the tracker follows.' : body.comingSoon ? `Holder data for ${body.chain?.name ?? 'this chain'} is coming soon. DeepCore launches already have live maps.` : 'The holders could not be read just now. Open the page to try again.'
+  const line = body.state === 'not-found' ? 'The Holder Map covers any token on its chains and the tokenised stocks the tracker follows.' : body.comingSoon ? `Holder data for ${body.chain?.name ?? 'this chain'} is coming soon.` : 'The holders could not be read just now. Open the page to try again.'
   let y = 346
   for (const l of wrap(ctx, line, TW, 4)) {
     ctx.fillText(l, X, y)

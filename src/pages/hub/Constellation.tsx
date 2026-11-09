@@ -1,23 +1,27 @@
 /* The gullylabs.xyz landing, "Constellation" (owner pick, 2026-10-27; replaces landing v3). Gully Labs as the studio
-   behind one connected suite: the eight products as a live map around Gully Chain (solid links are live integrations,
+   behind one connected suite: the eight Gully-named products as a live map around Gully Chain (solid links are live integrations,
    dashed ones flagged or planned), a live reading on every node and a drawer per product; right under it the directory
-   (design standard, 2026-11-01): what each product is, its live number and where to go; then one tabbed board (live
+   (design standard, 2026-11-01): what each product is, its live number and where to go, with the Peddle family
+   (PeddleSwap, Peddles, PeddleQuest: Gully Labs projects, 2026-11-05) as cards under it; then one tabbed board (live
    board, what's new, work with us, contact). On a phone the directory comes before the map.
    Every figure is read live (src/pages/hub/hubData.ts adapters): /api/hub, /api/hub/products, /api/stats and
    /api/hub/live. A source that cannot be read says so. Toasts only on real events seen between two polls. */
+import { timePT } from '../../lib/time'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Activity, ArrowDown, ArrowRight, ArrowUpRight, Blocks, Briefcase, ChartSpline, ChevronDown, CircleCheck, CircleDot, ExternalLink, FingerprintPattern, Hammer, Info, MessageSquare, Newspaper, Send, Trophy, X, type LucideIcon } from 'lucide-react'
 import { Seo } from '../../components/Seo'
 import { useLive } from '../../console/live'
 import { consoleToast } from '../../console/toast'
-import { Count, Spark } from '../../console/ui'
+import { Spark } from '../../console/ui'
+import { LiveStat } from '../../components/live/GlLive'
 import '../../terminal/terminal.css'
 import { A, TChart, UptimeGrid, useHubProducts, type ChartTab } from '../../terminal/kit'
 import { ContactForm, Process, ServicesList } from '../../terminal/sections'
 import './constellation.css'
 import { useHubLive } from './useHubLive'
-import { changes, curve, EDGES, fmtNum, HUB_PRODUCTS, kpiText, liveEvents, MAP, NEWS, productOf, readings, seenOf, STATUS_LABEL, suite, ago,  type ProductKey, type Reading, type Seen, type Sources } from './hubData'
+import { PeddleFamily } from './PeddleFamily'
+import { changes, curve, EDGES, fmtNum, HUB_PRODUCTS, kpiText, liveEvents, MAP, NEWS, productOf, readings, seenOf, STATUS_LABEL, suite, ago, LANDING_HEADLINE, LANDING_LEDE, type ProductKey, type Reading, type Seen, type Sources } from './hubData'
 
 const fmtUsd = (v: number | null) => (v == null ? '—' : v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : v >= 1e4 ? `$${(v / 1e3).toFixed(1)}K` : `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}`)
 const tagOf = (s: string) => (s === 'live' ? 'live' : s === 'soon' || s === 'rolling out' || s === 'coming soon' ? 'soon' : 'new')
@@ -306,22 +310,22 @@ function LiveBoard({ src, R }: { src: Sources; R: Record<ProductKey, Reading> })
   const chainRows = R.chain.series?.rows ?? []
   const idRows = R.id.series?.rows ?? []
   const tabs: ChartTab[] = [
-    { id: 'chain', label: 'Chain txs', title: 'Gully Chain transactions per hour (UTC)', series: [{ name: 'Transactions', color: '#00D2FF', values: chainRows.map((r) => r.v) }], labels: chainRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'indexer unreadable right now', sub: 'source: /api/hub/products (Gully Chain RPC and indexer)', legendTotal: chainRows.length ? `${chainRows.length} h total` : undefined },
-    { id: 'id', label: 'ID sign-ins', title: 'Gully ID sign-ins per hour (UTC)', series: [{ name: 'Sign-ins', color: '#00D2FF', values: idRows.map((r) => r.v) }], labels: idRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.live?.id ? 'ok' : src.live ? 'offline' : 'loading', empty: 'Gully ID stats unreadable right now', sub: 'source: gullyid.xyz/v1/stats/public', legendTotal: idRows.length ? `${idRows.length} h total` : undefined },
+    { id: 'chain', label: 'Chain txs', title: 'Gully Chain transactions per hour (PT)', series: [{ name: 'Transactions', color: '#00D2FF', values: chainRows.map((r) => r.v) }], labels: chainRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'indexer unreadable right now', sub: 'source: /api/hub/products (Gully Chain RPC and indexer)', legendTotal: chainRows.length ? `${chainRows.length} h total` : undefined },
+    { id: 'id', label: 'ID sign-ins', title: 'Gully ID sign-ins per hour (PT)', series: [{ name: 'Sign-ins', color: '#00D2FF', values: idRows.map((r) => r.v) }], labels: idRows.map((r) => r.x), fmt: (v) => fmtNum(v), integer: true, state: src.live?.id ? 'ok' : src.live ? 'offline' : 'loading', empty: 'Gully ID stats unreadable right now', sub: 'source: gullyid.xyz/v1/stats/public', legendTotal: idRows.length ? `${idRows.length} h total` : undefined },
   ]
   const mapRows = src.products?.holders?.daily ?? []
   const volRows = (src.stats?.daily ?? []).slice(-30)
   tabs.push(
-    { id: 'maps', label: 'Maps / day', title: 'HolderMaps maps opened per day (UTC)', series: [{ name: 'Maps', color: '#00D2FF', values: mapRows.map((r) => r.maps) }], labels: mapRows.map((r) => r.day.slice(5)), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'HolderMaps figures unreadable right now', sub: 'source: /api/hub/products', legendTotal: mapRows.length ? `${mapRows.length} days total` : undefined },
+    { id: 'maps', label: 'Maps / day', title: 'HolderMaps maps opened per day (PT)', series: [{ name: 'Maps', color: '#00D2FF', values: mapRows.map((r) => r.maps) }], labels: mapRows.map((r) => r.day.slice(5)), fmt: (v) => fmtNum(v), integer: true, state: src.products ? 'ok' : 'loading', empty: 'HolderMaps figures unreadable right now', sub: 'source: /api/hub/products', legendTotal: mapRows.length ? `${mapRows.length} days total` : undefined },
     { id: 'volume', label: 'Venue volume', title: 'Daily volume on the venues we built, USD', series: [{ name: 'Volume', color: '#00D2FF', values: volRows.map((r) => r.v) }], labels: volRows.map((r) => new Date(r.t * 1000).toISOString().slice(5, 10)), fmt: (v) => fmtUsd(v), state: src.stats ? 'ok' : 'loading', empty: 'venue figures unreadable right now', sub: 'source: /api/stats (each venue’s own API, DefiLlama as fallback)', legendTotal: volRows.length ? `${volRows.length} days total` : undefined },
   )
   // The tab with something to show comes first; decided once, so a poll never moves the tabs under the reader.
-  const order = useRef<string[] | null>(null)
-  if (!order.current && src.products && src.stats) {
+  const [order, setOrder] = useState<string[] | null>(null)
+  if (!order && src.products && src.stats) {
     const moving = (t: ChartTab) => t.series[0].values.some((v) => (v ?? 0) > 0)
-    order.current = [...tabs.filter(moving), ...tabs.filter((t) => !moving(t))].map((t) => t.id)
+    setOrder([...tabs.filter(moving), ...tabs.filter((t) => !moving(t))].map((t) => t.id))
   }
-  const shown = order.current ? order.current.map((id) => tabs.find((t) => t.id === id) as ChartTab) : tabs
+  const shown = order ? order.map((id) => tabs.find((t) => t.id === id) as ChartTab) : tabs
   const s = suite(src)
   return (
     <div className="cst-live">
@@ -380,7 +384,7 @@ function News() {
             </button>
           ))}
         </div>
-        <p className="cst-note">Every item is live or shipped this week. Dates are UTC.</p>
+        <p className="cst-note">Every item is live or shipped this week.</p>
       </div>
       <ol className="cst-news-list">
         {NEWS.filter((n) => f === 'all' || n.p === f).map((n) => {
@@ -404,7 +408,7 @@ function News() {
 
 /** The directory: every product, what it is, its live number and where to go. The domain is the main link (new tab);
     Details opens the drawer on this page. */
-function Directory({ R, open }: { R: Record<ProductKey, Reading>; open: (k: ProductKey, from: Element) => void }) {
+function Directory({ R, open, stats }: { R: Record<ProductKey, Reading>; open: (k: ProductKey, from: Element) => void; stats: Sources['stats'] }) {
   return (
     <section className="cst-dir" id="products" aria-labelledby="cst-dir-h">
       <div className="gt-wrap">
@@ -425,15 +429,21 @@ function Directory({ R, open }: { R: Record<ProductKey, Reading>; open: (k: Prod
                 </div>
                 <p className="cst-what">{p.line}</p>
                 <div className="read" data-reading={p.key}>
-                  {r.kpi ? (
+                  {r.kpi && r.kpi.of == null ? (
+                    // Gully Live UI: the count and its series in one live stat (count-up, sparkline drawing in).
+                    <div className="fig fig-live">
+                      <LiveStat bare small live full={p.key === 'chain'} value={r.kpi.v} spark={vals.length >= 2 ? vals : undefined} />
+                      <small>{r.kpi.label}</small>
+                    </div>
+                  ) : r.kpi ? (
                     <div className="fig">
-                      {r.kpi.of != null ? <b className="num">{kpiText(r.kpi)}</b> : <Count as="b" className="num" value={r.kpi.v} fmt={fmtNum} />}
+                      <b className="num">{kpiText(r.kpi)}</b>
                       <small>{r.kpi.label}</small>
                     </div>
                   ) : (
                     <small className="why">{r.why ?? 'No live reading yet'}</small>
                   )}
-                  {vals.length >= 2 && (
+                  {vals.length >= 2 && !(r.kpi && r.kpi.of == null) && (
                     <div className="sp" aria-hidden>
                       <Spark values={vals} color={p.color} h={28} />
                     </div>
@@ -452,6 +462,8 @@ function Directory({ R, open }: { R: Record<ProductKey, Reading>; open: (k: Prod
             )
           })}
         </ul>
+        {/* PeddleSwap, Peddles and PeddleQuest: Gully Labs projects, with their live figures from /api/stats */}
+        <PeddleFamily stats={stats} headingId="cst-pdl-h" />
       </div>
     </section>
   )
@@ -470,7 +482,7 @@ function useMedia(q: string) {
   return on
 }
 
-// The venues line: Peddles, PeddleSwap and PeddleQuest (/api/stats no longer reads DeepCore, partnership ended 2026-10-29).
+// The venues line: Peddles, PeddleSwap and PeddleQuest (/api/stats no longer reads the former launchpad partner, partnership ended 2026-10-29).
 const BUILT = ['peddles', 'peddleswap', 'peddlequest'] as const
 function builtVenues(src: Sources) {
   const vs = (src.stats?.venues ?? []).filter((v) => (BUILT as readonly string[]).includes(v.key) && v.state === 'ok') as { tvlUsd?: number | null; volumeAllUsd?: number | null; feesAllUsd?: number | null }[]
@@ -595,10 +607,7 @@ export function Constellation() {
 
   return (
     <div className="lcp gt cst">
-      <Seo
-        title="Eight connected products: identity, payments, chain, data, games"
-        description="Gully Labs builds a connected product suite: sign in with Gully ID, pay with Gully Pay, build on Gully Chain, see it with HolderMaps and Gully Security, play with Gully Studio. Live status and metrics from every product."
-      />
+      <Seo page="/" />
       <section className="cst-hero" aria-labelledby="cst-h1">
         <div className="gt-wrap cst-hero-in">
           <div className="cst-copy">
@@ -607,11 +616,11 @@ export function Constellation() {
               Gully Labs · product studio
             </p>
             <h1 id="cst-h1">
-              One studio.
+              {LANDING_HEADLINE[0]}
               <br />
-              <em>Eight products</em> that work as one.
+              <em>{LANDING_HEADLINE[1]}</em> {LANDING_HEADLINE[2]}
             </h1>
-            <p className="cst-lede">We build the whole path a user takes on chain, and every piece plugs into the next.</p>
+            <p className="cst-lede">{LANDING_LEDE}</p>
             <div className="cst-kpis" aria-live="polite">
               <div>
                 <span className="gt-k">Services up</span>
@@ -620,12 +629,12 @@ export function Constellation() {
               </div>
               <div>
                 <span className="gt-k">Sign-ins 24 h</span>
-                <Count as="b" className="num" value={R.id.kpi?.v ?? null} fmt={fmtNum} />
+                <LiveStat bare live value={R.id.kpi?.v ?? null} loading={!R.id.kpi && !R.id.why} />
                 <small>gullyid.xyz</small>
               </div>
               <div>
                 <span className="gt-k">Gully Chain block</span>
-                <Count as="b" className="num" value={R.chain.kpi?.v ?? null} fmt={fmtNum} />
+                <LiveStat bare live full value={R.chain.kpi?.v ?? null} loading={!R.chain.kpi && !R.chain.why} />
                 <small>testnet 485590</small>
               </div>
             </div>
@@ -644,7 +653,7 @@ export function Constellation() {
         </div>
       </section>
 
-      <Directory R={R} open={openDrawer} />
+      <Directory R={R} open={openDrawer} stats={src.stats} />
 
       {stacked && (
         <section className="cst-mapsec" aria-label="How the products connect">
@@ -683,7 +692,7 @@ export function Constellation() {
                 {t.label}
               </button>
             ))}
-            <span className="cst-fresh gt-k">{hl.data ? `live · ${new Date(hl.data.generatedAt).toISOString().slice(11, 19)} UTC` : 'reading live sources…'}</span>
+            <span className="cst-fresh gt-k">{hl.data ? `live · ${timePT(hl.data.generatedAt, true)}` : 'reading live sources…'}</span>
           </div>
           {/* anchors the header links land on */}
           <span id="live" />

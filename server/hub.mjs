@@ -4,7 +4,7 @@
 //   GET /api/hub   public, cached 60 s:
 //     services   every public Gully surface probed once a minute: up, state (up | down | coming), response time and
 //                the last hour's times. Gully Chain: site, Gully Street app and its feed, explorer, faucet, bridge,
-//                docs, developer portal, public RPC, indexer, copy trading, Gully Social, Gully Safe (coming until it answers 200),
+//                docs, developer portal, public RPC, indexer, copy trading, Gully Social, Gully Multisig (coming until it answers 200),
 //                Gully Sentry, Gully Offerwall.
 //                Gully Labs: Gully Pay (and its admin), Gully RPC (site, app, gateway), HolderMaps, Gully Security,
 //                Gully AI (site; the API is coming until the GPU box is up), Gully Studio (and its portals),
@@ -39,26 +39,26 @@ const STATUS_PAGE = () => env('GULLY_STATUS_PAGE_URL', 'https://status.gullylabs
 export const SURFACES = [
   { key: 'chain-site', group: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz' },
   { key: 'street', group: 'chain', name: 'Gully Street app', url: 'https://kre8.fun' },
-  { key: 'explorer', group: 'chain', name: 'Explorer', url: 'https://testnet-explorer.gullychain.xyz' },
+  { key: 'explorer', group: 'chain', name: 'Explorer', url: 'https://testnet.gullyscan.xyz' },
   { key: 'faucet', group: 'chain', name: 'Faucet', url: 'https://faucet.gullychain.xyz' },
   { key: 'bridge', group: 'chain', name: 'Bridge', url: 'https://testnet-bridge.gullychain.xyz' },
   { key: 'docs', group: 'chain', name: 'Docs', url: 'https://docs.gullychain.xyz' },
   { key: 'devportal', group: 'chain', name: 'Developer portal', url: 'https://dev.gullychain.xyz' },
   { key: 'rpc-public', group: 'chain', name: 'Public RPC', url: 'https://testnet-rpc.gullychain.xyz', rpc: true },
   { key: 'indexer', group: 'chain', name: 'Indexer', url: 'https://indexer.gullychain.xyz', probe: 'https://indexer.gullychain.xyz/head' },
-  // Gully Street's social feed reads the indexer's /feed; copy trading has its own engine; Gully Safe is being deployed.
+  // Gully Street's social feed reads the indexer's /feed; copy trading has its own engine; Gully Multisig counts as live only on a 200.
   { key: 'social', group: 'chain', name: 'Gully Street feed', url: 'https://kre8.fun', probe: 'https://indexer.gullychain.xyz/feed?limit=1' },
   { key: 'copy', group: 'chain', name: 'Copy trading engine', url: 'https://kre8.fun/copy', probe: 'https://copy.kre8.fun/health' },
   // Gully Social (posts, follows, profiles; services/social in gully-street) answers /healthz.
   { key: 'social-api', group: 'chain', name: 'Gully Social service', url: 'https://kre8.fun', probe: 'https://social.kre8.fun/healthz' },
-  { key: 'safe', group: 'chain', name: 'Gully Safe', url: 'https://safe.gullychain.xyz', soon: true },
+  { key: 'safe', group: 'chain', name: 'Gully Multisig', url: 'https://multisig.gullychain.xyz', soon: true },
   // Gully Sentry: free testnet Sentry Keys and the watchers that check Gully Chain's assertions (2026-10-28).
   { key: 'sentry', group: 'chain', name: 'Gully Sentry', url: 'https://sentry.gullychain.xyz', probe: 'https://sentry.gullychain.xyz/api/healthz' },
   // Gully Offerwall (OfferwallManager on chain 485590, built on Gully Quests): its public stats answer JSON.
   { key: 'offerwall', group: 'chain', name: 'Gully Offerwall', url: 'https://offers.kre8.fun', probe: 'https://offers.kre8.fun/v1/stats' },
   { key: 'gully-id', group: 'labs', name: 'Gully ID', url: 'https://gullyid.xyz', probe: 'https://gullyid.xyz/health' },
   { key: 'pay', group: 'labs', name: 'Gully Pay', url: 'https://gullypay.xyz', probe: 'https://gullypay.xyz/api/status' },
-  { key: 'x402', group: 'labs', name: 'Gully Pay x402', url: 'https://gullypay.xyz/x402/status' },
+  { key: 'x402', group: 'labs', name: 'Gully Pay x402', url: 'https://gullypay.xyz/api/x402/status' },
   { key: 'rpc-site', group: 'labs', name: 'Gully RPC', url: 'https://gullyrpc.xyz', probe: 'https://gullyrpc.xyz/status.json' },
   { key: 'rpc-app', group: 'labs', name: 'Gully RPC app', url: 'https://app.gullyrpc.xyz' },
   { key: 'rpc-gateway', group: 'labs', name: 'Gully RPC gateway', url: 'https://rpc.gullyrpc.xyz' },
@@ -72,7 +72,7 @@ export const SURFACES = [
   { key: 'studio-dev', group: 'labs', name: 'Gully Studio dev portal', url: 'https://dev.gullystudio.xyz', soon: true },
   { key: 'studio-docs', group: 'labs', name: 'Gully Studio docs', url: 'https://docs.gullystudio.xyz', soon: true },
   // The gateway serves only pinned content: the inline empty-directory CID answers without the network.
-  { key: 'ipfs', group: 'labs', name: 'Gully IPFS', url: 'https://ipfs.gullylabs.xyz', probe: 'https://ipfs.gullylabs.xyz/ipfs/bafyaabakaieac' },
+  { key: 'ipfs', group: 'labs', name: 'Gully IPFS', url: 'https://docs.gullylabs.xyz/ipfs', probe: 'https://ipfs.gullylabs.xyz/ipfs/bafyaabakaieac' },
   { key: 'status', group: 'labs', name: 'Status page', url: 'https://status.gullylabs.xyz' },
 ]
 
@@ -224,7 +224,7 @@ export function readGateway(j) {
 export function readStatusPage(html) {
   if (typeof html !== 'string' || !html.includes('class="banner')) return null
   const overall = (html.match(/class="banner\s+(ok|warn|bad)"/) ?? [])[1] ?? null
-  const services = [...html.matchAll(/<span class="nm">([^<]{1,60})<\/span>\s*<span class="pill\s+(up|down|degraded)">/g)].map((m) => ({ name: m[1].trim(), state: m[2] }))
+  const services = [...html.matchAll(/<span class="nm">([^<]{1,60})<\/span>(?:(?!class="nm")[\s\S]){0,4000}?<span class="pill\s+(up|down|degraded|pending)">/g)].filter((m) => m[2] !== 'pending').map((m) => ({ name: m[1].trim(), state: m[2] }))
   return { overall, services, up: services.filter((s) => s.state === 'up').length, total: services.length }
 }
 

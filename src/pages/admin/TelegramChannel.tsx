@@ -51,7 +51,6 @@ interface Auto {
   timezone: string
   quietHours: { enabled: boolean; start: string; end: string }
   minGapMinutes: number
-  launches: AutoType
   dailyGaps: AutoType
   weeklyMovers: AutoType
   blog: AutoType
@@ -99,8 +98,7 @@ const STATUS_STYLE: Record<Status, string> = {
   failed: 'border-error text-error',
   deleted: 'border-line text-faint line-through',
 }
-const AUTO_META: { id: 'launches' | 'dailyGaps' | 'weeklyMovers' | 'blog' | 'releases'; label: string; about: string; vars: string }[] = [
-  { id: 'launches', label: 'DeepCore new launches', about: 'Each new launch from the DeepCore poller.', vars: '{symbol} {chain} {pools} {link}' },
+const AUTO_META: { id: 'dailyGaps' | 'weeklyMovers' | 'blog' | 'releases'; label: string; about: string; vars: string }[] = [
   { id: 'dailyGaps', label: 'Daily widest gaps', about: 'Top 5 trusted gaps from the tracker, at a set time.', vars: '{list} {date} {link}' },
   { id: 'weeklyMovers', label: 'Weekly movers recap', about: 'Biggest 7-day on-chain price changes, once a week.', vars: '{list} {date} {link}' },
   { id: 'blog', label: 'New blog post', about: 'blog.gullylabs.xyz is checked every 10 minutes.', vars: '{title} {excerpt} {link}' },
@@ -392,21 +390,21 @@ function Composer({ token, view, editing, onDone, reload }: { token: string; vie
         </fieldset>
 
         <label className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start text-[14px] text-ink-2">
-          <input type="checkbox" checked={d.pin} onChange={(e) => set({ pin: e.target.checked })} className="size-5 accent-[#00d2ff]" />
+          <input type="checkbox" checked={d.pin} onChange={(e) => set({ pin: e.target.checked })} className="size-5 accent-[#6f8ddf]" />
           <Pin size={15} aria-hidden /> Pin in the channel
         </label>
 
         {!editing && (
           <div className="flex flex-col gap-1">
             <label className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start text-[14px] text-ink-2">
-              <input type="checkbox" checked={dm} onChange={(e) => setDm(e.target.checked)} className="size-5 accent-[#00d2ff]" />
+              <input type="checkbox" checked={dm} onChange={(e) => setDm(e.target.checked)} className="size-5 accent-[#6f8ddf]" />
               <MessageCircle size={15} aria-hidden /> Send to channel and DM users
             </label>
             {dm && (
               <div className="flex flex-col gap-1 pl-8">
                 <span className={small}>Everyone who started the bot (announcements on) gets a short “📣 New in the channel →” DM linking to this post. You confirm the exact count before it goes. One broadcast a day.</span>
                 <label className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start text-[13px] text-ink-2">
-                  <input type="checkbox" checked={dmUrgent} onChange={(e) => setDmUrgent(e.target.checked)} className="size-5 accent-[#00d2ff]" /> Urgent (skip the one-a-day limit)
+                  <input type="checkbox" checked={dmUrgent} onChange={(e) => setDmUrgent(e.target.checked)} className="size-5 accent-[#6f8ddf]" /> Urgent (skip the one-a-day limit)
                 </label>
               </div>
             )}
@@ -596,7 +594,7 @@ function AutoPanel({ token, view, reload }: { token: string; view: View; reload:
           <input type="number" min={0} max={1440} value={gap} onChange={(e) => setGap(e.target.value)} className={field} />
         </label>
         <label className="inline-flex min-h-11 items-center gap-2 text-[13px] text-ink-2">
-          <input type="checkbox" checked={quiet.enabled} onChange={(e) => setQuiet({ ...quiet, enabled: e.target.checked })} className="size-5 accent-[#00d2ff]" /> Quiet hours
+          <input type="checkbox" checked={quiet.enabled} onChange={(e) => setQuiet({ ...quiet, enabled: e.target.checked })} className="size-5 accent-[#6f8ddf]" /> Quiet hours
         </label>
         <input type="time" value={quiet.start} onChange={(e) => setQuiet({ ...quiet, start: e.target.value })} className={field} aria-label="Quiet hours start" />
         <span className="pb-3 text-faint">to</span>

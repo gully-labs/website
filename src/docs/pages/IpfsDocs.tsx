@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { MiniSpark } from '../../components/charts/MiniSpark'
 import type { IpfsStats } from '../../console/live'
 import { CodeBlock } from '../CodeBlock'
@@ -24,7 +25,7 @@ function IpfsLive() {
   const s = useApi<IpfsStats>('/api/ipfs/stats', 60_000)
   const st = s && s !== 'error' ? s : null
   const h = st?.history ?? []
-  const labels = h.map((x) => new Date(x.t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
+  const labels = h.map((x) => new Date(x.t).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }))
   const tiles: { label: string; value: string; data: (number | null)[]; fmt?: (v: number) => string }[] = [
     { label: 'CIDs pinned', value: st?.pinned == null ? 'not readable' : st.pinned.toLocaleString('en-US'), data: h.map((x) => x.pinned) },
     { label: 'Repo size', value: st?.repoBytes == null ? 'not readable' : gb(st.repoBytes), data: h.map((x) => x.repoBytes), fmt: gb },
@@ -84,7 +85,7 @@ export function IpfsDocs() {
 
       <Section id="uses" title="What we pin">
         <List>
-          <li>DeepCore token images and metadata, so launch pages and wallets always find them.</li>
+          <li>Launchpad token images and metadata, so launch pages and wallets always find them.</li>
           <li>NFT art, such as Gully passes.</li>
           <li>Sites behind <C>.gully</C> names: a name&apos;s contenthash points at a CID served here.</li>
           <li>Snapshots of public Gully docs.</li>

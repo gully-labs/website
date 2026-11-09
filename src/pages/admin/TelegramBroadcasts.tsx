@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { Ban, Bold, CalendarClock, Check, ChevronDown, Settings2, Eye, ExternalLink, Italic, Link2, LoaderCircle, Megaphone, Pause, Play, Plus, RotateCcw, Send, Smartphone, Trash2, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
@@ -120,7 +121,7 @@ const STATUS_STYLE: Record<Broadcast['status'], string> = {
   deleting: 'border-error text-error',
   deleted: 'border-line text-faint line-through',
 }
-const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—')
+const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—')
 const toLocalInput = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
 const segLabel = (s: Segment) => (s.kind === 'language' ? `Language: ${s.language}` : s.kind === 'active' ? `Active in the last ${s.days} days` : (SEGMENTS.find((x) => x.id === s.kind)?.label ?? s.kind))
 const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0)
@@ -503,7 +504,7 @@ function Composer({ token, ov, reload }: { token: string; ov: Overview; reload: 
         </fieldset>
 
         <label className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start text-[14px] text-ink-2">
-          <input type="checkbox" checked={d.urgent} onChange={(e) => set({ urgent: e.target.checked })} className="size-5 accent-[#00d2ff]" />
+          <input type="checkbox" checked={d.urgent} onChange={(e) => set({ urgent: e.target.checked })} className="size-5 accent-[#6f8ddf]" />
           Urgent (skip the one-broadcast-a-day limit)
         </label>
         {blockedByDay && <span className="text-[13px] text-gold">One broadcast a day: the next can go from {when(ov.nextAllowedAt)}, or tick Urgent.</span>}

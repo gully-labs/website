@@ -1,3 +1,4 @@
+import { TZ } from '../lib/time'
 import { ChartNoAxesCombined, Eye, Fingerprint, GitBranch, Link2, Rocket, ShieldCheck, Wallet, type LucideIcon } from 'lucide-react'
 import { AnalyticsPlanCards } from '../components/AnalyticsPlans'
 import { ANALYTICS_SIGNUP, usePlans } from '../lib/plans'
@@ -30,7 +31,8 @@ const rise = (i: number) => ({ animation: `gl-rise .55s ${i * 0.07}s ease both` 
 
 type Feature = { icon: LucideIcon; title: string; body: string }
 type Product = {
-  seo: { title: string; description: string }
+  /** `page`: its entry in src/content/seoPages.ts (title and description); `title`: its name in analytics events. */
+  seo: { page: string; title: string }
   eyebrow: string
   title: [string, string]
   lead: string
@@ -53,10 +55,7 @@ type Product = {
 }
 
 const ANALYTICS: Product = {
-  seo: {
-    title: 'Gully Analytics',
-    description: 'Privacy-friendly web analytics for dapps: page views plus wallet connects, chains and transactions, with a visit to wallet to transaction funnel.',
-  },
+  seo: { page: '/analytics', title: 'Gully Analytics' },
   eyebrow: 'PRODUCT · GULLY ANALYTICS',
   title: ['Analytics that see', 'the wallet'],
   lead: 'Page views alone don’t tell a dapp what worked. Gully Analytics adds what happens next: which visits connected a wallet, on which chain, with which wallet app, and which went on to send a transaction.',
@@ -94,7 +93,7 @@ function ProductPage({ p }: { p: Product }) {
   const { openContact } = useContact()
   return (
     <>
-      <Seo title={p.seo.title} description={p.seo.description} />
+      <Seo page={p.seo.page} />
       <section className="relative overflow-hidden px-page pt-[72px] pb-16">
         <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.14),transparent_62%)]" />
         <div className="relative flex max-w-[900px] flex-col gap-6">
@@ -246,7 +245,7 @@ function LiveFrame({ title, sub, children }: { title: string; sub: string; child
 
 const DAY = 86_400
 const LIVE_DAYS = 30
-const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { timeZone: TZ, hour: '2-digit', minute: '2-digit' })
 
 /** Daily volume each Gully venue publishes (GET /api/stats), one line per venue over the last 30 days.
     A day a venue did not publish is a gap in its line, never a 0; a venue with no series is named below. */

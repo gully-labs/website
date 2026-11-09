@@ -9,6 +9,7 @@
    page (/products/gully-sentry) and its numbers come through /api/hub/live (sentryNet, sentrySale, sentryChain). */
 import type { HubBody } from '../../console/live'
 import type { HubProducts } from '../../terminal/kit'
+import { SEO_PAGES } from '../../content/seoPages.ts'
 
 export type LayerKey = 'identity' | 'payments' | 'chain' | 'data' | 'play'
 export type ProductKey = 'id' | 'pay' | 'chain' | 'rpc' | 'holdermaps' | 'security' | 'studio' | 'ai'
@@ -51,7 +52,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
     icon: I + 'gully-id.svg',
     line: 'Passwordless sign-in for any app.',
     about: 'Passkeys, wallets (SIWE) and email codes over standard OpenID Connect, with per-app consent and slow, visible recovery. Free up to 1,000 monthly active users.',
-    live: ['Passkey, wallet and email sign-in', 'Sign in with Gully SDK for any site', 'Developer console (gullyid.xyz/developers/console)', 'Required by the Gully Chain faucet'],
+    live: ['Passkey, wallet and email sign-in', 'Sign in with Gully SDK for any site', 'Developer console (gullyid.xyz/developers/console)', 'Optional sign-in on the Gully Chain faucet'],
     next: ['Google and X sign-in (keys pending)', 'Sign in with Gully on Gully Pay and Gully RPC (built, flagged off)'],
     links: [['Developers', 'https://gullyid.xyz/developers'], ['Console', 'https://gullyid.xyz/developers/console']],
   },
@@ -60,16 +61,16 @@ export const HUB_PRODUCTS: HubProduct[] = [
     icon: I + 'pay.png',
     line: 'Checkout, payment links and x402 for merchants and AI agents.',
     about: 'Accept cards, Apple Pay and USDC on Base, Ethereum, BNB Chain, Solana and Gully Chain, and let AI agents pay your API over x402. On Gully Chain it settles in USDC.e.',
-    live: ['Hosted checkout and payment links', 'Store plugins: WooCommerce, Magento 2, OpenCart 4, PrestaShop; Shopify connector (beta)', 'x402 facilitator, Gully Chain among its networks', 'USDC.e on Gully Chain testnet', 'Merchant review: KYB checks and Stripe Connect verification', 'Creator tip pages at pay.gullypay.xyz (rolling out)'],
+    live: ['Hosted checkout and payment links', 'Store plugins: WooCommerce, Magento 2, OpenCart 4, PrestaShop; Shopify connector (beta)', 'x402 facilitator, Gully Chain among its networks', 'USDC.e on Gully Chain testnet', 'Direct payouts to your own wallet (testnet)', 'Merchant review: KYB checks and Stripe Connect verification', 'Creator tip pages at pay.gullypay.xyz (rolling out)'],
     next: ['Agent Wallets', 'One-tap passkey checkout', 'Pay with any token', 'Splits and escrow', 'Tap to pay', 'Non-custodial wallet', 'iOS and Android apps'],
     links: [['Docs', 'https://gullypay.xyz/docs'], ['Merchant setup', 'https://gullypay.xyz/setup']],
   },
   {
     key: 'chain', name: 'Gully Chain', domain: 'gullychain.xyz', url: 'https://gullychain.xyz', page: 'chain', layer: 'chain', status: 'testnet', color: '#00B2FA',
     icon: '/brand/web/logos/gc-icon.svg',
-    line: 'The social L3 where your profile is your wallet.',
+    line: 'The Arbitrum Orbit L3 for creators and culture.',
     about: 'An Arbitrum Orbit L3 (testnet, chain 485590): one passkey, one .gully name, sponsored gas. Launch, swap, copy trades, run quests and bridge in a minute.',
-    live: ['kre8.fun app and social feed', 'Gully Social: posts, follows and profiles', 'Copy trading with your own limits', 'Quests with on-chain rewards', 'Gully launchpad and Gully Swap', 'Bridge, faucet (Gully ID), explorer', 'Gully Safe and token lists', 'Contract verification (verify.gullychain.xyz)', 'Gully Sentry: free testnet Sentry Keys and watchers', 'Gully Offerwall: funded quests any site can embed (offers.kre8.fun)'],
+    live: ['kre8.fun app and social feed', 'Gully Social: posts, follows and profiles', 'Copy trading with your own limits', 'Quests with on-chain rewards', 'Gully launchpad and Gully Swap', 'Bridge, faucet (any wallet), explorer', 'Gully Multisig and token lists', 'Contract verification (verify.gullychain.xyz)', 'Gully Sentry: free testnet Sentry Keys and watchers', 'Gully Offerwall: funded quests any site can embed (offers.kre8.fun)'],
     next: ['Mainnet'],
     links: [['App', 'https://kre8.fun'], ['Docs', 'https://docs.gullychain.xyz'], ['Verify', 'https://verify.gullychain.xyz'], ['Sentry', 'https://sentry.gullychain.xyz'], ['Offerwall', 'https://offers.kre8.fun/'], ['Social', 'https://kre8.fun'], ['Copy trading', 'https://kre8.fun/copy']],
     pages: [['Gully Social', 'gully-social'], ['Copy Trading', 'copy-trading'], ['Gully Offerwall', 'offerwall'], ['Gully Quests', 'quests'], ['kre8.fun', 'street']],
@@ -79,8 +80,8 @@ export const HUB_PRODUCTS: HubProduct[] = [
     icon: I + 'rpc.png',
     line: 'One API key for Gully Chain, Ethereum, Base and more.',
     about: 'Multi-chain RPC with failover, live usage per key and a free tier. Gully Chain is served from Gully nodes; other chains through a partner network while Gully nodes are built.',
-    live: ['API keys (open sign-up, free tier)', 'Usage metering (beta)', 'Gully Chain on the gateway, keyless endpoint too'],
-    next: ['Archive and trace', 'Paid plans through Gully Pay', 'HyperEVM, X Layer, Ink, Unichain'],
+    live: ['API keys (open sign-up, free tier)', 'Plans per 30 days: Free 5M, Developer $49 50M, Business $199 300M weighted requests', 'Usage metering (beta)', 'Gully Chain on the gateway, keyless endpoint too'],
+    next: ['Archive and trace', 'HyperEVM, X Layer, Ink, Unichain'],
     links: [['Portal', 'https://app.gullyrpc.xyz'], ['Status', 'https://gullyrpc.xyz/status']],
   },
   {
@@ -88,7 +89,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
     icon: I + 'holdermaps.png',
     line: 'Who really holds a token? Bubble maps, read live.',
     about: 'Map any token’s holders on Gully Chain, Robinhood Chain, BNB Chain, Base, HyperEVM or Solana: top wallets, linked clusters and launch health.',
-    live: ['Any-token holder maps on six chains', 'Gully Chain maps', 'Replay, live updates, CSV export'],
+    live: ['Any-token holder maps on six chains', 'Gully Chain maps', 'Replay, live updates, CSV export', 'Deep check: $9 per token'],
     next: [],
     links: [['Open a map', 'https://holdermaps.xyz']],
   },
@@ -104,7 +105,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
   {
     key: 'studio', name: 'Gully Studio', domain: 'gullystudio.xyz', url: 'https://gullystudio.xyz', page: 'studio', layer: 'play', status: 'live', color: '#1E8BFF',
     icon: I + 'studio.png',
-    line: 'Unity 3D games with Gully ID, Gully Pay and Gully Chain inside.',
+    line: '3D games to play with friends on web and phone.',
     about: 'The Gully Labs game studio: Unity 6 games with Gully ID sign-in, Gully Pay purchases, and scores, quests and prizes on Gully Chain.',
     live: ['Frog Hop (testnet)', 'Open-source Gully Game SDK', 'Developer portal and docs', 'Offerwall contracts on testnet'],
     next: ['More games'],
@@ -157,6 +158,9 @@ export function curve(a: [number, number], b: [number, number], c: [number, numb
 
 export type NewsState = 'live' | 'new' | 'testnet' | 'beta' | 'rolling out' | 'coming soon'
 export const NEWS: { d: string; p: ProductKey; t: string; s: NewsState; href: string }[] = [
+  { d: '2026-11-05', p: 'chain', t: 'Gully Multisig on Anubis Network: the unmodified Safe 1.4.1 contracts at the canonical addresses', s: 'live', href: 'https://multisig.gullychain.xyz' },
+  { d: '2026-11-05', p: 'rpc', t: 'Gully RPC plans: Free, Developer and Business', s: 'live', href: 'https://gullyrpc.xyz/pricing' },
+  { d: '2026-11-05', p: 'pay', t: 'Direct payouts on Gully Pay: paid to your own wallet', s: 'testnet', href: 'https://gullypay.xyz/docs/payouts' },
   { d: '2026-10-28', p: 'pay', t: 'USDC.e is the dollar on Gully Chain: checkout and x402 on Gully Chain testnet settle in USDC.e', s: 'testnet', href: 'https://gullypay.xyz' },
   { d: '2026-10-28', p: 'chain', t: 'Gully Offerwall on Gully Chain testnet: advertisers fund quests, players earn USDC or points, publishers embed the wall', s: 'testnet', href: 'https://offers.kre8.fun/' },
   { d: '2026-10-28', p: 'chain', t: 'Gully Sentry: free testnet Sentry Keys and watchers', s: 'testnet', href: 'https://sentry.gullychain.xyz/' },
@@ -216,7 +220,7 @@ export interface Sources {
   live: HubLive | null
   liveState: Load
   /** /api/stats totals (venues we built) */
-  stats?: { totals: { tvlUsd: number | null; volumeAllUsd: number | null; feesAllUsd: number | null }; venues?: { key: string; state: string }[]; daily?: { t: number; v: number }[] } | null
+  stats?: { totals: { tvlUsd: number | null; volumeAllUsd: number | null; feesAllUsd: number | null }; venues?: StatsVenue[]; daily?: { t: number; v: number }[] } | null
 }
 export interface Row {
   v: number
@@ -250,7 +254,7 @@ export const SERVICE_KEYS: Record<ProductKey, string[]> = {
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 const hh = (iso: string | number) => {
   const d = new Date(typeof iso === 'number' ? iso * 1000 : iso)
-  return `${String(d.getUTCHours()).padStart(2, '0')}:00`
+  return `${d.toLocaleTimeString('en-GB', { timeZone: 'America/Los_Angeles', hour: '2-digit', hour12: false }).padStart(2, '0')}:00`
 }
 const dd = (day: string) => new Date(`${day}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 
@@ -273,7 +277,7 @@ export function upState(hub: HubBody | null, key: ProductKey): Reading['state'] 
 
 function latency(hub: HubBody | null, key: string): Row[] {
   const s = hub?.services.find((x) => x.key === key)
-  return (s?.history ?? []).filter((h) => num(h.ms) != null).map((h) => ({ v: h.ms as number, x: `${new Date(h.t).toISOString().slice(11, 16)} UTC` }))
+  return (s?.history ?? []).filter((h) => num(h.ms) != null).map((h) => ({ v: h.ms as number, x: new Date(h.t).toLocaleTimeString('en-GB', { timeZone: 'America/Los_Angeles', hour: '2-digit', minute: '2-digit', hour12: false }) }))
 }
 
 /** One product's live reading. Never invents a figure: missing sources give `why`, not zeros. */
@@ -287,7 +291,7 @@ export function reading(src: Sources, key: ProductKey, now = Date.now()): Readin
     if (!d) r.why = wait ? 'Loading…' : 'Gully ID stats unreadable right now'
     else {
       if (num(d.signins24h) != null) r.kpi = { v: d.signins24h as number, label: 'sign-ins, last 24 h', short: 'sign-ins 24h' }
-      r.series = { name: 'Gully ID sign-ins per hour (UTC)', unit: 'sign-ins', kind: 'bars', rows: d.hourly.map((h) => ({ v: h.n, x: hh(h.hour) })) }
+      r.series = { name: 'Gully ID sign-ins per hour (PT)', unit: 'sign-ins', kind: 'bars', rows: d.hourly.map((h) => ({ v: h.n, x: hh(h.hour) })) }
       r.extra = [['Accounts', d.totals.users], ['Passkeys', d.totals.passkeys], ['Apps signed into, 30 d', d.appsActive30d]]
     }
   } else if (key === 'pay') {
@@ -304,7 +308,7 @@ export function reading(src: Sources, key: ProductKey, now = Date.now()): Readin
     const head = num(live?.head?.block) ?? num(hub?.chain?.head)
     if (head != null) r.kpi = { v: head, label: 'latest block, chain 485590', short: 'block' }
     else r.why = wait || !hub ? 'Loading…' : 'Indexer unreadable right now'
-    if (prod?.chain) r.series = { name: 'Gully Chain transactions per hour (UTC)', unit: 'txs', kind: 'bars', rows: prod.chain.hourly.map((h) => ({ v: h.txs ?? 0, x: hh(h.t) })) }
+    if (prod?.chain) r.series = { name: 'Gully Chain transactions per hour (PT)', unit: 'txs', kind: 'bars', rows: prod.chain.hourly.map((h) => ({ v: h.txs ?? 0, x: hh(h.t) })) }
     if (hub?.quests) r.extra.push(['Quest completions, 24 h', hub.quests.completions24h], ['Active quests', hub.quests.active])
     if (live?.copy) r.extra.push(['Copy trading leaders · active copies', `${fmtNum(live.copy.leaders)} · ${fmtNum(live.copy.activeCopies)}`])
     if (prod?.activity) {
@@ -387,7 +391,7 @@ export function liveEvents(src: Sources, max = 8): LiveEvent[] {
   for (const f of (src.live?.feed?.items ?? []).slice(0, 6)) {
     const at = Number(f.timestamp)
     if (!Number.isFinite(at)) continue
-    ev.push({ at: new Date(at * 1000).toISOString(), p: 'chain', kind: 'chain', t: `${KIND[f.kind] ?? f.kind} on Gully Chain, block ${f.block}`, href: f.txHash ? `https://testnet-explorer.gullychain.xyz/tx/${f.txHash}` : undefined })
+    ev.push({ at: new Date(at * 1000).toISOString(), p: 'chain', kind: 'chain', t: `${KIND[f.kind] ?? f.kind} on Gully Chain, block ${f.block}`, href: f.txHash ? `https://testnet.gullyscan.xyz/tx/${f.txHash}` : undefined })
   }
   return ev.filter((e) => Number.isFinite(Date.parse(e.at))).sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, max)
 }
@@ -419,3 +423,101 @@ export function changes(prev: Seen | null, next: Seen, src: Sources): { title: s
 
 export const fmtNum = (v: number | null | undefined) => (v == null || !Number.isFinite(v) ? '–' : Math.round(v).toLocaleString('en-US'))
 export const kpiText = (k: Reading['kpi']) => (!k ? '–' : k.of != null ? `${k.v}/${k.of}` : fmtNum(k.v))
+
+/* ---------------------------------------------------------------- the Peddle family ----
+   PeddleSwap, Peddles and PeddleQuest are Gully Labs projects (owner, 2026-11-05): trading and DeFi beside the eight
+   Gully-named products. Each runs on its own site; the figures come from /api/stats (server/stats.mjs), the same
+   document the venue charts read. Logos are the projects' own files in public/venues (SOURCES.json), unchanged. */
+export type PeddleKey = 'peddleswap' | 'peddles' | 'peddlequest'
+export interface PeddleProduct {
+  key: PeddleKey
+  name: string
+  kind: string
+  domain: string
+  url: string
+  /** this site's page about it, /projects/<slug> */
+  page: string
+  status: Status
+  color: string
+  logo: string
+  line: string
+}
+export const PEDDLE_FAMILY: PeddleProduct[] = [
+  { key: 'peddleswap', name: 'PeddleSwap', kind: 'DEX', domain: 'peddleswap.xyz', url: 'https://peddleswap.xyz/', page: 'peddleswap', status: 'live', color: '#B8F03C', logo: '/venues/peddleswap.png', line: 'Swap tokens, earn fees from liquidity, lock tokens or LP, and bridge.' },
+  { key: 'peddles', name: 'Peddles', kind: 'Launchpad', domain: 'peddles.xyz', url: 'https://peddles.xyz/', page: 'peddles', status: 'live', color: '#27B6FF', logo: '/venues/peddles.svg', line: 'Launch memecoins paired to tokenised stocks; holders are paid in that stock.' },
+  { key: 'peddlequest', name: 'PeddleQuest', kind: 'Quests', domain: 'peddlequest.xyz', url: 'https://peddlequest.xyz/', page: 'peddlequest', status: 'live', color: '#FFD60A', logo: '/venues/peddlequest.png', line: 'Verified on-chain quests with XP, badges and reward pools escrowed first.' },
+]
+/** Every product the landing presents: the eight Gully-named ones and the Peddle family. */
+export const PRODUCT_COUNT = HUB_PRODUCTS.length + PEDDLE_FAMILY.length
+const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen']
+export const PRODUCT_COUNT_WORD = COUNT_WORDS[PRODUCT_COUNT] ?? String(PRODUCT_COUNT)
+/** The landing's title and description: the '/' entry of src/content/seoPages.ts, the table the server's head tags are
+    written from too (scripts/test-hub-landing.mjs checks them against PRODUCT_COUNT). */
+export const LANDING_TITLE = SEO_PAGES['/'].title
+export const LANDING_DESCRIPTION = SEO_PAGES['/'].description
+/** The landing's headline, in the three parts the page sets it in: "One studio. Eleven products that work as one." */
+export const LANDING_HEADLINE: [string, string, string] = ['One studio.', `${PRODUCT_COUNT_WORD[0].toUpperCase()}${PRODUCT_COUNT_WORD.slice(1)} products`, 'that work as one.']
+/** The landing's opening sentence, under its headline (the server's pre-render opens with it too). */
+export const LANDING_LEDE = 'We build the whole path a user takes on chain, from sign-in and payments to trading on PeddleSwap and launching on Peddles, and every piece plugs into the next.'
+
+/** One venue of the /api/stats document, as much of it as the family cards read. */
+export interface StatsVenue {
+  key: string
+  state: string
+  tvlUsd?: number | null
+  volumeAllUsd?: number | null
+  volume30dUsd?: number | null
+  volume24hUsd?: number | null
+  feesAllUsd?: number | null
+  fees24hUsd?: number | null
+  daily?: { t: number; v: number }[]
+  series?: { volume?: { t: number; v: number }[]; fees?: { t: number; v: number }[]; tvl?: { t: number; v: number }[] }
+}
+export interface PeddleFigure {
+  label: string
+  v: number
+}
+export interface PeddleReading {
+  state: 'loading' | 'ok' | 'error'
+  /** Value locked, volume and fees, each only when the venue publishes it (never a zero in place of a missing figure). */
+  tvl: PeddleFigure | null
+  volume: PeddleFigure | null
+  fees: PeddleFigure | null
+  /** Up to 30 daily points for the sparkline: volume when the venue has a volume history, else value locked. */
+  spark: number[]
+  sparkOf: 'volume' | 'tvl' | null
+  why?: string
+}
+const fig = (label: string, v: unknown): PeddleFigure | null => (typeof v === 'number' && Number.isFinite(v) ? { label, v } : null)
+
+/** The family's live readings from /api/stats. No document yet: loading. A venue the server could not read: error. */
+export function peddleReadings(stats: { venues?: StatsVenue[] } | null | undefined): Record<PeddleKey, PeddleReading> {
+  const out = {} as Record<PeddleKey, PeddleReading>
+  for (const p of PEDDLE_FAMILY) {
+    const none = { tvl: null, volume: null, fees: null, spark: [], sparkOf: null }
+    if (!stats) {
+      out[p.key] = { state: 'loading', ...none, why: 'Reading the live figures…' }
+      continue
+    }
+    const v = (stats.venues ?? []).find((x) => x.key === p.key)
+    if (!v || v.state !== 'ok') {
+      out[p.key] = { state: 'error', ...none, why: `${p.name} figures unreadable right now` }
+      continue
+    }
+    const vol = (v.series?.volume?.length ? v.series.volume : v.daily) ?? []
+    const tvl = v.series?.tvl ?? []
+    const useVol = vol.filter((d) => d.v > 0).length >= 2
+    const pts = (useVol ? vol : tvl).slice(-30).map((d) => d.v)
+    out[p.key] = {
+      state: 'ok',
+      tvl: fig('value locked', v.tvlUsd),
+      volume: fig('volume, all time', v.volumeAllUsd) ?? fig('volume, 30 d', v.volume30dUsd) ?? fig('volume, 24 h', v.volume24hUsd),
+      fees: fig('fees, all time', v.feesAllUsd) ?? fig('fees, 24 h', v.fees24hUsd),
+      spark: pts.length >= 2 ? pts : [],
+      sparkOf: pts.length >= 2 ? (useVol ? 'volume' : 'tvl') : null,
+    }
+    const r = out[p.key]
+    if (!r.tvl && !r.volume && !r.fees) r.why = `${p.name} publishes no dollar figure yet`
+  }
+  return out
+}

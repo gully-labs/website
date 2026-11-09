@@ -7,7 +7,7 @@ import { isDocsHost } from '../site-host'
    the server is `off`, and both are left out of uptime. */
 
 export type StatusState = 'up' | 'degraded' | 'down' | 'off' | 'unknown'
-export type StatusGroup = 'platform' | 'tracker' | 'deepcore' | 'telegram' | 'payments' | 'ai' | 'security' | 'holders' | 'chains'
+export type StatusGroup = 'platform' | 'tracker' | 'telegram' | 'payments' | 'ai' | 'security' | 'holders' | 'chains'
 
 export interface StatusBucket {
   /** Start of the 30-minute bucket (ISO). */
@@ -53,7 +53,6 @@ export interface StatusBody {
 export const STATUS_GROUPS: { id: StatusGroup; label: string }[] = [
   { id: 'platform', label: 'Platform' },
   { id: 'tracker', label: 'Tracker freshness' },
-  { id: 'deepcore', label: 'DeepCore' },
   { id: 'telegram', label: 'Telegram bot' },
   { id: 'payments', label: 'Gully Pay RPC' },
   { id: 'ai', label: 'Gully AI' },

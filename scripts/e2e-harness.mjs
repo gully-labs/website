@@ -3,7 +3,7 @@
 // server loads), and gives the browser side fixtures and page checks.
 //
 // Server-side stubs (no network): Anthropic (Gully AI), Telegram Bot API, JSON-RPC for every payment chain
-// (Chainlink feeds, blocks), DeepCore, the venue stats APIs and DexScreener/GeckoTerminal (refused, so the
+// (Chainlink feeds, blocks), the venue stats APIs and DexScreener/GeckoTerminal (refused, so the
 // tracker's own build fails fast; the browser gets fixtures for /api/tracker*). Anything else outbound is
 // refused and recorded in `blockedOutbound`, and the suite fails if any were made.
 
@@ -100,13 +100,13 @@ export const E2E_NOT_A_TOKEN = '0x00000000000000000000000000000000000c0de1'
  * 30 wallets with a pool, a lock and a burn address, two clusters, bundled buyers and the deployer for a
  * launch, the fair-price overlay for a stock, and 24 replay frames.
  */
-export function holdersFixture(kind = 'deepcore-launch', at = Date.now()) {
+export function holdersFixture(kind = 'launch', at = Date.now()) {
   const addr = (i) => '0x' + (0xa11ce000 + i * 7919).toString(16).padStart(40, '0')
-  const launch = kind === 'deepcore-launch'
+  const launch = kind === 'launch'
   const stock = kind === 'stock'
   const raw = Array.from({ length: 30 }, (_, i) => 1000 / (i + 1) ** 1.15)
   const total = raw.reduce((a, b) => a + b, 0)
-  const labels = { 0: { kind: 'pool', name: 'DeepCore pools (vault)' }, 4: { kind: 'lock', name: 'DeepCore launch lock' }, 9: { kind: 'burn', name: 'Burn (dead address)' }, ...(launch ? { 3: { kind: 'deployer', name: 'Deployer' } } : { 6: { kind: 'exchange', name: 'Binance 8' } }) }
+  const labels = { 0: { kind: 'pool', name: 'Launch pool (vault)' }, 4: { kind: 'lock', name: 'Launch liquidity lock' }, 9: { kind: 'burn', name: 'Burn (dead address)' }, ...(launch ? { 3: { kind: 'deployer', name: 'Deployer' } } : { 6: { kind: 'exchange', name: 'Binance 8' } }) }
   const clusterA = [1, 2, 5, 7, 11]
   const clusterB = [8, 13, 17]
   const nodes = raw.map((v, i) => {
@@ -156,7 +156,7 @@ export function holdersFixture(kind = 'deepcore-launch', at = Date.now()) {
     token: { address: launch ? E2E_LAUNCH_TOKEN : stock ? '0xd0601ce157db5bdc3162bbac2a2c8af5320d9eec' : E2E_ANY_TOKEN, symbol: launch ? 'DTC' : stock ? 'NVDA' : 'ANYT', name: launch ? null : stock ? 'NVIDIA' : 'Any Token', decimals: 18, supply: launch ? 1_000_000_000 : null, url: 'https://basescan.org/address/x' },
     ...(kind === 'token' ? { coverage: { level: 'top', reason: 'it has more than 40,000 transfers, too many to rebuild its full history', shown: 30 } } : {}),
     asOf: new Date(at - 120_000).toISOString(),
-    sources: launch ? { holders: 'DeepCore’s log index: all 812 transfers since launch (exact balances)', links: 'Direct transfers between the mapped wallets, since launch' } : { holders: 'Blockscout (top 50 holders)', links: 'Direct transfers between the mapped wallets in the latest 5,000 transfers' },
+    sources: launch ? { holders: 'Our own index of the chain’s Transfer logs: all 812 transfers since launch (exact balances)', links: 'Direct transfers between the mapped wallets, since launch' } : { holders: 'Blockscout (top 50 holders)', links: 'Direct transfers between the mapped wallets in the latest 5,000 transfers' },
     holders: { count: launch ? 41 : 18_204, shown: 30, graph: 30, sharesOf: launch ? 'total supply' : 'total supply', partial: null },
     tier: 'pro',
     locked: [],
@@ -191,7 +191,7 @@ export function holdersFixture(kind = 'deepcore-launch', at = Date.now()) {
           verdict: 'Liquidity is locked, but three wallets bundled the first block and still hold 14%.',
           counted: 5,
           parts: [
-            { id: 'liquidity', label: 'Liquidity locked', weight: 25, points: 25, value: 'Locked', reason: 'The launch liquidity sits in DeepCore’s launch lock.', wallets: [] },
+            { id: 'liquidity', label: 'Liquidity locked', weight: 25, points: 25, value: 'Locked', reason: 'The launch liquidity sits in the launchpad’s liquidity lock.', wallets: [] },
             { id: 'bundle', label: 'Bundled buys', weight: 20, points: 6, value: '3 wallets · 14%', reason: 'Three wallets bought in the first block of trading.', wallets: [addr(2), addr(5), addr(12)] },
             { id: 'snipers', label: 'Snipers', weight: 15, points: 9, value: '2 wallets · 2.5%', reason: 'Two wallets bought in the first 3 blocks.', wallets: [addr(15), addr(16)] },
             { id: 'deployer', label: 'Deployer’s share', weight: 15, points: 8, value: `${nodes[3].pct}%`, reason: 'The deployer still holds a share.', wallets: [addr(3)] },
@@ -218,7 +218,7 @@ export function holdersFixture(kind = 'deepcore-launch', at = Date.now()) {
 
 /** The other Holder Map endpoints (server/holders.mjs), deterministic: resolve, the checked-launch feed, top scanned, live, wallet and Gully AI. */
 export function holdersExtraFixtures(at = Date.now()) {
-  const launch = holdersFixture('deepcore-launch', at)
+  const launch = holdersFixture('launch', at)
   const path = `/holders/robinhood/${E2E_LAUNCH_TOKEN}`
   const tok = (i) => '0x' + String(i).repeat(40).slice(0, 40)
   const feedRow = (i, score, level) => ({ chainKey: 'robinhood', chainName: 'Robinhood Chain', token: tok(i), symbol: `NEW${i}`, createdAt: new Date(at - i * 600_000).toISOString(), state: 'checked', health: { score, level, verdict: `Launch ${i}` }, riskLine: `${i} wallets bought in the first block of trading.`, path: `/holders/robinhood/${tok(i)}` })
@@ -226,7 +226,7 @@ export function holdersExtraFixtures(at = Date.now()) {
     resolve: (q) => ({
       matches:
         /^dtc$/i.test(q) || q.toLowerCase() === E2E_LAUNCH_TOKEN
-          ? [{ chain: 'robinhood', chainName: 'Robinhood Chain', token: E2E_LAUNCH_TOKEN, symbol: 'DTC', kind: 'deepcore-launch', path }]
+          ? [{ chain: 'robinhood', chainName: 'Robinhood Chain', token: E2E_LAUNCH_TOKEN, symbol: 'DTC', kind: 'launch', path }]
           : q.toLowerCase() === E2E_ANY_TOKEN
             ? [{ chain: 'base', chainName: 'Base', token: E2E_ANY_TOKEN, symbol: 'ANYT', kind: 'token', path: `/holders/base/${E2E_ANY_TOKEN}` }]
             : /^nvda$/i.test(q)
@@ -247,16 +247,11 @@ export function holdersExtraFixtures(at = Date.now()) {
         { ...feedRow(5, null, null), state: 'checking', health: null, riskLine: null },
       ],
     },
-    top: { day: new Date(at).toISOString().slice(0, 10), items: [{ chain: 'robinhood', token: E2E_LAUNCH_TOKEN, symbol: 'DTC', kind: 'deepcore-launch', scans: 214, path }, { chain: 'robinhood', token: 'NVDA', symbol: 'NVDA', kind: 'stock', scans: 120, path: '/holders/robinhood/NVDA' }] },
+    top: { day: new Date(at).toISOString().slice(0, 10), items: [{ chain: 'robinhood', token: E2E_LAUNCH_TOKEN, symbol: 'DTC', kind: 'launch', scans: 214, path }, { chain: 'robinhood', token: 'NVDA', symbol: 'NVDA', kind: 'stock', scans: 120, path: '/holders/robinhood/NVDA' }] },
     live: { state: 'ok', cursor: 85_700_010, transfers: [{ from: launch.nodes[1].id, to: launch.nodes[2].id, pct: 0.2, block: 85_700_005, at: new Date(at).toISOString() }, { from: '0x' + '99'.repeat(20), to: launch.nodes[6].id, pct: 0.1, block: 85_700_006, at: new Date(at).toISOString() }], pcts: { [launch.nodes[2].id]: launch.nodes[2].pct + 0.2 }, asOf: new Date(at).toISOString() },
     wallet: { state: 'ok', firstBuy: { at: new Date(at - 6 * 86_400_000).toISOString(), block: 85_689_760, tokens: 12_500_000, paid: { amount: 0.42, symbol: 'WETH' } }, buys: 3, sells: 1, entryPrice: 0.0000000336, priceNow: 0.0000000477, quote: 'WETH', pnlPct: 42, otherLaunches: [{ chainKey: 'robinhood', token: '0x' + 'ab'.repeat(20), symbol: 'OLD1', path: `/holders/robinhood/0x${'ab'.repeat(20)}` }], asOf: new Date(at).toISOString() },
     ask: { answer: 'Most of DTC sits with a few wallets. Three of them bought together in the first block, which is a warning sign.', citations: [{ n: 1, title: 'Holder Map', url: 'https://docs.gullylabs.xyz/holder-map', source: 'Docs' }] },
   }
-}
-
-/** /api/deepcore/launches in the server's shape (server.mjs). */
-export function launchesFixture(at = Date.now()) {
-  return { state: 'ok', asOf: new Date(at).toISOString(), launches: [{ chainId: 4663, chainKey: 'robinhood', chainName: 'Robinhood Chain', token: E2E_LAUNCH_TOKEN, symbol: 'DTC', createdAt: new Date(at - 7 * 86_400_000).toISOString(), locked: true, links: { token: 'https://deepcore.fun/tokens/x', launch: 'https://deepcore.fun/app/launch/v2/x', swap: 'https://deepcore.fun/app/swap' } }] }
 }
 
 /** /api/stats in the server's shape (server/stats.mjs, src/lib/stats.ts): three venues read, one unreadable.
@@ -276,7 +271,7 @@ export function statsFixture(at = Date.now(), { quiet = false, step = 0 } = {}) 
     sources: { volume: key === 'peddles' ? llama : own(key), fees: llama, tvl: llama }, lastActivity: quiet ? new Date((day0 - 12 * 86400) * 1000).toISOString() : new Date(day0 * 1000).toISOString(),
     counts: {}, notes: [], source: { url: `https://${key}.example/api`, readAt: iso }, ...extra,
   })
-  const venues = [venue('deepcore', 900), venue('peddleswap', 400), venue('peddles', 650), { key: 'peddlequest', state: 'error', error: 'e2e: unreadable on purpose' }]
+  const venues = [venue('gullychain', 900), venue('peddleswap', 400), venue('peddles', 650), { key: 'peddlequest', state: 'error', error: 'e2e: unreadable on purpose' }]
   const ok = venues.filter((v) => v.state === 'ok')
   const sum = (k) => ok.reduce((a, v) => a + v[k], 0)
   const keys = ok.map((v) => v.key)
@@ -530,7 +525,6 @@ export async function bootServer({ port }) {
     GULLY_TREASURY_ADDRESS: treasury,
     ANTHROPIC_API_KEY: 'sk-ant-e2e-' + 'x'.repeat(30),
     TELEGRAM_BOT_TOKEN: E2E_BOT_TOKEN,
-    DEEPCORE_API: 'https://deepcore-api.e2e.invalid',
     // Every payment chain (FEEDS has one per chain).
     ...Object.fromEntries(Object.keys(FEEDS).map((id) => [`GULLY_RPC_${id}`, `https://rpc-${id}.e2e.invalid`])),
   })

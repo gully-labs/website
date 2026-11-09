@@ -38,7 +38,7 @@ export function ScoreIndex() {
 
   return (
     <>
-      <Seo title="Gully Score" description="Transparent contract scores from public evidence only: verified code, who controls it, upgrades, delays, recent privileged changes, locks and holders. Nobody can pay to change a score." />
+      <Seo page="/score" />
       <section className="relative overflow-clip px-page pt-[72px] pb-12 max-[600px]:pt-10">
         <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.12),transparent_62%)]" />
         <div className="relative flex max-w-[900px] flex-col gap-6">

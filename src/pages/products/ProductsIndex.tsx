@@ -7,6 +7,8 @@ import { PRODUCTS } from '../../terminal/catalog'
 import { Dot, Panel, SecHead, TChart, UptimeGrid, useReveal } from '../../terminal/kit'
 import { LogoWall } from '../../terminal/sections'
 import { venueTabs } from '../../terminal/liveTabs'
+import { PEDDLE_FAMILY } from '../hub/hubData'
+import { PeddleFamily } from '../hub/PeddleFamily'
 
 export function ProductsIndex() {
   const live = useLive()
@@ -14,12 +16,12 @@ export function ProductsIndex() {
   const ok = live.hub?.services.filter((s) => s.state === 'up').length
   return (
     <div className="lcp gt" ref={ref}>
-      <Seo title="Products" description="Every Gully Labs product with its own page and live charts: Gully Chain, Gully Street, Gully Bridge, Gully Safe, Gully Pay, Gully RPC, HolderMaps, Gully Security, Gully AI, Gully Studio, Gully IPFS, Gully Quests and the DeepCore launchpad. Each supports Gully Chain." />
+      <Seo page="/products" />
       <section className="gt-hero gt-phero" aria-labelledby="pi-h">
         <div className="gt-wrap gt-one">
           <div className="gt-hero-copy rise">
             <span className="gt-k">
-              <b>products</b> · {PRODUCTS.length} · all on or supporting Gully Chain
+              <b>products</b> · {PRODUCTS.length + PEDDLE_FAMILY.length} · {PRODUCTS.length} on or supporting Gully Chain · {PEDDLE_FAMILY.length} in the Peddle family
             </span>
             <h1 id="pi-h">
               Every product, <span className="gt-acc">one lab.</span>
@@ -32,6 +34,7 @@ export function ProductsIndex() {
         <div className="gt-wrap">
           <SecHead n="01" label="Products" title="Pick a product" id="wall-h" />
           <LogoWall />
+          <PeddleFamily stats={live.stats} headingId="pi-pdl-h" level={3} />
         </div>
       </section>
       <section className="gt-sec" aria-labelledby="up-h">

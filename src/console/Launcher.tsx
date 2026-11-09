@@ -5,6 +5,7 @@
    - WhatsNew:   what shipped since the hub update, each row with its live state where the hub checks it.
    A state is read from /api/hub (server/hub.mjs). "coming" is a surface still being set up that has not answered
    200 yet; nothing is shown as up that was not checked, and no figure is typed in. */
+import { TZ } from '../lib/time'
 import type { ComponentType, ReactNode } from 'react'
 import { Activity, ArrowLeftRight, ArrowUpRight, Bot, CircleDollarSign, Gamepad2, HardDrive, Network, Rocket, ScanSearch, Server, ShieldCheck, Vault, type LucideProps } from 'lucide-react'
 import './console.css'
@@ -30,7 +31,7 @@ export const LAUNCH: LaunchItem[] = [
   { key: 'chain', name: 'Gully Chain', url: 'https://gullychain.xyz', icon: Network, line: 'L3 testnet 485590 with a live network board.', hub: ['chain-site', 'rpc-public'] },
   { key: 'street', name: 'kre8.fun', url: 'https://kre8.fun', icon: Rocket, line: 'Social feed, 5 wallets per passkey, copy trading, Quests.', hub: ['street'] },
   { key: 'bridge', name: 'Gully Bridge', url: 'https://testnet-bridge.gullychain.xyz', icon: ArrowLeftRight, line: 'Hyperlane fast lane (gETH) plus the canonical bridge.', hub: ['bridge'] },
-  { key: 'safe', name: 'Gully Safe', url: 'https://safe.gullychain.xyz', icon: Vault, line: 'Multisig wallets on Gully Chain.', hub: ['safe'] },
+  { key: 'safe', name: 'Gully Multisig', url: 'https://multisig.gullychain.xyz', icon: Vault, line: 'Multisig wallets on Gully Chain.', hub: ['safe'] },
   { key: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz', icon: CircleDollarSign, line: 'Open sign-up, hosted checkout, x402 on five chains.', hub: ['pay', 'x402'] },
   { key: 'rpc', name: 'Gully RPC', url: 'https://gullyrpc.xyz', icon: Server, line: 'One key for every network, Gully Chain included.', hub: ['rpc-site', 'rpc-gateway'] },
   { key: 'holders', name: 'HolderMaps', url: 'https://holdermaps.xyz', icon: ScanSearch, line: 'Who holds a token: bubble maps and deep checks.', hub: ['holders'] },
@@ -140,7 +141,7 @@ export function HubBoard() {
     <div className="hb card" data-testid="hub-board">
       <div className="ch">
         <span className="lab cy">{ic(Activity)}Live board</span>
-        <span className="r">{hub ? `checked ${new Date(hub.generatedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · each minute` : 'checking…'}</span>
+        <span className="r">{hub ? `checked ${new Date(hub.generatedAt).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })} · each minute` : 'checking…'}</span>
       </div>
       <div className="hbg">
         <Cell label="Gully Chain block" value={chainHead(live)} sub={live.chain ? 'testnet 485590 · RPC' : hub?.chain ? 'testnet 485590 · indexer' : 'testnet 485590'} spark={chainGaps(live)} color={C.s[0]} />
@@ -180,7 +181,7 @@ export function whatsNew(hub: HubBody | null): NewItem[] {
     { product: 'Gully Quests', text: q?.active != null ? `${q.active} live quests, rewards paid on chain` : 'Quests on chain, rewards paid on chain', url: 'https://kre8.fun/quests', hub: ['street'] },
     { product: 'Gully Bridge', text: 'Hyperlane fast lane (gETH, Gully Bridged ETH) and the canonical bridge', url: 'https://testnet-bridge.gullychain.xyz', hub: ['bridge'] },
     { product: 'Gully Bridge', text: 'Bridge SDK: integrators earn a fee on every bridge', url: 'https://docs.gullychain.xyz', tag: 'in progress' },
-    { product: 'Gully Safe', text: 'Multisig wallets on Gully Chain', url: 'https://safe.gullychain.xyz', hub: ['safe'] },
+    { product: 'Gully Multisig', text: 'Multisig wallets on Gully Chain', url: 'https://multisig.gullychain.xyz', hub: ['safe'] },
     { product: 'Gully Pay', text: 'Open sign-up and hosted checkout; x402 on Base, Ethereum, BNB Chain, Solana and Gully Chain', url: 'https://gullypay.xyz', hub: ['pay', 'x402'] },
     { product: 'Gully Pay', text: 'Admin at admin.gullypay.xyz; mobile apps', url: 'https://gullypay.xyz', tag: 'in progress' },
     { product: 'HolderMaps', text: 'Standalone app with the new design', url: 'https://holdermaps.xyz', hub: ['holders'] },

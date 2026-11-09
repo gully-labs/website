@@ -1,3 +1,4 @@
+import { dateTimePT } from '../../lib/time'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { C } from '../../components/charts/chartPresets'
 import { LiveDayBars } from './DailyChart'
@@ -67,7 +68,7 @@ export function ChainsWaitlist({ token }: { token: string }) {
             <li key={r.id} className="flex flex-col gap-1 rounded-input border border-line px-3 py-2 font-mono text-[12px]">
               <span className="flex flex-wrap items-baseline justify-between gap-2">
                 <b className="font-medium text-ink">{unescape(r.project)}</b>
-                <span className="text-faint">{new Date(r.at).toISOString().slice(0, 16).replace('T', ' ')} UTC</span>
+                <span className="text-faint">{dateTimePT(r.at)}</span>
               </span>
               <span className="text-gold">{unescape(r.contact)}</span>
               <span className="text-muted">

@@ -4,8 +4,7 @@
 //
 // The real server runs IN THIS PROCESS on port 8801 (TEST_PORT overrides) with a fresh temporary DATA_DIR
 // and the tracker loop off. Nothing real is ever called: TELEGRAM_API points at a local Bot API stub that
-// records every call and can be told to fail one; GHOST_URL at a Ghost Content API stub; DEEPCORE_API at a
-// DeepCore stub (launch events go through deepcore.mjs's real poller and listeners); ANTHROPIC_API_URL at a
+// records every call and can be told to fail one; GHOST_URL at a Ghost Content API stub; ANTHROPIC_API_URL at a
 // Messages API stub for the Gully AI draft. The token is a made-up one; the channel is a made-up one too.
 
 import crypto from 'node:crypto'
@@ -87,16 +86,6 @@ const ghost = http.createServer((req, res) => {
 })
 await new Promise((r) => ghost.listen(0, '127.0.0.1', r))
 
-/* -------------------------------------------------------------- DeepCore stub --- */
-
-const dcItem = (n) => ({ chainId: 8453, token: `0x${String(n).padStart(40, '0')}`, launchToken: { symbol: `T${n}` }, createdAt: { blockTimestamp: new Date(Date.UTC(2026, 9, 17, 10, n)).toISOString(), txHash: '0x' + 'ab'.repeat(32) }, legs: [{ kind: 'CL', quote: { symbol: 'WETH' }, lock: { status: 'indexed', lockId: 1 } }] })
-const dcItems = [dcItem(1)]
-const deepcore = http.createServer((req, res) => {
-  res.writeHead(200, { 'content-type': 'application/json' })
-  res.end(JSON.stringify({ data: { items: [...dcItems].reverse(), chains: [{ chainId: 8453, status: 'ok', total: dcItems.length }] } }))
-})
-await new Promise((r) => deepcore.listen(0, '127.0.0.1', r))
-
 /* ------------------------------------------------------------- Anthropic stub --- */
 
 const claudeCalls = []
@@ -121,8 +110,6 @@ Object.assign(process.env, {
   ADMIN_TOKEN: ADMIN,
   TRACKER_LOOP: 'off',
   TRACKER_SKIP_APIS: '1',
-  DEEPCORE_LOOP: 'off',
-  DEEPCORE_API: `http://127.0.0.1:${deepcore.address().port}`,
   GULLY_RPC_1: 'http://127.0.0.1:9',
   GULLY_RPC_56: 'http://127.0.0.1:9',
   GULLY_RPC_8453: 'http://127.0.0.1:9',
@@ -142,7 +129,6 @@ for (const k of ['ANTHROPIC_API_KEY', 'GHOST_CONTENT_KEY', 'ASK_DAILY_LIMIT', 'T
 await import('../server/server.mjs')
 const tg = await import('../server/telegram.mjs')
 const ch = await import('../server/telegram-channel.mjs')
-const dc = await import('../server/deepcore.mjs')
 ch.stopChannel() // the test drives the scheduler by hand
 await new Promise((r) => setTimeout(r, 300))
 
@@ -154,11 +140,13 @@ const findPost = async (id) => (await A('/api/admin/channel')).data.posts.find((
 const row = (o) => ({ chain: 'robinhood', ticker: 'NVDA', name: 'NVIDIA', status: 'premium', gapPct: 3.1, fair: 180, onchain: 185.58, poolStale: false, sessionOpen: true, pool: { liquidityUsd: 50_000 }, ...o })
 const ROWS = [row({}), row({ ticker: 'TSLA', status: 'discount', gapPct: -2.5 }), row({ ticker: 'META', status: 'in-line', gapPct: 0.4 }), row({ ticker: 'AMZN', status: 'thin', gapPct: 9 }), row({ ticker: 'GOOGL', status: 'unverified', gapPct: null }), row({ ticker: 'MSFT', chain: 'bsc', status: 'drifting', gapPct: 1.5 }), row({ ticker: 'AAPL', status: 'premium', gapPct: 2.2 }), row({ ticker: 'AMD', status: 'premium', gapPct: 4.4 })]
 let rowsOk = true
+/** The clock the history below is dated from: the real one until the auto-post tests install their own. */
+let historyNow = () => Date.now()
 const changelog = [{ key: 'https://docs.gullylabs.xyz/changelog#2026-10-16', date: '16 October 2026', url: 'https://docs.gullylabs.xyz/changelog#2026-10-16', text: 'Older release.' }]
 ch.setChannelSourcesForTest({
   rows: async () => (rowsOk ? ROWS : null),
   history: (c, tk) => {
-    const s = Math.floor(Date.now() / 1000)
+    const s = Math.floor(historyNow() / 1000)
     const base = tk === 'NVDA' ? 100 : tk === 'TSLA' ? 200 : 50
     return [[s - 6 * 86_400, 1, base, base], [s - 60, 1, tk === 'NVDA' ? 110 : tk === 'TSLA' ? 190 : 50.5, base]]
   },
@@ -307,52 +295,19 @@ try {
 
   /* --------------------------------------------------------------- auto posts --- */
   const auto0 = (await A('/api/admin/channel/auto')).data.auto
-  check('auto posts: every type is off by default', ['launches', 'dailyGaps', 'weeklyMovers', 'blog', 'releases'].every((k) => auto0[k].enabled === false))
+  check('auto posts: every type is off by default, and the retired launch type is gone (2026-11-08)', ['dailyGaps', 'weeklyMovers', 'blog', 'releases'].every((k) => auto0[k].enabled === false) && !('launches' in auto0))
   const autoPosts = async (type) => (await A('/api/admin/channel')).data.posts.filter((p) => p.createdBy === `auto:${type}`)
   // A free clock: Saturday 17 Oct 2026, UTC.
   const at = (hhmm, day = 17) => Date.parse(`2026-10-${day}T${hhmm}:00Z`)
   let clock = at('09:00')
   ch.setNowForTest(() => clock)
+  // The 7 days of history end at the test's clock, not at the day the test happens to run.
+  historyNow = () => clock
   await A('/api/admin/channel/auto', { timezone: 'UTC', minGapMinutes: 0, quietHours: { enabled: false } })
 
-  // DeepCore launches: off by default.
-  await dc.pollLaunchesNow() // the baseline: what exists is never announced
-  dcItems.push(dcItem(2))
-  await dc.pollLaunchesNow()
-  await ch.tickChannel()
-  check('launches: off, a new launch posts nothing', (await autoPosts('launches')).length === 0)
+  // The retired launch type is refused, not silently kept.
+  check('auto: the retired launches type is not accepted', (await A('/api/admin/channel/auto/launches/preview', {})).status === 404)
   check('auto: bad settings refused', (await A('/api/admin/channel/auto', { timezone: 'Mars/Base', minGapMinutes: -1 })).status === 400)
-  await A('/api/admin/channel/auto', { launches: { enabled: true } })
-  dcItems.push(dcItem(3))
-  await dc.pollLaunchesNow()
-  await ch.tickChannel()
-  let lp1 = await autoPosts('launches')
-  check('launches: on, the new launch is posted once with a DeepCore button', lp1.length === 1 && /T3/.test(lp1[0].text) && /Base/.test(lp1[0].text) && lp1[0].buttons[0].url.startsWith('https://deepcore.fun/tokens/') && lp1[0].status === 'sent', JSON.stringify(lp1[0]?.text))
-  check('launches: the post says "Liquidity locked" in plain words, no pool kind or quote', lp1.length === 1 && lp1[0].text.includes('Base · 🔒 Liquidity locked') && !/CL|WETH|pool/.test(lp1[0].text) && lp1[0].buttons[0].text === 'View on DeepCore', lp1[0]?.text)
-  await dc.pollLaunchesNow()
-  await ch.tickChannel()
-  check('launches: no duplicate on the next poll', (await autoPosts('launches')).length === 1)
-  // Quiet hours hold the next one; it goes out when they end.
-  await A('/api/admin/channel/auto', { quietHours: { enabled: true, start: '23:00', end: '01:00' } })
-  clock = at('23:30')
-  dcItems.push(dcItem(4))
-  await dc.pollLaunchesNow()
-  await ch.tickChannel()
-  check('quiet hours: nothing posted at 23:30', (await autoPosts('launches')).length === 1 && (await A('/api/admin/channel/auto')).data.auto.blocked === 'quiet')
-  clock = at('01:05', 18)
-  await ch.tickChannel()
-  check('quiet hours over: the held launch goes out', (await autoPosts('launches')).length === 2)
-  // Minimum gap.
-  await A('/api/admin/channel/auto', { minGapMinutes: 60 })
-  dcItems.push(dcItem(5))
-  await dc.pollLaunchesNow()
-  clock = at('01:30', 18)
-  await ch.tickChannel()
-  check('min gap: a launch 25 min after the last post waits', (await autoPosts('launches')).length === 2 && (await A('/api/admin/channel/auto')).data.auto.blocked === 'gap')
-  clock = at('02:10', 18)
-  await ch.tickChannel()
-  check('min gap passed: it goes out', (await autoPosts('launches')).length === 3)
-  await A('/api/admin/channel/auto', { minGapMinutes: 0, quietHours: { enabled: false }, launches: { enabled: false } })
 
   // Blog: off by default; on: the first poll only records what exists; a new post is announced once.
   process.env.GHOST_CONTENT_KEY = GHOST_KEY
@@ -393,6 +348,33 @@ try {
   await ch.tickChannel()
   check('releases: no duplicate', (await autoPosts('releases')).length === 1)
   await A('/api/admin/channel/auto', { releases: { enabled: false } })
+
+  // Quiet hours and the minimum gap, driven by changelog releases.
+  await A('/api/admin/channel/auto', { releases: { enabled: true } })
+  await ch.checkSources()
+  await ch.tickChannel()
+  const rel0 = (await autoPosts('releases')).length
+  check('releases: re-enabling announces nothing by itself', rel0 === 1)
+  await A('/api/admin/channel/auto', { quietHours: { enabled: true, start: '23:00', end: '01:00' } })
+  clock = at('23:30')
+  changelog.push({ key: 'https://docs.gullylabs.xyz/changelog#2026-10-17b', date: '17 October 2026', url: 'https://docs.gullylabs.xyz/changelog#2026-10-17b', text: 'Quiet hours test entry.' })
+  await ch.checkSources()
+  await ch.tickChannel()
+  check('quiet hours: nothing posted at 23:30', (await autoPosts('releases')).length === rel0 && (await A('/api/admin/channel/auto')).data.auto.blocked === 'quiet')
+  clock = at('01:05', 18)
+  await ch.tickChannel()
+  check('quiet hours over: the held post goes out', (await autoPosts('releases')).length === rel0 + 1)
+  // Minimum gap.
+  await A('/api/admin/channel/auto', { minGapMinutes: 60 })
+  changelog.push({ key: 'https://docs.gullylabs.xyz/changelog#2026-10-18b', date: '18 October 2026', url: 'https://docs.gullylabs.xyz/changelog#2026-10-18b', text: 'Min gap test entry.' })
+  await ch.checkSources()
+  clock = at('01:30', 18)
+  await ch.tickChannel()
+  check('min gap: a post 25 min after the last one waits', (await autoPosts('releases')).length === rel0 + 1 && (await A('/api/admin/channel/auto')).data.auto.blocked === 'gap')
+  clock = at('02:10', 18)
+  await ch.tickChannel()
+  check('min gap passed: it goes out', (await autoPosts('releases')).length === rel0 + 2)
+  await A('/api/admin/channel/auto', { minGapMinutes: 0, quietHours: { enabled: false }, releases: { enabled: false } })
 
   // Daily widest gaps at a set time.
   clock = at('13:00', 19)
@@ -440,7 +422,7 @@ try {
   // Previews render without sending.
   const sends0 = calls.filter((c) => /^send/.test(c.method)).length
   const pv = {}
-  for (const k of ['launches', 'dailyGaps', 'weeklyMovers', 'blog', 'releases']) pv[k] = (await A(`/api/admin/channel/auto/${k}/preview`, {})).data
+  for (const k of ['dailyGaps', 'weeklyMovers', 'blog', 'releases']) pv[k] = (await A(`/api/admin/channel/auto/${k}/preview`, {})).data
   check('preview: every type renders a post', Object.values(pv).every((x) => x.preview && x.preview.text.length > 10 && x.preview.errors.length === 0), JSON.stringify(Object.fromEntries(Object.entries(pv).map(([k, v]) => [k, v.skip ?? v.preview?.errors]))))
   check('preview: nothing was sent', calls.filter((c) => /^send/.test(c.method)).length === sends0)
   rowsOk = false
@@ -494,7 +476,7 @@ try {
   const autoTexts = (await A('/api/admin/channel')).data.posts.filter((p) => /^auto:/.test(p.createdBy)).flatMap((p) => [p.text, ...(p.buttons ?? []).map((b) => b.text)])
   check(`plain words: no automatic post or button says "api.", "API", "RPC", "feed", "UTC", "pool", "on-chain" or a raw time (${autoTexts.length} texts)`, autoTexts.length >= 8 && !autoTexts.some((x) => JARGON.test(x)), autoTexts.filter((x) => JARGON.test(x)).slice(0, 3).join(' | '))
   const defaults = Object.values(ch.DEFAULT_TEMPLATES_FOR_TEST)
-  check('plain words: every default template is free of them too', defaults.length === 5 && !defaults.some((x) => JARGON.test(x)), defaults.filter((x) => JARGON.test(x)).join(' | '))
+  check('plain words: every default template is free of them too', defaults.length === 4 && !defaults.some((x) => JARGON.test(x)), defaults.filter((x) => JARGON.test(x)).join(' | '))
   check('every channel call went to the configured channel or the linked test chat', calls.filter((c) => c.body.chat_id !== undefined).every((c) => [CHANNEL, '4242'].includes(String(c.body.chat_id))))
   check('every keyboard sent has https URL buttons only', calls.filter((c) => c.body.reply_markup?.inline_keyboard && c.body.chat_id === CHANNEL).every((c) => c.body.reply_markup.inline_keyboard.flat().every((b) => /^https:\/\//.test(b.url))))
   const store = JSON.parse(fs.readFileSync(path.join(tmp, 'channel-posts.json'), 'utf8'))

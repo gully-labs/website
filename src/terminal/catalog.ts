@@ -82,7 +82,7 @@ export const PRODUCTS: ProductDef[] = [
     ],
     faq: [
       ['Is it free?', 'Free up to 1,000 monthly active users; larger plans are billed through Gully Pay.'],
-      ['Which Gully products use it?', 'The Gully Chain faucet requires it today. Sign in with Gully is built into Gully Pay and Gully RPC and switches on there next.'],
+      ['Which Gully products use it?', 'The Gully Chain faucet offers it as an optional sign-in today (it also funds a brand-new wallet). Sign in with Gully is built into Gully Pay and Gully RPC and switches on there next.'],
       ['Google and X sign-in?', 'Coming: the provider keys are pending.'],
     ],
     pricing: 'on-site',
@@ -116,7 +116,7 @@ export const PRODUCTS: ProductDef[] = [
     faq: [
       ['Is Gully Chain on mainnet?', 'Not yet. The testnet (chain 485590) is live; mainnet follows the testnet programme.'],
       ['Can you launch a chain like this for us?', 'Yes. Chain launch is one of our services: the same Orbit stack, explorer, bridge and RPC, run by us.'],
-      ['Where do I get an RPC key?', 'From Gully RPC. The public endpoint stays free and rate-limited.'],
+      ['Where do I get an RPC key?', 'From Gully RPC: Free, Developer or Business plans at gullyrpc.xyz/pricing. The public endpoint stays free and rate-limited.'],
     ],
     pricing: 'free-testnet',
   },
@@ -184,14 +184,14 @@ export const PRODUCTS: ProductDef[] = [
   },
   {
     slug: 'safe',
-    name: 'Gully Safe',
+    name: 'Gully Multisig',
     group: 'chain',
-    line: 'Multisig wallets on Gully Chain, for treasuries and teams.',
-    short: 'Multisig wallets on Gully Chain.',
-    logo: { kind: 'mark', mark: 'chain', label: 'Gully Safe' },
-    url: 'https://safe.gullychain.xyz',
-    urlLabel: 'safe.gullychain.xyz',
-    docs: 'https://docs.gullychain.xyz',
+    line: 'Multisig wallets for teams and treasuries on Anubis Network, built on the unmodified Safe 1.4.1 contracts.',
+    short: 'Team and treasury multisigs on Anubis Network.',
+    logo: { kind: 'mark', mark: 'chain', label: 'Gully Multisig' },
+    url: 'https://multisig.gullychain.xyz',
+    urlLabel: 'multisig.gullychain.xyz',
+    docs: 'https://docs.gullychain.xyz/multisig/',
     hub: ['safe'],
     og: '/brand/web/og/gully-chain.png',
     category: 'FinanceApplication',
@@ -205,7 +205,7 @@ export const PRODUCTS: ProductDef[] = [
       ['Fund it', 'Send ETH or tokens to the Safe address.'],
       ['Propose and sign', 'Owners sign until the threshold is met, then it executes.'],
     ],
-    faq: [['Is Gully Safe live?', 'It is being deployed. This page shows its real state, checked every minute.']],
+    faq: [['Is Gully Multisig live?', 'This page shows its real state, checked every minute at multisig.gullychain.xyz, its only address.']],
     pricing: 'free-testnet',
   },
   {
@@ -442,7 +442,7 @@ export const PRODUCTS: ProductDef[] = [
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Quests' },
     url: `${STREET}/quests`,
     urlLabel: 'kre8.fun/quests',
-    docs: 'https://docs.gullychain.xyz/gully-core/',
+    docs: 'https://docs.gullycore.xyz/',
     hub: ['street', 'indexer'],
     og: '/brand/web/og/gully-chain.png',
     category: 'GameApplication',
@@ -561,31 +561,46 @@ export const PRODUCTS: ProductDef[] = [
     slug: 'gully-core',
     name: 'Gully Core',
     group: 'chain',
-    line: 'Gully Chain’s own launchpad and DEX core: a token and its pool in one step, graduating to Gully Swap.',
-    short: 'Built-in launchpad on Gully Chain.',
+    line: 'Launch a token, run a launchpad or own a DEX on one shared core, on the chains your users already use.',
+    short: 'Launchpads and DEXes on one core.',
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Core' },
-    url: `${STREET}/launch`,
-    urlLabel: 'kre8.fun/launch',
-    docs: 'https://docs.gullychain.xyz/gully-core/',
+    url: 'https://gullycore.xyz',
+    urlLabel: 'gullycore.xyz',
+    cta2: ['Launch on kre8.fun', `${STREET}/launch`],
+    docs: 'https://docs.gullycore.xyz',
     hub: ['street', 'indexer'],
     og: '/brand/web/og/gully-chain.png',
     category: 'FinanceApplication',
     features: [
-      { t: 'One-step launch', d: 'Token, bonding curve and pool in a single transaction.' },
-      { t: 'Graduation', d: 'Completed curves graduate to a Gully Swap pool.' },
+      { t: 'One-step launch', d: 'A token and its pool in a single transaction, with a fee that opens high and falls to 1%.' },
+      { t: 'Your own site', d: 'Launchpads, DEXes and stock markets on the shared core, with no contracts to deploy.' },
       { t: 'Checked by HolderMaps', d: 'Every launch can be mapped and health-checked.' },
+      { t: 'For outside builders', d: 'A flat 0.30% of every trade on pools you create, and nothing else.' },
+      { t: 'Its lineage', d: 'Built on PancakeSwap Infinity’s audited core.' },
     ],
     how: [
-      ['Launch', 'Name, ticker and image in kre8.fun.'],
-      ['Trade the curve', 'Buys and sells on the bonding curve.'],
-      ['Graduate', 'Liquidity moves to Gully Swap.'],
+      ['Pick what to build', 'A token, a launchpad, a DEX, a stock market or a vault.'],
+      ['Set the rules', 'Pick a chain, your fee share and a launch preset.'],
+      ['Go live', 'It trades from the first block.'],
     ],
-    faq: [['Who builds Gully Core?', 'Gully Labs. It is our own launchpad and DEX core for Gully Chain, run as part of the chain.']],
+    faq: [
+      ['Who builds Gully Core?', 'Gully Labs. It is our own launchpad and DEX core, built on PancakeSwap Infinity’s audited core.'],
+      ['Where is it live?', 'On Anubis, Robinhood Chain, BNB Chain and Base mainnets and on Gully Chain testnet. The home is gullycore.xyz; the app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet).'],
+    ],
     pricing: 'free-testnet',
   },
 ]
 
 export const productBySlug = (s: string | undefined) => PRODUCTS.find((p) => p.slug === s) ?? null
+
+/** The product page's section headings (src/pages/products/ProductPage.tsx), also drawn in the page the server
+    sends before scripts run (scripts/build-page-content.mjs). */
+export const PRODUCT_SECTIONS = { features: 'What it does', how: 'Three steps', pricing: 'Prices in USD', faq: 'Questions', links: 'Go further' }
+/** What the page says about price for a product with no published price table. */
+export const pricingNote = (p: Pick<ProductDef, 'pricing' | 'urlLabel'>) =>
+  p.pricing === 'free-testnet' ? 'Free on testnet. Mainnet pricing is published when mainnet opens.' : p.pricing === 'quoted' ? 'Quoted per project. Tell us what you need below.' : `Plans and fees are published on ${p.urlLabel}, in USD.`
+/** Every question on a product's page: its own, then the one every product answers. */
+export const productFaq = (p: Pick<ProductDef, 'name' | 'faq'>): [string, string][] => [...p.faq, [`Does ${p.name} support Gully Chain?`, 'Yes. Every Gully product supports Gully Chain (chain 485590 on testnet today).']]
 
 /* ---------------------------------------------------------------- services ---- */
 export type ServiceKey = 'chain' | 'contracts' | 'security' | 'apps' | 'payments' | 'infra' | 'launch' | 'ai' | 'games'
@@ -609,5 +624,8 @@ export const SERVICES: ServiceDef[] = [
   { key: 'ai', title: 'AI integration', desc: 'Assistants that cite their sources and read live on-chain data, like Gully AI.', deliverables: ['Retrieval over your docs', 'Live data tools', 'Chat on web and Telegram', 'Evaluation and logs'], timeline: '2–6 weeks', proof: 'ai' },
   { key: 'games', title: 'Game development', desc: 'Unity 3D games with on-chain items and scores, from Gully Studio.', deliverables: ['Unity 3D game', 'Gully Game SDK integration', 'On-chain scores and items', 'In-game payments'], timeline: '8–24 weeks', proof: 'studio' },
 ]
+
+/** The service a product page offers to build "one like it" (its Start a project link and its Links section). */
+export const SERVICE_FOR: Partial<Record<Slug, ServiceKey>> = { 'gully-sentry': 'security', chain: 'chain', street: 'apps', bridge: 'chain', safe: 'contracts', pay: 'payments', rpc: 'infra', holders: 'apps', security: 'security', ai: 'ai', studio: 'games', ipfs: 'infra', quests: 'launch', offerwall: 'launch', 'gully-social': 'apps', 'copy-trading': 'apps', 'gully-core': 'launch' }
 
 export const BUDGETS = ['Under $10k', '$10k–$25k', '$25k–$50k', '$50k–$100k', '$100k+', 'Not sure yet']

@@ -1,4 +1,5 @@
-import { Activity, Bot, Boxes, CircleCheck, CircleDollarSign, Network, ScanSearch, ShieldCheck, Sparkles, TriangleAlert, type LucideIcon } from 'lucide-react'
+import { dateTimePT, timePT } from '../../lib/time'
+import { Activity, Bot, CircleCheck, CircleDollarSign, Network, ScanSearch, ShieldCheck, Sparkles, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { ChainLogo } from '../logos/ChainLogo'
 import { AnimatedNumber } from '../charts/AnimatedNumber'
@@ -12,11 +13,11 @@ import { OVERALL_WORDS, STATE_WORDS, STATUS_GROUPS, useStatus, type StatusBody, 
    RPC latency over the day, and the incident history. Used by /status and (compact) by the docs' Status page. */
 
 const STATE_COLOR: Record<StatusState, string> = { up: C.green, degraded: C.gold, down: C.error, off: C.faint, unknown: C.muted }
-const GROUP_ICON: Record<StatusGroup, LucideIcon> = { platform: Activity, tracker: Network, deepcore: Boxes, telegram: Bot, payments: CircleDollarSign, ai: Sparkles, security: ShieldCheck, holders: ScanSearch, chains: Network }
+const GROUP_ICON: Record<StatusGroup, LucideIcon> = { platform: Activity, tracker: Network, telegram: Bot, payments: CircleDollarSign, ai: Sparkles, security: ShieldCheck, holders: ScanSearch, chains: Network }
 
-const hhmm = (iso: string) => `${new Date(iso).toISOString().slice(11, 16)} UTC`
+const hhmm = (iso: string) => timePT(iso)
 const pct = (v: number) => `${(Math.round(v * 10000) / 100).toFixed(2)}%`
-const when = (iso: string) => new Date(iso).toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
+const when = (iso: string) => dateTimePT(iso)
 function duration(a: string, b: string | null) {
   const ms = (b ? Date.parse(b) : Date.now()) - Date.parse(a)
   if (ms < 90_000) return `${Math.max(1, Math.round(ms / 1000))} s`

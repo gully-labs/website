@@ -1,9 +1,9 @@
 import { holderInternalPath, holderShortPath, isHolderMapsHost, SITE_URL } from '../site-host'
 
 /* On holdermaps.xyz only the Holder Map's own pages live on this origin (server/hosts.mjs). The site header, footer and
-   pages link the rest of Gully Labs by path (/pricing, /tracker, /legal/terms); a click on one of those goes straight
+   pages link the rest of Gully Labs by path (/pricing, /tracker, /legal); a click on one of those goes straight
    to the same page on gullylabs.xyz instead of routing here first. (A link opened in a new tab reaches the server,
-   which answers it with the same 301.) Runs in the capture phase, before React Router's own click handling. */
+   which answers it with the same 301.) HolderMaps' own /terms and /privacy stay here. Runs in the capture phase, before React Router's own click handling. */
 export function installHolderMapsLinks() {
   if (typeof document === 'undefined' || !isHolderMapsHost()) return
   document.addEventListener(
@@ -15,6 +15,8 @@ export function installHolderMapsLinks() {
       const url = new URL(a.href, window.location.href)
       if (url.origin !== window.location.origin) return
       if (holderInternalPath(url.pathname) || holderShortPath(url.pathname)) return
+      // HolderMaps' own Terms and Privacy Policy live here (server/hosts.mjs HOLDERMAPS_LEGAL).
+      if (/^\/(terms|privacy)\/?$/.test(url.pathname)) return
       e.preventDefault()
       window.location.assign(SITE_URL + url.pathname + url.search + url.hash)
     },

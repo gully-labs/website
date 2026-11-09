@@ -1,10 +1,10 @@
+import { dayPT, lastDaysPT } from '../../lib/time'
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
-import { areaPreset, axisTooltip, C, linePreset, tipHtml } from '../../components/charts/chartPresets'
-import { EChart } from '../../components/charts/EChart'
-import { api, type Account, type AnalyticsAccount, type AnalyticsSeries, type GapAlert, type Payment, type Usage } from './api'
+import { C } from '../../components/charts/chartPresets'
+import { LiveChart, type LivePoint } from '../../components/live/GlLive'
+import { api, daysLeft, type Account, type AnalyticsAccount, type AnalyticsSeries, type GapAlert, type Payment, type Usage } from './api'
 import { GhostCurves } from './charts'
-import { useAlertsView } from './helpers'
 import { ErrorLine, Skeleton } from './parts'
 import { BLUE, chip, LIMITED_COLOR, mono, panel, panelTitle, rise } from './styles'
 import { AlertTimeline, LiveMarker, QuotaRing, StackedDays, type DayStack } from './vcharts'
@@ -15,25 +15,23 @@ import { AlertTimeline, LiveMarker, QuotaRing, StackedDays, type DayStack } from
      KeysTraffic       GET /api/developer/usage?range=7d (the Keys tab's own read): ok, errors and 429s a day
      AlertFires        each alert's delivery log: deliveries a day over 30 days, then the per-alert timeline
      AnalyticsTraffic  GET /api/developer/analytics/series?range=7d|30d: page views and visitors a day
-     PlanUsage         keys and alerts in use against the plan, and what the workspace has paid in USD */
+     PlanUsage         keys in use against the plan, the plan period, and what the workspace has paid in USD */
 
 const fmt = (n: number) => n.toLocaleString('en-US')
 const OK = '#3ddc97'
 const ERR = '#ff6b81'
 
-/** The last `n` local days as empty stacks, oldest first, with a lookup by day. */
+/** The last `n` Los Angeles days as empty stacks, oldest first, with a lookup by day. */
 function emptyDays(n: number) {
   const days: DayStack[] = []
   const index = new Map<string, DayStack>()
-  const today = new Date()
-  for (let i = n - 1; i >= 0; i--) {
-    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
-    const row = { label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), values: {} as Record<string, number> }
-    index.set(d.toDateString(), row)
+  for (const { key, label } of lastDaysPT(n)) {
+    const row = { label, values: {} as Record<string, number> }
+    index.set(key, row)
     days.push(row)
   }
   const add = (at: string | number, kind: string, by = 1) => {
-    const row = index.get(new Date(at).toDateString())
+    const row = index.get(dayPT(at))
     if (row) row.values[kind] = (row.values[kind] ?? 0) + by
   }
   return { days, add }
@@ -181,23 +179,6 @@ export function AnalyticsTraffic({ account }: { account: AnalyticsAccount }) {
   const readable = data ? data.sites.some((x) => x.ok) : false
   const pv = data ? data.days.reduce((a, d) => a + d.pageviews, 0) : null
   const vis = data ? data.days.reduce((a, d) => a + d.visitors, 0) : null
-  const option = useMemo(() => {
-    if (!data) return null
-    const labels = data.days.map((d) => new Date(d.t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }))
-    return {
-      grid: { left: 40, right: 10, top: 12, bottom: 24 },
-      xAxis: { type: 'category', boundaryGap: false, data: labels, axisLabel: { hideOverlap: true } },
-      yAxis: { type: 'value', minInterval: 1, splitNumber: 3 },
-      tooltip: axisTooltip((ps: { dataIndex: number; seriesName: string; value: number; color: string }[]) => {
-        const i = ps[0]?.dataIndex ?? -1
-        return i < 0 ? '' : tipHtml({ title: `${labels[i]} (UTC)`, rows: ps.map((p) => ({ name: p.seriesName, value: fmt(p.value), color: p.color })) })
-      }, 'cross'),
-      series: [
-        { id: 'pv', name: 'page views', ...areaPreset({ color: C.gold, fill: 0.28 }), data: data.days.map((d) => d.pageviews) },
-        { id: 'vis', name: 'visitors', ...linePreset({ color: BLUE }), data: data.days.map((d) => d.visitors) },
-      ],
-    }
-  }, [data])
 
   return (
     <section className={panel} style={rise(1)} aria-labelledby="ga-traffic" data-testid="analytics-traffic">
@@ -238,8 +219,11 @@ export function AnalyticsTraffic({ account }: { account: AnalyticsAccount }) {
         </GhostCurves>
       ) : (
         <div className={`flex flex-col gap-2 transition-opacity ${stale ? 'opacity-60' : ''}`} aria-busy={stale}>
-          <EChart option={option!} height={160} skeleton="line" label={`Page views and visitors per day over the last ${range === '7d' ? '7' : '30'} days: ${pv == null ? 'views not tracked yet' : `${fmt(pv)} views`}, ${vis == null ? 'visitors not tracked yet' : `${fmt(vis)} visitors`}.`} />
-          <Legend kinds={[{ id: 'pv', name: 'page views', color: C.gold, total: pv ?? undefined }, { id: 'vis', name: 'visitors', color: BLUE, total: vis ?? undefined }]} />
+          {/* Gully Live UI: one chart per measure, one axis each (UTC days). */}
+          <div className="grid gap-3 min-[1100px]:grid-cols-2">
+            <LiveChart kind="area" title="Page views a day" height={150} series={data!.days.map((d) => [Date.parse(d.t), d.pageviews] as LivePoint)} empty="Page views chart from the second recorded day." label={`Page views per day over the last ${range === '7d' ? '7' : '30'} days: ${pv == null ? 'not tracked yet' : `${fmt(pv)} in all`}.`} />
+            <LiveChart kind="bars" title="Visitors a day" height={150} series={data!.days.map((d) => [Date.parse(d.t), d.visitors] as LivePoint)} empty="Visitors chart from the second recorded day." label={`Visitors per day over the last ${range === '7d' ? '7' : '30'} days: ${vis == null ? 'not tracked yet' : `${fmt(vis)} in all`}.`} />
+          </div>
         </div>
       )}
     </section>
@@ -248,12 +232,10 @@ export function AnalyticsTraffic({ account }: { account: AnalyticsAccount }) {
 
 /* -------------------------------------------------------------- Billing --- */
 
-/** What the plan is used for right now (keys and alerts against their limits) and what was paid, in USD. */
-export function PlanUsage({ account, payments }: { account: Account; payments: Payment[] }) {
-  const alerts = useAlertsView()
+/** What the plan is used for right now (keys against their limit, the days left of the paid period) and what was paid, in USD. */
+export function PlanUsage({ account, payments, periodDays }: { account: Account; payments: Payment[]; periodDays: number }) {
   const liveKeys = account.keys.filter((k) => !k.revokedAt).length
-  const alertMax = alerts.view?.limits.max ?? account.plan.alerts
-  const alertUsed = alerts.view?.limits.used ?? null
+  const left = daysLeft(account.plan.expiresAt)
   // Only payments with a recorded USD value count; an unknown one is never a $0 (the total says "partial").
   const values = payments.map((p) => (p.usd === null || p.usd === undefined || p.usd === '' ? NaN : Number(p.usd)))
   const known = values.filter((v) => Number.isFinite(v))
@@ -271,12 +253,12 @@ export function PlanUsage({ account, payments }: { account: Account; payments: P
         </span>
       </div>
       <div className="flex items-center gap-3">
-        <QuotaRing size={76} quota={alertMax} caption="alerts" slices={[{ name: 'alerts', value: alertUsed ?? 0, color: BLUE }]} />
+        <QuotaRing size={76} quota={Math.max(periodDays, left ?? 0, 1)} caption="days" slices={[{ name: 'days left', value: left ?? 0, color: BLUE }]} />
         <span className="flex flex-col gap-[2px]">
-          <span className="font-mono text-[11px] tracking-[1px] text-faint">ALERTS</span>
+          <span className="font-mono text-[11px] tracking-[1px] text-faint">{account.plan.name.toUpperCase()} · DAYS LEFT</span>
           <span className="font-display text-[22px] leading-none font-bold">
-            {alertUsed === null ? alerts.err ? <span className="text-faint" title="not available right now" aria-label="not available right now" data-unknown>—</span> : <span className="font-mono text-[13px] font-normal text-faint">…</span> : alertUsed ? <AnimatedNumber value={alertUsed} countUp /> : <span className="font-mono text-[13px] font-normal text-faint">none yet</span>}{' '}
-            <span className="font-mono text-[11px] font-normal text-faint">of {alertMax}</span>
+            {left === null ? <span className="font-mono text-[13px] font-normal text-faint">no end date</span> : <AnimatedNumber value={left} countUp />}{' '}
+            {left !== null && <span className="font-mono text-[11px] font-normal text-faint">of {periodDays} a period</span>}
           </span>
         </span>
       </div>

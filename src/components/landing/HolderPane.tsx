@@ -1,35 +1,26 @@
-import { useEffect, useState } from 'react'
-import { HolderMapMini } from '../holders/HolderMapMini'
-import { LaunchHolders } from '../holders/LaunchHolders'
+import { Link } from 'react-router'
+import { ScanSearch } from 'lucide-react'
 
-/* The home console's Holder Map tab (design audit X11): the live mini map of the newest DeepCore launch (the
-   animated bubbles, the launch-health ring and the top-10 share since launch, all from the Holder Map's own
-   components) with the latest launches under it, each linking to its full map. Stock maps are not shown here:
-   they appear only where an archive RPC is configured (see /holders). Nothing is typed in: the launch comes
-   from GET /api/deepcore/launches, and a quiet feed says so. */
-
-type Latest = { chainKey: string; token: string } | null
+/* The home console's Holder Map tab. Until 2026-11-08 it showed the newest partner launch's mini map and the latest
+   partner-launchpad launches (GET /api/deepcore/launches). That feed was retired with the rest of that partner's integrations
+   (owner, 2026-11-08); the Gully Core launch feed is not wired here yet, so the tab says so plainly and sends people
+   to the Holder Map itself, where any token can be looked up. Nothing is invented and no empty chart frame is drawn. */
 
 export default function HolderPane() {
-  const [first, setFirst] = useState<Latest | undefined>(undefined)
-  useEffect(() => {
-    let alive = true
-    fetch('/api/deepcore/launches')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(
-        (b: { launches?: { chainKey: string; token: string }[] }) => alive && setFirst(b.launches?.[0] ? { chainKey: b.launches[0].chainKey, token: b.launches[0].token } : null),
-        () => alive && setFirst(null),
-      )
-    return () => {
-      alive = false
-    }
-  }, [])
   return (
     <div className="flex flex-col gap-4" data-console-holders>
-      {first === undefined && <div role="status" aria-label="Reading the newest launch" className="h-[132px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] card" />}
-      {first && <HolderMapMini chain={first.chainKey} token={first.token} />}
-      <div className="card card-pad">
-        <LaunchHolders limit={5} />
+      <div className="card card-pad flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <ScanSearch className="size-5 text-dim" aria-hidden="true" />
+          <h3 className="text-[15px] font-semibold text-ink">Holder Map</h3>
+        </div>
+        <p className="text-[14px] leading-relaxed text-dim">
+          Look up who holds any token: bundled buys, the deployer’s share and the wallets that move together. The live launch feed shown here
+          until 8 November 2026 came from a former partner launchpad and was retired; Gully Core launches will take its place when their feed is wired.
+        </p>
+        <Link to="/holders" className="btn btn-primary self-start" data-console-holders-open>
+          Open the Holder Map
+        </Link>
       </div>
     </div>
   )

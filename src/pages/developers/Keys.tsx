@@ -1,11 +1,11 @@
+import { TZ } from '../../lib/time'
 import { track } from '../../lib/track'
-import { Activity, AlertTriangle, AppWindow, BookOpen, Check, Clock, Code2, Gauge, KeyRound, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Send, Trash2 } from 'lucide-react'
+import { Activity, AlertTriangle, BookOpen, Check, Clock, Code2, Gauge, KeyRound, Link2, MoreHorizontal, Pencil, Plus, RefreshCw, RotateCw, Send, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { CodeBlock } from '../../docs/CodeBlock'
-import { widgetSnippet } from '../../lib/widgetEmbed'
-import { DOCS_URL, isLocalHost, SITE_URL } from '../../site-host'
+import { DOCS_URL } from '../../site-host'
 import { ago, api, fmtDate, type Account, type ApiKey, type RecentRequest, type Usage } from './api'
 import { usePoll } from './poll'
 import { useSubTab } from './subtab'
@@ -25,15 +25,15 @@ import { ServiceHeader } from './services/ServiceHeader'
 import { docsPage } from './services/links'
 import { group } from './usage'
 import { StatusPill as KitPill } from '../../components/ui/StatusPill'
+import { ConsentLine } from '../../components/legal/ConsentLine'
 
 /* The Keys tab: a two-step setup stepper (create a key, make a first call), then sub-tabs that show one
-   section at a time (#keys/keys, #keys/requests, #keys/quickstart, #keys/widget, remembered): live keys
+   section at a time (#keys/keys, #keys/requests, #keys/quickstart, remembered): live keys
    with a KPI row and their 7-day traffic, create / rename / rotate / revoke (the secret is shown once),
-   linking a legacy key; the last 50 requests; a quickstart; the no-key widget. Every figure comes from
+   linking a legacy key; the last 50 requests; a quickstart. Every figure comes from
    /api/developer/account, /usage?range=7d and /requests, polled with backoff (a failed refresh keeps the
    last good data and shows a retry chip). */
 
-const WIDGET_URL = isLocalHost() ? '/widget' : `${SITE_URL}/widget`
 const API_ORIGIN = 'https://gullylabs.xyz'
 const fmt = (n: number) => n.toLocaleString('en-US')
 
@@ -123,7 +123,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
     if (week.state !== 'ok') return null
     const g = group(week.usage)
     const out: Record<string, { total: number; spark: number[]; labels: string[] }> = {}
-    const labels = g.map((b) => new Date(b.t).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }))
+    const labels = g.map((b) => new Date(b.t).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }))
     for (const k of account.keys) out[k.id] = { total: g.reduce((a, b) => a + (b.keys[k.id] ?? 0), 0), spark: g.map((b) => b.keys[k.id] ?? 0), labels }
     return out
   }, [week, account.keys])
@@ -281,7 +281,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2">
         <InfoTip summary={<>Send a key as <code className="font-mono text-ink-2">Authorization: Bearer gl_live_…</code> from your server.</>}>
-          Never put a key in browser code: anyone can read it there. The full key is shown once when it is created or rotated; we keep only a hash of it. The no-key widget reads the public API itself.
+          Never put a key in browser code: anyone can read it there. The full key is shown once when it is created or rotated; we keep only a hash of it.
         </InfoTip>
         <Can cat="keys" what="link keys" hide>
           <button type="button" onClick={() => setDialog({ kind: 'link' })} className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 font-mono text-[12px] text-muted hover:text-ink">
@@ -320,6 +320,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
             <span className="text-[12px] text-faint">Only for you, to tell keys apart. Up to 40 characters.</span>
           </label>
           {err && <ErrorLine>{err}</ErrorLine>}
+          {dialog?.kind === 'create' && <ConsentLine />}
           <div className="flex justify-end gap-2">
             <button type="button" onClick={close} className={pillLine}>
               Cancel
@@ -531,7 +532,7 @@ function Requests({ account }: { account: Account }) {
               {rows.map((r, i) => (
                 <tr key={`${r.at}-${i}`} className="border-b border-line last:border-b-0 hover:bg-surface-hover">
                   <td className="py-[10px] pr-3 whitespace-nowrap text-muted" title={new Date(r.at).toLocaleString()}>
-                    {new Date(r.at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+                    {new Date(r.at).toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
                     <span className="ml-2 text-faint">{ago(r.at)}</span>
                   </td>
                   <td className="max-w-[340px] truncate py-[10px] pr-3 text-ink-2" title={r.path}>
@@ -647,35 +648,12 @@ function Quickstart({ account }: { account: Account }) {
   )
 }
 
-function WidgetPanel() {
-  return (
-    <section id="widget" className={`${panel} scroll-mt-24`} style={rise(3)} aria-labelledby="widget-title">
-      <div className="flex flex-col gap-[2px]">
-        <h2 id="widget-title" className={panelTitle}>
-          No key needed: the widget
-        </h2>
-        <span className={mono}>The widget reads the public API itself; do not put a key in it.</span>
-      </div>
-      <p className="m-0 max-w-[680px] text-[14px] leading-[1.6] text-muted">Drop live fair-price data into any page with two lines of HTML. Pick the layout, chain and theme in the builder, then paste the snippet.</p>
-      <CodeBlock code={widgetSnippet({ type: 'ticker', chain: 'robinhood', theme: 'dark', limit: 8 })} lang="html" caption="HTML · ticker, Robinhood Chain" />
-      <div className="flex flex-wrap gap-2">
-        <ExtLink href={WIDGET_URL} className={pillGold}>
-          <AppWindow size={16} aria-hidden /> Open the widget builder
-        </ExtLink>
-        <ExtLink href={`${DOCS_URL}/widget`} className={pillSm}>
-          <BookOpen size={15} aria-hidden /> Widget guide
-        </ExtLink>
-      </div>
-    </section>
-  )
-}
-
-const KEY_SUBS = ['keys', 'requests', 'quickstart', 'widget'] as const
+const KEY_SUBS = ['keys', 'requests', 'quickstart'] as const
 type KeySub = (typeof KEY_SUBS)[number]
 
 export function KeysTab({ account, reload, creating, onCreateDone, section }: { account: Account; reload: () => Promise<void>; creating: boolean; onCreateDone: () => void; section: string | null }) {
   const [sub, setSub] = useSubTab<KeySub>('keys', KEY_SUBS, 'keys')
-  // Old deep links (#requests, #quickstart, #widget) open their sub-tab.
+  // Old deep links (#requests, #quickstart; #widget opens Keys) open their sub-tab.
   useEffect(() => {
     if (section && (KEY_SUBS as readonly string[]).includes(section)) setSub(section as KeySub)
   }, [section, setSub])
@@ -693,7 +671,7 @@ export function KeysTab({ account, reload, creating, onCreateDone, section }: { 
   const first = live[0]
   return (
     <div className="flex flex-col gap-2">
-      <ServiceHeader icon={KeyRound} title="API keys" desc="Keys for the Tracker API, how much each one is used, and the quickstart to make a first call." status={{ tone: live.length ? 'live' : 'idle', text: live.length ? `${live.length} live key${live.length === 1 ? '' : 's'}` : 'no key yet' }} docs={docsPage('api-keys')} />
+      <ServiceHeader icon={KeyRound} title="API keys" desc="Keys for the Gully Labs API, how much each one is used, and the quickstart to make a first call." status={{ tone: live.length ? 'live' : 'idle', text: live.length ? `${live.length} live key${live.length === 1 ? '' : 's'}` : 'no key yet' }} docs={docsPage('api-keys')} />
       <Stepper
         title="Set up the API"
         testId="keys-stepper"
@@ -744,14 +722,12 @@ export function KeysTab({ account, reload, creating, onCreateDone, section }: { 
           { id: 'keys', label: 'Keys', icon: <KeyRound size={15} aria-hidden />, count: live.length },
           { id: 'requests', label: 'Requests', icon: <Activity size={15} aria-hidden /> },
           { id: 'quickstart', label: 'Quickstart', icon: <Code2 size={15} aria-hidden /> },
-          { id: 'widget', label: 'Widget', icon: <AppWindow size={15} aria-hidden /> },
         ]}
       />
       <SubPanel idBase="keys" value={sub}>
         {sub === 'keys' && <KeysPanel account={account} reload={reload} creating={creating || askCreate} onCreateDone={createDone} />}
         {sub === 'requests' && <Requests account={account} />}
         {sub === 'quickstart' && <Quickstart account={account} />}
-        {sub === 'widget' && <WidgetPanel />}
       </SubPanel>
     </div>
   )

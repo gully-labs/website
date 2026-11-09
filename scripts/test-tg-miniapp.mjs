@@ -169,8 +169,8 @@ try {
   const sp = await call('/api/tg/sparks')
   check('sparks: answers an object of series', sp.status === 200 && typeof sp.data.sparks === 'object')
   const ln = await call('/api/tg/launches')
-  check('launches: answers with a state (unreadable here: DeepCore is not reachable in tests)', ln.status === 200 && ['ok', 'stale', 'unreadable'].includes(ln.data.state) && Array.isArray(ln.data.launches) && ln.data.chainNames?.['56'] === 'BNB Chain')
-  check('launches: an unknown chain is 400', (await call('/api/tg/launches?chain=12345')).status === 400)
+  check('launches: the feed answers 410 gone with code RETIRED (DeepCore retired 2026-11-08)', ln.status === 410 && ln.data?.code === 'RETIRED', `${ln.status} ${JSON.stringify(ln.data)}`)
+  check('launches: any chain filter gets the same 410', (await call('/api/tg/launches?chain=12345')).status === 410)
 
   /* --------------------------------------------------- alerts, directions --- */
   const strangerAlerts = await call('/api/tg/alerts', { data: initData({ user: { id: STRANGER, first_name: 'Sam' } }) })
@@ -192,7 +192,7 @@ try {
 
   /* ------------------------------------------- launch alerts, announcements, holder chains (N-24, P1-19, N-1) --- */
   const launchAlert = await call('/api/tg/alerts', { method: 'POST', body: { kind: 'deepcore-launch', chainId: 8453 } })
-  check('create: a DeepCore launch alert goes through the alerts module (Free plan full: 403, not a 400)', launchAlert.status === 403, JSON.stringify(launchAlert.data))
+  check('create: the retired new-launch kind answers 410 RETIRED (2026-11-08), before any plan check', launchAlert.status === 410 && launchAlert.data?.code === 'RETIRED', JSON.stringify(launchAlert.data))
   const me1 = await call('/api/tg/me')
   check('me: says whether announcements are on, and which stock chains have holder data', me1.data.announcements === true && Array.isArray(me1.data.holderChains), JSON.stringify(me1.data))
   const off = await call('/api/tg/announcements', { method: 'POST', body: { on: false } })

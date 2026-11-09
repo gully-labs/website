@@ -3,7 +3,7 @@
 //     (Gully Pay, Chain Kit and the L3 roadmap moved to their products' own docs on 2026-10-26 and are not here);
 //   - the site's copy: src/content/*.ts and the Products, Pricing, Services and About pages, at https://gullylabs.xyz/...;
 //   - the changelog (a docs page, labelled "Changelog");
-//   - the legal pages (merchant terms, privacy policy, terms of service), one chunk run per numbered section, at /legal/<page>#s<n>;
+//   - the legal pages (terms of service, privacy policy, merchant and scan terms), one chunk run per numbered section, at <page>#s<n>;
 //   - the Gully Pay contract notes (contracts/CHOICE.md, contracts/TESTNET-RESULTS.md) and the L3 spec
 //     (ops/l3/SPEC.md, labelled "Roadmap"), capped in length, hashes and addresses shortened, at their GitHub
 //     section anchors in the public gully-labs/website repo;
@@ -399,18 +399,19 @@ function siteChunks() {
 
 const LEGAL_PAGES = [
   { file: 'src/pages/legal/MerchantTerms.tsx', url: '/legal/merchant-terms', title: 'Gully Pay merchant terms' },
-  { file: 'src/pages/legal/Privacy.tsx', url: '/legal/privacy', title: 'Privacy policy', table: { name: 'RETENTION', section: 11 } },
+  { file: 'src/pages/legal/Privacy.tsx', url: '/privacy', title: 'Privacy Policy', table: { name: 'RETENTION', section: 11 } },
   { file: 'src/pages/legal/ScanTerms.tsx', url: '/legal/scan-terms', title: 'AI Security Scan terms' },
-  { file: 'src/pages/legal/Terms.tsx', url: '/legal/terms', title: 'Terms of Service' },
+  { file: 'src/pages/legal/Terms.tsx', url: '/terms', title: 'Terms of Service' },
 ]
 
-/** The legal pages: the header's prose, then each numbered <S n={k} title="…"> at #s<k>. */
+/** The legal pages: the introduction's prose (<Intro>, or a <header> in an older page), then each numbered
+    <S n={k} title="…"> at #s<k>. */
 function legalChunks() {
   const chunks = []
   for (const pg of LEGAL_PAGES) {
     const sf = parse(pg.file)
     const url = SITE + pg.url
-    const header = findAll(sf, (n) => ts.isJsxElement(n) && tagName(n) === 'header')[0]
+    const header = findAll(sf, (n) => ts.isJsxElement(n) && (tagName(n) === 'Intro' || tagName(n) === 'header'))[0]
     const intro = header ? blocks(header).map((p) => docProse(p.replace(HEADING, ''))).filter((p) => p.split(' ').length >= 8) : []
     chunks.push(...chunkSection({ source: 'Legal', title: pg.title, url, section: null, paragraphs: intro }))
     const extra = {}
@@ -602,7 +603,7 @@ function miniAppChunks() {
     for (const r of findAll(sf, (n) => (ts.isJsxElement(n) || ts.isJsxFragment(n)) && !insideJsx(n))) paras.push(...blocks(r).filter((p) => !p.startsWith(HEADING) && siteProse(p)))
   }
   const uniq = [...new Set(paras)].filter((p) => !CODE_RE.test(p))
-  return chunkSection({ source: 'Telegram Mini App', title: 'Gully Labs Mini App in Telegram', url: `${SITE}/tg`, section: null, paragraphs: [`The Gully Labs Mini App opens inside Telegram from @GullyLabsBot's "Open app" button. It shows the stock token gaps, DeepCore launches and your alerts.`, ...uniq] })
+  return chunkSection({ source: 'Telegram Mini App', title: 'Gully Labs Mini App in Telegram', url: `${SITE}/tg`, section: null, paragraphs: [`The Gully Labs Mini App opens inside Telegram from @GullyLabsBot's "Open app" button. It shows the stock token gaps and your alerts.`, ...uniq] })
 }
 
 /* ------------------------------------------------------------------ main --- */
@@ -616,7 +617,17 @@ try {
 const prevById = new Map((previous?.chunks ?? []).map((c) => [c.id, c]))
 const now = new Date().toISOString()
 const seen = new Map()
-const chunks = [...docsChunks(), ...siteChunks(), ...legalChunks(), ...repoDocChunks(), ...telegramChunks(), ...miniAppChunks(), ...readmeChunks(previous?.chunks ?? []), ...featureChunks(await loadFeatures())].map((c0) => {
+// The READMEs of repos that are not cloned next to this one stay as the committed index has them, wherever this build
+// writes (--out to a temp file in the tests and on a build box has no previous index of its own).
+let committed = previous
+if (!committed) {
+  try {
+    committed = JSON.parse(fs.readFileSync(path.join(ROOT, 'server', 'data', 'ask-index.json'), 'utf8'))
+  } catch {
+    /* no committed index either: those READMEs are skipped, with a warning */
+  }
+}
+const chunks = [...docsChunks(), ...siteChunks(), ...legalChunks(), ...repoDocChunks(), ...telegramChunks(), ...miniAppChunks(), ...readmeChunks(committed?.chunks ?? []), ...featureChunks(await loadFeatures())].map((c0) => {
   // Two blocks of one page under the same heading (a page's own "Questions" and its FAQ data) share a seed.
   const k = seen.get(c0.id) ?? 0
   seen.set(c0.id, k + 1)

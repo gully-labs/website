@@ -4,12 +4,12 @@ import { DailyLine, EmptySeries } from '../components/LiveChart'
 import { Seo } from '../components/Seo'
 import { ShareMenu } from '../components/Share'
 import { btnOutline, statusPill } from '../components/ui'
-import { projectNumber, projects, TOTAL_SLOTS } from '../content/projects'
+import { projectNumber, projectPath, projects, TOTAL_SLOTS } from '../content/projects'
+import { projectSeo } from '../content/seoPages'
 import { useStats } from '../hooks/useStats'
 import { ChainLogo } from '../components/logos/ChainLogo'
 import { chainMark } from '../components/logos/registry'
 import { fmtTime, fmtUsd, metricsOf, sourceHost } from '../lib/stats'
-import { LaunchHolders } from '../components/holders/LaunchHolders'
 import { OnchainPanel } from '../components/OnchainPanel'
 
 const cardTitle = 'm-0 font-display text-[28px] font-bold uppercase'
@@ -49,7 +49,7 @@ export function ProjectDetail() {
 
   return (
     <div className="flex flex-col gap-10 px-page pt-10 pb-24">
-      <Seo title={p.name} description={`${p.tagline}. ${p.description}`} />
+      <Seo {...projectSeo(p)} />
 
       <Link
         to="/#projects"
@@ -158,20 +158,8 @@ export function ProjectDetail() {
 
       {(p.key === 'peddles' || p.key === 'peddlequest') && <OnchainPanel venue={p.key} accent={p.accent} />}
 
-      {p.key === 'deepcore' && (
-        <section aria-labelledby="dc-holders" className="flex flex-col gap-4 rounded-card border border-line bg-surface p-7">
-          <div className="flex flex-col gap-1">
-            <h2 id="dc-holders" className={cardTitle}>
-              Latest launches · who holds them
-            </h2>
-            <span className="font-mono text-[12px] text-faint">Holder Maps by Gully Labs: bundled buys, the deployer’s share and connected wallets, for every new DeepCore token.</span>
-          </div>
-          <LaunchHolders />
-        </section>
-      )}
-
       <Link
-        to={`/projects/${next.slug}`}
+        to={projectPath(next)}
         className="flex flex-wrap items-center justify-between gap-6 rounded-card border border-line bg-surface p-7 text-ink transition-colors hover:border-line-hover hover:text-ink"
       >
         <span className="font-mono text-[12px] text-dim">NEXT PROJECT</span>

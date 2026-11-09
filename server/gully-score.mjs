@@ -22,8 +22,7 @@
 //                   switch; server/security/bytecode.mjs) and a SIMULATED transfer from a real holder (eth_call with a
 //                   state override, server/gully-chain.mjs) that measures a fee on transfer or a transfer that fails
 //   changes         privileged changes seen by Gully Security monitoring in the last 30 days (only when watched)
-//   liquidity       launch liquidity locked: DeepCore launches (DeepCore's indexer) and Gully Launchpad launches on
-//                   Gully Chain (the bonding curve holds it until graduation; after that the LP NFT must sit in the
+//   liquidity       launch liquidity locked: Gully Launchpad launches on Gully Chain (the bonding curve holds it until graduation; after that the LP NFT must sit in the
 //                   GullyLPLocker, read on chain)
 //   holders         Launch Health or top-10 holder share from the Holder Map (GET /api/holders/:chain/:token, when
 //                   that service runs on this server; otherwise not available and said so)
@@ -54,7 +53,6 @@ import { badgeHeaders, badgeStyleFrom, renderBadge } from './badges.mjs'
 import { clientIp, DATA_DIR, json } from './http.mjs'
 import { chainInfo, rpc as payRpc } from './payments.mjs'
 import { scoreChainOf as chainOf, scoreChainList, decodeString, listedContracts, monitorFacts, onMonitorEvents, readControl, SEL, short } from './sec-monitor.mjs'
-import { readLaunches } from './deepcore.mjs'
 import { holderPageUrl } from './hosts.mjs'
 import { blockTimeOf as gullyBlockTime, creatorHistory, deployBlock as gullyDeployBlock, gullyNames, isGullyChain, launchStatus, setGullyFetchForTest, setGullyRpcForTest, tokenBehaviour } from './gully-chain.mjs'
 
@@ -82,7 +80,7 @@ export const COMPONENTS = [
   { id: 'upgradeability', label: 'Can the code change', weight: 10, source: 'ERC-1967, beacon and ZeppelinOS proxy slots, and Sourcify’s proxy check', what: 'Can the code this address runs be swapped for different code?' },
   { id: 'behaviour', label: 'Token behaviour', weight: 10, source: 'The token’s own bytecode (mint, blacklist, fee, limit and trading-switch functions) and a simulated transfer from a real holder (eth_call with a state override; nothing is sent)', what: 'Can the owner mint, blacklist or tax holders, and does a transfer arrive in full?' },
   { id: 'changes', label: 'Recent privileged changes', weight: 10, source: 'Gully Security monitoring (owner, admin, roles, upgrades, pauses, Safe signers)', what: 'Have owners, roles, code or signers changed in the last 30 days?' },
-  { id: 'liquidity', label: 'Liquidity locked', weight: 10, source: 'DeepCore’s indexer (api.deepcore.fun) for DeepCore launches; the Gully Launchpad and GullyLPLocker on Gully Chain, read on chain', what: 'Is the launch liquidity locked, so it cannot be pulled?' },
+  { id: 'liquidity', label: 'Liquidity locked', weight: 10, source: 'The Gully Launchpad and GullyLPLocker on Gully Chain, read on chain', what: 'Is the launch liquidity locked, so it cannot be pulled?' },
   { id: 'holders', label: 'Holder spread', weight: 10, source: 'Gully Holder Map (Launch Health, top-10 share)', what: 'Is the supply spread out, or held by a few connected wallets?' },
   { id: 'review', label: 'Gully Security review', weight: 10, source: 'Published Gully Security reports only', what: 'Has Gully Security published a report on it, and what did it find?' },
   { id: 'age', label: 'Age', weight: 5, source: 'Deployment block (Sourcify or Etherscan) and its block time', what: 'How long has it been on chain?' },
@@ -117,7 +115,7 @@ const keyOf = (chainId, address) => `${chainId}:${address}`
 
 let rpc = payRpc
 let fetchFn = (...a) => globalThis.fetch(...a)
-let launchesFn = (chainId) => readLaunches({ chainId, limit: 50 })
+let launchesFn = async () => ({ state: 'retired', launches: [] }) // DeepCore retired 2026-11-08
 let holdersBase = () => String(process.env.GULLY_HOLDERS_API ?? `http://127.0.0.1:${process.env.PORT ?? 8080}`).replace(/\/+$/, '')
 let reportFn = defaultReportFor
 
@@ -412,7 +410,7 @@ async function doCompute(chainId, address, now) {
   }
   const creatorLine = creator ? ` Created by ${creator.name ? `${creator.name} (${short(creator.address)})` : short(creator.address)}${creator.launches !== null ? `, who has launched ${creator.launches} token${creator.launches === 1 ? '' : 's'} here${creator.launches ? `, ${creator.graduated} graduated` : ''}` : ''}.` : ''
 
-  // liquidity (DeepCore launches; Gully Launchpad launches on Gully Chain)
+  // liquidity (Gully Launchpad launches on Gully Chain; the DeepCore source was retired 2026-11-08)
   if (gully) {
     if (launch === undefined) parts.push(na('liquidity', `The Gully Launchpad could not be read just now (neither the indexer nor ${chain.name} answered).`))
     else if (!launch) parts.push(na('liquidity', 'Liquidity locks are read for Gully Launchpad tokens on Gully Chain, and this token was not launched there.'))
@@ -420,24 +418,7 @@ async function doCompute(chainId, address, now) {
     else if (launch.lp?.locked === true) parts.push(ok('liquidity', 100, 'Locked (Gully LP Locker)', `The launch graduated into a Gully Swap pool and its LP position (NFT #${launch.lp.tokenId}) is held by the GullyLPLocker ${short(launch.lp.locker)}, which can collect fees but never withdraw the liquidity.${creatorLine}`, [{ label: 'The locker', url: explorer(launch.lp.locker) }, ...(launch.pool ? [{ label: 'The pool', url: explorer(launch.pool) }] : [])]))
     else if (launch.lp?.locked === false) parts.push(ok('liquidity', 0, 'Not locked', `The launch graduated but its LP position (NFT #${launch.lp.tokenId}) is held by ${short(launch.lp.owner)}, not by the GullyLPLocker: the liquidity could be removed.${creatorLine}`, [{ label: 'The position’s owner', url: explorer(launch.lp.owner) }]))
     else parts.push(na('liquidity', launch.lp?.reason ?? 'The LP position could not be read just now.'))
-  } else if (chainId === 8453 || chainId === 56) {
-    let launch = null
-    let err = null
-    try {
-      const r = await launchesFn(chainId)
-      launch = (r?.launches ?? []).find((l) => String(l.token).toLowerCase() === address) ?? null
-      if (!launch && r?.state === 'unreadable') err = 'DeepCore’s launch list could not be read just now.'
-    } catch {
-      err = 'DeepCore’s launch list could not be read just now.'
-    }
-    if (launch) {
-      const legs = launch.legs ?? []
-      const known = legs.filter((g) => g.locked !== null)
-      const locked = known.filter((g) => g.locked === true).length
-      if (!known.length) parts.push(na('liquidity', 'DeepCore states no lock record for this launch’s pools yet.'))
-      else parts.push(ok('liquidity', (locked / legs.length) * 100, locked === legs.length ? 'Locked' : locked ? `${locked} of ${legs.length} pools locked` : 'Not locked', locked === legs.length ? 'DeepCore’s indexer has a lock record for every launch pool: the launch liquidity cannot be pulled.' : locked ? `Only ${locked} of the ${legs.length} launch pools have a lock record.` : 'DeepCore’s indexer has no lock record for the launch pools: the liquidity could be removed.', [{ label: 'On DeepCore', url: launch.links?.token ?? 'https://deepcore.fun' }]))
-    } else parts.push(na('liquidity', err ?? 'Liquidity locks are read for DeepCore launches only, and this is not one of DeepCore’s recent launches.'))
-  } else parts.push(na('liquidity', 'Liquidity locks are read for DeepCore launches (Base and BNB Chain) and Gully Launchpad launches (Gully Chain).'))
+  } else parts.push(na('liquidity', 'Liquidity locks are read for Gully Launchpad launches on Gully Chain.'))
 
   // holders (Holder Map)
   const hm = await holderMap(chainId, address)
@@ -602,7 +583,7 @@ export function scorePageMeta(p) {
 /** The embeddable badge (server/badges.mjs, the shared kit badge): mark | GULLY SCORE | the score and its grade. The date it was read is in the title. */
 export function badgeSvg(r, chain, address, style = {}) {
   const score = r?.score ?? null
-  const date = r?.computedAt ? new Date(r.computedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : null
+  const date = r?.computedAt ? new Date(r.computedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Los_Angeles' }) : null
   const value = score === null ? (r ? 'N/A' : 'Not scored yet') : `${score} ${grade(score)}`
   const tone = score === null ? 'neutral' : score >= 80 ? 'good' : score >= 40 ? 'brand' : 'warn'
   const title = score === null ? `Gully Score: ${r ? 'not enough data' : 'not scored yet'}` : `Gully Score ${score} out of 100 (${grade(score)}), ${date}`

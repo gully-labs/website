@@ -1,6 +1,7 @@
+import { TZ } from '../../lib/time'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { Bot, BrainCircuit, Network, Radar, Satellite, ScanSearch } from 'lucide-react'
+import { Bot, BrainCircuit, Network, Radar, ScanSearch } from 'lucide-react'
 import { EChart } from '../../components/charts/EChart'
 import { C, CHART_H, sparklinePreset } from '../../components/charts/chartPresets'
 import { ChartSkeleton } from '../../components/charts/ChartSkeleton'
@@ -21,7 +22,6 @@ interface Health {
     source: string | null
     env: string | null
     available: boolean
-    launches: boolean
     reason: string | null
   }[]
   monitors: {
@@ -36,15 +36,6 @@ interface Health {
     lastError: string | null
     lastErrorAt: string | null
     detail: 'loop' | 'chains'
-  }
-  deepcore: {
-    lastOkAt: string | null
-    lagMs: number | null
-    pollMs: number
-    lastError: string | null
-    baselineAt: string | null
-    seen: number | null
-    cached: number | null
   }
   bot: {
     enabled: boolean
@@ -120,11 +111,9 @@ const dur = (ms: number | null) => (ms == null ? '—' : ms < 90_000 ? `${Math.r
 const ago = (iso: string | null) => (iso ? `${dur(Date.now() - Date.parse(iso))} ago` : 'never')
 const num = (n: number | null | undefined) => (n == null ? '—' : n.toLocaleString('en-US'))
 const hhmm = (iso: string) =>
-  new Date(iso).toLocaleTimeString('en-US', {
-    hour: '2-digit',
+  new Date(iso).toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit',
     minute: '2-digit',
-    hour12: false,
-  })
+    hour12: false })
 
 function Dot({ tone }: { tone: Tone }) {
   return <i aria-hidden className={`inline-block size-[9px] shrink-0 rounded-full ${TONE[tone].dot}`} style={tone === 'ok' ? { animation: 'gl-pulse-ring 2.4s ease-out infinite' } : undefined} />
@@ -230,9 +219,6 @@ export function HealthCard({ token }: { token: string }) {
   const monLagLimit = 5 * 60_000
   const monTone: Tone = m.monitors === 0 ? 'off' : m.lagMs != null && m.lagMs > monLagLimit ? 'down' : m.errors ? 'warn' : m.detail === 'loop' && m.lastTickAt ? 'ok' : m.errors === 0 ? 'ok' : 'warn'
 
-  const d = h.deepcore
-  const dcTone: Tone = d.lagMs == null ? 'down' : d.lagMs > d.pollMs * 4 ? 'down' : d.lastError || d.lagMs > d.pollMs * 2 ? 'warn' : 'ok'
-
   const b = h.bot
   const botTone: Tone = !b.enabled ? 'off' : b.errors && b.lastErrorAt && (!b.lastUpdateAt || b.lastErrorAt > b.lastUpdateAt) ? 'warn' : b.detail === 'stats' ? 'warn' : 'ok'
 
@@ -242,7 +228,7 @@ export function HealthCard({ token }: { token: string }) {
   const em = h.embeddings
   const embTone: Tone = em.configured === false ? 'down' : em.retrieval === 'hybrid' ? 'ok' : 'warn'
 
-  const tones = [holdersTone, monTone, dcTone, botTone, engTone, embTone]
+  const tones = [holdersTone, monTone, botTone, engTone, embTone]
   const worst: Tone = tones.includes('down') ? 'down' : tones.includes('warn') ? 'warn' : 'ok'
 
   return (
@@ -265,14 +251,12 @@ export function HealthCard({ token }: { token: string }) {
                 <span className="flex items-center gap-2 text-ink-2">
                   <Dot tone={c.available ? 'ok' : 'down'} /> {c.name}
                 </span>
-                <span className={`truncate ${c.available ? 'text-faint' : 'text-error'}`} title={`Source: ${c.source ?? 'none'}${c.env ? ` (${c.env})` : ''}. DeepCore launches: ${c.launches ? 'mapped' : 'not on this chain'}.`}>
+                <span className={`truncate ${c.available ? 'text-faint' : 'text-error'}`} title={`Source: ${c.source ?? 'none'}${c.env ? ` (${c.env})` : ''}.`}>
                   {c.available ? 'stocks available' : (c.reason ?? 'unavailable')}
-                  {c.launches ? ' · launches' : ''}
                 </span>
               </li>
             ))}
           </ul>
-          <span className="font-mono text-[11px] text-faint">"launches": DeepCore launches map there without a key. Stock tokens need the source above.</span>
           <Spark history={h.history} field="holdersAvailable" tone={holdersTone} fmt={(v) => `${v} chains available`} label="Holder Map chains with data, per minute" />
         </Item>
 
@@ -292,24 +276,6 @@ export function HealthCard({ token }: { token: string }) {
           testId="health-monitors"
         >
           <Spark history={h.history} field="monitorsLagS" tone={monTone} fmt={secs} label="Security monitor loop lag, per minute" />
-        </Item>
-
-        <Item
-          icon={Satellite}
-          title="DeepCore poller"
-          tone={dcTone}
-          status={TONE[dcTone].word}
-          rows={[
-            ['last good read', ago(d.lastOkAt)],
-            ['polls every', dur(d.pollMs)],
-            ['launches cached', num(d.cached)],
-            ['launches seen', num(d.seen)],
-            ['last error', errText(d.lastError)],
-            ['ledger feeds', !h.stats?.at ? 'not checked yet' : h.stats.issues.length ? `${h.stats.issues.length} problem${h.stats.issues.length === 1 ? '' : 's'}: ${h.stats.issues.map((i) => `${i.venue} ${i.kind}`).join(', ')}` : `all venues fine · checked ${ago(h.stats.at)}`],
-          ]}
-          testId="health-deepcore"
-        >
-          <Spark history={h.history} field="deepcoreLagS" tone={dcTone} fmt={secs} label="Time since DeepCore's last good read, per minute" />
         </Item>
 
         <Item

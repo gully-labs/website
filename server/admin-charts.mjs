@@ -4,7 +4,7 @@
 //   revenue        billing ledger payments (billing.json): USD per day, split by asset symbol and by chain
 //   accounts       wallet accounts (developers.json createdAt) and Gully Analytics accounts per day
 //   api            origin API requests per day (access.mjs api-usage.json: anonymous, keyed, limited)
-//   alerts         alert deliveries per day from alerts.json (gap vs DeepCore launch; test sends left out)
+//   alerts         alert deliveries per day from alerts.json (gap vs legacy launch alerts; test sends left out)
 //   ask            Gully AI questions per day from DATA_DIR/ask-log.jsonl, by channel
 //   payLinks       invoices made by pay links that were paid, per day (count and USD)
 //   webhooks       delivery outcomes per day: Gully Pay merchant webhooks (pay-webhooks.mjs) and alert
@@ -15,6 +15,7 @@
 // Retention limits are said in `note` (alerts keep their last 50 deliveries; the ask log 90 days;
 // pay webhooks the last 1,000 finished deliveries).
 
+import { dayLA, lastDaysLA } from './time-la.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { accessStats } from './access.mjs'
@@ -27,12 +28,10 @@ import { CHAINS } from './payments.mjs'
 import { developers } from './store.mjs'
 
 const DAY = 86_400_000
-const dayKey = (t) => new Date(t).toISOString().slice(0, 10)
+const dayKey = (t) => dayLA(t)
 
 function dayList(days, now = Date.now()) {
-  const out = []
-  for (let i = days - 1; i >= 0; i--) out.push(dayKey(now - i * DAY))
-  return out
+  return lastDaysLA(days, now)
 }
 
 /** An all-zero array over `keys`, and a function that adds `n` to the day of time `t` (when in range). */

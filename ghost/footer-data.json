@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "note": "One catalog for the footer groups on every Gully Labs surface (landing, product pages, blog theme). Data only: groups, labels, icon names, hrefs, rank. rank: product (a Gully product with its own page), tool (a Gully Chain tool), feature (part of a product, never a footer item), company, peddle (the Peddle family). tile: the key of the matching tile in the landing's Everything in orbit grid, so the two can never disagree (checked by test-landing). icon: names from server/landing-icons.mjs. Gully Core points at https://gullycore.xyz (docs: https://docs.gullycore.xyz).",
+  "brand": {
+    "tagline": "You Think It, We Ship It. Web3 product studio and development services",
+    "copy": "© 2026 Gully Labs LLC",
+    "figures": "Figures are read live from each product and the Gully Chain testnet; a source that cannot be read says so."
+  },
+  "columns": [
+    {
+      "id": "products",
+      "title": "Products",
+      "links": [
+        { "label": "Gully Core", "href": "https://gullycore.xyz", "icon": "rocket", "rank": "product", "tile": "core" },
+        { "label": "Gully Chain", "href": "/products/chain", "icon": "boxes", "rank": "product", "tile": "chain" },
+        { "label": "kre8", "href": "https://kre8.fun", "icon": "play", "rank": "product", "tile": "kre8" },
+        { "label": "Gully ID", "href": "/products/gully-id", "icon": "fingerprint-pattern", "rank": "product", "tile": "id" },
+        { "label": "Gully Pay", "href": "/products/pay", "icon": "credit-card", "rank": "product", "tile": "pay" },
+        { "label": "Gully RPC", "href": "/products/rpc", "icon": "server", "rank": "product", "tile": "rpc" },
+        { "label": "HolderMaps", "href": "/products/holders", "icon": "map", "rank": "product", "tile": "holdermaps" }
+      ]
+    },
+    {
+      "id": "more",
+      "title": "More products",
+      "links": [
+        { "label": "Gully Security", "href": "/products/security", "icon": "shield-check", "rank": "product", "tile": "security" },
+        { "label": "Gully AI", "href": "/products/ai", "icon": "sparkles", "rank": "product", "tile": "ai" },
+        { "label": "Gully Studio", "href": "/products/studio", "icon": "gamepad-2", "rank": "product", "tile": "studio" },
+        { "label": "Gully Multisig", "href": "/products/safe", "icon": "vault", "rank": "product", "tile": "multisig" },
+        { "label": "Gully IPFS", "href": "/products/ipfs", "icon": "hard-drive", "rank": "product", "tile": null }
+      ]
+    },
+    {
+      "id": "chain-tools",
+      "title": "Gully Chain tools",
+      "links": [
+        { "label": "Explorer", "href": "https://testnet.gullyscan.xyz", "icon": "chart-line", "rank": "tool", "tile": "explorer" },
+        { "label": "Bridge", "href": "https://testnet-bridge.gullychain.xyz", "icon": "arrow-left-right", "rank": "tool", "tile": "bridge" },
+        { "label": "Faucet", "href": "https://faucet.gullychain.xyz", "icon": "zap", "rank": "tool", "tile": "faucet" },
+        { "label": "Sentry", "href": "/products/gully-sentry", "icon": "radar", "rank": "tool", "tile": null },
+        { "label": "Quests", "href": "/products/quests", "icon": "trophy", "rank": "tool", "tile": null },
+        { "label": "Docs for builders", "href": "https://docs.gullychain.xyz", "icon": "code-xml", "rank": "tool", "tile": null }
+      ]
+    },
+    {
+      "id": "company",
+      "title": "Company",
+      "links": [
+        { "label": "Docs", "href": "https://docs.gullylabs.xyz", "icon": "book-open", "rank": "company" },
+        { "label": "Blog", "href": "https://blog.gullylabs.xyz", "icon": "message-circle", "rank": "company" },
+        { "label": "Status", "href": "/status", "icon": "activity", "rank": "company" },
+        { "label": "Contact", "href": "/services#contact", "icon": "mail", "rank": "company" },
+        { "label": "X", "href": "https://x.com/Gully_Labs", "icon": "arrow-up-right", "rank": "company" },
+        { "label": "Telegram", "href": "https://t.me/GullyLabsNews", "icon": "send", "rank": "company" },
+        { "label": "GitHub", "href": "https://github.com/gully-labs", "icon": "box", "rank": "company" }
+      ]
+    }
+  ],
+  "peddle": {
+    "title": "Peddle family",
+    "links": [
+      { "label": "PeddleSwap", "href": "https://peddleswap.xyz/", "icon": "arrow-left-right", "rank": "peddle", "tile": "peddleswap" },
+      { "label": "Peddles", "href": "https://peddles.xyz/", "icon": "rocket", "rank": "peddle", "tile": "peddles" },
+      { "label": "PeddleQuest", "href": "https://peddlequest.xyz/", "icon": "trophy", "rank": "peddle", "tile": "peddlequest" }
+    ]
+  },
+  "legal": [
+    { "label": "Terms", "href": "/terms", "icon": "file-text" },
+    { "label": "Privacy", "href": "/privacy", "icon": "lock" },
+    { "label": "Legal", "href": "/legal", "icon": "scale" }
+  ]
+}

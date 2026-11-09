@@ -150,6 +150,68 @@
    docs page, the app's AI view): inside that scope the page tokens above and the console tokens (src/console/console.css
    --gl-*) take its kit colours, sampled from its logo; the rest are tints between those samples. Contrast: dim and
    faint are >= 4.5:1 on every surface of their scope. */
+/* Gully Labs, the 2026-11 kit (brand/gully-labs-kit-2026-11): the navy theme of the parent brand, from the kit's own navy
+   #0E1C38, blue #3754A0, light blue #6F8DDF and greys #C9D2E8 #D6DCE8, on the site, the app, the admin and the docs.
+   Surfaces are the kit navy stepped up and down; the accent is the kit light blue (5.6:1 on the ground). HolderMaps,
+   Gully Security and the checkouts do not set this brand and keep their own look. Figtree (OFL) is the closest open
+   family to the kit's wordmark; the files are self-hosted in public/fonts. */
+@font-face { font-family: Figtree; src: url(/fonts/figtree-latin-500.woff2) format('woff2'); font-weight: 400 500; font-display: swap; }
+@font-face { font-family: Figtree; src: url(/fonts/figtree-latin-700.woff2) format('woff2'); font-weight: 600 800; font-display: swap; }
+:root[data-product-brand='gullylabs'] {
+  --color-bg: #0b1730;
+  --color-bg-alt: #0e1c38;
+  --color-bg-footer: #0e1c38;
+  --color-surface: #13233f;
+  --color-surface-deep: #0e1c38;
+  --color-surface-hover: #1a2c4d;
+  --color-line: #22345a;
+  --color-line-strong: #2f4470;
+  --color-line-hover: #3f5789;
+  --color-grid: #16264a;
+  --color-axis: #8a97b5;
+  --color-ink: #ffffff;
+  --color-ink-2: #d6dce8;
+  --color-muted: #c9d2e8;
+  --color-dim: #aab6d0;
+  --color-faint: #a9b5cf;
+  --color-gold: #6f8ddf;
+  --color-gold-hover: #9db4ee;
+  --color-gold-line: #2f4470;
+  --color-bar: #6f8ddf;
+  --color-mascot-bg: #13233f;
+  --font-display: Figtree, system-ui, sans-serif;
+  --font-sans: Figtree, system-ui, sans-serif;
+  --gl-bg: #0b1730;
+  --gl-surface: #13233f;
+  --gl-cyan: #6f8ddf;
+  --gl-blue: #3754a0;
+  --gl-violet: #6f8ddf;
+  --gl-text: #ffffff;
+  --gl-text-muted: #c9d2e8;
+  --gl-ink: #0e1c38;
+  --gl-gradient: linear-gradient(90deg, #6f8ddf 0%, #9db4ee 100%);
+  --gl-font: Figtree, system-ui, sans-serif;
+  --gl-line: #22345a;
+  --gl-line-2: #2f4470;
+  --gl-hover: #1a2c4d;
+  --gl-grid: #16264a;
+  --gl-dim: #aab6d0;
+  --gt-bg: #0b1730;
+  --gt-surface: #13233f;
+  --gt-raise: #1a2c4d;
+  --gt-rule: #22345a;
+  --gt-rule-2: #2f4470;
+  --gt-text: #f1f3f8;
+  --gt-muted: #c9d2e8;
+  --gt-dim: #aab6d0;
+  --gt-ink: #0e1c38;
+  --gt-accent: #6f8ddf;
+  --gt-accent-dim: rgba(111, 141, 223, 0.14);
+  --gt-violet: #9db4ee;
+  --gt-coming: #9db4ee;
+  --gt-sans: Figtree, system-ui, sans-serif;
+  --gt-head: Figtree, system-ui, sans-serif;
+}
 :root[data-product-brand='holdermaps'] {
   --color-bg: #0a0a0a;
 }

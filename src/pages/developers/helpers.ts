@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { useState } from 'react'
 import { usePoll } from './poll'
 import { ago, api, conditionText, type AlertsView, type AnalyticsBlock, type AnalyticsSite, type AnalyticsUsage, type ApiKey, type GapAlert, type PayAsset } from './api'
@@ -14,7 +15,7 @@ const n = (v: number) => v.toLocaleString('en-US')
 export type Secret = { title: string; secret: string } | null
 
 export function alertName(a: GapAlert) {
-  return a.name || (a.condition.type === 'deepcore-launch' ? 'DeepCore launch alert' : a.condition.type === 'holders' ? `${a.condition.symbol ?? 'Token'} holder alert` : a.ticker ? `${a.ticker} alert` : 'Any-stock alert')
+  return a.name || (a.condition.type === 'deepcore-launch' ? 'Launch alert (retired)' : a.condition.type === 'holders' ? `${a.condition.symbol ?? 'Token'} holder alert` : a.ticker ? `${a.ticker} alert` : 'Any-stock alert')
 }
 
 export function alertRule(a: GapAlert) {
@@ -25,8 +26,8 @@ export function alertRule(a: GapAlert) {
 export function alertState(a: GapAlert): { t: string; c: string } {
   if (!a.coveredByPlan) return { t: 'not in your plan', c: '#ff8a7a' }
   if (!a.enabled) return { t: 'paused', c: '#9398b5' }
-  if (a.mutedUntil) return { t: `muted until ${new Date(a.mutedUntil).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`, c: '#9398b5' }
-  if (a.waitingToReArm.length) return { t: `fired ${ago(a.lastFiredAt)} · waits to re-arm`, c: '#00d2ff' }
+  if (a.mutedUntil) return { t: `muted until ${new Date(a.mutedUntil).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`, c: '#9398b5' }
+  if (a.waitingToReArm.length) return { t: `fired ${ago(a.lastFiredAt)} · waits to re-arm`, c: '#6f8ddf' }
   return { t: 'watching', c: '#3ddc97' }
 }
 

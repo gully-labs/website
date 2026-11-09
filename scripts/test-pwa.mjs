@@ -39,6 +39,8 @@ async function ctxFor({ width = 1440, height = 900, mobile = false, signedIn = f
   const ctx = await browser.newContext({ viewport: { width, height }, ...(mobile ? { isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : {}), ...(userAgent ? { userAgent } : {}), serviceWorkers: 'allow' })
   if (signedIn) await ctx.addCookies([{ name: 'gl_dev', value: COOKIE, domain: 'localhost', path: '/', httpOnly: true, sameSite: 'Lax' }])
   await ctx.route(/^https?:\/\/(?!localhost[:/]|127\.0\.0\.1[:/])/, (route) => route.abort('blockedbyclient'))
+  // The Gully AI button shows only when the server has a key: this server has none, and the layout checks need the button.
+  await ctx.route('**/api/ask/status', (route) => route.fulfill({ json: { configured: true } }))
   return ctx
 }
 const errorsOf = (page) => {
@@ -79,7 +81,7 @@ await step('manifests', async () => {
   const app = await get('app.gullylabs.xyz')
   check('site manifest: 200, application/manifest+json, "Gully Labs", standalone, start_url /, scope /', site.status === 200 && /application\/manifest\+json/.test(site.headers['content-type']) && site.data?.name === 'Gully Labs' && site.data.display === 'standalone' && site.data.start_url === '/' && site.data.scope === '/')
   check('app manifest: 200, "Gully Labs App", standalone, start_url /, scope /', app.status === 200 && app.data?.name === 'Gully Labs App' && app.data.display === 'standalone' && app.data.start_url === '/' && app.data.scope === '/')
-  check('the two manifests differ only by identity (name, short name, description), colours are the kit lab-night', site.data.theme_color === '#0D141C' && app.data.background_color === '#0D141C' && site.data.name !== app.data.name && site.data.short_name !== app.data.short_name)
+  check('the two manifests differ only by identity (name, short name, description), colours are the same', site.data.theme_color === app.data.theme_color && site.data.background_color === app.data.background_color && /^#[0-9A-Fa-f]{6}$/.test(site.data.theme_color) && site.data.name !== app.data.name && site.data.short_name !== app.data.short_name)
   check('the .webmanifest path answers the same per host', (await get('app.gullylabs.xyz', '/manifest.webmanifest')).data?.name === 'Gully Labs App' && (await get('gullylabs.xyz', '/manifest.webmanifest')).data?.name === 'Gully Labs')
   check('localhost serves the site manifest', (await get('localhost')).data?.name === 'Gully Labs')
   check('admin and docs hosts serve no manifest (404)', (await get('admin.gullylabs.xyz')).status === 404 && (await get('docs.gullylabs.xyz')).status === 404)
@@ -214,7 +216,7 @@ await step('offline', async () => {
   await ctx.setOffline(true)
   await page.goto(BASE + '/services')
   await page.getByRole('heading', { name: 'You are offline' }).waitFor({ timeout: 10_000 })
-  check('offline without a cached shell: the kit-style offline page shows, with a Try again link', (await page.getByRole('link', { name: 'Try again' }).count()) === 1 && (await page.locator('svg[data-brand="kit"]').count()) === 1)
+  check('offline without a cached shell: the kit-style offline page shows, with a Try again link', (await page.getByRole('link', { name: 'Try again' }).count()) === 1 && (await page.locator('[data-brand="kit"]').count()) === 1)
   await ctx.close()
 })
 
@@ -222,6 +224,8 @@ await step('offline', async () => {
 
 const fireInstallPrompt = (page) =>
   page.evaluate(() => {
+    window.scrollTo(0, 400)
+    window.dispatchEvent(new Event('scroll'))
     const e = new Event('beforeinstallprompt', { cancelable: true })
     e.prompt = async () => {
       window.__prompted = (window.__prompted ?? 0) + 1
@@ -289,6 +293,7 @@ await step('install card on iOS Safari', async () => {
   const ctx = await ctxFor({ width: 390, height: 844, mobile: true, userAgent: UA })
   const page = await ctx.newPage()
   await page.goto(BASE + '/')
+  await page.evaluate(() => window.scrollTo(0, 400))
   await installCard(page).waitFor({ timeout: 8000 })
   const steps = page.getByTestId('pwa-ios-steps')
   check('iOS Safari: "Share → Add to Home Screen" instructions with the Share and Add icons, no Install button', (await installCard(page).getAttribute('data-mode')) === 'ios' && /Share/.test(await steps.textContent()) && /Add to Home Screen/.test(await steps.textContent()) && /→/.test(await steps.textContent()) && (await steps.locator('svg').count()) === 2 && (await page.getByTestId('pwa-install').count()) === 0)
@@ -346,7 +351,7 @@ await step('layout at 390 px', async () => {
   // Site: the install card, then the update card, beside the dock (Back to top and Gully AI).
   const ctx = await ctxFor({ width: 390, height: 844, mobile: true })
   const page = await ctx.newPage()
-  await page.goto(BASE + '/')
+  await page.goto(BASE + '/pricing')
   const fab = page.getByTestId('ask-fab')
   await fab.waitFor({ timeout: 10_000 })
   await fireInstallPrompt(page)
@@ -401,7 +406,7 @@ await step('layout at 390 px', async () => {
   for (const [w, h] of [[1440, 900], [768, 1024]]) {
     const dctx = await ctxFor({ width: w, height: h })
     const dp = await dctx.newPage()
-    await dp.goto(BASE + '/')
+    await dp.goto(BASE + '/pricing')
     await dp.getByTestId('ask-fab').waitFor({ timeout: 10_000 })
     await fireInstallPrompt(dp)
     await installCard(dp).waitFor({ timeout: 8000 })
@@ -414,7 +419,7 @@ await step('layout at 390 px', async () => {
   }
 })
 
-check('the server made no unexpected outbound calls', blockedOutbound.filter((u) => !/localhost|127\.0\.0\.1/.test(u)).every((u) => /dexscreener|geckoterminal|rpc\.|arbitrum|base|deepcore|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag|e2e\.invalid/i.test(u)), blockedOutbound.slice(0, 3).join(' | '))
+check('the server made no unexpected outbound calls', blockedOutbound.filter((u) => !/localhost|127\.0\.0\.1/.test(u)).every((u) => /dexscreener|geckoterminal|rpc\.|arbitrum|base|drpc|publicnode|ordofi|blastapi|robinhood|binance|bsc|llama|peddle|solana|xstocks|jup\.ag|gully|holdermaps|kre8\.fun|e2e\.invalid/i.test(u)), blockedOutbound.slice(0, 3).join(' | '))
 await browser.close()
 const secs = Math.round((Date.now() - started) / 1000)
 console.log(`\n${t.passed} passed, ${t.failed} failed (${secs} s)`)

@@ -1,3 +1,4 @@
+import { TZ } from '../../lib/time'
 import { C, PALETTE } from '../../components/charts/chartPresets'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -117,7 +118,7 @@ export const shortAddr = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
 /** The brand's band colours for a score (kit tokens only). */
 export const bandColor = (s: number | null) => (s === null ? C.faint : s >= 80 ? C.green : s >= 60 ? C.gold : s >= 40 ? PALETTE[4] : C.error)
 
-export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: TZ })
 
 /** A part's tone: a low part is a weakness to read, not an alarm, so it is amber, never the error red. */
 export const partColor = (s: number | null) => (s === null ? C.faint : s >= 80 ? C.green : s >= 40 ? C.gold : PALETTE[4])
@@ -129,7 +130,7 @@ const SOURCE_WORDS: Record<string, string> = {
   timelock: 'Read from the contract that delays changes, on the chain',
   upgradeability: 'Read from the contract’s upgrade settings on the chain',
   changes: 'Read from Gully Security monitoring of the last 30 days',
-  liquidity: 'Read from DeepCore’s launch records (DeepCore launches only)',
+  liquidity: 'Read from the launchpad’s launch records (launchpad launches only)',
   holders: 'Read from the Gully Holder Map',
   review: 'Read from published Gully Security reports',
   age: 'Read from the contract’s deployment on the chain',

@@ -1,22 +1,27 @@
 /* Site header and footer in the lab-console language: one line from 1024 to 1920 px (labels drop to icons
    below 1280), a Menu sheet below 1024, Lucide icon on every item, live pill, pill buttons. */
+import { track } from '../lib/track'
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { Activity, ArrowRight, ArrowUpRight, BookOpen, Box, Briefcase, ChartCandlestick, ChartLine, FileText, Gauge, KeyRound, LayoutGrid, Lock, Mail, Menu, MessageCircle, Send, Sparkles, Tag, type LucideProps, X, Zap } from 'lucide-react'
+import { Activity, ArrowLeftRight, ArrowRight, ArrowUpRight, BookOpen, Box, Briefcase, ChartCandlestick, ChartLine, FileText, Gauge, KeyRound, LayoutGrid, Lock, Mail, Menu, MessageCircle, Rocket, Scale, Send, Sparkles, Tag, Trophy, type LucideProps, X, Zap } from 'lucide-react'
 import type { ComponentType } from 'react'
-import { APP_URL, DOCS_URL } from '../site-host'
+import { APP_URL } from '../site-host'
+import { FOOTER_COPY, FOOTER_LEGAL, FOOTER_LINKS, FOOTER_MORE, FOOTER_TAGLINE, headerNav, PAGES_NAV, type NavLinkDef } from '../content/nav'
 import { ic, LivePill } from './ui'
 import { PRODUCTS } from '../terminal/catalog'
 import { PRODUCT_ICON } from './productIcons'
+import { PEDDLE_FAMILY, type PeddleKey } from '../pages/hub/hubData'
 
 type Icon = ComponentType<LucideProps>
-const BLOG_URL = 'https://blog.gullylabs.xyz'
+const PEDDLE_ICON: Record<PeddleKey, Icon> = { peddleswap: ArrowLeftRight, peddles: Rocket, peddlequest: Trophy }
 interface Item {
   label: string
   icon: Icon
   to?: string
   href?: string
 }
+
+const PEDDLE_LINKS: Item[] = PEDDLE_FAMILY.map((p) => ({ label: p.name, icon: PEDDLE_ICON[p.key], href: p.url }))
 
 function NavLink({ it, className, onClick }: { it: Item; className?: string; onClick?: () => void }) {
   const { pathname, hash } = useLocation()
@@ -41,23 +46,34 @@ function NavLink({ it, className, onClick }: { it: Item; className?: string; onC
   )
 }
 
-const headerItems = (home: boolean): Item[] => [
-  { label: 'Products', icon: LayoutGrid, to: '/products' },
-  { label: 'Services', icon: Briefcase, to: '/services' },
-  { label: 'Live', icon: ChartLine, to: '/#live' },
-  { label: 'Docs', icon: BookOpen, href: DOCS_URL },
-  { label: 'Blog', icon: MessageCircle, href: BLOG_URL },
-  { label: 'Contact', icon: Mail, to: home ? '/#contact' : '/services#contact' },
-]
+/* The links themselves live in src/content/nav.ts (the server's pre-render reads the same lists); this file gives
+   each one its icon, by label (a label not listed here gets the grid icon). */
+const NAV_ICON = {
+  Products: LayoutGrid,
+  Services: Briefcase,
+  Live: ChartLine,
+  Docs: BookOpen,
+  Blog: MessageCircle,
+  Contact: Mail,
+  'All products': LayoutGrid,
+  Tracker: ChartCandlestick,
+  'Gully Score': Gauge,
+  Pricing: Tag,
+  'Gully AI': Sparkles,
+  Status: Activity,
+  App: Zap,
+  X: ArrowUpRight,
+  Telegram: Send,
+  GitHub: Box,
+  'Gully ID sign-in': KeyRound,
+  Terms: FileText,
+  Privacy: Lock,
+  Legal: Scale,
+} satisfies Record<string, Icon>
+const withIcons = (defs: NavLinkDef[]): Item[] => defs.map((d) => ({ ...d, icon: NAV_ICON[d.label as keyof typeof NAV_ICON] ?? LayoutGrid }))
+const headerItems = (home: boolean): Item[] => withIcons(headerNav(home))
 // Gully Labs' own pages. The products live on their own domains (the Products list below, and /products).
-const pages: Item[] = [
-  { label: 'All products', icon: LayoutGrid, to: '/products' },
-  { label: 'Tracker', icon: ChartCandlestick, to: '/tracker' },
-  { label: 'Gully Score', icon: Gauge, to: '/score' },
-  { label: 'Pricing', icon: Tag, to: '/pricing' },
-  { label: 'Gully AI', icon: Sparkles, to: '/ask' },
-  { label: 'Status', icon: Activity, to: '/status' },
-]
+const pages: Item[] = withIcons(PAGES_NAV)
 
 export function ConsoleHeader() {
   const { pathname } = useLocation()
@@ -77,9 +93,8 @@ export function ConsoleHeader() {
     <>
     <header className="nav">
       <div className="wrap">
-        <Link className="brand" to="/" aria-label="Gully Labs home">
-          <img src="/brand/icon/gully-labs-icon.png" width={30} height={33} alt="" />
-          <img src="/brand/logo/gully-labs-wordmark-horizontal.png" width={170} height={17} alt="Gully Labs" />
+        <Link className="brand" to="/" aria-label="Gully Labs home" data-brand="kit">
+          <img src="/brand/kit/logotype-reversed.svg" width={176} height={32} alt="Gully Labs" />
         </Link>
         <nav aria-label="Main">
           <ul>
@@ -92,7 +107,7 @@ export function ConsoleHeader() {
         </nav>
         <div className="navr">
           <LivePill />
-          <a className="btn sec sm" href={APP_URL} target="_blank" rel="noopener noreferrer" aria-label="Launch app">
+          <a className="btn sec sm" href={APP_URL} target="_blank" rel="noopener noreferrer" aria-label="Launch app" onClick={() => track('launch-app', { from: 'header' })}>
             {ic(Zap)}
             <span className="lbl">Launch app</span>
           </a>
@@ -142,34 +157,17 @@ export function ConsoleSheet({ home, close }: { home: boolean; close: () => void
 
 export function ConsoleFooter() {
   const home = useLocation().pathname === '/'
-  const links: Item[] = [
-    { label: 'Products', icon: LayoutGrid, to: '/products' },
-    { label: 'Docs', icon: BookOpen, href: DOCS_URL },
-    { label: 'App', icon: Zap, href: APP_URL },
-    { label: 'Status', icon: Activity, to: '/status' },
-    { label: 'X', icon: ArrowUpRight, href: 'https://x.com/Gully_Labs' },
-    { label: 'Telegram', icon: Send, href: 'https://t.me/GullyLabsNews' },
-    { label: 'GitHub', icon: Box, href: 'https://github.com/gully-labs' },
-  ]
-  const more: Item[] = [
-    { label: 'Products', icon: LayoutGrid, to: '/products' },
-    { label: 'Services', icon: Briefcase, to: '/services' },
-    { label: 'Tracker', icon: ChartCandlestick, to: '/tracker' },
-    { label: 'Gully Score', icon: Gauge, to: '/score' },
-    { label: 'Pricing', icon: Tag, to: '/pricing' },
-    { label: 'Gully AI', icon: Sparkles, to: '/ask' },
-    { label: 'Terms', icon: FileText, to: '/legal/terms' },
-    { label: 'Privacy', icon: Lock, to: '/legal/privacy' },
-    { label: 'Gully ID sign-in', icon: KeyRound, to: '/gully-id' },
-  ]
+  const links = withIcons(FOOTER_LINKS)
+  const more = withIcons(FOOTER_MORE)
+  const legal = withIcons(FOOTER_LEGAL)
   return (
     <footer>
       <div className="wrap">
         <div>
-          <img src="/brand/logo/gully-labs-logo.png" srcSet="/brand/logo/gully-labs-logo.png 1x, /brand/logo/gully-labs-logo-2x.png 2x" width={160} height={64} alt="Gully Labs — You Think It, We Ship It." />
-          <span className="tagline">You Think It, We Ship It. · Web3 product studio and development services</span>
+          <img src="/brand/kit/wordmark-reversed.svg" width={200} height={56} alt="Gully Labs, Web3 and DeFi development" loading="lazy" />
+          <span className="tagline">{FOOTER_TAGLINE}</span>
           <a className="gt-badge" href="/" aria-label="Powered by Gully Labs">
-            <img src="/brand/badges/powered-by-gully-labs-dark.png" srcSet="/brand/badges/powered-by-gully-labs-dark.png 1x, /brand/badges/powered-by-gully-labs-dark-2x.png 2x, /brand/badges/powered-by-gully-labs-dark-3x.png 3x" width={190} height={48} alt="Powered by Gully Labs" />
+            <img src="/brand/kit/powered-by-clear-white.svg" width={160} height={48} alt="Powered by Gully Labs" loading="lazy" />
           </a>
         </div>
         <nav aria-label="Footer">
@@ -202,6 +200,17 @@ export function ConsoleFooter() {
               </ul>
             </div>
           ))}
+          {/* The Peddle family: Gully Labs projects on their own sites (owner, 2026-11-05). New tab, like every other host. */}
+          <div className="fgrp" data-testid="footer-peddle">
+            <span className="lab">Peddle</span>
+            <ul>
+              {PEDDLE_LINKS.map((it) => (
+                <li key={it.label}>
+                  <NavLink it={it} />
+                </li>
+              ))}
+            </ul>
+          </div>
         </nav>
         {!home && (
           <nav aria-label="Site pages" className="more">
@@ -214,9 +223,16 @@ export function ConsoleFooter() {
             </ul>
           </nav>
         )}
-        <p className="copy2">
-          © 2026 Gully Labs · Figures are read live from each product and the Gully Chain testnet; a source that cannot be read says so.
-        </p>
+        <nav aria-label="Legal" className="legal" data-testid="footer-legal">
+          <ul>
+            {legal.map((it) => (
+              <li key={it.label}>
+                <NavLink it={it} />
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <p className="copy2">{FOOTER_COPY}</p>
       </div>
     </footer>
   )

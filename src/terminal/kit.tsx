@@ -1,6 +1,7 @@
 /* Gully Terminal building blocks (landing v3, 2026-10-26): kit logos, status dots, monospace KPI tiles with
    sparklines, ruled panels, live charts with honest empty/offline states, horizontal bar lists, the uptime grid and
    scroll reveals. Charts reuse the lab-console SVG kit (src/console/charts.ts); terminal.css flattens its styling. */
+import { TZ } from '../lib/time'
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { lineChart, bars as drawBars, type LineChart, type Series } from '../console/charts'
@@ -69,8 +70,8 @@ const plansPoll = poller<Plans>('/api/plans', 300_000)
 export const usePlans = () => useSyncExternalStore(plansPoll.subscribe, plansPoll.get, plansPoll.get)
 
 /* ---------------------------------------------------------------- formats ---- */
-export const hourLabel = (t: number) => new Date(t * 1000).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-export const minLabel = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+export const hourLabel = (t: number) => new Date(t * 1000).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })
+export const minLabel = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })
 export const fmtEth = (v: number | null | undefined) => (v == null || !isFinite(v) ? '—' : `${v < 0.001 && v > 0 ? v.toExponential(1) : v.toFixed(v < 1 ? 4 : 2)} ETH`)
 export const fmtMs = (v: number | null | undefined) => (v == null || !isFinite(v) ? '—' : `${Math.round(v)} ms`)
 export const fmtCompact = (v: number | null | undefined) => (v == null || !isFinite(v) ? '—' : v >= 1e9 ? `${(v / 1e9).toFixed(2)}B` : v >= 1e6 ? `${(v / 1e6).toFixed(2)}M` : v >= 1e4 ? `${(v / 1e3).toFixed(1)}k` : Math.round(v).toLocaleString('en-US'))
@@ -89,7 +90,7 @@ export function Logo({ def, name, scale = 1, decorative = false }: { def: LogoDe
           // GullyChain brand kit v4 icon (gc-icon.svg, byte-identical to the kit; kit v4 is icon-only)
           <img src="/brand/web/logos/gc-icon.svg" width={h} height={h} alt="" decoding="async" draggable={false} />
         ) : (
-          <img src="/brand/icon/gully-labs-icon.png" width={Math.round((h * 343) / 372)} height={h} alt="" decoding="async" draggable={false} />
+          <img src="/brand/kit/mark-reversed.svg" width={Math.round(h * 1.042)} height={h} alt="" decoding="async" draggable={false} />
         )}
         <span aria-hidden>{def.label}</span>
       </span>

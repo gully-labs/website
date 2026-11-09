@@ -1,5 +1,5 @@
 // Holder Map (server/holders.mjs, holders-card.mjs and the holder alerts in alerts.mjs), offline: every
-// upstream (DeepCore's API, the RPCs, Blockscout, Moralis, Solana) is a stub, so no call leaves the machine.
+// upstream (the RPCs, Blockscout, Moralis, Solana) is a stub, so no call leaves the machine.
 // Covers balance reconstruction from Transfer logs, clustering, labels, the summary maths, the launch
 // forensics, the replay, tiers, the cache, degrading without a key, CSV/card routes and holder alerts.
 // Run: npm run test:holders
@@ -10,7 +10,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-holders-'))
-Object.assign(process.env, { DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker.json'), TRACKER_LOOP: 'off', DEEPCORE_LOOP: 'off', HOLDER_ALERTS_LOOP: 'off', DEEPCORE_API: 'https://dc.test', BLOCKSCOUT_API: 'https://bs.test', BLOCKSCOUT_METADATA_API: 'https://meta.test', MORALIS_API: 'https://moralis.test', GULLY_RPC_4663: 'https://rpc4663.test', GULLY_RPC_56: 'https://rpc56.test', GULLY_RPC_SOLANA: 'https://sol.test', SOLANA_RPC_ONLY_ENV: '1' })
+Object.assign(process.env, { DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker.json'), TRACKER_LOOP: 'off', HOLDER_ALERTS_LOOP: 'off', BLOCKSCOUT_API: 'https://bs.test', BLOCKSCOUT_METADATA_API: 'https://meta.test', MORALIS_API: 'https://moralis.test', GULLY_RPC_4663: 'https://rpc4663.test', GULLY_RPC_56: 'https://rpc56.test', GULLY_RPC_SOLANA: 'https://sol.test', SOLANA_RPC_ONLY_ENV: '1' })
 for (const k of ['BLOCKSCOUT_API_KEY', 'MORALIS_API_KEY', 'HOLDER_MAP_GATED', 'JUPITER_FEE_ACCOUNT']) delete process.env[k]
 
 const H = await import('../server/holders.mjs')
@@ -27,7 +27,7 @@ const tr = (from, to, value, block, tx = `0x${block}`, i = 0) => ({ from, to, va
 
 /* -------------------------------------------------------------- pure parts --- */
 
-test('decodeTransfer reads DeepCore and RPC log shapes and rejects other events', () => {
+test('decodeTransfer reads indexer and RPC log shapes and rejects other events', () => {
   const t = H.decodeTransfer(log(addr(1), addr(2), 5n * E18, 10, '0xab', 3, 1_700_000_000))
   assert.deepEqual(t, { from: addr(1), to: addr(2), value: 5n * E18, block: 10, tx: '0xab', index: 3, ts: 1_700_000_000 })
   assert.equal(H.decodeTransfer({ ...log(addr(1), addr(2), 1n, 1, '0x1'), topics: ['0x' + '1'.repeat(64), topic(addr(1)), topic(addr(2))] }), null)
@@ -76,10 +76,16 @@ function launchHistory() {
   return t
 }
 const LAUNCH = { creator: DEPLOYER, createdAt: { blockNumber: '100', blockTimestamp: '2026-10-11T08:20:21.000Z' }, legs: [{ lock: { status: 'indexed', locker: addr(0xa2), lockedAt: { blockTimestamp: '2026-10-11T08:20:21.000Z' } } }], launchToken: { symbol: 'TST', decimals: 18 }, totalSupply: { raw: String(1_000_000n * E18) } }
-const LABELS = () => H.staticLabels({ chainKey: 'robinhood', token: TOKEN, venue: { vault: VAULT, launchpadKitV2: KIT, poolManagers: {}, routers: {} }, launch: LAUNCH })
+// The launchpad's pool vault and launch kit, as a launchpad module (holders-launchpads.mjs) would label them.
+const LABELS = () => {
+  const m = H.staticLabels({ chainKey: 'robinhood', token: TOKEN, launch: LAUNCH })
+  m.set(VAULT, { kind: 'pool', name: 'Launch pool (vault)' })
+  m.set(KIT, { kind: 'deepcore', name: 'Launch kit' })
+  return m
+}
 
 test('buildMap on a launch: exact shares, labels kept out of clusters, forensics and the plain summary', () => {
-  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'deepcore-launch', holders: null, history: { transfers: launchHistory(), complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, funding: { checked: false, recipients: [], reason: 'not checked' }, sources: {}, tier: 'pro' })
+  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'launch', holders: null, history: { transfers: launchHistory(), complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, funding: { checked: false, recipients: [], reason: 'not checked' }, sources: {}, tier: 'pro' })
   assert.equal(m.state, 'ok')
   const by = Object.fromEntries(m.nodes.map((n) => [n.id, n]))
   assert.equal(by[VAULT].label.kind, 'pool')
@@ -108,7 +114,7 @@ test('buildMap on a launch: exact shares, labels kept out of clusters, forensics
   assert.equal(m.forensics.funded.wallets, 1)
   assert.ok(by[addr(7)].flags.includes('funded-by-deployer'))
   assert.equal(m.forensics.liquidity.locked, true)
-  assert.ok(m.summary.plain.some((p) => /launch lock/.test(p)))
+  assert.ok(m.summary.plain.some((p) => /liquidity lock/.test(p)))
   assert.ok(m.summary.plain.some((p) => /burned/.test(p)))
   assert.ok(m.links.some((l) => l.kind === 'funding'))
   // Replay from every transfer: the last frame equals today's shares.
@@ -119,7 +125,7 @@ test('buildMap on a launch: exact shares, labels kept out of clusters, forensics
 
 test('a lone first buyer is not "bundled"', () => {
   const t = [tr(ZERO, KIT, 1000n, 100, '0xs', 0), tr(KIT, VAULT, 1000n, 100, '0xs', 1), tr(VAULT, addr(1), 10n, 200, '0xa'), tr(VAULT, addr(2), 10n, 205, '0xb')]
-  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 0, kind: 'deepcore-launch', history: { transfers: t, complete: true }, labels: LABELS(), supply: 1000n, launch: LAUNCH, sources: {} })
+  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 0, kind: 'launch', history: { transfers: t, complete: true }, labels: LABELS(), supply: 1000n, launch: LAUNCH, sources: {} })
   assert.equal(m.forensics.bundled.wallets, 0)
   assert.equal(m.forensics.bundled.firstBlockBuyers, 1)
   assert.match(m.forensics.riskLine, /^No bundled buying/)
@@ -162,13 +168,12 @@ test('stock overlay: value at the real share price, the premium, and what buyers
   assert.equal(u.fair.gapPct, null)
 })
 
-test('labels: burn, token contract, DeepCore vault/kit/lock, Gully fee proxies on chains that have them', () => {
-  const l = H.staticLabels({ chainKey: 'bsc', token: TOKEN, venue: { vault: VAULT, poolManagers: { cl: addr(0xc1) }, routers: { u: addr(0xc2) } }, launch: LAUNCH })
+test('labels: burn, token contract, the launch lock, Gully fee proxies on chains that have them (no partner venue contracts since 2026-11-08)', () => {
+  const l = H.staticLabels({ chainKey: 'bsc', token: TOKEN, launch: LAUNCH })
   assert.equal(l.get(ZERO).kind, 'burn')
   assert.equal(l.get('0x000000000000000000000000000000000000dead').kind, 'burn')
   assert.equal(l.get(TOKEN).kind, 'token')
-  assert.equal(l.get(VAULT).kind, 'pool')
-  assert.equal(l.get(addr(0xc2)).kind, 'router')
+  assert.equal(l.get(VAULT), undefined, 'the partner launchpad’s vault is not a known label any more')
   assert.equal(l.get(addr(0xa2)).kind, 'lock')
   assert.equal(l.get('0x0dfbee143b42b41efc5a6f87bfd1ffc78c2f0ac9').kind, 'gully')
 })
@@ -181,17 +186,6 @@ function stubFetch(url, init = {}) {
   const u = new URL(String(url))
   calls.push(u.host + u.pathname)
   const ok = (body) => Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }))
-  if (u.host === 'dc.test') {
-    if (u.pathname === '/v1/venue/4663') return ok({ data: { vault: VAULT, launchpadKitV2: KIT, poolManagers: {}, routers: {} } })
-    if (u.pathname === `/v1/chains/4663/kit-v2/launches/token/${TOKEN}`) return ok({ data: LAUNCH })
-    if (u.pathname.startsWith('/v1/chains/4663/kit-v2/launches/token/')) return Promise.resolve(new Response('{"error":{}}', { status: 404 }))
-    if (u.pathname === '/v1/chains/4663/logs') {
-      const all = launchHistory().map((t, i) => log(t.from, t.to, t.value, t.block, t.tx, i))
-      const page = u.searchParams.get('cursor') ? 1 : 0
-      const half = Math.ceil(all.length / 2)
-      return ok({ data: { logs: page ? all.slice(half) : all.slice(0, half), toBlock: '200' }, page: { hasMore: !page, nextCursor: page ? null : 'c1' } })
-    }
-  }
   if (u.host === 'rpc4663.test' || u.host === 'rpc56.test') {
     const body = JSON.parse(String(init.body))
     const one = (q) => ({ jsonrpc: '2.0', id: q.id, result: q.method === 'eth_getCode' ? (q.params[0] === VAULT ? '0x6080' : '0x') : q.method === 'eth_blockNumber' ? '0x3e8' : q.method === 'eth_call' ? '0x' + (1000n * E18).toString(16) : q.method === 'eth_getLogs' ? [log(addr(1), addr(2), E18, 990, '0xl1')] : q.method === 'eth_getBlockByNumber' ? { timestamp: '0x6a000000' } : null })
@@ -207,16 +201,13 @@ function stubFetch(url, init = {}) {
 H.setHoldersFetchForTest(stubFetch)
 H.setTrackerForTest(async (chain, ticker) => (ticker === 'NVDA' ? { fair: 100, onchain: 101, gapPct: 1, status: 'in-line', pool: null } : null), () => [])
 
-test('a DeepCore launch is rebuilt from DeepCore’s log index, paged, with venue labels and freshness', async () => {
+test('the former partner launchpad is not read (retired 2026-11-08): its launch is any token now, no call leaves for it', async () => {
   H.resetHoldersForTest()
+  calls.length = 0
   const m = await H.computeHolderMap('robinhood', TOKEN, 'pro')
-  assert.equal(m.state, 'ok')
-  assert.equal(m.kind, 'deepcore-launch')
-  assert.match(m.sources.holders, /all 11 transfers since launch/)
-  assert.equal(m.forensics.bundled.wallets, 3)
-  assert.ok(Date.parse(m.asOf) > 0)
-  assert.equal(m.nodes.find((n) => n.id === VAULT).contract, true)
-  assert.ok(calls.some((c) => c === 'dc.test/v1/chains/4663/logs'))
+  assert.notEqual(m.kind, 'deepcore-launch')
+  assert.ok(['unavailable', 'not-found'].includes(m.state), `no archive RPC and no holder key in this test: honest, not a partner-index rebuild (${m.state})`)
+  assert.ok(!calls.some((c) => /deepcore|dc\.test/.test(c)), 'nothing was asked of the partner API')
 })
 
 test('a token that is neither a launch nor a tracked stock is refused (no upstream hammering)', async () => {
@@ -231,7 +222,7 @@ test('without a key a chain degrades to a plain "coming soon", never an env-var 
   const rh = await H.computeHolderMap('robinhood', 'NVDA', 'pro')
   assert.equal(rh.state, 'unavailable')
   assert.equal(rh.comingSoon, true)
-  assert.equal(rh.reason, 'Holder history is not available yet on Robinhood Chain. DeepCore launches already have live maps.', 'no archive RPC answers and no fallback key: honest, not partial')
+  assert.equal(rh.reason, 'Holder history is not available yet on Robinhood Chain.', 'no archive RPC answers and no fallback key: honest, not partial')
   noEnv(rh)
   const bsc = await H.computeHolderMap('bsc', 'AAPL', 'pro')
   assert.equal(bsc.comingSoon, true)
@@ -256,18 +247,18 @@ test('without a key a chain degrades to a plain "coming soon", never an env-var 
   }
 })
 
-test('holdersAvailable / holdersButtonVisible follow the data keys; launches never need one', () => {
+test('holdersAvailable / holdersButtonVisible follow the data keys; the legacy launch kind is never available', () => {
   const rpc = process.env.GULLY_RPC_SOLANA
   try {
     assert.equal(H.holdersAvailable('robinhood'), false)
     assert.equal(H.holdersAvailable('bsc'), false)
-    assert.equal(H.holdersAvailable('robinhood', 'deepcore-launch'), true)
-    assert.equal(H.holdersAvailable('bsc', 'deepcore-launch'), true)
-    assert.equal(H.holdersAvailable('solana', 'deepcore-launch'), false)
+    assert.equal(H.holdersAvailable('robinhood', 'deepcore-launch'), false, 'retired kind')
+    assert.equal(H.holdersAvailable('bsc', 'deepcore-launch'), false)
+    assert.equal(H.holdersAvailable('robinhood', 'token'), false, 'any token follows the stock sources')
     assert.equal(H.holdersAvailable('mars'), false)
     assert.equal(H.holdersAvailable('4663'), false, 'chain ids work too')
     assert.equal(H.holdersButtonVisible('robinhood', 'NVDA'), false, 'stock card: hidden without the key')
-    assert.equal(H.holdersButtonVisible('robinhood', TOKEN), true, 'launch: always shown')
+    assert.equal(H.holdersButtonVisible('robinhood', TOKEN), false, 'any token: hidden without a source too')
     process.env.BLOCKSCOUT_API_KEY = 'k'
     process.env.MORALIS_API_KEY = 'k'
     assert.equal(H.holdersAvailable('robinhood'), true)
@@ -336,18 +327,29 @@ test('with a Blockscout key: top holders, exchange tags, recent-transfer links a
   }
 })
 
+/** The launch map of TOKEN as the Holder Map builds it from a complete history, seeded into the cache per tier. */
+const seedLaunch = (tiers = ['free', 'pro']) => {
+  for (const tier of tiers) H.seedHolderMapForTest('robinhood', TOKEN, H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'launch', history: { transfers: launchHistory(), complete: true, fromBlock: 100, toBlock: 200 }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {}, tier }), [tier])
+}
+
 test('cache: a second read within the window makes no upstream call; tiers are cached apart', async () => {
   H.resetHoldersForTest()
-  const a = await H.readHolderMap('robinhood', TOKEN, { tier: 'pro' })
-  const n = calls.length
-  const b = await H.readHolderMap('robinhood', TOKEN.toUpperCase().replace('0X', '0x'), { tier: 'pro' })
-  assert.equal(calls.length, n)
-  assert.equal(b.cached, true)
-  assert.equal(a.asOf, b.asOf)
-  assert.ok(H.cacheMs() >= 300_000)
-  const f = await H.readHolderMap('robinhood', TOKEN, { tier: 'free' })
-  assert.ok(calls.length > n)
-  assert.equal(f.tier, 'free')
+  process.env.BLOCKSCOUT_API_KEY = 'proapi_test'
+  try {
+    const a = await H.readHolderMap('robinhood', 'NVDA', { tier: 'pro' })
+    assert.equal(a.state, 'ok')
+    const n = calls.length
+    const b = await H.readHolderMap('robinhood', 'nvda', { tier: 'pro' })
+    assert.equal(calls.length, n)
+    assert.equal(b.cached, true)
+    assert.equal(a.asOf, b.asOf)
+    assert.ok(H.cacheMs() >= 300_000)
+    const f = await H.readHolderMap('robinhood', 'NVDA', { tier: 'free' })
+    assert.ok(calls.length > n)
+    assert.equal(f.tier, 'free')
+  } finally {
+    delete process.env.BLOCKSCOUT_API_KEY
+  }
 })
 
 test('per-IP budget: builds beyond the limit answer busy, cached answers stay free', async () => {
@@ -386,6 +388,7 @@ const req = (p) => ({ method: 'GET', url: p, headers: { 'x-forwarded-for': '198.
 
 test('routes: JSON with features, CSV gated by the switch, a PNG share card, bad input refused', async () => {
   H.resetHoldersForTest()
+  seedLaunch()
   let r = fakeRes()
   await H.handleHolders(req(`/api/holders/robinhood/${TOKEN}`), r, new URL(`http://x/api/holders/robinhood/${TOKEN}`), { plan: 'anonymous' })
   assert.equal(r.out.status, 200)
@@ -428,6 +431,7 @@ test('routes: JSON with features, CSV gated by the switch, a PNG share card, bad
 
 test('the share card states the map’s own figures', async () => {
   H.resetHoldersForTest()
+  seedLaunch()
   const m = await H.readHolderMap('robinhood', TOKEN, { tier: 'free' })
   const svg = renderHolderCardSvg(m)
   assert.match(svg, /HOLDER MAP/)
@@ -510,7 +514,7 @@ test('holder alerts end to end: created through the alerts API, evaluated from t
 const I = await import('../server/holders-intel.mjs')
 
 test('Launch Health: each part from the map, weights shown, unknown parts left out of the score', () => {
-  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'deepcore-launch', history: { transfers: launchHistory(), complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {} })
+  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'launch', history: { transfers: launchHistory(), complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {} })
   m.deployerHistory = { checked: true, total: 0, serial: false, launches: [] }
   const h = I.launchHealth(m)
   const part = Object.fromEntries(h.parts.map((p) => [p.id, p]))
@@ -565,12 +569,33 @@ test('most scanned today: one count per visitor per token per day', () => {
   assert.deepEqual(t.items.map((x) => [x.symbol, x.scans]), [['TST', 2], ['AAPL', 1]])
 })
 
+/** The RPC stub with eth_getLogs answering the launch's own transfers (the live reads). */
+const withLaunchLogs = async (fn) => {
+  H.setHoldersFetchForTest((url, init = {}) => {
+    const u = new URL(String(url))
+    if (u.host === 'rpc4663.test') {
+      const body = JSON.parse(String(init.body))
+      const logs = launchHistory().map((x, i) => log(x.from, x.to, x.value, x.block, x.tx, i))
+      const one = (q) => (q.method === 'eth_getLogs' ? { jsonrpc: '2.0', id: q.id, result: logs } : q.method === 'eth_blockNumber' ? { jsonrpc: '2.0', id: q.id, result: '0x3e8' } : null)
+      const ans = Array.isArray(body) ? body.map(one) : one(body)
+      if (ans && (!Array.isArray(ans) || ans.every(Boolean))) return Promise.resolve(new Response(JSON.stringify(ans), { status: 200, headers: { 'content-type': 'application/json' } }))
+    }
+    return stubFetch(url, init)
+  })
+  try {
+    return await fn()
+  } finally {
+    H.setHoldersFetchForTest(stubFetch)
+  }
+}
+
 test('live: new transfers since the cursor move the mapped shares', async () => {
   H.resetHoldersForTest()
+  seedLaunch()
   const m = await H.readHolderMap('robinhood', TOKEN, { tier: 'free' })
   assert.equal(m.live.supported, true)
-  const live = await I.readLive('robinhood', TOKEN, 150)
-  assert.equal(live.state, 'ok')
+  const live = await withLaunchLogs(() => I.readLive('robinhood', TOKEN, 150))
+  assert.equal(live.state, 'ok', live.reason)
   // The stub answers every transfer again; shares move by the net of those transfers for mapped wallets.
   assert.ok(live.transfers.length > 0)
   assert.equal(typeof live.cursor, 'number')
@@ -591,7 +616,7 @@ test('Cluster Watch: "sells X% of its holding" fires on a relative fall; deploye
 
 test('recentFlows: the latest transfers as buys, sells, transfers, mints and burns, oldest first, never invented', () => {
   const t = [...launchHistory(), tr(addr(2), VAULT, 5_000n * E18, 120, '0xs1')]
-  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'deepcore-launch', history: { transfers: t, complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {}, tier: 'free' })
+  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'launch', history: { transfers: t, complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {}, tier: 'free' })
   assert.ok(Array.isArray(m.recentFlows), 'free maps carry them too: they are the public transfers the map was built from')
   assert.equal(m.recentFlows.length, t.length, 'fewer transfers than the cap: all of them')
   const f = m.recentFlows
@@ -609,12 +634,12 @@ test('recentFlows: the latest transfers as buys, sells, transfers, mints and bur
   assert.equal(sell.at, null, 'no time in the log and none read: null, not a guess')
   // Capped to the latest RECENT_FLOWS, still oldest first.
   const many = Array.from({ length: H.RECENT_FLOWS + 10 }, (_, i) => tr(VAULT, addr(1 + (i % 5)), E18, 200 + i, `0xm${i}`))
-  const m2 = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'deepcore-launch', history: { transfers: [...launchHistory(), ...many], complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {} })
+  const m2 = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'launch', history: { transfers: [...launchHistory(), ...many], complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {} })
   assert.equal(m2.recentFlows.length, H.RECENT_FLOWS)
   assert.equal(m2.recentFlows.at(-1).block, 200 + H.RECENT_FLOWS + 9)
   assert.ok(m2.recentFlows.every((x, i, a) => i === 0 || a[i - 1].block <= x.block))
   // Block times read for the replay are used when the log has none.
-  const m3 = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'deepcore-launch', history: { transfers: t, complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {}, times: new Map([[120, 1_760_000_000]]) })
+  const m3 = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'launch', history: { transfers: t, complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {}, times: new Map([[120, 1_760_000_000]]) })
   assert.equal(m3.recentFlows.at(-1).at, new Date(1_760_000_000_000).toISOString())
   // No history read: no flows (an empty list, not a made-up one).
   const m4 = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'X', decimals: 0, kind: 'stock', holders: [{ address: addr(1), raw: 10n }], history: null, labels: new Map(), supply: 10n, sources: {} })
@@ -634,9 +659,10 @@ test('flowSide: pool out is a buy, pool in is a sell, zero is a mint, burn addre
 
 test('live: each new transfer says buy or sell, with whole units, and the moved top 10', async () => {
   H.resetHoldersForTest()
+  seedLaunch()
   await H.readHolderMap('robinhood', TOKEN, { tier: 'free' })
-  const live = await I.readLive('robinhood', TOKEN, 150)
-  assert.equal(live.state, 'ok')
+  const live = await withLaunchLogs(() => I.readLive('robinhood', TOKEN, 150))
+  assert.equal(live.state, 'ok', live.reason)
   for (const t of live.transfers) {
     assert.ok(['buy', 'sell', 'transfer', 'mint', 'burn'].includes(t.side), t.side)
     assert.equal(typeof t.units, 'number')
@@ -646,7 +672,7 @@ test('live: each new transfer says buy or sell, with whole units, and the moved 
 })
 
 test('launch feed preview: the biggest bubbles and the latest flows of a cached map, nothing built for it', () => {
-  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'deepcore-launch', history: { transfers: launchHistory(), complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {} })
+  const m = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'launch', history: { transfers: launchHistory(), complete: true }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {} })
   const p = I.mapPreview(m)
   assert.ok(p.nodes.length > 0 && p.nodes.length <= I.PREVIEW_NODES)
   assert.equal(p.nodes[0].k, 'pool')
@@ -717,7 +743,7 @@ async function withSim(urls, fn, over = {}, tokenIn = null) {
       return Promise.resolve(new Response(JSON.stringify(out), { status: 200, headers: { 'content-type': 'application/json' } }))
     }
     // The chain's public default RPCs: down in this test.
-    if (!['dc.test', 'bs.test', 'meta.test', 'moralis.test', 'sol.test'].includes(u.host)) return Promise.resolve(new Response('down', { status: 503 }))
+    if (!['bs.test', 'meta.test', 'moralis.test', 'sol.test'].includes(u.host)) return Promise.resolve(new Response('down', { status: 503 }))
     return stubFetch(url, init)
   })
   H.resetHoldersForTest()
@@ -821,7 +847,7 @@ test('own log index: no archive RPC and no key is an honest "not available yet"'
     const m = await H.computeHolderMap('robinhood', 'NVDA', 'pro')
     assert.equal(m.state, 'unavailable')
     assert.equal(m.comingSoon, true)
-    assert.equal(m.reason, 'Holder history is not available yet on Robinhood Chain. DeepCore launches already have live maps.')
+    assert.equal(m.reason, 'Holder history is not available yet on Robinhood Chain.')
     assert.equal(H.holdersAvailable('robinhood'), false)
     assert.equal(H.holdersSourceHealth().find((x) => x.chain === 'robinhood').label, 'no archive RPC answering')
   })
@@ -946,7 +972,6 @@ test('any token: an address that is not a token is refused with a plain reason, 
 function probeFetch(tokens) {
   return (url, init = {}) => {
     const u = new URL(String(url))
-    if (u.host === 'dc.test') return Promise.resolve(new Response('{"error":{}}', { status: 404 }))
     if (!tokens[u.host]) return Promise.reject(new TypeError('down'))
     const one = (q) => {
       const a = String(q.params[0]?.to ?? q.params[0]).toLowerCase()
@@ -1020,7 +1045,7 @@ test('budgets: unlisted maps have a tighter per-IP and a global per-minute budge
   }
 })
 
-test('any token: a token of another launchpad runs the launch forensics, names the venue, never the DeepCore health score', async () => {
+test('any token: a token of another launchpad runs the launch forensics, names the venue, no partner health score', async () => {
   await withSim(
     ['arch.test'],
     async ({ token }) => {
@@ -1031,7 +1056,7 @@ test('any token: a token of another launchpad runs the launch forensics, names t
         assert.equal(m.kind, 'launch')
         assert.equal(m.venue, 'Peddles')
         assert.ok(m.forensics, 'launch forensics unlocked by knownLaunch')
-        assert.equal(m.health, null, 'the health score is DeepCore’s')
+        assert.equal(m.health, null, 'no health score: its record source was retired')
         assert.equal(m.forensics.deployer, addr(1))
       } finally {
         H.setKnownLaunchForTest(null)

@@ -2,6 +2,7 @@
 // DATA_DIR (the gully-web-data volume in production). Writes are atomic (tmp + rename). Secrets
 // are never stored in the clear: API keys and claim codes are kept as SHA-256 hashes.
 
+import { dayLA, lastDaysLA } from './time-la.mjs'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -140,13 +141,13 @@ function pruneSessions() {
  * Starts a session for a wallet; returns the plaintext session id (for the cookie) once.
  * `userAgent` (optional) is kept, cut to 200 characters, to label the device in the sessions list.
  */
-export function createSession(address, { userAgent = null } = {}) {
+export function createSession(address, { userAgent = null, via = null, gullySub = null } = {}) {
   pruneSessions()
   const mine = Object.entries(sessions).filter(([, s]) => s.address === address).sort((a, b) => a[1].createdAt.localeCompare(b[1].createdAt))
   while (mine.length >= MAX_SESSIONS_PER_ACCOUNT) delete sessions[mine.shift()[0]]
   const id = randomToken(32)
   const now = Date.now()
-  sessions[sha256(id)] = { address, createdAt: new Date(now).toISOString(), expiresAt: new Date(now + SESSION_TTL_MS).toISOString(), lastSeenAt: new Date(now).toISOString(), userAgent: typeof userAgent === 'string' ? userAgent.slice(0, 200) : null, activeWorkspace: null }
+  sessions[sha256(id)] = { address, ...(via ? { via, gullySub } : {}), createdAt: new Date(now).toISOString(), expiresAt: new Date(now + SESSION_TTL_MS).toISOString(), lastSeenAt: new Date(now).toISOString(), userAgent: typeof userAgent === 'string' ? userAgent.slice(0, 200) : null, activeWorkspace: null }
   saveSessions()
   return id
 }
@@ -320,21 +321,20 @@ export function joinChainsWaitlist({ address, workspace, email }) {
   return { row, already: false }
 }
 
-/** Requests and waitlist sign-ups per UTC day over the last `days` days, oldest first. */
+/** Requests and waitlist sign-ups per Los Angeles day over the last `days` days, oldest first. */
 export function chainKitDaily(days = 30, now = Date.now()) {
   const out = []
   const idx = new Map()
-  for (let i = days - 1; i >= 0; i--) {
-    const day = new Date(now - i * 86_400_000).toISOString().slice(0, 10)
+  for (const day of lastDaysLA(days, now)) {
     idx.set(day, out.length)
     out.push({ day, requests: 0, waitlist: 0 })
   }
   for (const r of chainKit.requests) {
-    const i = idx.get(String(r.at).slice(0, 10))
+    const i = idx.get(dayLA(r.at))
     if (i !== undefined) out[i].requests++
   }
   for (const r of chainKit.waitlist) {
-    const i = idx.get(String(r.at).slice(0, 10))
+    const i = idx.get(dayLA(r.at))
     if (i !== undefined) out[i].waitlist++
   }
   return out

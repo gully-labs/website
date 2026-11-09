@@ -13,7 +13,7 @@
 //                buttons: [{ text, url }] (≤ 3, https), pin, scheduledAt, sentAt, messageId, chat, error,
 //                createdBy ('admin' | 'auto:<type>'), autoKey, createdAt, updatedAt, history: [{ at, action, ok, error?, by }] }
 //   settings   { testChat: chatId of a linked chat | null, auto: { timezone, quietHours, minGapMinutes, <type>: {...} } }
-//   state      { seen: { blog: [], releases: [], launches: [] }, baselined: { blog, releases }, pending: [], lastDaily, lastWeekly }
+//   state      { seen: { blog: [], releases: [] }, baselined: { blog, releases }, pending: [], lastDaily, lastWeekly }
 //   followers  [{ day: 'YYYY-MM-DD', count, at }]  one sample a UTC day (getChatMemberCount), 400 kept
 //
 // Routes (admin-token gated by admin.mjs, which forwards /api/admin/channel*):
@@ -39,14 +39,14 @@
 // Scheduler (startChannel, from server.mjs startLoops: never in deploy standby): every 30 s it posts the
 // scheduled posts that are due (a post more than 6 h overdue, e.g. after a long outage, is marked failed
 // with "missed" instead of going out late; Retry posts it), runs the due auto posts, and samples the follower
-// count once a UTC day. The blog is polled every 10 minutes, the changelog index is re-read every 10 minutes,
-// DeepCore launches arrive through deepcore.mjs's onLaunches.
+// count once a UTC day. The blog is polled every 10 minutes, the changelog index is re-read every 10 minutes.
+// (The partner launchpad's launch posts were retired on 2026-11-08.)
 //
-// Automatic posts are all OFF by default. Rules: an event type (DeepCore launch, blog post, release) queues
+// Automatic posts are all OFF by default. Rules: an event type (blog post, release) queues
 // one item per new thing (deduplicated by key, remembered across restarts); the first check after a type
 // is switched on only records what already exists (no backlog). Every auto post waits for quiet hours to
 // end and for the minimum gap since the channel's last post (manual or auto), then goes out through the
-// same sanitizer, limits and history as a manual post. Queued launch items older than 6 h are dropped.
+// same sanitizer, limits and history as a manual post.
 
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -55,8 +55,7 @@ import { fileURLToPath } from 'node:url'
 import { DATA_DIR, json, readJson } from './http.mjs'
 import { channelBanner, linkedChat, linkedChatById, sendToChannel, telegramEnabled } from './telegram.mjs'
 import { readHistoryDays, readTracker } from './tracker.mjs'
-import { onLaunches, readLaunches } from './deepcore.mjs'
-import { chainName, esc, gapSentence, lockLine, signed, SITE, trustedNow } from './telegram-ui.mjs'
+import { chainName, esc, gapSentence, signed, SITE, trustedNow } from './telegram-ui.mjs'
 import { developers } from './store.mjs'
 import { gateFunnel } from './telegram-users.mjs'
 
@@ -69,7 +68,6 @@ const TICK_MS = 30_000
 const BLOG_POLL_MS = 10 * 60_000
 const CHANGELOG_POLL_MS = 10 * 60_000
 const MISSED_MS = 6 * 3_600_000
-const PENDING_TTL_MS = 6 * 3_600_000
 const KEEP_POSTS = 1_000
 const KEEP_SEEN = 2_000
 const KEEP_HISTORY = 30
@@ -96,11 +94,10 @@ export function setNowForTest(fn) {
 
 /* ---------------------------------------------------------------- store --- */
 
-const AUTO_TYPES = ['launches', 'dailyGaps', 'weeklyMovers', 'blog', 'releases']
+const AUTO_TYPES = ['dailyGaps', 'weeklyMovers', 'blog', 'releases'] // 'launches' retired 2026-11-08
 // Templates are written for readers, not developers: no source names, no raw timestamps, the gap as
-// "above/below the real share price". {pools} on a launch is the lock line ("🔒 Liquidity locked").
+// "above/below the real share price".
 const DEFAULT_TEMPLATES = {
-  launches: '🚀 <b>New on DeepCore: {symbol}</b>\n{chain}{pools}\n\n<a href="{link}">View on DeepCore</a>',
   dailyGaps: '📊 <b>Furthest from the real share price · {date}</b>\n\n{list}\n\nHow far each stock token trades from the real share price today. Information only, not advice.\n<a href="{link}">See every stock</a>',
   weeklyMovers: '📈 <b>The week in stock tokens · {date}</b>\n\n{list}\n\nToken price change over 7 days. Information only, not advice.\n<a href="{link}">See every stock</a>',
   blog: '📝 <b>{title}</b>\n\n{excerpt}\n\n<a href="{link}">Read on the blog</a>',
@@ -108,17 +105,15 @@ const DEFAULT_TEMPLATES = {
 }
 /** Earlier defaults: a stored template equal to one of these is upgraded to the current default on load (an admin's own edits are kept). */
 const OLD_TEMPLATES = {
-  launches: ['🚀 <b>New on DeepCore: {symbol}</b>\n{chain} · {pools}\n\n<a href="{link}">See it on DeepCore</a>'],
   dailyGaps: ['📊 <b>Widest trusted gaps · {date}</b>\n\n{list}\n\nGap = on-chain price against the Chainlink fair price. Information only, not advice.\n<a href="{link}">Live tracker</a>'],
   weeklyMovers: ['📈 <b>The week in tokenised stocks · {date}</b>\n\n{list}\n\nOn-chain price change over 7 days. Information only, not advice.\n<a href="{link}">Live tracker</a>'],
 }
 export const DEFAULT_TEMPLATES_FOR_TEST = DEFAULT_TEMPLATES
-const DEFAULT_BUTTONS = { launches: 'View on DeepCore', dailyGaps: 'See every stock', weeklyMovers: 'See every stock', blog: 'Read the post', releases: 'Read the changelog' }
+const DEFAULT_BUTTONS = { dailyGaps: 'See every stock', weeklyMovers: 'See every stock', blog: 'Read the post', releases: 'Read the changelog' }
 const defaultAuto = () => ({
-  timezone: 'UTC',
+  timezone: 'America/Los_Angeles',
   quietHours: { enabled: false, start: '23:00', end: '07:00' },
   minGapMinutes: 60,
-  launches: { enabled: false, template: DEFAULT_TEMPLATES.launches },
   dailyGaps: { enabled: false, template: DEFAULT_TEMPLATES.dailyGaps, time: '14:00' },
   weeklyMovers: { enabled: false, template: DEFAULT_TEMPLATES.weeklyMovers, day: 5, time: '21:00' },
   blog: { enabled: false, template: DEFAULT_TEMPLATES.blog },
@@ -144,7 +139,8 @@ function load() {
   db.settings.auto.quietHours = { ...auto.quietHours, ...(db.settings.auto.quietHours ?? {}) }
   db.state ??= {}
   db.state.seen ??= {}
-  for (const t of ['blog', 'releases', 'launches']) db.state.seen[t] ??= []
+  for (const t of ['blog', 'releases']) db.state.seen[t] ??= []
+  delete db.settings?.auto?.launches // retired 2026-11-08
   db.state.baselined ??= {}
   db.state.pending ??= [] // { type, key, at, data }
   db.state.lastDaily ??= null
@@ -535,8 +531,7 @@ let radarTickFn = null
 let tickTimer = null
 let blogTimer = null
 let firstRun = null
-let unsubscribe = null
-/** Starts the 30 s scheduler, the blog poll and the DeepCore launch hook. Idempotent. */
+/** Starts the 30 s scheduler and the blog poll. Idempotent. */
 export function startChannel() {
   if (tickTimer) return
   const safe = (fn) => () => Promise.resolve().then(fn).catch((e) => console.error('channel:', e?.message ?? e))
@@ -544,12 +539,11 @@ export function startChannel() {
   tickTimer.unref?.()
   blogTimer = setInterval(safe(checkSources), Math.min(BLOG_POLL_MS, CHANGELOG_POLL_MS))
   blogTimer.unref?.()
-  unsubscribe ??= onLaunches((fresh) => onNewLaunches(fresh))
   import('./launch-radar.mjs').then((m) => (radarTickFn = tickTimer ? m.radarTick : null)).catch((e) => console.error('radar:', e?.message ?? e))
   firstRun = setTimeout(safe(async () => (await checkSources(), await tickChannel())), 5_000)
   firstRun.unref?.()
 }
-/** Tests: stop the timers (the DeepCore launch hook stays, so tests drive everything by hand). */
+/** Tests: stop the timers (tests drive everything by hand). */
 export function stopChannel() {
   clearInterval(tickTimer)
   clearInterval(blogTimer)
@@ -634,13 +628,11 @@ let readRows = async () => {
 }
 let historyDays = (chain, ticker, days) => readHistoryDays(chain, ticker, days)
 let readChangelog = () => changelogFromIndex()
-let launchesReader = (o) => readLaunches(o)
-/** Tests: synthetic tracker rows, history, changelog and launches. */
-export function setChannelSourcesForTest({ rows, history, changelog, launches } = {}) {
+/** Tests: synthetic tracker rows, history and changelog. */
+export function setChannelSourcesForTest({ rows, history, changelog } = {}) {
   if (rows) readRows = rows
   if (history) historyDays = history
   if (changelog) readChangelog = changelog
-  if (launches) launchesReader = launches
 }
 
 /** Changelog entries from the Ask index (server/data/ask-index.json): one per dated section, newest first. */
@@ -680,10 +672,6 @@ async function readBlog(limit = 10) {
 
 const fmtDate = (t = now()) => new Intl.DateTimeFormat('en-GB', { timeZone: db.settings.auto.timezone, day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(t))
 
-function launchPost(l) {
-  const lock = lockLine(l)
-  return buildAuto('launches', { symbol: l.symbol ?? 'a new token', chain: l.chainName ?? chainName(l.chainKey), pools: lock ? ` · ${lock}` : '', locked: lock ?? '', link: l.links?.token ?? 'https://deepcore.fun' }, l.links?.token ?? null)
-}
 async function dailyGapsPost() {
   const rows = await readRows().catch(() => null)
   if (!rows) return { skip: 'The tracker could not be read.' }
@@ -730,14 +718,6 @@ function queueItem(type, key, data) {
   return true
 }
 
-/** deepcore.mjs's onLaunches: queue each new launch when the type is on. */
-export function onNewLaunches(fresh) {
-  if (!db.settings.auto.launches.enabled || !fresh?.length) return
-  let n = 0
-  for (const l of fresh) if (l?.key && queueItem('launches', l.key, l)) n++
-  if (n) save()
-}
-
 /** Blog and changelog: new items queued, the first check after switching on only records what exists. */
 export async function checkSources() {
   const a = db.settings.auto
@@ -767,9 +747,9 @@ export async function checkSources() {
 async function runAuto() {
   const a = db.settings.auto
   const t = now()
-  // Drop items of types switched off, and launch items too old to be news.
+  // Drop items of types switched off (and anything of the retired launch type).
   const before = db.state.pending.length
-  db.state.pending = db.state.pending.filter((x) => a[x.type]?.enabled && !(x.type === 'launches' && t - Date.parse(x.at) > PENDING_TTL_MS))
+  db.state.pending = db.state.pending.filter((x) => AUTO_TYPES.includes(x.type) && a[x.type]?.enabled)
   if (db.state.pending.length !== before) save()
   if (autoBlocked(t)) return
   const local = localParts(t)
@@ -791,7 +771,7 @@ async function runAuto() {
   const item = db.state.pending.shift()
   if (!item) return
   save()
-  const v = item.type === 'launches' ? launchPost(item.data) : item.type === 'blog' ? blogPost(item.data) : releasePost(item.data)
+  const v = item.type === 'blog' ? blogPost(item.data) : releasePost(item.data)
   await sendAuto(item.type, v, `${item.type}:${item.key}`)
 }
 const isoWeek = (t) => {
@@ -819,11 +799,6 @@ async function sendAuto(type, v, autoKey) {
 async function previewAuto(type) {
   if (type === 'dailyGaps') return dailyGapsPost()
   if (type === 'weeklyMovers') return weeklyMoversPost()
-  if (type === 'launches') {
-    const queued = db.state.pending.find((x) => x.type === 'launches')
-    const l = queued?.data ?? (await launchesReader({ limit: 1 }).catch(() => null))?.launches?.[0]
-    return l ? launchPost(l) : { skip: 'No DeepCore launch could be read just now.' }
-  }
   if (type === 'blog') {
     const queued = db.state.pending.find((x) => x.type === 'blog')
     if (queued) return blogPost(queued.data)
@@ -924,7 +899,7 @@ function updateAuto(body) {
 
 /** The pinned "Start here" post: where to go for the bot, the Mini App and the tracker. */
 const WELCOME_POST = {
-  text: '<b>👋 Start here</b>\nGully Labs News: the widest stock-token gaps, new DeepCore launches as they happen and product drops.\n\n🤖 <b>The bot</b> sets alerts and answers /gap, /top and /launches.\n📱 <b>The Mini App</b> opens from the bot’s Open app button.\n📊 <b>The tracker</b> has every token on the web.',
+  text: '<b>👋 Start here</b>\nGully Labs News: the widest stock-token gaps and product drops.\n\n🤖 <b>The bot</b> sets alerts and answers /gap and /top.\n📱 <b>The Mini App</b> opens from the bot’s Open app button.\n📊 <b>The tracker</b> has every token on the web.',
   media: { kind: 'animation', banner: true },
   buttons: [
     { text: '🤖 Open the bot', url: 'https://t.me/GullyLabsBot' },

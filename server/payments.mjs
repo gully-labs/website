@@ -144,7 +144,7 @@ const TESTNETS = {
   // Gully Chain) and test ETH priced by the chain's RedStone ETH / USD adapter (AggregatorV3 shape, 8 decimals). Offered only
   // while GULLY_TESTNET_CHAINS names 485590 (never in production); otherwise the chain stays read-only (READ_CHAINS).
   485590: {
-    chain: { id: 485590, key: 'gully', name: 'Gully Chain Testnet', testnet: true, explorer: 'https://testnet-explorer.gullychain.xyz', explorerName: 'Gully Chain Explorer', confirmations: 1, rpcs: ['https://testnet-rpc.gullychain.xyz'], feed: { address: '0x732b8a31e19827b6c81db7a433fd120e302862c8', decimals: 8, description: 'ETH / USD', maxAgeSec: FEED_MAX_AGE_SEC } },
+    chain: { id: 485590, key: 'gully', name: 'Gully Chain Testnet', testnet: true, explorer: 'https://testnet.gullyscan.xyz', explorerName: 'Gully Chain Explorer', confirmations: 1, rpcs: ['https://testnet-rpc.gullychain.xyz'], feed: { address: '0x732b8a31e19827b6c81db7a433fd120e302862c8', decimals: 8, description: 'ETH / USD', maxAgeSec: FEED_MAX_AGE_SEC } },
     assets: [
       { id: 'gully-usdc', chainId: 485590, symbol: 'USDC.e', name: 'Bridged USDC (testnet)', kind: 'token', address: '0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76', decimals: 6 },
       { id: 'gully-eth', chainId: 485590, symbol: 'ETH', name: 'Ether (testnet)', kind: 'native', address: null, decimals: 18 },
@@ -177,7 +177,7 @@ const GULLY_MAINNET_ASSETS = GULLY_MAINNET_PAY
  * invoices or plans can see them; rpc() and rpcsFor() serve them for reads. GULLY_RPC_<chainId> overrides the RPCs.
  */
 export const READ_CHAINS = {
-  485590: { id: 485590, key: 'gully', name: 'Gully Chain Testnet', testnet: true, readOnly: true, explorer: 'https://testnet-explorer.gullychain.xyz', explorerName: 'Gully Chain Explorer', confirmations: 1, rpcs: ['https://testnet-rpc.gullychain.xyz'] },
+  485590: { id: 485590, key: 'gully', name: 'Gully Chain Testnet', testnet: true, readOnly: true, explorer: 'https://testnet.gullyscan.xyz', explorerName: 'Gully Chain Explorer', confirmations: 1, rpcs: ['https://testnet-rpc.gullychain.xyz'] },
 }
 if (GULLY_MAINNET && !GULLY_MAINNET_PAY) {
   const g = GULLY_MAINNET

@@ -1,3 +1,4 @@
+import { TZ, dayPT, lastDaysPT } from '../../lib/time'
 import { BellRing, ChartNoAxesCombined, CreditCard, Gauge, History, KeyRound, Layers, Loader2, Send, UserRound, Users, type LucideIcon } from 'lucide-react'
 import { useMemo, useState, type KeyboardEvent } from 'react'
 import { usePoll } from './poll'
@@ -33,9 +34,9 @@ const KINDS: { id: Kind | 'all'; label: string; icon: LucideIcon }[] = [
   { id: 'usage', label: 'Usage', icon: Gauge },
   { id: 'account', label: 'Account', icon: UserRound },
 ]
-const KIND_COLOR: Record<Kind, string> = { keys: '#00d2ff', alerts: '#248bff', billing: '#3ddc97', team: '#9578e8', telegram: '#248bff', analytics: '#20a0c4', usage: '#ff8a7a', account: '#8f94b0' }
+export const KIND_COLOR: Record<Kind, string> = { keys: '#6f8ddf', alerts: '#6f8ddf', billing: '#3ddc97', team: '#9578e8', telegram: '#6f8ddf', analytics: '#20a0c4', usage: '#ff8a7a', account: '#8f94b0' }
 
-function kindOf(action: string): Kind {
+export function kindOf(action: string): Kind {
   const head = action.split('.')[0]
   if (head === 'key') return 'keys'
   if (head === 'alert') return 'alerts'
@@ -52,7 +53,7 @@ const addr = (v: unknown) => (/^0x[0-9a-f]{40}$/i.test(s(v)) ? shortAddress(s(v)
 const ALERT_CHANGE: Record<string, string> = { paused: 'paused', resumed: 'resumed', 'webhook-secret-rotated': 'rotated the webhook secret of', 'telegram-on': 'turned Telegram on for', 'telegram-off': 'turned Telegram off for' }
 
 /** The event as words: [what, on what]. */
-function describe(e: ActivityEvent): [string, string | null] {
+export function describeEvent(e: ActivityEvent): [string, string | null] {
   const d = e.detail ?? {}
   const t = e.target
   switch (e.action) {
@@ -127,12 +128,10 @@ function describe(e: ActivityEvent): [string, string | null] {
 
 function dayLabel(iso: string) {
   const d = new Date(iso)
-  const today = new Date()
-  const y = new Date(today)
-  y.setDate(today.getDate() - 1)
-  if (d.toDateString() === today.toDateString()) return 'Today'
-  if (d.toDateString() === y.toDateString()) return 'Yesterday'
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const [y, today] = lastDaysPT(2).map((x) => x.key)
+  if (dayPT(d) === today) return 'Today'
+  if (dayPT(d) === y) return 'Yesterday'
+  return d.toLocaleDateString('en-US', { timeZone: TZ, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export function ActivityTab() {
@@ -163,15 +162,13 @@ export function ActivityTab() {
   const perDay = useMemo<DayStack[]>(() => {
     const days: DayStack[] = []
     const index = new Map<string, DayStack>()
-    const today = new Date()
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
-      const row = { label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), values: {} as Record<string, number> }
-      index.set(d.toDateString(), row)
+    for (const { key, label } of lastDaysPT(14)) {
+      const row = { label, values: {} as Record<string, number> }
+      index.set(key, row)
       days.push(row)
     }
     for (const e of shown) {
-      const row = index.get(new Date(e.at).toDateString())
+      const row = index.get(dayPT(e.at))
       if (row) row.values[kindOf(e.action)] = (row.values[kindOf(e.action)] ?? 0) + 1
     }
     return days
@@ -222,7 +219,7 @@ export function ActivityTab() {
       ) : !events.length ? (
         <GhostCurves height={140} title="Your activity will draw here">
           <History size={22} className="text-gold" aria-hidden />
-          <span className="max-w-[460px] text-[13px] text-muted">Key, alert, billing and team changes made from now on are listed here with who made them, and counted per day.</span>
+          <span className="max-w-[460px] text-[13px] text-muted">Key, billing, team and analytics changes made from now on are listed here with who made them, and counted per day.</span>
         </GhostCurves>
       ) : (
         <div className="grid grid-cols-1 gap-3 min-[1024px]:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
@@ -242,7 +239,7 @@ export function ActivityTab() {
               const day = dayLabel(e.at)
               const head = i === 0 || dayLabel(shown[i - 1].at) !== day
               const k = kindOf(e.action)
-              const [what, on] = describe(e)
+              const [what, on] = describeEvent(e)
               return (
                 <li key={e.id} className="flex flex-col" style={{ animation: `gl-rise .35s ${Math.min(i, 12) * 0.03}s ease both` }}>
                   {head && <span className={`${i === 0 ? '' : 'pt-2'} pb-1 font-mono text-[11px] tracking-[1px] text-faint uppercase`}>{day}</span>}

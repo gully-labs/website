@@ -3,6 +3,7 @@
    top of the admin panel, plus this small card with the last hourly read of every proxy on every chain. Recent
    pay-guard refusals (a payment instruction the server refused to emit) are raised in the banner too. */
 
+import { TZ } from '../../lib/time'
 import { useState } from 'react'
 import { ChainLogo } from '../../components/logos/ChainLogo'
 import { flash } from '../../components/ui/toast'
@@ -21,7 +22,7 @@ export interface FeeProxyStatus {
 
 const card = 'flex min-w-0 flex-col gap-3 rounded-card border border-line bg-surface p-6'
 const small = 'font-mono text-[12px] text-faint'
-const at = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : 'not yet')
+const at = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : 'not yet')
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
 
 export function FeeProxyBanner({ s }: { s: FeeProxyStatus | undefined }) {

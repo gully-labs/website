@@ -24,7 +24,8 @@
 // Everything else streams through untouched.
 
 import http from 'node:http'
-import { admitEvents, recordEvents } from './analytics-accounts.mjs'
+import crypto from 'node:crypto'
+import { admitEvents, DASHBOARD_ORIGIN, houseHostMap, houseWalletHostList, isWalletSite, recordEvents } from './analytics-accounts.mjs'
 import { loginInterstitial, ssoPage } from './analytics-sso.mjs'
 import { ANALYTICS_TRIAL_DAYS } from './plans.mjs'
 
@@ -49,7 +50,7 @@ function forwardHeaders(req) {
   }
 }
 
-const isTrackerPath = (p) => p === '/api/send' || p === '/api/batch' || p === '/script.js'
+const isTrackerPath = (p) => p === '/api/send' || p === '/api/batch' || p === '/script.js' || p === '/a.js'
 
 function unavailable(req, res) {
   if (res.headersSent) return res.destroy()
@@ -261,8 +262,50 @@ async function handleEvents(req, res, batch) {
   if (!keep.length) return refuse(req, res, verdicts.find((v) => !v.ok).block)
   const counts = new Map()
   ids.forEach((id, i) => id && verdicts[i].ok && counts.set(id, (counts.get(id) ?? 0) + 1))
-  const out = keep.length === items.length ? body : Buffer.from(JSON.stringify(keep))
+  let changed = keep.length !== items.length
+  for (const it of keep) if (scrubWallet(it)) changed = true
+  const out = !changed ? body : Buffer.from(JSON.stringify(batch ? keep : keep[0]))
   forward(req, res, out, (status) => status < 400 && recordEvents(counts))
+}
+
+/**
+ * Unique-wallet counting without the address. The tracker sends a client-side hash (first 16 hex of SHA-256 of the
+ * lowercase address) in data.address, only on app surfaces. Here it is re-hashed with a server-side pepper and the
+ * website id (HMAC-SHA256, first 16 hex), so the stored value cannot be reversed or matched across sites, and is
+ * dropped everywhere else: a full address, any other shape, a site not on the config's `wallets` list, or no pepper.
+ * Returns true when the item changed.
+ */
+const walletPepper = () => process.env.ANALYTICS_WALLET_PEPPER || process.env.ANALYTICS_APP_SECRET || ''
+export function scrubWallet(item) {
+  const d = item?.payload?.data
+  if (!d || typeof d !== 'object' || !('address' in d)) return false
+  const site = typeof item.payload.website === 'string' ? item.payload.website.toLowerCase() : ''
+  const v = typeof d.address === 'string' ? d.address.toLowerCase() : ''
+  const pepper = walletPepper()
+  if (pepper && isWalletSite(site) && /^[0-9a-f]{16}$/.test(v)) d.address = crypto.createHmac('sha256', pepper).update(`${site}:${v}`).digest('hex').slice(0, 16)
+  else delete d.address
+  return true
+}
+
+/**
+ * /a.js: one tag for every Gully page. It looks up the page's host in the house config (gully-ops
+ * sites/_shared/analytics.json) and loads the Umami tracker with that host's website id, so no page carries an id.
+ * Cookieless; Do Not Track respected by Umami (data-do-not-track); the address is sent without query or hash and sign-in
+ * callback pages are never tracked, so no code or token reaches analytics.
+ */
+/** Pages that carry ids or tokens in the path, or are sign-in steps: never tracked. */
+const NEVER_TRACK = '(^|/)(callback|checkout|pay|fund|reset-password|verify-email|sign-?in|login|consent|approve|approval|connect|authorize|oauth)(/|$)'
+
+export function loaderScript() {
+  const map = houseHostMap()
+  const wallets = houseWalletHostList()
+  return `(function(){try{var m=${JSON.stringify(map)};var w=${JSON.stringify(wallets)};var h=location.hostname.toLowerCase();var id=m[h];if(!id)return;if(new RegExp(${JSON.stringify(NEVER_TRACK)},"i").test(location.pathname)||document.querySelector('script[data-website-id]'))return;var s=document.createElement('script');s.defer=true;var u=${JSON.stringify(DASHBOARD_ORIGIN + '/script.js')};try{if(window.trustedTypes&&trustedTypes.createPolicy){u=trustedTypes.createPolicy('gully-analytics',{createScriptURL:function(x){return x}}).createScriptURL(u)}}catch(e){}s.src=u;s.setAttribute('data-website-id',id);s.setAttribute('data-domains',h);s.setAttribute('data-do-not-track','true');s.setAttribute('data-exclude-search','true');s.setAttribute('data-exclude-hash','true');s.setAttribute('data-web3','true');s.setAttribute('data-web3-address',w.indexOf(h)>=0?'hash':'none');document.head.appendChild(s)}catch(e){}})();\n`
+}
+
+function serveLoader(req, res) {
+  const js = Buffer.from(loaderScript())
+  res.writeHead(200, { ...TRACKER_CORS, 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300', 'Content-Length': String(js.length) })
+  res.end(req.method === 'HEAD' ? undefined : js)
 }
 
 function sendPage(res, page, method) {
@@ -283,6 +326,7 @@ export function handleAnalytics(req, res) {
     res.writeHead(204, TRACKER_CORS)
     return res.end()
   }
+  if (get && path === '/a.js') return serveLoader(req, res)
   if (get && path === '/sso' && url.searchParams.has('code')) return sendPage(res, ssoPage(req, url), req.method)
   if (get && path === '/login' && isDocument(req, url)) {
     if (url.searchParams.get('form') === 'password' && url.search === '?form=password') return serveLoginForm(req, res, path)

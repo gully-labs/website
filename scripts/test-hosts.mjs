@@ -25,7 +25,7 @@ const dist = path.join(tmp, 'dist')
 fs.mkdirSync(path.join(dist, 'assets'), { recursive: true })
 fs.writeFileSync(
   path.join(dist, 'index.html'),
-  '<!doctype html><html><head><meta name="theme-color" content="#06050D" />\n<!-- Icons: the Gully Labs brand kit (public/brand/icon), unchanged. -->\n<link rel="icon" type="image/png" sizes="16x16" href="/brand/icon/favicon-16.png" />\n<link rel="icon" type="image/png" sizes="32x32" href="/brand/icon/favicon-32.png" />\n<link rel="apple-touch-icon" sizes="180x180" href="/brand/icon/app-icon-180.png" />\n<title>Gully Labs</title><meta name="description" content="x" />\n<meta property="og:site_name" content="Gully Labs" />\n<meta property="og:image" content="https://gullylabs.xyz/brand/social/og-image-1200x630.png" />\n<meta property="og:image:alt" content="Gully Labs logo with mascot" />\n    <script defer src="https://analytics.gullylabs.xyz/script.js" data-website-id="x"></script>\n<link rel="canonical" href="https://gullylabs.xyz/" /></head><body><div id="root"></div></body></html>',
+  '<!doctype html><html><head><meta name="theme-color" content="#0E1C38" />\n<!-- Icons: the Gully Labs brand kit (public/brand/icon), unchanged. -->\n<link rel="icon" type="image/png" sizes="16x16" href="/brand/icon/favicon-16.png" />\n<link rel="icon" type="image/png" sizes="32x32" href="/brand/icon/favicon-32.png" />\n<link rel="apple-touch-icon" sizes="180x180" href="/brand/icon/app-icon-180.png" />\n<title>Gully Labs</title><meta name="description" content="x" />\n<meta property="og:site_name" content="Gully Labs" />\n<meta property="og:image" content="https://gullylabs.xyz/brand/social/og-image-1200x630.png" />\n<meta property="og:image:alt" content="Gully Labs logo with mascot" />\n    <script defer src="https://analytics.gullylabs.xyz/script.js" data-website-id="x"></script>\n<link rel="canonical" href="https://gullylabs.xyz/" /></head><body><div id="root"></div></body></html>',
 )
 fs.writeFileSync(path.join(dist, 'assets', 'index-abcdef12.js'), 'console.log(1)')
 fs.writeFileSync(path.join(dist, 'widget.js'), '/* widget */')
@@ -139,7 +139,12 @@ try {
     const local = await get(`localhost:${PORT}`, INV)
     check('localhost keeps /pay by path (development)', local.status === 200 && !local.headers.location, String(local.status))
     const main = await get(MAIN, '/')
-    check('main /: still the site, with the analytics beacon and its own CSP', main.status === 200 && main.text.includes('analytics.gullylabs.xyz') && /static\.cloudflareinsights\.com/.test(main.headers['content-security-policy'] ?? ''))
+    // The flip (owner, 2026-11-08): / is the new landing, indexable with its own canonical; the old preview path redirects to it.
+    check('main /: the landing, indexable, canonical /, title and description in range', main.status === 200 && main.text.includes('/landing/live.js') && !/noindex/i.test(main.text) && !/noindex/i.test(main.headers['x-robots-tag'] ?? '') && main.text.includes('<link rel="canonical" href="https://gullylabs.xyz/">') && /<title>[^<]{20,60}<\/title>/.test(main.text) && /<meta name="description" content="[^"]{70,160}"/.test(main.text) && main.text.includes('href="/products/') && !main.text.includes('/preview/products/'))
+    const prev = await get(MAIN, '/preview/landing')
+    check('main /preview/landing: 301 to /', prev.status === 301 && prev.headers.location === '/', String(prev.status))
+    check('localhost still serves the preview path, noindex (suite and development)', (await get(`localhost:${PORT}`, '/preview/landing')).status === 200)
+    check('main /: the new landing, with the analytics beacon and its own CSP', main.status === 200 && main.text.includes('analytics.gullylabs.xyz') && /static\.cloudflareinsights\.com/.test(main.headers['content-security-policy'] ?? ''))
   }
 
   /* ----------------------------------------------------------------- api. --- */
@@ -194,7 +199,7 @@ try {
     check('holdermaps policy: the session-only dashboard, admin and Telegram APIs are refused', ['/api/admin/x', '/api/developer/account', '/api/tg/me', '/api/telegram/x'].every((p) => r(p).kind === 'deny'))
     const rl = r(`/holders/base/${TOKEN}?x=1`)
     check('holdermaps policy: /holders/... is a 301 to the short path, query kept', rl.kind === 'redirect' && rl.location === `/base/${TOKEN}?x=1` && r('/holders').location === '/' && r(`/holders/deep/${DEEP}`).location === `/deep/${DEEP}`, JSON.stringify(rl))
-    check('holdermaps policy: any other page (and an unknown chain) goes to the same path on gullylabs.xyz', r('/pricing?a=1').location === `https://${MAIN}/pricing?a=1` && r('/legal/terms').location === `https://${MAIN}/legal/terms` && r('/tracker/robinhood/TSLA').location === `https://${MAIN}/tracker/robinhood/TSLA` && r('/embed/holders/base/x').location === `https://${MAIN}/embed/holders/base/x`)
+    check('holdermaps policy: any other page (and an unknown chain) goes to the same path on gullylabs.xyz', r('/pricing?a=1').location === `https://${MAIN}/pricing?a=1` && r('/legal').location === `https://${MAIN}/legal` && r('/legal/terms').location === '/terms' && r('/tracker/robinhood/TSLA').location === `https://${MAIN}/tracker/robinhood/TSLA` && r('/embed/holders/base/x').location === `https://${MAIN}/embed/holders/base/x`)
     check('holdermaps policy: www. is a 301 to the apex, path and query kept', r(`/base/${TOKEN}?q=1`, 'www.holdermaps.xyz').location === `https://holdermaps.xyz/base/${TOKEN}?q=1`)
     check('holdermaps: the main host policy is unchanged (holdermaps. is not a service host)', hostPolicy(HM, '/') === 'allow' && hostPolicy(MAIN, '/holders') === 'allow')
 
@@ -202,7 +207,7 @@ try {
     const home = await get(HM, '/')
     check('holdermaps /: 200, the app shell, titled HolderMaps, canonical holdermaps.xyz/', home.status === 200 && home.text.includes('<div id="root">') && /<title>[^<]*HolderMaps[^<]*<\/title>/.test(home.text) && home.text.includes('<link rel="canonical" href="https://holdermaps.xyz/" />') && home.text.includes('<meta property="og:title" content="Who really holds a token? Holder bubble maps · HolderMaps" />'), home.text.slice(0, 400))
     // Branding (its brand kit, server/product-brand.mjs): HolderMaps' own colour, icons, site name, share image and JSON-LD.
-    check('holdermaps /: theme-color is the HolderMaps kit ink, not lab-night', home.text.includes('<meta name="theme-color" content="#0A0A0A" />') && !home.text.includes('#06050D'))
+    check('holdermaps /: theme-color is the HolderMaps kit ink, not the parent navy', home.text.includes('<meta name="theme-color" content="#0A0A0A" />') && !home.text.includes('#0E1C38'))
     check('holdermaps /: favicons and apple-touch icon are HolderMaps\' own', home.text.includes('href="/brand/holdermaps/icon-16.png"') && home.text.includes('href="/brand/holdermaps/icon-32.png"') && home.text.includes('href="/brand/holdermaps/icon-180.png"') && !home.text.includes('/brand/icon/'))
     check('holdermaps /: og:site_name HolderMaps, its own OG image (absolute, holdermaps.xyz) and alt text', home.text.includes('<meta property="og:site_name" content="HolderMaps" />') && home.text.includes('<meta property="og:image" content="https://holdermaps.xyz/brand/holdermaps/og-image-1200x630.png" />') && home.text.includes('<meta name="twitter:image" content="https://holdermaps.xyz/brand/holdermaps/twitter-card-1200x600.png" />') && /og:image:alt" content="HolderMaps/.test(home.text) && !home.text.includes('gullylabs.xyz/brand/social'))
     const ld = home.text.match(/<script type="application\/ld\+json">([^<]*)<\/script>/)
@@ -224,7 +229,7 @@ try {
       const nf = await get(HM, p)
       check(`holdermaps ${p}: its own 404, noindex, titled Not found · HolderMaps`, nf.status === 404 && !nf.headers.location && nf.text.includes('<div id="root">') && nf.text.includes('<title>Not found · HolderMaps</title>') && /<meta name="robots" content="noindex"/.test(nf.text) && nf.headers['x-robots-tag'] === 'noindex', `${nf.status} ${nf.headers.location ?? ''}`)
     }
-    for (const p of ['/legal/terms', '/tracker', '/admin', '/chains']) check(`holdermaps ${p}: still a 301 to gullylabs.xyz`, (await get(HM, p)).status === 301)
+    for (const p of ['/legal', '/tracker', '/admin', '/chains']) check(`holdermaps ${p}: still a 301 to gullylabs.xyz`, (await get(HM, p)).status === 301)
     const deep = await get(HM, `/deep/${DEEP}`)
     check('holdermaps /deep/<id>: 200, noindex, no canonical (private by link)', deep.status === 200 && /<meta name="robots" content="noindex"/.test(deep.text) && deep.headers['x-robots-tag'] === 'noindex' && !/rel="canonical"/.test(deep.text) && /HolderMaps/.test(deep.text.match(/<title>[^<]*<\/title>/)?.[0] ?? ''))
     const long = await get(HM, `/holders/base/${TOKEN}?ref=x`)
@@ -247,8 +252,8 @@ try {
     const man = await get(HM, '/manifest.webmanifest')
     check('holdermaps manifest: installs as HolderMaps, with its own icons and colours', man.status === 200 && man.data?.name === 'HolderMaps' && man.data.theme_color === '#0A0A0A' && man.data.background_color === '#0A0A0A' && man.data.icons.length === 2 && man.data.icons.every((i) => i.src.startsWith('/brand/holdermaps/')), man.text.slice(0, 120))
     // The main site's head keeps the Gully Labs brand.
-    const mainHome = await get(MAIN, '/')
-    check('main /: still Gully Labs theme-color, icons and site name', mainHome.text.includes('<meta name="theme-color" content="#06050D" />') && mainHome.text.includes('href="/brand/icon/favicon-16.png"') && mainHome.text.includes('<meta property="og:site_name" content="Gully Labs" />'))
+    const mainHome = await get(MAIN, '/products')
+    check('main /products: still Gully Labs theme-color, icons and site name', mainHome.text.includes('<meta name="theme-color" content="#0E1C38" />') && mainHome.text.includes('href="/brand/icon/favicon-16.png"') && mainHome.text.includes('<meta property="og:site_name" content="Gully Labs" />'))
     // Gully AI: its own share image and theme colour on /ask; the site's tab icon and site name are kept.
     const ask = await get(MAIN, '/ask')
     check('main /ask: Gully AI share image and theme colour, Gully Labs icons and site name', ask.text.includes('<meta property="og:image" content="https://gullylabs.xyz/brand/gullyai/og-1200x630.png" />') && ask.text.includes('<meta name="theme-color" content="#000406" />') && ask.text.includes('href="/brand/icon/favicon-16.png"') && ask.text.includes('<meta property="og:site_name" content="Gully Labs" />') && /og:image:alt" content="Gully AI/.test(ask.text))
@@ -275,7 +280,7 @@ try {
       check('primary: a token page names its own holdermaps.xyz address as canonical (never "holdermaps.xyznull")', hp.text.includes(`<link rel="canonical" href="https://holdermaps.xyz/base/${TOKEN}" />`) && !hp.text.includes('xyznull'), hp.text.match(/<link rel="canonical"[^>]*>/)?.[0])
       const hsm = (await get(HM, '/sitemap.xml')).text
       check('primary: the holdermaps.xyz sitemap lists the home page and has no broken <loc>', hsm.includes('<loc>https://holdermaps.xyz/</loc>') && !hsm.includes('null'))
-      check('primary: pages carry the holdermaps-primary tag (the browser follows it)', hp.text.includes('<meta name="holdermaps-primary" content="1" />') && (await get(MAIN, '/')).text.includes('holdermaps-primary'))
+      check('primary: pages carry the holdermaps-primary tag (the browser follows it)', hp.text.includes('<meta name="holdermaps-primary" content="1" />') && (await get(MAIN, '/products')).text.includes('holdermaps-primary'))
       const msm = (await get(MAIN, '/sitemap.xml')).text
       check('primary: the main sitemap no longer lists Holder Map pages', !msm.includes(`${MAIN}/holders`) && msm.includes(`<loc>https://${MAIN}/tracker</loc>`))
       check('primary: links the server writes name holdermaps.xyz', holderPageUrl('base', TOKEN) === `https://holdermaps.xyz/base/${TOKEN}` && holderHomeUrl() === 'https://holdermaps.xyz/')
@@ -371,7 +376,7 @@ try {
       check('primary: localhost, docs. and app. keep their /security behaviour (development, other hosts)', (await get(`localhost:${PORT}`, '/security')).status === 200 && (await get('docs.gullylabs.xyz', '/security')).headers.location !== 'https://gullysecurity.xyz/')
       const sp = await get(SEC, '/reports')
       check('primary: gully-web no longer serves gullysecurity.xyz (421, the standalone app does)', sp.status === 421 && (await get(`www.${SEC}`, '/')).status === 421 && (await get(SEC, '/api/security/reports')).status === 421, `${sp.status}`)
-      check('primary: main pages carry the security-primary tag (the browser follows it)', (await get(MAIN, '/')).text.includes('<meta name="security-primary" content="1" />'))
+      check('primary: main pages carry the security-primary tag (the browser follows it)', (await get(MAIN, '/products')).text.includes('<meta name="security-primary" content="1" />'))
       // /api/score* is answered by the Security app until clients migrate: GET proxied, POST a 308.
       const stub = http.createServer((q, r) => { r.writeHead(200, { 'Content-Type': 'application/json' }); r.end(JSON.stringify({ proxied: q.url })) })
       await new Promise((ok) => stub.listen(0, '127.0.0.1', ok))
@@ -544,8 +549,9 @@ try {
     // 6. The "Powered by Gully Labs" badge: kit PNGs at ~30 px in the app's and the docs' footers and the blog's bottom
     //    row; not on gullylabs.xyz's own pages (it IS Gully Labs).
     const badge = read('src/components/PoweredByBadge.tsx')
-    check('badge component: kit PNG 1x/2x/3x, 30 px (26 px on phones), new tab to gullylabs.xyz, alt text, no SVG', badge.includes('powered-by-gully-labs-dark-2x.png 2x') && badge.includes('powered-by-gully-labs-dark-3x.png 3x') && /height=\{30\}/.test(badge) && badge.includes('h-[30px]') && badge.includes('max-[600px]:h-[26px]') && badge.includes('href="https://gullylabs.xyz/"') && badge.includes('alt="Powered by Gully Labs"') && !badge.includes('.svg'))
+    check('badge component: the kit SVG, 30 px (26 px on phones), new tab to gullylabs.xyz, alt text', badge.includes('/brand/kit/powered-by-clear-white.svg') && /height=\{30\}/.test(badge) && badge.includes('h-[30px]') && badge.includes('max-[600px]:h-[26px]') && badge.includes('href="https://gullylabs.xyz/"') && badge.includes('alt="Powered by Gully Labs"'))
     for (const [f, tag] of [['src/docs/DocsLayout.tsx', '<PoweredByBadge />'], ['src/pages/developers/AppShell.tsx', '<BadgeFooterRow />'], ['src/pages/developers/DevelopersPage.tsx', '<BadgeFooterRow />']]) check(`badge in the footer: ${f}`, read(f).includes(tag))
+    check('HolderMaps footer: the kit SVG badge, no old PNG', read('src/holdermaps/HmChrome.tsx').includes('/brand/kit/powered-by-clear-white.svg') && !read('src/holdermaps/HmChrome.tsx').includes('powered-by-gully-labs'))
     check('main site: no 48 px Powered-by badge in the trust band', !read('src/console/ui.tsx').includes('powered-by-gully-labs-dark.png'))
     const kit = 'C:/Users/Admin/Desktop/GULLY LABS GRAPHICS/Gully Labs/brand-kit/badges'
     if (fs.existsSync(kit)) check('badge PNGs are byte-exact kit copies (site and blog theme)', ['', '-2x', '-3x'].every((s) => { const k = fs.readFileSync(path.join(kit, `powered-by-gully-labs-dark${s}.png`)); return k.equals(fs.readFileSync(path.join(ROOT, 'public', 'brand', 'badges', `powered-by-gully-labs-dark${s}.png`))) && k.equals(fs.readFileSync(path.join(ROOT, 'ghost', 'theme', 'gully', 'assets', 'brand', 'badges', `powered-by-gully-labs-dark${s}.png`))) }))

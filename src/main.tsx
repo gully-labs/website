@@ -15,7 +15,7 @@ import '@fontsource/poppins/700.css'
 import './index.css'
 import { ToastRoot } from './components/ui/ToastRoot'
 import { applyDocumentBrand } from './brand/products'
-import { isHolderMapsHost } from './site-host'
+import { isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost } from './site-host'
 import { installExternalLinks } from './lib/externalLinks'
 import { reloadForNewBuild } from './lib/staleBuild'
 import { initPwa } from './pwa/pwa'
@@ -27,7 +27,8 @@ window.addEventListener('vite:preloadError', (e) => {
 })
 
 // holdermaps.xyz is HolderMaps' own app: the whole page takes its kit palette (src/index.css [data-product-brand]).
-applyDocumentBrand(isHolderMapsHost() ? 'holdermaps' : null)
+// Everything else that is Gully Labs' own wears the parent kit; Gully Security and the checkouts keep their own look.
+applyDocumentBrand(isHolderMapsHost() ? 'holdermaps' : isSecurityHost() || isPayHost() || isEmbedHost() ? null : 'gullylabs')
 
 // Owner rule: every link to another origin opens in a new tab (src/lib/externalLinks.ts), on every host.
 installExternalLinks()

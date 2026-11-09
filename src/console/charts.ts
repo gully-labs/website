@@ -4,19 +4,20 @@
    tweens (600-700 ms) instead of swapping, bars slide left as blocks arrive and the newest one flashes,
    sparklines carry a travelling glow dot. Reduced motion keeps fades and number changes only. */
 
+import { TZ, timePT } from '../lib/time'
 import { yTicks } from '../components/charts/chartData'
 export const REDUCED = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-export const C = { cyan: '#00D2FF', blue: '#248BFF', violet: '#7B3BFF', magenta: '#C02CFF', muted: '#A3A8C3', surface: '#0B0A16', bg: '#06050D', s: ['#20A0C4', '#1A5FE6', '#9578E8', '#9121B5'], up: '#3DDC97', down: '#FF6B81' }
+export const C = { cyan: '#6f8ddf', blue: '#6f8ddf', violet: '#9db4ee', magenta: '#9db4ee', muted: '#A3A8C3', surface: '#13233f', bg: '#0b1730', s: ['#20A0C4', '#1A5FE6', '#9578E8', '#9121B5'], up: '#3DDC97', down: '#FF6B81' }
 const NS = 'http://www.w3.org/2000/svg'
 
 export const fmtUsd = (v: number | null | undefined) =>
   v == null || !isFinite(v) ? '—' : v >= 1e9 ? `$${(v / 1e9).toFixed(2)}B` : v >= 1e6 ? `$${(v / 1e6).toFixed(2)}M` : v >= 1e4 ? `$${(v / 1e3).toFixed(1)}k` : `$${v.toLocaleString('en-US', { maximumFractionDigits: v >= 100 ? 0 : 2 })}`
 export const fmtInt = (v: number | null | undefined) => (v == null || !isFinite(v) ? '—' : Math.round(v).toLocaleString('en-US'))
 export const fmtPct = (v: number) => `${v.toFixed(1)}%`
-export const fmtTime = (iso: string | number | Date) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-/** The same clock in UTC, labelled, so every live stamp on a page agrees (the hub board reads UTC). */
-export const fmtTimeUtc = (iso: string | number | Date) => `${new Date(iso).toISOString().slice(11, 19)} UTC`
-export const fmtDay = (t: number) => new Date(t * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+export const fmtTime = (iso: string | number | Date) => new Date(iso).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+/** The same clock, labelled, so every live stamp on a page agrees. */
+export const fmtTimeUtc = (iso: string | number | Date) => timePT(iso, true)
+export const fmtDay = (t: number) => new Date(t * 1000).toLocaleDateString('en-GB', { timeZone: 'UTC', day: '2-digit', month: 'short' })
 const ease = (t: number) => 1 - Math.pow(1 - t, 3)
 const esc = (s: unknown) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string)
 const uid = () => Math.random().toString(36).slice(2, 8)

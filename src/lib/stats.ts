@@ -1,6 +1,7 @@
 /* The /api/stats document (server/stats.mjs), typed, plus the formatting every surface
    shares. A figure is a number or `null` (not published / not measurable); a venue is
    `ok` or `error`. Nothing here invents a value for a missing one. */
+import { TZ } from './time'
 import { projects } from '../content/projects'
 
 export interface Point {
@@ -30,7 +31,7 @@ export interface VenueOk {
   fees24hUsd: number | null
   feesAllUsd?: number | null
   feesNative?: { symbol: string; amount: number } | null
-  /** DeepCore only: dollars held in its locks (launch LP locked forever, timed locks, vesting). */
+  /** Launchpad venues only: dollars held in their locks (launch LP locked forever, timed locks, vesting). */
   lockedUsd?: number | null
   /** Daily volume, kept for older readers: the same points as `series.volume`. */
   daily: Point[]
@@ -108,9 +109,9 @@ export function fmtUsd(v: number | null | undefined): string {
 }
 
 export const fmtTime = (iso: string) =>
-  `${new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })} UTC`
+  `${new Date(iso).toLocaleTimeString('en-US', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false })} PT`
 
-export const fmtDay = (t: number) => new Date(t * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+export const fmtDay = (t: number) => new Date(t * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: TZ })
 
 export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 

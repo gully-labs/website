@@ -40,6 +40,7 @@ const sourceFile = (source) => {
 
 // ---------------------------------------------------------------- the registry
 const bad = []
+let skipped = 0
 const seen = new Set()
 const texts = new Map()
 for (const c of contracts) {
@@ -61,7 +62,10 @@ for (const c of contracts) {
   if (!/^[A-Za-z0-9._-]+:[^\s]+$/.test(c.source)) fail('source format')
   else {
     const file = sourceFile(c.source)
-    if (!fs.existsSync(file)) fail(`source file missing: ${file}`)
+    const repo = c.source.slice(0, c.source.indexOf(':'))
+    // A sibling repo that is not cloned next to this one (a build box, a worktree) cannot be read: counted, not failed.
+    if (repo !== 'website' && !fs.existsSync(path.join(projects, repo))) skipped++
+    else if (!fs.existsSync(file)) fail(`source file missing: ${file}`)
     else {
       if (!texts.has(file)) texts.set(file, fs.readFileSync(file, 'utf8').toLowerCase())
       if (!texts.get(file).includes(c.address.toLowerCase())) fail(`${c.source} does not contain the address`)
@@ -69,7 +73,7 @@ for (const c of contracts) {
   }
 }
 check(`registry has entries (${contracts.length})`, contracts.length > 0)
-check(`every entry valid (${bad.length} problems)`, bad.length === 0, bad.slice(0, 3).join(' | '))
+check(`every entry valid (${bad.length} problems${skipped ? `; ${skipped} sources in repos not cloned here were not read` : ''})`, bad.length === 0, bad.slice(0, 3).join(' | '))
 if (bad.length) console.log(bad.slice(0, 20).join('\n'))
 
 const TREASURY = '0xCaf7C1ce6F234bED687264cBE6210a4ab5c12fd6'
@@ -118,7 +122,7 @@ const html = renderHead('<!doctype html><html><head><title>x</title></head><body
 const ld = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]))
 const org = ld.find((x) => x['@type'] === 'Organization')
 const app = ld.find((x) => x['@type'] === 'SoftwareApplication')
-check('home head has Organization JSON-LD', !!org && org.name === 'Gully Labs' && org.url === 'https://gullylabs.xyz' && /gully-mark-512\.png$/.test(org.logo))
+check('home head has Organization JSON-LD with a logo this site ships', !!org && org.name === 'Gully Labs' && org.url === 'https://gullylabs.xyz' && org.logo.startsWith('https://gullylabs.xyz/brand/') && fs.existsSync(path.join(root, 'public', new URL(org.logo).pathname)))
 check('Organization sameAs: X, GitHub, Telegram, YouTube, TikTok, Facebook, Medium', ['https://x.com/Gully_Labs', 'https://github.com/gully-labs', 'https://t.me/GullyLabsNews', 'https://www.youtube.com/@Gully_Labs', 'https://www.tiktok.com/@gully_labs', 'https://www.facebook.com/gullylabsllc', 'https://medium.com/@labsgully'].every((u) => org?.sameAs.includes(u)))
 check('home head has SoftwareApplication JSON-LD', !!app && app.name === 'Gully Labs' && !!app.applicationCategory && !!app.description)
 check('logo file exists in the brand kit copy', fs.existsSync(path.join(root, 'public/brand/gully-mark-512.png')))
@@ -128,9 +132,9 @@ const docsMeta = pageMeta('docs.gullylabs.xyz', '/contracts')
 check('docs /contracts has SEO meta', docsMeta.found === true && docsMeta.canonical === 'https://docs.gullylabs.xyz/contracts')
 
 // ---------------------------------------------------------------- the legal pages
-const terms = pageMeta('gullylabs.xyz', '/legal/terms')
-check('/legal/terms has its own title and canonical, and is indexable', terms.found === true && terms.title === 'Terms of Service · Gully Labs' && terms.canonical === 'https://gullylabs.xyz/legal/terms' && !terms.noindex)
-check('/legal/terms, /legal/privacy and /legal/merchant-terms are in the sitemap', ['terms', 'privacy', 'merchant-terms'].every((x) => sitemapFor('gullylabs.xyz').includes(`<loc>https://gullylabs.xyz/legal/${x}</loc>`)))
+const terms = pageMeta('gullylabs.xyz', '/terms')
+check('/terms has its own title and canonical, and is indexable', terms.found === true && terms.title === 'Terms of Service · Gully Labs' && terms.canonical === 'https://gullylabs.xyz/terms' && !terms.noindex)
+check('/terms, /privacy, /legal and /legal/merchant-terms are in the sitemap (and not the old /legal/terms)', ['terms', 'privacy', 'legal', 'legal/merchant-terms'].every((x) => sitemapFor('gullylabs.xyz').includes(`<loc>https://gullylabs.xyz/${x}</loc>`)) && !sitemapFor('gullylabs.xyz').includes('/legal/terms<'))
 
 console.log(`\n${t.passed} passed, ${t.failed} failed`)
 process.exit(t.failed ? 1 : 0)

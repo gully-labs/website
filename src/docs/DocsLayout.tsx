@@ -1,4 +1,4 @@
-import { Activity, ArrowLeftRight, BadgeCheck, BellRing, BookOpen, Bot, FileCheck, Network, Server, Gamepad2, CircleDollarSign, ChartCandlestick, ChartNoAxesCombined, Code2, Gauge, HardDrive, HeartPulse, History, Home, KeyRound, Lock, type LucideIcon, Menu, MessageCircleQuestion, Milestone, Newspaper, Orbit, Package, Plug, Puzzle, QrCode, ScanSearch, Search, Send, ShieldCheck, Smartphone, Tags, Users, X } from 'lucide-react'
+import { Activity, ArrowLeftRight, BadgeCheck, BellRing, BookOpen, Bot, FileCheck, Network, Server, Gamepad2, CircleDollarSign, ChartCandlestick, ChartNoAxesCombined, Code2, Gauge, HardDrive, HeartPulse, History, Home, KeyRound, Lock, type LucideIcon, Menu, MessageCircleQuestion, Milestone, Newspaper, Orbit, Package, Plug, Puzzle, QrCode, Scale, ScanSearch, Search, Send, ShieldCheck, Smartphone, Tags, Users, X } from 'lucide-react'
 import { securityPrimary } from '../site-host'
 import { useContext, useEffect, useId, useMemo, useState } from 'react'
 import { NavLink, Outlet, ScrollRestoration, useNavigate, useResolvedPath } from 'react-router'
@@ -6,6 +6,7 @@ import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
 import { Mascot, Wordmark } from '../components/brand'
 import { AskLauncher } from '../components/ask/AskLauncher'
+import { FollowBar } from '../components/FollowBar'
 import { track } from '../lib/track'
 import { apiOrigin, DOC_KEYWORDS, DOC_PAGES, DocsBase, SITE, useDocHref, type DocSlug } from './nav'
 import { PoweredByBadge } from '../components/PoweredByBadge'
@@ -54,7 +55,7 @@ const GULLY_LINKS: { label: string; href: string; icon: LucideIcon }[] = [
   { label: 'Status', href: `${SITE}/status`, icon: HeartPulse },
   { label: 'Telegram bot', href: 'https://t.me/GullyLabsBot', icon: Send },
   { label: 'Blog', href: 'https://blog.gullylabs.xyz', icon: Newspaper },
-  { label: 'Privacy', href: `${SITE}/legal/privacy`, icon: Lock },
+  { label: 'Privacy', href: `${SITE}/privacy`, icon: Lock },
   { label: 'App dashboard', href: 'https://app.gullylabs.xyz', icon: KeyRound },
 ]
 /** The products on their own domains, each with its own docs or home (2026-10-26). */
@@ -253,6 +254,7 @@ export function DocsLayout() {
       <a href="#docs-main" className="absolute top-2 left-2 z-50 inline-flex min-h-11 -translate-y-20 items-center rounded-sm bg-gold px-3 text-[14px] font-semibold text-bg focus:translate-y-0">
         Skip to content
       </a>
+      <FollowBar />
       <header className="sticky top-0 z-40 border-b border-line bg-[rgba(6,5,13,.86)] backdrop-blur-md">
         <div className="mx-auto flex h-[64px] max-w-[1440px] items-center justify-between gap-4 px-6 max-[600px]:gap-2 max-[600px]:px-4">
           <div className="flex min-w-0 items-center gap-3 max-[600px]:gap-2">
@@ -266,16 +268,16 @@ export function DocsLayout() {
             >
               {open ? <X size={18} aria-hidden /> : <Menu size={18} aria-hidden />}
             </button>
-            <NavLink to={home} end className="flex min-h-11 min-w-0 items-center gap-3 text-ink no-underline max-[359px]:min-w-11 max-[359px]:justify-center" aria-label="Gully Labs Docs, home">
+            <NavLink to={home} end className="flex min-h-11 min-w-0 items-center gap-3 text-ink no-underline max-[419px]:min-w-11 max-[419px]:justify-center" aria-label="Gully Labs Docs, home">
               {/* A smaller wordmark on narrow phones, so the menu, Gully AI and site buttons fit at 390 px. */}
               <span className="flex max-[479px]:hidden">
                 <Wordmark height={24} decorative />
               </span>
-              <span className="hidden max-[479px]:flex max-[359px]:hidden">
+              <span className="hidden max-[479px]:flex max-[419px]:hidden">
                 <Wordmark height={20} decorative />
               </span>
-              {/* Under 360px the wordmark would sit under the Gully AI button: the round mark stands in. */}
-              <span className="hidden max-[359px]:flex" data-testid="docs-header-mark">
+              {/* Under 420px the wordmark would sit under the Gully AI button: the round mark stands in. */}
+              <span className="hidden max-[419px]:flex" data-testid="docs-header-mark">
                 <Mascot size={32} decorative />
               </span>
               {/* Below 440px the header has no room for the pill beside the menu, Ask and site buttons. */}
@@ -324,8 +326,9 @@ export function DocsLayout() {
           <nav aria-label="Gully Labs" className="flex flex-wrap items-center gap-x-5">
             {[
               { label: 'Status', href: `${SITE}/status`, icon: HeartPulse },
-              { label: 'Terms', href: `${SITE}/legal/terms`, icon: FileCheck },
-              { label: 'Privacy', href: `${SITE}/legal/privacy`, icon: Lock },
+              { label: 'Terms', href: `${SITE}/terms`, icon: FileCheck },
+              { label: 'Privacy', href: `${SITE}/privacy`, icon: Lock },
+              { label: 'Legal', href: `${SITE}/legal`, icon: Scale },
               { label: 'Blog', href: 'https://blog.gullylabs.xyz', icon: Newspaper },
               { label: 'gullylabs.xyz', href: SITE, icon: Home },
             ].map((l) => (

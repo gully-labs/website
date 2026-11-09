@@ -3,7 +3,7 @@
 //   node scripts/test-gully-score.mjs        (no build needed; TEST_PORT overrides the port, default 8798)
 //
 // The chain is a JavaScript stub (setScoreRpcForTest / setMonitorRpcForTest), Sourcify and the Holder Map are a
-// stubbed fetch, DeepCore's launch list and the published-report source are stub functions. Nothing upstream is read.
+// stubbed fetch, the Gully Launchpad launch list and the published-report source are stub functions. Nothing upstream is read.
 //
 // Covers: the component maths for each kind of control and upgrade setup, missing data left out (never 0) and no
 // score under the minimum coverage, the published-report-only rule, that nothing paid can change a score (imports,
@@ -204,7 +204,7 @@ try {
   check('A: upgradeable scores 30 and names the current code', part(a, 'upgradeability').score === 30 && /0x0000…1001/.test(part(a, 'upgradeability').reason))
   check('A: deployed 400 days ago scores 100', part(a, 'age').score === 100 && /400 days ago/.test(part(a, 'age').reason), part(a, 'age').reason)
   check('A: not watched → recent changes not available, with the reason', !part(a, 'changes').available && /does not watch/.test(part(a, 'changes').reason))
-  check('A: not a DeepCore launch → liquidity not available', !part(a, 'liquidity').available)
+  check('A: not a Gully Launchpad launch → liquidity not available', !part(a, 'liquidity').available)
   check('A: Holder Map answers 404 → not available, said plainly', !part(a, 'holders').available && /not running on this server/.test(part(a, 'holders').reason), part(a, 'holders').reason)
   check('A: no report → review not available', !part(a, 'review').available)
   const expectA = Math.round((W.verified * 100 + W.control * 15 + W.timelock * 0 + W.upgradeability * 30 + W.age * 100) / (W.verified + W.control + W.timelock + W.upgradeability + W.age))
@@ -219,13 +219,13 @@ try {
     const before = fetched.length
     const gc = await get(485590, H)
     check('Gully Chain Testnet: scored from chain reads only (no Sourcify or Etherscan call)', gc?.chainKey === 'gully' && fetched.slice(before).every((u) => !/sourcify|etherscan/.test(u)), JSON.stringify(fetched.slice(before)))
-    check('Gully Chain Testnet: the code counts as not verified, saying no service covers the chain', part(gc, 'verified').available && part(gc, 'verified').score === 0 && /no source verification service/.test(part(gc, 'verified').reason) && part(gc, 'verified').evidence[0].url.startsWith('https://testnet-explorer.gullychain.xyz/address/'))
+    check('Gully Chain Testnet: the code counts as not verified, saying no service covers the chain', part(gc, 'verified').available && part(gc, 'verified').score === 0 && /no source verification service/.test(part(gc, 'verified').reason) && part(gc, 'verified').evidence[0].url.startsWith('https://testnet.gullyscan.xyz/address/'))
     check('Gully Chain Testnet: control is read from the chain (one wallet)', part(gc, 'control').score === 15)
     check('Gully Chain Testnet: never offered or priced for payment (read-only chain)', !pay.CHAINS[485590] && !pay.ASSETS.some((x) => x.chainId === 485590) && !pay.publicChains({ all: true }).some((c) => c.id === 485590) && pay.chainInfo(485590)?.readOnly === true)
     check('Gully Chain Testnet: not offered for monitoring', !mon.monitorChains().some((c) => c.id === 485590) && mon.scoreChainOf('gully')?.id === 485590)
     const r = await fetch(`${BASE}/api/score/gully/${H}`)
     const j = await r.json()
-    check('GET /api/score/gully/:address answers with CORS and the testnet explorer', r.status === 200 && r.headers.get('access-control-allow-origin') === '*' && j.chain?.key === 'gully' && /testnet-explorer\.gullychain\.xyz/.test(j.links?.explorer ?? ''), `${r.status} ${JSON.stringify(j).slice(0, 200)}`)
+    check('GET /api/score/gully/:address answers with CORS and the testnet explorer', r.status === 200 && r.headers.get('access-control-allow-origin') === '*' && j.chain?.key === 'gully' && /testnet.gullyscan.xyz/.test(j.links?.explorer ?? ''), `${r.status} ${JSON.stringify(j).slice(0, 200)}`)
 
     // A Gully Launchpad token: known code, the curve holds the liquidity, the creator's record, a simulated 5% fee.
     const gl = await get(485590, L)
@@ -248,7 +248,7 @@ try {
   check('E: a minimal clone cannot change its code: 100', part(e, 'upgradeability').score === 100 && /clone/.test(part(e, 'upgradeability').value.toLowerCase()))
   const f = await get(8453, F)
   check('F: a Safe needing 2 of 3 scores 100', part(f, 'control').score === 100 && part(f, 'control').value === 'Safe, 2 of 3')
-  check('F: a DeepCore launch with every pool locked scores 100, linked to DeepCore', part(f, 'liquidity').score === 100 && part(f, 'liquidity').evidence[0].url.startsWith('https://deepcore.fun/'))
+  check('F: liquidity locks are not read on Base any more (DeepCore source retired 2026-11-08), said plainly', !part(f, 'liquidity').available && /Gully Launchpad launches on Gully Chain/.test(part(f, 'liquidity').reason))
   check('F: Launch Health from the Holder Map is used when present', part(f, 'holders').score === 72 && part(f, 'holders').evidence[0].url.endsWith(`/holders/base/${F}`))
   const g = await get(8453, G)
   check('G: not verified is a real 0 (available), not missing', part(g, 'verified').available && part(g, 'verified').score === 0)
@@ -373,13 +373,13 @@ try {
   check('badge: served as SVG, cacheable, open to any origin', badge.status === 200 && /image\/svg\+xml/.test(badge.headers.get('content-type')) && /max-age=3600/.test(badge.headers.get('cache-control')) && badge.headers.get('access-control-allow-origin') === '*')
   check('badge: well-formed XML', wellFormed(svg), svg.slice(0, 120))
   const stored = (await anon.call(`/api/score/base/${A}`)).data
-  const date = new Date(stored.computedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+  const date = new Date(stored.computedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Los_Angeles' })
   // The badge is the shared kit badge (server/badges.mjs): every letter is a path, so the score, grade and date are
   // read from its <title> and aria-label; the geometry and colour checks live in scripts/test-badges.mjs.
   check('badge: the title says the score, the grade and the date it was read', svg.includes(`<title>Gully Score ${stored.score} out of 100 (${stored.grade}), ${date}</title>`) && svg.includes(`aria-label="Gully Score ${stored.score} out of 100 (${stored.grade}), ${date}"`), date)
-  check('badge: paths only (no <text>), the kit mark is embedded and it links back', !/<text/.test(svg) && svg.includes('data:image/png;base64,iVBOR') && /<image [^>]*width="21" height="20"/.test(svg) && svg.includes(`https://gullylabs.xyz/score/base/${A}`))
+  check('badge: paths only (no <text>), the kit mark is embedded and it links back', !/<text/.test(svg) && svg.includes('data:image/png;base64,iVBOR') && /<image [^>]*width="20" height="20"/.test(svg) && svg.includes(`https://gullylabs.xyz/score/base/${A}`))
   check('badge: kit colours only', [...svg.matchAll(/#[0-9A-Fa-f]{6}/g)].every((m) => ['#0D141C', '#2A3542', '#151D28', '#D9B563', '#F4F2EC', '#7D8794', '#6F7560', '#F2D58A', '#AEB5BE', '#2F6B35', '#3C553B'].includes(m[0].toUpperCase())))
-  check('badge: ?size=L&theme=light is honoured (36 px tall, bone field)', /height="36"/.test(await (await fetch(`${BASE}/score/base/${A}/badge.svg?size=L&theme=light`)).text()) && (await (await fetch(`${BASE}/score/base/${A}/badge.svg?theme=light`)).text()).includes('#F4F2EC'))
+  check('badge: ?size=L&theme=light is honoured (36 px tall, white field)', /height="36"/.test(await (await fetch(`${BASE}/score/base/${A}/badge.svg?size=L&theme=light`)).text()) && (await (await fetch(`${BASE}/score/base/${A}/badge.svg?theme=light`)).text()).includes(`fill="${(await import('../server/badges.mjs')).TOKENS.bone}"`))
   const blank = await (await fetch(`${BASE}/score/base/${addr(0x777)}/badge.svg`)).text()
   check('badge for a contract never scored: valid, says so, no number', wellFormed(blank) && blank.includes('<title>Gully Score: not scored yet</title>') && !/out of 100/.test(blank))
   const gb = await (await fetch(`${BASE}/score/base/${G}/badge.svg`)).text()
