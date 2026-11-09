@@ -1,5 +1,5 @@
 // Holder Map Deep check (server/holders-deep.mjs the engine, server/holders-deep-routes.mjs the paid API), offline:
-// every upstream (the holder map, DeepCore, the explorer, name tags, RPCs, Solana) is a stub passed to the engine,
+// every upstream (the holder map, the explorer, name tags, RPCs, Solana) is a stub passed to the engine,
 // so no call leaves the machine. The real server runs IN THIS PROCESS on TEST_PORT (default 9051) with a fresh
 // temporary DATA_DIR; payments are marked paid in process (Gully Pay's own checks have their own suite).
 //
@@ -65,7 +65,7 @@ const OLD = addr(0x77)
 
 const launchMap = () => ({
   state: 'ok',
-  kind: 'deepcore-launch',
+  kind: 'launch',
   token: { address: TOKEN, symbol: 'TST', name: 'Test' },
   sources: { holders: 'stub' },
   holders: { count: 50 },
@@ -131,14 +131,14 @@ const everyFindingHasSourceAndConfidence = (r) => r.findings.length > 0 && r.fin
 /* ============================================================ PART A: the engine === */
 
 try {
-  /* ---- a DeepCore launch with an explorer ---------------------------------------------------- */
+  /* ---- a launchpad launch with an explorer ---------------------------------------------------- */
   {
     const { deps, calls } = makeDeps()
     const r = await engine.runDeepCheck({ chain: 'base', token: TOKEN, deps })
     check('launch: the check is done, not partial, with all four sections ok', r.status === 'done' && r.partial === null && ['trading', 'funding', 'clusters', 'deployer'].every((k) => r.sections[k].state === 'ok'), JSON.stringify(Object.fromEntries(Object.entries(r.sections).map(([k, v]) => [k, v.state]))))
     check('every finding states its source and a confidence', everyFindingHasSourceAndConfidence(r), JSON.stringify(r.findings.filter((f) => !f.source || !f.confidence)))
     const tr = r.sections.trading
-    check('trading: the map forensics, high confidence, snipers and bundle counts', tr.method === 'deepcore-launch-forensics' && tr.confidence === 'high' && tr.snipers.count === 2 && tr.bundled.count === 2 && tr.snipers.wallets.length === 2 && tr.firstTradeBlock === 101)
+    check('trading: the map forensics, high confidence, snipers and bundle counts', tr.method === 'launch-forensics' && tr.confidence === 'high' && tr.snipers.count === 2 && tr.bundled.count === 2 && tr.snipers.wallets.length === 2 && tr.firstTradeBlock === 101)
     const f = r.sections.funding
     const byAddr = Object.fromEntries(f.traces.map((x) => [x.address, x]))
     check('funding: top unlabelled non-contract holders plus the deployer are traced (the contract and the pool are not)', f.traces.length === 5 && f.traces.some((x) => x.role === 'deployer' && x.address === DEP) && !byAddr[POOL] && !byAddr[addr(0x99)], f.traces.map((x) => x.address.slice(-2)).join(','))
@@ -155,7 +155,7 @@ try {
     const big = cl.combined[0]
     check('clusters: combined merges direct and shared into one group (W3 joins through W4), with its basis', big.wallets.length === 5 && [W1, W2, W3, W4, DEP].every((w) => big.wallets.includes(w)) && big.basis === 'direct-transfers+shared-funder', JSON.stringify(big))
     const d = r.sections.deployer
-    check('deployer: DeepCore launches with their outcome', d.state === 'ok' && d.address === DEP && d.tokens.some((x) => x.address === OLD && x.outcome === 'liquidity-pulled' && x.source === 'DeepCore account activity'))
+    check('deployer: the partner launchpad record is retired (2026-11-08), said so; no token carries it as a source', d.state === 'ok' && d.address === DEP && d.launchpad?.state === 'unavailable' && /retired on 2026-11-08/.test(d.launchpad.reason) && !d.tokens.some((x) => x.address === OLD))
     check('deployer: the explorer found a token the deployer created on Base (and the non-token contract is not listed)', d.tokens.some((x) => x.address === C1 && x.chain === 'base' && x.symbol === 'OLD') && !d.tokens.some((x) => x.address === C2))
     check('deployer: a chain whose page was cut says older deployments may exist; chains without data are listed', d.chains.find((c) => c.chain === 'bsc').reason?.includes('older deployments') && d.chains.length === 4)
     check('deployer: other launchpads are unavailable, with the reason', r.unavailable.some((u) => u.what === 'Other launchpads') && d.otherLaunchpads.state === 'unavailable')
@@ -225,7 +225,7 @@ try {
     check('generic funding: with no explorer key, a wallet funded by a wallet shows the token transfer, source and confidence', w9.hops[0].from === DEPL && w9.hops[0].kind === 'token' && w9.hops[0].confidence === 'high' && /Our own index|own index|Transfer/i.test(w9.hops[0].source))
     const s1 = f.traces.find((x) => x.address === S1)
     check('generic funding: a buyer whose first tokens came from the pool is a "buy", not a funding', s1.origin.type === 'buy')
-    check('generic deployer: unavailable, with the reason (not a DeepCore launch, no explorer key)', r.sections.deployer.state === 'unavailable' && /explorer key/.test(r.sections.deployer.reason) && r.unavailable.some((u) => u.section === 'deployer'))
+    check('generic deployer: unavailable, with the reason (no launch record, no explorer key)', r.sections.deployer.state === 'unavailable' && /explorer key/.test(r.sections.deployer.reason) && r.unavailable.some((u) => u.section === 'deployer'))
     check('generic: every finding has a source and confidence', everyFindingHasSourceAndConfidence(r))
 
     const noArch = await engine.runDeepCheck({ chain: 'base', token: TOKEN, deps: makeDeps({ explorerKey: () => '', readMap: async () => ({ state: 'not-found' }), ownHistory: async () => ({ state: 'no-archive' }) }).deps })

@@ -46,43 +46,6 @@ type Delivery = {
   }>
 }`
 
-const LAUNCH = `// An alert of kind 'deepcore-launch'. Same headers, signature and envelope as above.
-type LaunchDelivery = {
-  id: string
-  type: 'alert.triggered' | 'alert.test'
-  createdAt: string
-  alert: {
-    id: string
-    name: string | null
-    kind: 'deepcore-launch'
-    target: { deepcoreChainId: 56 | 999 | 4663 | 8453 | null }   // empty = every chain
-    condition: { type: 'deepcore-launch'; chainId: number | null }
-  }
-  events: Array<{                    // oldest launch first; up to 20 in one delivery
-    kind: 'deepcore.launch'
-    chainId: number                  // 56 BNB Chain, 999 HyperEVM, 4663 Robinhood Chain, 8453 Base
-    chainKey: string                 // 'bsc' | 'hyperevm' | 'robinhood' | 'base'
-    chainName: string
-    token: string                    // the new token's address
-    symbol: string | null
-    createdAt: string                // the launch's block time, ISO 8601
-    txHash: string | null
-    pools: Array<{
-      poolId: string | null
-      kind: 'CL' | 'Bin' | null
-      quote: string | null           // the symbol it is paired with
-      locked: boolean | null         // true: the launchpad's indexer has a lock record; empty: unknown
-      lockId: string | null
-    }>
-    links: { token: string; launch: string; swap: string }   // the launch's pages on the launchpad
-    snapshotAt: string               // the launch poll that saw it
-  }>
-}
-
-// Create one from the dashboard, or with the same session API the dashboard uses:
-// POST /api/developer/alerts
-// { "name": "Base launches", "condition": { "type": "deepcore-launch", "chainId": 8453 }, "webhookUrl": "https://…", "telegram": true }`
-
 const VERIFY = `// Node 18+ with Express. Verify against the RAW body, before any JSON parsing.
 import crypto from 'node:crypto'
 import express from 'express'
@@ -232,25 +195,8 @@ export function PlansAlerts() {
         <P>
           A second kind of alert watches the launchpad for new token launches. It has no stock: it watches one launchpad chain, or every chain when <C>chainId</C> is left empty.
         </P>
-        <Fields
-          head={['Condition', 'Body', 'Fires when']}
-          rows={[['deepcore-launch', '{ type: "deepcore-launch", chainId }', <>A token launches on the launchpad on that chain: <C>56</C> BNB Chain, <C>999</C> HyperEVM, <C>4663</C> Robinhood Chain or <C>8453</C> Base; empty for any of them.</>]]}
-        />
-        <Details summary="New launch alerts: the details">
-          <List>
-            <li>The launchpad’s public API (<C>GET /v1/launches</C>) is read every 90 seconds. Each launch fires once, the first time it is seen; after a restart nothing already seen is sent again.</li>
-            <li>Only launches made after the alert was created count (with an hour of slack for indexer lag), so a new alert does not replay the backlog.</li>
-            <li>One delivery at most every 5 minutes per alert: launches seen in the meantime wait and go out together, up to the 20 most recent.</li>
-            <li>A paused, muted or over-the-plan alert neither sends nor queues: launches it missed are not sent later.</li>
-            <li>It counts against your plan’s alerts like a gap alert, and delivers the same way: webhook, Telegram or both, signed the same way (see below).</li>
-            <li>When the launchpad cannot be read, nothing fires and nothing is invented; the next good read catches up on launches it has not seen.</li>
-          </List>
-        </Details>
-        <Details summary="A launch delivery, as TypeScript">
-          <CodeBlock lang="js" code={LAUNCH} caption="TypeScript · a launch delivery" />
-        </Details>
         <P>
-          In Telegram, anyone can ask the bot <C>/launches</C> for the five latest launchpad launches on every chain, or <C>/launches base</C> (also <C>bsc</C>, <C>robinhood</C>, <C>hyperevm</C>, or a chain id) for one chain. It reads the same 90-second cache as the alerts, says when the list is older because the launchpad could not be read, and names any chain the launchpad itself could not read. Launch information is not advice.
+          New-launch alerts (<C>deepcore-launch</C>) were retired on 2026-11-08 together with the former partner launchpad's feed: creating one answers <C>410</C>, and existing ones no longer fire. Gully Core, Gully Labs’ own launchpad and DEX core, is at gullycore.xyz.
         </P>
       </Section>
 

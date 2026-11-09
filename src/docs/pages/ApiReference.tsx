@@ -260,7 +260,7 @@ export function ApiReference() {
         <Fields
           rows={[
             ['state', 'string', <><C>ok</C>, <C>not-found</C> (404: the token is neither a launchpad launch nor a tracked stock), <C>unavailable</C> (200, with <C>reason</C> and <C>needs</C>: the chain’s holder source is not set up on this server), <C>error</C> (502) or <C>busy</C> (429 or 503).</>],
-            ['kind', 'string', <><C>deepcore-launch</C> or <C>stock</C>.</>],
+            ['kind', 'string', <><C>stock</C>, <C>launch</C> (a launchpad's token) or <C>token</C>.</>],
             ['chain, token', 'object', <>Chain <C>key</C>, <C>id</C>, <C>name</C>; token <C>address</C>, <C>symbol</C>, <C>name</C>, <C>decimals</C>, <C>supply</C> (empty when unknown) and explorer <C>url</C>.</>],
             ['holders', 'object', <><C>count</C> (empty when unknown), <C>shown</C>, <C>graph</C>, <C>sharesOf</C> (<C>total supply</C> or <C>listed holders</C>), <C>partial</C>.</>],
             ['nodes', 'Node[]', <>Ranked wallets: <C>id</C>, <C>rank</C>, <C>balance</C>, <C>pct</C>, <C>label</C> (<C>kind</C>: deployer, pool, lock, burn, token, deepcore, router, gully, exchange, known), <C>contract</C>, <C>cluster</C>, <C>flags</C> (sniper, bundled, funded-by-deployer, deployer), <C>url</C>; stocks add <C>valueAtFairUsd</C>, <C>premiumUsd</C>, <C>boughtGapPct</C>.</>],
@@ -325,7 +325,7 @@ export function ApiReference() {
             ['generatedAt', 'string (ISO)', 'When this answer was built.'],
             ['totals', 'object', <><C>volumeAllUsd</C>, <C>volume24hUsd</C>, <C>tvlUsd</C>, <C>fees24hUsd</C>, <C>feesAllUsd</C>: each the sum over the venues that publish it, or empty when none does. <C>covers</C> names the venues in each total; <C>unread</C> the venues that could not be read.</>],
             ['daily', '{ t, v }[]', 'Daily volume in USD summed across the venues read; t in Unix seconds.'],
-            ['venues', 'Venue[]', <>One per project (<C>deepcore</C>, <C>peddleswap</C>, <C>peddles</C>, <C>peddlequest</C>): <C>state: ok</C> with its figures, <C>daily</C>, <C>series</C> (<C>{'{ volume, fees, tvl }'}</C>, each <C>{'{ t, v }[]'}</C> in USD, the last 120 days), <C>sources</C> (who supplied each series: the venue's own API, or DefiLlama with <C>fallback: true</C>), <C>lastActivity</C> (when the last day with non-zero volume was, or absent when none is known), <C>counts</C>, <C>notes</C> and <C>source</C> (<C>url</C>, <C>readAt</C>), or <C>state: error</C> with <C>error</C>. A venue that fails is unreadable, never zero.</>],
+            ['venues', 'Venue[]', <>One per project (<C>peddleswap</C>, <C>peddles</C>, <C>peddlequest</C>, <C>gullychain</C>): <C>state: ok</C> with its figures, <C>daily</C>, <C>series</C> (<C>{'{ volume, fees, tvl }'}</C>, each <C>{'{ t, v }[]'}</C> in USD, the last 120 days), <C>sources</C> (who supplied each series: the venue's own API, or DefiLlama with <C>fallback: true</C>), <C>lastActivity</C> (when the last day with non-zero volume was, or absent when none is known), <C>counts</C>, <C>notes</C> and <C>source</C> (<C>url</C>, <C>readAt</C>), or <C>state: error</C> with <C>error</C>. A venue that fails is unreadable, never zero.</>],
           ]}
         />
         <P>
@@ -347,7 +347,7 @@ export function ApiReference() {
   
   interface StatusComponent {
     id: string
-    group: 'platform' | 'tracker' | 'deepcore' | 'telegram' | 'payments' | 'ai' | 'security' | 'holders'
+    group: 'platform' | 'tracker' | 'telegram' | 'payments' | 'ai' | 'security' | 'holders'
     name: string
     state: StatusState
     detail: string
@@ -404,17 +404,9 @@ export function ApiReference() {
         </P>
       </Section>
 
-      <Section id="launchpad" title="Launchpad: /api/deepcore">
-        <Fields
-          head={['Path', 'Answers', 'Limits and cache']}
-          variant="routes"
-          rows={[
-            ['GET /api/deepcore/launches?chain=&limit=', <>The launchpad’s newest launches from the server’s poller: <C>{'{ state (ok, stale, unreadable), launches[], asOf, chains[], error, pollSeconds }'}</C>. Each launch: <C>key</C>, <C>chainId</C>, <C>chainName</C>, <C>token</C>, <C>symbol</C>, <C>createdAt</C>, <C>creator</C>, <C>totalSupply</C>, <C>legs[]</C> (pools, lock), <C>links</C>, <C>locked</C>. <C>chain</C> is 56, 999, 4663 or 8453; <C>limit</C> 1–50, default 50.</>, 'public, max-age=30; no key'],
-            ['GET /api/deepcore/quote?chain=&token=&amount=', <>A launchpad router quote for buying a stock token with the native coin, for comparison only (nothing is signed): <C>{'{ quote }'}</C> with <C>pay</C>, <C>out</C> (amount, minimum), <C>priceImpactPct</C>, <C>fee</C>, <C>route</C> (venues, hops), <C>alternatives</C>, <C>expiresAt</C>, <C>links</C>. <C>chain</C> is <C>robinhood</C> or <C>bsc</C>; <C>token</C> a tracked stock token; <C>amount</C> up to 1000 of the native coin.</>, <>10 a minute per address (<C>429</C>, <C>RATE_LIMITED</C>); answers cached 20 s (<C>cached: true</C>). Region-gated (<C>451</C>).</>],
-          ]}
-        />
+      <Section id="launchpad" title="Launchpad: /api/deepcore (retired)">
         <P>
-          Quote errors carry a <C>code</C>: <C>BAD_CHAIN</C>, <C>BAD_TOKEN</C>, <C>BAD_AMOUNT</C> (400), <C>NO_ROUTE</C> (404), <C>BUSY</C> (429, the launchpad’s own limit), <C>UNREADABLE</C> (502).
+          <C>GET /api/deepcore/launches</C> and <C>GET /api/deepcore/quote</C> answer <C>410</C> since 2026-11-08: the former partner launchpad's integrations were retired. Gully Core, Gully Labs’ own launchpad and DEX core, publishes its own data at gullycore.xyz (docs.gullycore.xyz).
         </P>
       </Section>
 

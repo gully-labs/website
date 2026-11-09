@@ -27,7 +27,12 @@ export interface Project {
   built: string[]
   /** The product family it belongs to: PeddleSwap, Peddles and PeddleQuest are the Peddle family (owner, 2026-11-05). */
   family?: 'Peddle'
+  /** This site's page for it when it is not a /projects page (a Gully product has a /products page instead). */
+  page?: string
 }
+
+/** The page on this site a project row links to: its /projects page, or its product page when it has one. */
+export const projectPath = (p: Pick<Project, 'slug' | 'page'>) => p.page ?? `/projects/${p.slug}`
 
 export const projects: Project[] = [
   {
@@ -95,6 +100,7 @@ export const projects: Project[] = [
   {
     slug: 'gullychain',
     key: 'gullychain',
+    page: '/products/chain',
     name: 'Gully Chain',
     tag: 'L3 chain',
     status: 'Beta',

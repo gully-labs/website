@@ -1,13 +1,12 @@
 import { TZ } from '../../lib/time'
-import { ArrowDown, ArrowUp, ArrowUpDown, BellRing, Layers, Lock, Megaphone, Moon, Search, Users } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, BellRing, Layers, Megaphone, Moon, Search, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { EChart } from '../../components/charts/EChart'
-import { alpha, barsPreset, C, PALETTE, sparklinePreset } from '../../components/charts/chartPresets'
+import { alpha, C, sparklinePreset } from '../../components/charts/chartPresets'
 import { NF } from '../../components/charts/number-formats'
 import { GhostChart } from '../../components/charts/GhostChart'
 import { ChainLogo } from '../../components/logos/ChainLogo'
-import { TokenLogo } from '../../components/logos/TokenLogo'
 import { StockLogo } from '../../components/tracker/StockLogo'
 import { ageText, CHAIN_NAME, CHAIN_SHORT, DOWN, fmtCompactUsd, fmtGap, fmtPrice, gapColor, UP, useHistory, type Load, type Tracker, type TrackerRow, type TrackerStatus } from '../../lib/tracker'
 import type { AlertCondition, GapAlert, GapDirection } from '../developers/api'
@@ -17,7 +16,7 @@ import { track } from '../../lib/track'
 import { HolderMap } from '../../components/holders/HolderMap'
 
 /* The Mini App's screens: the gap list across chains, one stock (24h chart and an alert composer driven
-   by Telegram's MainButton), launchpad launches and the linked account's alerts. Colours come from the
+   by Telegram's MainButton) and the linked account's alerts. Colours come from the
    theme tokens TgApp maps from Telegram; charts get concrete colours (ECharts cannot read CSS vars). */
 
 const SITE = 'https://gullylabs.xyz'
@@ -63,7 +62,7 @@ const plainCondition = (cond: AlertCondition | HolderCondition, chains: Record<s
     return `${who} of ${holderTarget(cond)} change`
   }
   const c = cond
-  if (c.type === 'deepcore-launch') return `A new token launches on the launchpad (${c.chainId ? (chains[c.chainId] ?? LAUNCH_CHAIN_NAMES[c.chainId] ?? `chain ${c.chainId}`) : 'any chain'})`
+  if (c.type === 'deepcore-launch') return `A new token launches on the former partner launchpad (${c.chainId ? (chains[c.chainId] ?? LAUNCH_CHAIN_NAMES[c.chainId] ?? `chain ${c.chainId}`) : 'any chain'}); retired 2026-11-08, no longer fires`
   if (c.type === 'gap') return c.direction === 'above' ? `▲ ${c.pct}% or more above the real share price` : c.direction === 'below' ? `▼ ${c.pct}% or more below the real share price` : `↕ ${c.pct}% or more above or below the real share price`
   return c.status === 'either' ? 'Well above or below the real share price' : c.status === 'premium' ? 'Well above the real share price' : c.status === 'discount' ? 'Well below the real share price' : String(c.status)
 }
@@ -469,152 +468,6 @@ export function StockScreen({ wa, initData, row, me, ink, onAlertsChanged, onHol
           )}
         </div>
       </Section>
-    </div>
-  )
-}
-
-/* ---------- Launchpad launches ---------- */
-
-type Launch = { key: string; chainId: number; chainKey: string; chainName: string; token: string; symbol: string | null; createdAt: string; legs: { kind: string | null; quote: string | null; locked: boolean | null }[]; links: { token: string } }
-type Launches = { state: 'ok' | 'stale' | 'unreadable'; launches: Launch[]; asOf: string | null; error: string | null; chainNames: Record<string, string> }
-const LAUNCH_CHAINS = [
-  { id: '0', label: 'All', icon: <Layers size={14} aria-hidden /> },
-  { id: '56', label: 'BNB', icon: <ChainLogo chain="bsc" size={14} decorative /> },
-  { id: '999', label: 'HyperEVM', icon: <ChainLogo chain="hyperevm" size={14} decorative /> },
-  { id: '4663', label: 'Robinhood', icon: <ChainLogo chain="robinhood" size={14} decorative /> },
-  { id: '8453', label: 'Base', icon: <ChainLogo chain="base" size={14} decorative /> },
-]
-// The kit's categorical palette (charts need concrete colours; ECharts cannot read CSS variables).
-const CHAIN_COLORS: Record<number, string> = { 56: PALETTE[0], 999: PALETTE[2], 4663: PALETTE[1], 8453: PALETTE[3] }
-const CHAIN_LABEL: Record<number, string> = { 56: 'BNB', 999: 'HyperEVM', 4663: 'Robinhood', 8453: 'Base' }
-
-export function LaunchesTab({ wa, initData, ink, me, onHolders, onAlertsChanged }: { wa: WebApp; initData: string; ink: string; me?: Me; onHolders?: (chain: string, token: string) => void; onAlertsChanged?: () => void }) {
-  const [chain, setChain] = useState('0')
-  const [alertMsg, setAlertMsg] = useState<{ ok: boolean; text: string } | null>(null)
-  const [alertBusy, setAlertBusy] = useState(false)
-  // A new-launch alert for the chain picked above (any chain on "All"), delivered to the linked chat (P1-19).
-  const launchAlert = async () => {
-    if (!me) return
-    if (!me.linked) return wa.openLink(me.portal)
-    if (alertBusy) return
-    setAlertBusy(true)
-    const r = await tgApi<{ alert: GapAlert }>(initData, '/api/tg/alerts', { method: 'POST', body: { kind: 'deepcore-launch', chainId: chain === '0' ? null : Number(chain) } })
-    setAlertBusy(false)
-    if (r.ok) {
-      haptic.ok()
-      track('alert-created', { kind: 'deepcore-launch', channel: 'telegram' })
-      setAlertMsg({ ok: true, text: `Alert created: ${plainCondition(r.data.alert.condition)}. It arrives in your linked chat.` })
-      onAlertsChanged?.()
-    } else {
-      haptic.fail()
-      setAlertMsg({ ok: false, text: friendlyError(r, 'The alert was not created. Try again in a minute.') })
-    }
-  }
-  const { load } = useTgApi<Launches>(initData, `/api/tg/launches${chain === '0' ? '' : `?chain=${chain}`}`, 90_000)
-  const now = useNow()
-  const counts = useMemo(() => {
-    if (load.k !== 'ok') return null
-    const m = new Map<number, number>()
-    for (const l of load.data.launches) m.set(l.chainId, (m.get(l.chainId) ?? 0) + 1)
-    return [...m.entries()].map(([id, n]) => ({ id, n, name: CHAIN_LABEL[id] ?? load.data.chainNames[id] ?? `Chain ${id}` }))
-  }, [load])
-  const barOption = useMemo(
-    () =>
-      counts && {
-        grid: { left: 4, right: 4, top: 18, bottom: 22 },
-        xAxis: { type: 'category', data: counts.map((c) => c.name), axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: ink, fontSize: 11, interval: 0, fontFamily: 'Hanken Grotesk, sans-serif' } },
-        yAxis: { type: 'value', show: false },
-        tooltip: { show: true, trigger: 'axis', confine: true },
-        series: [{ id: 'launches', ...barsPreset({ radius: [5, 5, 0, 0] }), barMaxWidth: 34, label: { show: true, position: 'top', color: ink, fontSize: 11 }, data: counts.map((c) => ({ value: c.n, itemStyle: { color: CHAIN_COLORS[c.id] ?? C.faint } })) }],
-      },
-    [counts, ink],
-  )
-
-  return (
-    <div className="flex flex-col gap-3">
-      <Chips value={chain} options={LAUNCH_CHAINS} onChange={setChain} label="Launchpad chain" />
-      {me && (
-        <div className="flex flex-col gap-1">
-          <Button tone="line" onClick={launchAlert} disabled={alertBusy}>
-            <span className="inline-flex items-center gap-2">
-              <BellRing size={16} aria-hidden /> {me.linked ? `Alert me on new launches${chain === '0' ? '' : ` on ${LAUNCH_CHAIN_NAMES[Number(chain)] ?? 'this chain'}`}` : 'Link your wallet in the app for launch alerts'}
-            </span>
-          </Button>
-          {alertMsg && (
-            <p role="status" className={`m-0 px-1 text-[13px] ${alertMsg.ok ? 'text-green' : 'text-error'}`}>
-              {alertMsg.text}
-            </p>
-          )}
-        </div>
-      )}
-      {load.k === 'loading' && <ListSkeleton n={5} />}
-      {load.k === 'error' && <Notice title="Launches aren’t available right now">Try again in a minute.</Notice>}
-      {load.k === 'ok' && load.data.state === 'unreadable' && <Notice title="The launchpad isn’t answering right now">Try again in a minute.</Notice>}
-      {load.k === 'ok' && load.data.state !== 'unreadable' && (
-        <>
-          {load.data.state === 'stale' && <p className="m-0 px-1 text-[12px] text-faint">The launchpad isn’t answering right now; this list is from {ageText(load.data.asOf, now)}.</p>}
-          {barOption && counts!.length > 1 && (
-            <div className={`${card} px-2 pt-1`}>
-              <EChart option={barOption} height={110} label={`Latest launches per chain: ${counts!.map((c) => `${c.name} ${c.n}`).join(', ')}`} />
-            </div>
-          )}
-          <Section title={`${load.data.launches.length} latest launches`}>
-            {!load.data.launches.length && <GhostChart label="New launches will draw here" variant="bars" height={110} badge={false} />}
-            <ul className="m-0 flex list-none flex-col gap-2 p-0">
-              {load.data.launches.map((l) => {
-                const leg = l.legs[0]
-                return (
-                  <li key={l.key} className={`${card} flex items-stretch`}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        haptic.tap()
-                        wa.openLink(l.links.token)
-                      }}
-                      aria-label={`${l.symbol ?? 'New token'} on ${l.chainName}: open on the launchpad`}
-                      className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-[14px] px-3 py-[10px] text-left active:opacity-80"
-                    >
-                      <TokenLogo symbol={l.symbol ?? 'Token'} chain={l.chainKey} address={l.token} size={32} />
-                      <span className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate font-semibold">{l.symbol ?? `${l.token.slice(0, 6)}…${l.token.slice(-4)}`}</span>
-                        <span className="flex items-center gap-1 text-[12px] text-muted">
-                          <ChainLogo chain={l.chainKey} size={14} decorative className="flex-none" />
-                          <span className="min-w-0 truncate">
-                          {l.chainName}
-                          {leg?.locked === true && (
-                            <>
-                              {' · '}
-                              <Lock size={11} aria-hidden className="mr-[2px] inline align-[-1px]" />
-                              Liquidity locked
-                            </>
-                          )}
-                          {leg?.locked === false ? ' · Liquidity not locked' : ''}
-                          </span>
-                        </span>
-                      </span>
-                      <span className="flex-none text-[12px] text-faint">{ageText(l.createdAt, now)}</span>
-                    </button>
-                    {onHolders && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          haptic.tap()
-                          onHolders(l.chainKey, l.token.toLowerCase())
-                        }}
-                        aria-label={`Who holds ${l.symbol ?? 'this token'}?`}
-                        className="flex min-h-11 min-w-11 flex-none flex-col items-center justify-center gap-[2px] border-l border-line px-3 text-[11px] text-muted active:opacity-70"
-                      >
-                        <Users size={18} aria-hidden />
-                        Holders
-                      </button>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
-          </Section>
-        </>
-      )}
     </div>
   )
 }

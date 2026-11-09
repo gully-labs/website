@@ -58,7 +58,7 @@ export const SURFACES = [
   { key: 'offerwall', group: 'chain', name: 'Gully Offerwall', url: 'https://offers.kre8.fun', probe: 'https://offers.kre8.fun/v1/stats' },
   { key: 'gully-id', group: 'labs', name: 'Gully ID', url: 'https://gullyid.xyz', probe: 'https://gullyid.xyz/health' },
   { key: 'pay', group: 'labs', name: 'Gully Pay', url: 'https://gullypay.xyz', probe: 'https://gullypay.xyz/api/status' },
-  { key: 'x402', group: 'labs', name: 'Gully Pay x402', url: 'https://gullypay.xyz/x402/status' },
+  { key: 'x402', group: 'labs', name: 'Gully Pay x402', url: 'https://gullypay.xyz/api/x402/status' },
   { key: 'rpc-site', group: 'labs', name: 'Gully RPC', url: 'https://gullyrpc.xyz', probe: 'https://gullyrpc.xyz/status.json' },
   { key: 'rpc-app', group: 'labs', name: 'Gully RPC app', url: 'https://app.gullyrpc.xyz' },
   { key: 'rpc-gateway', group: 'labs', name: 'Gully RPC gateway', url: 'https://rpc.gullyrpc.xyz' },
@@ -72,7 +72,7 @@ export const SURFACES = [
   { key: 'studio-dev', group: 'labs', name: 'Gully Studio dev portal', url: 'https://dev.gullystudio.xyz', soon: true },
   { key: 'studio-docs', group: 'labs', name: 'Gully Studio docs', url: 'https://docs.gullystudio.xyz', soon: true },
   // The gateway serves only pinned content: the inline empty-directory CID answers without the network.
-  { key: 'ipfs', group: 'labs', name: 'Gully IPFS', url: 'https://ipfs.gullylabs.xyz', probe: 'https://ipfs.gullylabs.xyz/ipfs/bafyaabakaieac' },
+  { key: 'ipfs', group: 'labs', name: 'Gully IPFS', url: 'https://docs.gullylabs.xyz/ipfs', probe: 'https://ipfs.gullylabs.xyz/ipfs/bafyaabakaieac' },
   { key: 'status', group: 'labs', name: 'Status page', url: 'https://status.gullylabs.xyz' },
 ]
 

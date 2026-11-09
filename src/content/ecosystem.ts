@@ -109,10 +109,10 @@ export const snippets: Snippet[] = [
   },
   {
     id: 'webhook',
-    label: 'Launch webhook',
+    label: 'Gap webhook',
     lang: 'json',
     caption: 'JSON · POST /api/developer/alerts (signed in with your wallet)',
-    code: '{\n  "name": "Base launches",\n  "condition": { "type": "deepcore-launch", "chainId": 8453 },\n  "webhookUrl": "https://…",\n  "telegram": true\n}',
+    code: '{\n  "name": "NVDA premium",\n  "chain": "robinhood",\n  "ticker": "NVDA",\n  "condition": { "type": "gap", "pct": 2, "direction": "above" },\n  "webhookUrl": "https://…",\n  "telegram": true\n}',
   },
   {
     id: 'pay',

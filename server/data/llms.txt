@@ -36,12 +36,11 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Gully Score](https://gullylabs.xyz/score) (live): A 0 to 100 reading of how a contract is controlled and how it has behaved, from public evidence only, with every component, weight and source shown.
 - [Score badge](https://docs.gullylabs.xyz/gully-score) (live): An SVG badge of a contract's score that a project can embed on its own site.
 - [Gully AI assistant](https://gullylabs.xyz/ask) (live): Answers questions about Gully Labs from its own docs and live data, cites its sources and says it does not know when it does not.
-- [@GullyLabsBot commands and alerts](https://docs.gullylabs.xyz/telegram) (live): A Telegram bot with a menu for gaps, movers, new launchpad launches, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.
+- [@GullyLabsBot commands and alerts](https://docs.gullylabs.xyz/telegram) (live): A Telegram bot with a menu for gaps, movers, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.
 - [News channel gate](https://docs.gullylabs.xyz/news-gate) (live): Asks users to follow @GullyLabsNews to use the bot's features, while leaving alerts, mute, pause, delete and unlink open.
-- [Telegram Mini App](https://gullylabs.xyz/tg) (live): The Gully app inside Telegram, with stock gaps, launchpad launches and alerts for the account linked to your chat.
-- [New launch alerts](https://docs.gullylabs.xyz/telegram) (live): Alerts when a new token launches on the launchpad, on any chain or one you pick.
+- [Telegram Mini App](https://gullylabs.xyz/tg) (live): The Gully app inside Telegram, with stock gaps and alerts for the account linked to your chat.
 - [Gully Analytics](https://gullylabs.xyz/analytics) (live): Privacy-friendly web analytics with Web3 events, a fork of Umami, that a wallet signs up for in the app and pays for with Gully Pay.
-- [Gully Labs App dashboard](https://app.gullylabs.xyz/) (live): A wallet-signed-in dashboard at app.gullylabs.xyz for keys, alerts, usage, billing, analytics, security, Gully Pay and the other services.
+- [Gully Labs App dashboard](https://app.gullylabs.xyz/) (live): A wallet-signed-in dashboard at app.gullylabs.xyz for the services Gully Labs runs: chain orders, Gully IPFS, Gully Analytics, development requests, keys, usage, billing, team and settings. Other Gully products live in their own apps.
 - [Teams and workspaces](https://docs.gullylabs.xyz/teams) (live): Every wallet is a workspace; owners invite teammates by wallet or link with roles, and an activity log records changes.
 - [Public status page](https://gullylabs.xyz/status) (live): A public page and JSON endpoint showing the health of the API, tracker data, launch poller, Telegram bot, payment RPCs, Gully AI, the scan engine, monitors and Holder Map sources.
 - [Docs site and changelog](https://docs.gullylabs.xyz/) (live): Documentation for every product at docs.gullylabs.xyz, with a searchable sidebar, an API reference, a roadmap and a dated changelog.

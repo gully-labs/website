@@ -307,7 +307,7 @@ URL: https://docs.gullylabs.xyz/gully-score
 Answers questions about Gully Labs from its own docs and live data, cites its sources and says it does not know when it does not.
 
 - Retrieval is hybrid: BM25, a synonym-expanded BM25 and, when VOYAGE_API_KEY is set, embeddings, fused by reciprocal-rank fusion.
-- Live tools include get_plans, get_stock, get_top_gaps, deepcore_launches, deepcore_pool, get_holders, get_gully_score, get_published_reports, get_pay_chains, get_status and get_pay_gas; signed-in users also get get_my_store, get_my_usage and get_my_alerts.
+- Live tools include get_plans, get_stock, get_top_gaps, get_holders, get_gully_score, get_published_reports, get_pay_chains, get_status and get_pay_gas; signed-in users also get get_my_store, get_my_usage and get_my_alerts.
 - Default answer model is claude-haiku-5-5 (ASK_MODEL); the log keeps a salted IP hash only, for 90 days.
 - Per-visitor limits default to 6 a minute and 60 a day; ASK_DAILY_LIMIT caps all surfaces at 2000 a day.
 - It runs on the site (/ask), the docs, the app, ⌘K and Telegram (/ask).
@@ -316,7 +316,7 @@ URL: https://gullylabs.xyz/ask
 
 ### @GullyLabsBot commands and alerts (Telegram bot, live)
 
-A Telegram bot with a menu for gaps, movers, new launchpad launches, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.
+A Telegram bot with a menu for gaps, movers, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.
 
 - Private-chat commands: start, app, gap, top, movers, launches, holders, alerts, security, score, ask, help, stop. Groups get gap, top, launches and help.
 - Alerts can be paused, muted for 24 hours, tested or deleted from the chat.
@@ -335,20 +335,12 @@ URL: https://docs.gullylabs.xyz/news-gate
 
 ### Telegram Mini App (Mini App, live)
 
-The Gully app inside Telegram, with stock gaps, launchpad launches and alerts for the account linked to your chat.
+The Gully app inside Telegram, with stock gaps and alerts for the account linked to your chat.
 
 - Served at gullylabs.xyz/tg; each request carries Telegram initData, validated with HMAC-SHA256 and refused after 24 hours.
 - Routes: /api/tg/me, /sparks, /launches, /alerts and /announcements.
 
 URL: https://gullylabs.xyz/tg
-
-### New launch alerts (Telegram bot, live)
-
-Alerts when a new token launches on the launchpad, on any chain or one you pick.
-
-- Launchpad chains: BNB Chain (56), HyperEVM (999), Robinhood Chain (4663) and Base (8453).
-
-URL: https://docs.gullylabs.xyz/telegram
 
 ### Gully Analytics (Gully Analytics, live)
 
@@ -363,7 +355,7 @@ URL: https://gullylabs.xyz/analytics
 
 ### Gully Labs App dashboard (App, live)
 
-A wallet-signed-in dashboard at app.gullylabs.xyz for keys, alerts, usage, billing, analytics, security, Gully Pay and the other services.
+A wallet-signed-in dashboard at app.gullylabs.xyz for the services Gully Labs runs: chain orders, Gully IPFS, Gully Analytics, development requests, keys, usage, billing, team and settings. Other Gully products live in their own apps.
 
 - Sign-in is Sign-In with Ethereum (EIP-4361), including smart-contract wallets via EIP-1271 and ERC-6492.
 - The old developers host was retired on 2026-10-17; /app and /developers on the main site redirect to the app.

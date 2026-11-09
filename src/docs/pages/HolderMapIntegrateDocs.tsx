@@ -155,7 +155,7 @@ export function HolderMapIntegrateDocs() {
           head={['Field', 'Type', 'Meaning']}
           rows={[
             ['state', '"ok" | "unavailable" | "not-found" | "busy" | "error"', <>Only <C>ok</C> carries the fields below. The others carry <C>reason</C> (plain words), <C>chain</C>, <C>token.address</C> and <C>asOf</C>; <C>unavailable</C> adds <C>comingSoon</C>.</>],
-            ['kind', 'string', <>What was mapped, for example <C>stock</C> or <C>deepcore-launch</C>.</>],
+            ['kind', 'string', <>What was mapped: <C>stock</C>, <C>launch</C> or <C>token</C>.</>],
             ['chain', '{ key, id, name }', 'The chain.'],
             ['token', '{ address, symbol, name, decimals, supply, url }', <><C>supply</C> is empty when the total supply is not known; <C>url</C> is the explorer page.</>],
             ['asOf', 'ISO time', 'When the map was built.'],

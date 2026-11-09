@@ -6,9 +6,10 @@
 //              first token transfer (Transfer logs) came from, followed up to K hops. Exchange origins (labelled)
 //              end a trace. Funders shared by two or more traced wallets are listed.
 //   clusters   the map's direct-transfer clusters, the clusters formed by shared funders, and both combined.
-//   deployer   the deployer's record across the supported chains: other tokens deployed (DeepCore account
-//              activity, and the explorer's contract-creation transactions where an explorer key is set).
-//   trading    snipers and bundled buys: buys in the first blocks after the first liquidity. For DeepCore
+//   deployer   the deployer's record across the supported chains: other tokens deployed (the explorer's
+//              contract-creation transactions where an explorer key is set; the partner launchpad's account
+//              activity was retired on 2026-11-08).
+//   trading    snipers and bundled buys: buys in the first blocks after the first liquidity. For launchpad
 //              launches this is the map's own forensics (exact); for ANY other EVM token it is inferred from the
 //              token's Transfer history (the pool is the contract that paid tokens out to many wallets), and says so.
 //
@@ -16,11 +17,10 @@
 // and the hops. A check that reaches a limit finishes "partial" with the reason(s) and keeps what it found.
 //
 // Read-only on holders.mjs, holders-logs.mjs and holders-intel.mjs: only their exports are used. Own helpers
-// here (not exported there): DeepCore log paging for a launch's transfers, the Blockscout explorer reads, name
+// here (not exported there): the Blockscout explorer reads, name
 // tags, Solana first-funder reads. All upstream IO goes through `deps` so tests stub it.
 
-import { DEEPCORE_CHAINS } from './deepcore.mjs'
-import { dcGet, decodeTransfer, evmRpc, HOLDER_CHAINS, holdersAvailable, readCode, readHolderMap, reconstructBalances, TRANSFER_TOPIC } from './holders.mjs'
+import { decodeTransfer, evmRpc, HOLDER_CHAINS, holdersAvailable, readCode, readHolderMap, reconstructBalances, TRANSFER_TOPIC } from './holders.mjs'
 import { archiveKnown, readOwnHistory } from './holders-logs.mjs'
 import { readDeployerHistory } from './holders-intel.mjs'
 import { HOLDER_DEEP } from './plans.mjs'
@@ -29,7 +29,6 @@ import { solanaRpc } from './solana.mjs'
 const ZERO = '0x0000000000000000000000000000000000000000'
 const DEAD = '0x000000000000000000000000000000000000dead'
 const SNIPER_BLOCKS = 5
-const DC_PAGE = 1_000
 const lower = (a) => String(a ?? '').toLowerCase()
 const isAddr = (a) => typeof a === 'string' && /^0x[0-9a-fA-F]{40}$/.test(a)
 const round2 = (n) => (typeof n === 'number' && Number.isFinite(n) ? Math.round(n * 100) / 100 : null)
@@ -130,7 +129,6 @@ export function liveDeps() {
     readMap: (chainKey, token) => readHolderMap(chainKey, token, { tier: 'pro' }),
     rpc: (chainKey, method, params) => evmRpc(chainKey, method, params),
     code: (chainKey, addrs) => readCode(chainKey, addrs),
-    dc: (p) => dcGet(p),
     ownHistory: (chainKey, token) => readOwnHistory(chainKey, token),
     deployerHistory: (chainId, deployer, token, opts) => readDeployerHistory(chainId, deployer, token, opts),
     fetchJson,
@@ -154,7 +152,7 @@ export function coverage(chainKeyIn, { deps = null } = {}) {
   const key = deps ? !!deps.explorerKey?.() : explorerKey() !== ''
   const sol = chainKey === 'solana'
   const archive = sol ? false : deps ? !!deps.archive : archiveKnown(chainKey)
-  const launches = !sol && !!DEEPCORE_CHAINS[c.id]
+  const launches = false // the partner launchpad's exact launch records were retired on 2026-11-08
   const part = (state, reason) => ({ state, reason: reason ?? null })
   if (sol) {
     const have = deps ? !!deps.solanaSet : solanaRpcSet()
@@ -180,14 +178,14 @@ export function coverage(chainKeyIn, { deps = null } = {}) {
       launches || key
         ? part(
             launches && key ? 'available' : 'limited',
-            launches && key ? null : launches ? 'DeepCore’s record only (no explorer key for contract creations).' : 'Explorer contract creations only (not a DeepCore launch).',
+            launches && key ? null : launches ? 'The launchpad’s record only (no explorer key for contract creations).' : 'Explorer contract creations only.',
           )
-        : part('unavailable', 'The deployer needs DeepCore (launches) or an explorer key.'),
+        : part('unavailable', 'The deployer record needs an explorer key.'),
     trading: launches
-      ? part('available', 'Exact for DeepCore launches; inferred from transfers for any other token.')
+      ? part('available', 'Exact for launchpad launches; inferred from transfers for any other token.')
       : archive
         ? part('limited', 'Inferred from the token’s transfer history.')
-        : part('unavailable', 'Needs an archive RPC or DeepCore to read the first blocks.'),
+        : part('unavailable', 'Needs an archive RPC to read the first blocks.'),
   }
 }
 
@@ -285,7 +283,7 @@ export async function runDeepCheck({ chain, token: tokenIn, deps = liveDeps(), l
   } else {
     report.base.note =
       map?.state === 'not-found'
-        ? 'This token is not a DeepCore launch or a tracked stock token, so there is no holder map: the check runs from the token’s own transfers and the explorer.'
+        ? 'This token is not a tracked stock token or a known launch, so there is no holder map: the check runs from the token’s own transfers and the explorer.'
         : `The holder map is not available (${map?.reason ?? map?.state}); the check runs from the token’s own transfers and the explorer.`
   }
   const nodes = map?.state === 'ok' ? map.nodes : []
@@ -318,52 +316,6 @@ export async function runDeepCheck({ chain, token: tokenIn, deps = liveDeps(), l
         note: 'Transfer history is not read on Solana.',
       })
     const launchBlock = map?.state === 'ok' ? map.forensics?.launchBlock : null
-    if (map?.state === 'ok' && map.kind === 'deepcore-launch' && Number.isInteger(launchBlock)) {
-      const out = []
-      let cursor = null
-      for (;;) {
-        try {
-          budget.take('span')
-        } catch (e) {
-          budget.note(e)
-          return Object.assign(history, {
-            state: 'partial',
-            transfers: out,
-            complete: false,
-            source: 'DeepCore log index',
-            note: `Only the first ${out.length.toLocaleString('en-US')} transfers were read: ${e.message}`,
-          })
-        }
-        const q = `address=${token}&topic0=${TRANSFER_TOPIC}&fromBlock=${launchBlock}&toBlock=latest&limit=${DC_PAGE}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`
-        const r = await deps.dc(`/v1/chains/${c.id}/logs?${q}`)
-        if (!r.ok || !Array.isArray(r.body?.data?.logs))
-          return Object.assign(history, {
-            state: out.length ? 'partial' : 'unavailable',
-            transfers: out,
-            source: 'DeepCore log index',
-            note: 'DeepCore’s log index could not be read.',
-          })
-        for (const l of r.body.data.logs) {
-          const t = decodeTransfer(l)
-          if (t) out.push(t)
-        }
-        if (!r.body.page?.hasMore)
-          return Object.assign(history, {
-            state: 'ok',
-            transfers: out,
-            complete: true,
-            source: 'DeepCore log index (every transfer since launch)',
-          })
-        cursor = r.body.page.nextCursor
-        if (!cursor)
-          return Object.assign(history, {
-            state: 'partial',
-            transfers: out,
-            source: 'DeepCore log index',
-            note: 'DeepCore’s log index stopped paging.',
-          })
-      }
-    }
     try {
       budget.take('span')
     } catch (e) {
@@ -405,8 +357,8 @@ export async function runDeepCheck({ chain, token: tokenIn, deps = liveDeps(), l
       const flagged = (flag) => nodes.filter((n) => n.flags.includes(flag)).map((n) => ({ address: n.id, pct: n.pct }))
       report.sections.trading = {
         state: 'ok',
-        method: 'deepcore-launch-forensics',
-        source: 'DeepCore log index (every transfer since launch) and the launch’s pool labels',
+        method: 'launch-forensics',
+        source: 'Transfer history since launch and the launch’s pool labels',
         confidence: 'high',
         launchBlock: f.launchBlock,
         firstTradeBlock: f.firstTradeBlock,
@@ -431,7 +383,7 @@ export async function runDeepCheck({ chain, token: tokenIn, deps = liveDeps(), l
           section: 'trading',
           text: f.riskLine,
           confidence: 'high',
-          source: 'DeepCore log index + launch pool labels',
+          source: 'transfer history + launch pool labels',
         }),
       )
       if (f.firstTradeBlock !== null)
@@ -441,7 +393,7 @@ export async function runDeepCheck({ chain, token: tokenIn, deps = liveDeps(), l
             section: 'trading',
             text: `${f.snipers.wallets} wallet${f.snipers.wallets === 1 ? '' : 's'} made their first buy within ${f.snipers.blocks} blocks of the first trade and hold ${f.snipers.pct ?? '?'}% now.`,
             confidence: 'high',
-            source: 'DeepCore log index + launch pool labels',
+            source: 'transfer history + launch pool labels',
           }),
         )
       return
@@ -903,7 +855,7 @@ export async function runDeepCheck({ chain, token: tokenIn, deps = liveDeps(), l
       tokens: [],
       otherLaunchpads: {
         state: 'unavailable',
-        reason: 'No launchpad other than DeepCore has a public API we read yet.',
+        reason: 'No launchpad publishes a deployer record we read yet.',
       },
     })
     if (sol) {
@@ -913,7 +865,7 @@ export async function runDeepCheck({ chain, token: tokenIn, deps = liveDeps(), l
       return
     }
     let who = deployer
-    let whoSource = deployer ? 'DeepCore launch record' : null
+    let whoSource = deployer ? 'Launch record' : null
     if (!who && deps.explorerKey?.()) {
       budget.take('explorer')
       const r = await deps.fetchJson(`${explorerBase()}/${c.id}/api/v2/addresses/${token}?apikey=${encodeURIComponent(deps.explorerKey())}`)
@@ -925,50 +877,15 @@ export async function runDeepCheck({ chain, token: tokenIn, deps = liveDeps(), l
     }
     if (!who) {
       sec.state = 'unavailable'
-      sec.reason = deps.explorerKey?.() ? 'The explorer does not say who deployed this token.' : 'The deployer is not known: this is not a DeepCore launch and no explorer key is set.'
+      sec.reason = deps.explorerKey?.() ? 'The explorer does not say who deployed this token.' : 'The deployer is not known: this is not a known launch and no explorer key is set.'
       unavailable('deployer', 'Deployer record', sec.reason)
       return
     }
     sec.address = who
     sec.source = whoSource
     const seen = new Map()
-    // DeepCore's account activity: every launch the deployer made on the chains DeepCore runs on.
-    const dcLaunches = []
-    if (DEEPCORE_CHAINS[c.id]) {
-      budget.take('explorer', 6)
-      const h = await deps.deployerHistory(c.id, who, token, { max: 5 }).catch(() => null)
-      if (h?.checked) {
-        for (const l of h.launches) {
-          seen.set(`${l.chainKey}:${l.token}`, true)
-          dcLaunches.push({
-            chain: l.chainKey,
-            address: l.token,
-            symbol: l.symbol ?? null,
-            createdAt: l.createdAt ?? null,
-            outcome: pickOutcome(l),
-            outcomeNote: l.note ?? null,
-            source: 'DeepCore account activity',
-            confidence: 'high',
-            path: l.path ?? null,
-          })
-        }
-        sec.tokens.push(...dcLaunches)
-        sec.deepcore = {
-          state: 'ok',
-          total: h.total,
-          shown: h.launches.length,
-          more: h.more ?? 0,
-        }
-      } else
-        sec.deepcore = {
-          state: 'unavailable',
-          reason: h?.reason ?? 'DeepCore could not be read for the deployer’s other launches.',
-        }
-    } else
-      sec.deepcore = {
-        state: 'unavailable',
-        reason: `DeepCore does not run on ${c.name}.`,
-      }
+    // The launchpad's own record of the deployer's other launches: retired with the partner API on 2026-11-08.
+    sec.launchpad = { state: 'unavailable', reason: 'The former partner launchpad’s account record was retired on 2026-11-08; the explorer’s contract creations are read instead.' }
     // The explorer's contract creations, chain by chain.
     if (deps.explorerKey?.()) {
       for (const [ck, ch] of Object.entries(deps.chains)) {
@@ -1040,14 +957,14 @@ export async function runDeepCheck({ chain, token: tokenIn, deps = liveDeps(), l
       }))
     }
     const n = sec.tokens.length
-    const noOutcome = n === 0 && sec.deepcore.state !== 'ok' && !sec.chains.some((r) => r.state === 'ok')
+    const noOutcome = n === 0 && !sec.chains.some((r) => r.state === 'ok')
     if (noOutcome) {
       sec.state = 'unavailable'
-      sec.reason = 'Neither DeepCore nor an explorer could be read for the deployer’s other tokens.'
+      sec.reason = 'No explorer could be read for the deployer’s other tokens.'
       unavailable('deployer', 'Deployer record', sec.reason)
       return
     }
-    sec.source = [whoSource, sec.deepcore.state === 'ok' ? 'DeepCore account activity' : null, sec.chains.some((r) => r.state === 'ok') ? 'explorer contract creations' : null]
+    sec.source = [whoSource, sec.chains.some((r) => r.state === 'ok') ? 'explorer contract creations' : null]
       .filter(Boolean)
       .join('; ')
     const bad = sec.tokens.filter((t) => t.outcome === 'liquidity-pulled' || t.outcome === 'deployer-sold')
@@ -1058,7 +975,7 @@ export async function runDeepCheck({ chain, token: tokenIn, deps = liveDeps(), l
         text: n
           ? `The deployer ${short(who)} deployed ${n} other token${n === 1 ? '' : 's'} that we can see${bad.length ? `, ${bad.length} with a bad outcome (${bad.map((t) => t.outcome).join(', ')})` : ''}.`
           : `The deployer ${short(who)} has no other token we can see in the sources that answered.`,
-        confidence: sec.chains.some((r) => r.state === 'ok' && r.complete) || sec.deepcore.state === 'ok' ? 'medium' : 'low',
+        confidence: sec.chains.some((r) => r.state === 'ok' && r.complete) ? 'medium' : 'low',
         source: sec.source,
       }),
     )

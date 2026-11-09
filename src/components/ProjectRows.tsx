@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { motion } from 'motion/react'
 import { ArrowUpRight } from 'lucide-react'
-import { comingSoon, projects, type Project } from '../content/projects'
+import { comingSoon, projectPath, projects, type Project } from '../content/projects'
 import { fmtTime, fmtUsd, sourceHost, type Point, type Stats, type Venue } from '../lib/stats'
 import { NotifyMe } from './NotifyMe'
 import { MiniSpark } from './charts/MiniSpark'
@@ -40,15 +40,6 @@ function figure(v: Venue | undefined, c: Col): { n: number | null; note?: string
   }
   if (v.feesAllUsd !== null && v.feesAllUsd !== undefined) return { n: v.feesAllUsd }
   return { n: v.fees24hUsd, note: v.fees24hUsd === null ? undefined : '24h' }
-}
-
-/** Small secondary facts a venue publishes beyond the three figures (a launchpad, say: hosted sites,
-    launches in 24h, dollars in locks). A fact the venue left out reads "—", never 0. */
-function extrasOf(v: Venue | undefined): string | null {
-  if (!v || v.state !== 'ok' || v.key !== 'deepcore') return null
-  const c = v.counts
-  const n = (x: number | null | undefined) => (x === null || x === undefined ? '—' : x.toLocaleString('en-US'))
-  return `${n(c.sites)} hosted site${c.sites === 1 ? '' : 's'} · ${n(c.launches24h)} launch${c.launches24h === 1 ? '' : 'es'} 24h · ${fmtUsd(v.lockedUsd)} in locks`
 }
 
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five']
@@ -150,7 +141,7 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
       <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,310px),1fr))] gap-3 p-0">
         {rows.map((p, i) => {
           const venue = venueOf(p.key)
-          const extras = extrasOf(venue)
+          const extras: string | null = null
           const provenance =
             venue?.state === 'ok'
               ? `Read from ${sourceHost(venue.source.url)} at ${fmtTime(venue.source.readAt)}${venue.notes.length ? ` · ${venue.notes.join(' ')}` : ''}`
@@ -171,7 +162,7 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
               <div className="flex items-start gap-3">
                 <VenueLogo venue={p.key} name={p.name} size={40} decorative className="ring-1 ring-line-strong transition-transform duration-200 group-hover:scale-105" />
                 <span className="flex min-w-0 flex-1 flex-col leading-[1.25]">
-                  <Link to={`/projects/${p.slug}`} className="relative w-fit font-semibold text-ink before:absolute before:-inset-y-3 before:inset-x-0 before:content-[''] hover:text-gold">
+                  <Link to={projectPath(p)} className="relative w-fit font-semibold text-ink before:absolute before:-inset-y-3 before:inset-x-0 before:content-[''] hover:text-gold">
                     {p.name}
                   </Link>
                   <span className="text-[12px] text-dim">{p.tagline}</span>

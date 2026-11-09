@@ -161,8 +161,7 @@ export const features: Feature[] = [
     source: [
       "website:server/alerts.mjs",
       "website:server/plans.mjs",
-      "website:src/docs/pages/PlansAlerts.tsx",
-      "website:src/pages/developers/Alerts.tsx"
+      "website:src/docs/pages/PlansAlerts.tsx"
     ]
   },
   {
@@ -580,7 +579,7 @@ export const features: Feature[] = [
     summary: "Answers questions about Gully Labs from its own docs and live data, cites its sources and says it does not know when it does not.",
     facts: [
       "Retrieval is hybrid: BM25, a synonym-expanded BM25 and, when VOYAGE_API_KEY is set, embeddings, fused by reciprocal-rank fusion.",
-      "Live tools include get_plans, get_stock, get_top_gaps, deepcore_launches, deepcore_pool, get_holders, get_gully_score, get_published_reports, get_pay_chains, get_status and get_pay_gas; signed-in users also get get_my_store, get_my_usage and get_my_alerts.",
+      "Live tools include get_plans, get_stock, get_top_gaps, get_holders, get_gully_score, get_published_reports, get_pay_chains, get_status and get_pay_gas; signed-in users also get get_my_store, get_my_usage and get_my_alerts.",
       "Default answer model is claude-haiku-5-5 (ASK_MODEL); the log keeps a salted IP hash only, for 90 days.",
       "Per-visitor limits default to 6 a minute and 60 a day; ASK_DAILY_LIMIT caps all surfaces at 2000 a day.",
       "It runs on the site (/ask), the docs, the app, ⌘K and Telegram (/ask)."
@@ -598,7 +597,7 @@ export const features: Feature[] = [
     product: "Telegram bot",
     name: "@GullyLabsBot commands and alerts",
     status: "live",
-    summary: "A Telegram bot with a menu for gaps, movers, new launchpad launches, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.",
+    summary: "A Telegram bot with a menu for gaps, movers, Holder Map, contract scans, Gully Score and Gully AI, plus alert delivery.",
     facts: [
       "Private-chat commands: start, app, gap, top, movers, launches, holders, alerts, security, score, ask, help, stop. Groups get gap, top, launches and help.",
       "Alerts can be paused, muted for 24 hours, tested or deleted from the chat.",
@@ -633,7 +632,7 @@ export const features: Feature[] = [
     product: "Mini App",
     name: "Telegram Mini App",
     status: "live",
-    summary: "The Gully app inside Telegram, with stock gaps, launchpad launches and alerts for the account linked to your chat.",
+    summary: "The Gully app inside Telegram, with stock gaps and alerts for the account linked to your chat.",
     facts: [
       "Served at gullylabs.xyz/tg; each request carries Telegram initData, validated with HMAC-SHA256 and refused after 24 hours.",
       "Routes: /api/tg/me, /sparks, /launches, /alerts and /announcements."
@@ -643,21 +642,6 @@ export const features: Feature[] = [
       "website:server/telegram-miniapp.mjs",
       "website:src/pages/tg/TgApp.tsx",
       "website:src/docs/pages/TelegramMiniAppDocs.tsx"
-    ]
-  },
-  {
-    id: "telegram-deepcore-launch-alerts",
-    product: "Telegram bot",
-    name: "New launch alerts",
-    status: "live",
-    summary: "Alerts when a new token launches on the launchpad, on any chain or one you pick.",
-    facts: [
-      "Launchpad chains: BNB Chain (56), HyperEVM (999), Robinhood Chain (4663) and Base (8453)."
-    ],
-    url: "https://docs.gullylabs.xyz/telegram",
-    source: [
-      "website:server/deepcore.mjs",
-      "website:server/telegram-miniapp.mjs"
     ]
   },
   {
@@ -685,7 +669,7 @@ export const features: Feature[] = [
     product: "App",
     name: "Gully Labs App dashboard",
     status: "live",
-    summary: "A wallet-signed-in dashboard at app.gullylabs.xyz for keys, alerts, usage, billing, analytics, security, Gully Pay and the other services.",
+    summary: "A wallet-signed-in dashboard at app.gullylabs.xyz for the services Gully Labs runs: chain orders, Gully IPFS, Gully Analytics, development requests, keys, usage, billing, team and settings. Other Gully products live in their own apps.",
     facts: [
       "Sign-in is Sign-In with Ethereum (EIP-4361), including smart-contract wallets via EIP-1271 and ERC-6492.",
       "The old developers host was retired on 2026-10-17; /app and /developers on the main site redirect to the app."
@@ -827,7 +811,7 @@ export const features: Feature[] = [
     url: "https://gullychain.xyz/",
     source: [
       "website:server/developer.mjs",
-      "website:src/pages/developers/Products.tsx"
+      "website:src/pages/Products.tsx"
     ]
   },
   {
@@ -1132,7 +1116,7 @@ export const features: Feature[] = [
     status: "building",
     summary: "The home page product console gains a Holder Map tab showing the live mini map of the newest launchpad launch with the latest launches under it.",
     facts: [
-      "Data comes from GET /api/deepcore/launches; a quiet feed is said to be quiet.",
+      "The launch feed source is being moved to Gully Core (the former partner feed, GET /api/deepcore/launches, was retired on 2026-11-08); a quiet feed is said to be quiet.",
       "The Security tab also gains a ring chart of the Gully Score weights read from /api/score.",
       "The tracker tab is renamed 'Stock tracker' with the button 'Open the Stock tracker'."
     ],

@@ -34,9 +34,9 @@ const KINDS: { id: Kind | 'all'; label: string; icon: LucideIcon }[] = [
   { id: 'usage', label: 'Usage', icon: Gauge },
   { id: 'account', label: 'Account', icon: UserRound },
 ]
-const KIND_COLOR: Record<Kind, string> = { keys: '#6f8ddf', alerts: '#6f8ddf', billing: '#3ddc97', team: '#9578e8', telegram: '#6f8ddf', analytics: '#20a0c4', usage: '#ff8a7a', account: '#8f94b0' }
+export const KIND_COLOR: Record<Kind, string> = { keys: '#6f8ddf', alerts: '#6f8ddf', billing: '#3ddc97', team: '#9578e8', telegram: '#6f8ddf', analytics: '#20a0c4', usage: '#ff8a7a', account: '#8f94b0' }
 
-function kindOf(action: string): Kind {
+export function kindOf(action: string): Kind {
   const head = action.split('.')[0]
   if (head === 'key') return 'keys'
   if (head === 'alert') return 'alerts'
@@ -53,7 +53,7 @@ const addr = (v: unknown) => (/^0x[0-9a-f]{40}$/i.test(s(v)) ? shortAddress(s(v)
 const ALERT_CHANGE: Record<string, string> = { paused: 'paused', resumed: 'resumed', 'webhook-secret-rotated': 'rotated the webhook secret of', 'telegram-on': 'turned Telegram on for', 'telegram-off': 'turned Telegram off for' }
 
 /** The event as words: [what, on what]. */
-function describe(e: ActivityEvent): [string, string | null] {
+export function describeEvent(e: ActivityEvent): [string, string | null] {
   const d = e.detail ?? {}
   const t = e.target
   switch (e.action) {
@@ -219,7 +219,7 @@ export function ActivityTab() {
       ) : !events.length ? (
         <GhostCurves height={140} title="Your activity will draw here">
           <History size={22} className="text-gold" aria-hidden />
-          <span className="max-w-[460px] text-[13px] text-muted">Key, alert, billing and team changes made from now on are listed here with who made them, and counted per day.</span>
+          <span className="max-w-[460px] text-[13px] text-muted">Key, billing, team and analytics changes made from now on are listed here with who made them, and counted per day.</span>
         </GhostCurves>
       ) : (
         <div className="grid grid-cols-1 gap-3 min-[1024px]:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
@@ -239,7 +239,7 @@ export function ActivityTab() {
               const day = dayLabel(e.at)
               const head = i === 0 || dayLabel(shown[i - 1].at) !== day
               const k = kindOf(e.action)
-              const [what, on] = describe(e)
+              const [what, on] = describeEvent(e)
               return (
                 <li key={e.id} className="flex flex-col" style={{ animation: `gl-rise .35s ${Math.min(i, 12) * 0.03}s ease both` }}>
                   {head && <span className={`${i === 0 ? '' : 'pt-2'} pb-1 font-mono text-[11px] tracking-[1px] text-faint uppercase`}>{day}</span>}

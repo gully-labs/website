@@ -3,9 +3,8 @@ import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { AnimatedNumber } from '../../components/charts/AnimatedNumber'
 import { areaPreset, axisTooltip, C, linePreset, tipHtml } from '../../components/charts/chartPresets'
 import { EChart } from '../../components/charts/EChart'
-import { api, type Account, type AnalyticsAccount, type AnalyticsSeries, type GapAlert, type Payment, type Usage } from './api'
+import { api, daysLeft, type Account, type AnalyticsAccount, type AnalyticsSeries, type GapAlert, type Payment, type Usage } from './api'
 import { GhostCurves } from './charts'
-import { useAlertsView } from './helpers'
 import { ErrorLine, Skeleton } from './parts'
 import { BLUE, chip, LIMITED_COLOR, mono, panel, panelTitle, rise } from './styles'
 import { AlertTimeline, LiveMarker, QuotaRing, StackedDays, type DayStack } from './vcharts'
@@ -16,7 +15,7 @@ import { AlertTimeline, LiveMarker, QuotaRing, StackedDays, type DayStack } from
      KeysTraffic       GET /api/developer/usage?range=7d (the Keys tab's own read): ok, errors and 429s a day
      AlertFires        each alert's delivery log: deliveries a day over 30 days, then the per-alert timeline
      AnalyticsTraffic  GET /api/developer/analytics/series?range=7d|30d: page views and visitors a day
-     PlanUsage         keys and alerts in use against the plan, and what the workspace has paid in USD */
+     PlanUsage         keys in use against the plan, the plan period, and what the workspace has paid in USD */
 
 const fmt = (n: number) => n.toLocaleString('en-US')
 const OK = '#3ddc97'
@@ -247,12 +246,10 @@ export function AnalyticsTraffic({ account }: { account: AnalyticsAccount }) {
 
 /* -------------------------------------------------------------- Billing --- */
 
-/** What the plan is used for right now (keys and alerts against their limits) and what was paid, in USD. */
-export function PlanUsage({ account, payments }: { account: Account; payments: Payment[] }) {
-  const alerts = useAlertsView()
+/** What the plan is used for right now (keys against their limit, the days left of the paid period) and what was paid, in USD. */
+export function PlanUsage({ account, payments, periodDays }: { account: Account; payments: Payment[]; periodDays: number }) {
   const liveKeys = account.keys.filter((k) => !k.revokedAt).length
-  const alertMax = alerts.view?.limits.max ?? account.plan.alerts
-  const alertUsed = alerts.view?.limits.used ?? null
+  const left = daysLeft(account.plan.expiresAt)
   // Only payments with a recorded USD value count; an unknown one is never a $0 (the total says "partial").
   const values = payments.map((p) => (p.usd === null || p.usd === undefined || p.usd === '' ? NaN : Number(p.usd)))
   const known = values.filter((v) => Number.isFinite(v))
@@ -270,12 +267,12 @@ export function PlanUsage({ account, payments }: { account: Account; payments: P
         </span>
       </div>
       <div className="flex items-center gap-3">
-        <QuotaRing size={76} quota={alertMax} caption="alerts" slices={[{ name: 'alerts', value: alertUsed ?? 0, color: BLUE }]} />
+        <QuotaRing size={76} quota={Math.max(periodDays, left ?? 0, 1)} caption="days" slices={[{ name: 'days left', value: left ?? 0, color: BLUE }]} />
         <span className="flex flex-col gap-[2px]">
-          <span className="font-mono text-[11px] tracking-[1px] text-faint">ALERTS</span>
+          <span className="font-mono text-[11px] tracking-[1px] text-faint">{account.plan.name.toUpperCase()} · DAYS LEFT</span>
           <span className="font-display text-[22px] leading-none font-bold">
-            {alertUsed === null ? alerts.err ? <span className="text-faint" title="not available right now" aria-label="not available right now" data-unknown>—</span> : <span className="font-mono text-[13px] font-normal text-faint">…</span> : alertUsed ? <AnimatedNumber value={alertUsed} countUp /> : <span className="font-mono text-[13px] font-normal text-faint">none yet</span>}{' '}
-            <span className="font-mono text-[11px] font-normal text-faint">of {alertMax}</span>
+            {left === null ? <span className="font-mono text-[13px] font-normal text-faint">no end date</span> : <AnimatedNumber value={left} countUp />}{' '}
+            {left !== null && <span className="font-mono text-[11px] font-normal text-faint">of {periodDays} a period</span>}
           </span>
         </span>
       </div>

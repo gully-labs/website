@@ -267,7 +267,7 @@ export function NetworkChips({ kind }: { kind: 'x402' | 'gateway' }) {
 
 const LABS: { k: string; name: string; url: string }[] = [
   { k: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz' },
-  { k: 'x402', name: 'x402 facilitator', url: 'https://gullypay.xyz/x402/status' },
+  { k: 'x402', name: 'x402 facilitator', url: 'https://gullypay.xyz/api/x402/status' },
   { k: 'pay-admin', name: 'Gully Pay admin', url: 'https://admin.gullypay.xyz' },
   { k: 'rpc-site', name: 'Gully RPC', url: 'https://gullyrpc.xyz' },
   { k: 'rpc-app', name: 'Gully RPC app', url: 'https://app.gullyrpc.xyz' },
@@ -279,7 +279,7 @@ const LABS: { k: string; name: string; url: string }[] = [
   { k: 'studio', name: 'Gully Studio', url: 'https://gullystudio.xyz' },
   { k: 'studio-dev', name: 'Studio dev portal', url: 'https://dev.gullystudio.xyz' },
   { k: 'studio-docs', name: 'Studio docs', url: 'https://docs.gullystudio.xyz' },
-  { k: 'ipfs', name: 'Gully IPFS gateway', url: 'https://ipfs.gullylabs.xyz' },
+  { k: 'ipfs', name: 'Gully IPFS gateway', url: 'https://docs.gullylabs.xyz/ipfs' },
   { k: 'status', name: 'Status page', url: 'https://status.gullylabs.xyz' },
 ]
 

@@ -4,7 +4,7 @@
 //   revenue        billing ledger payments (billing.json): USD per day, split by asset symbol and by chain
 //   accounts       wallet accounts (developers.json createdAt) and Gully Analytics accounts per day
 //   api            origin API requests per day (access.mjs api-usage.json: anonymous, keyed, limited)
-//   alerts         alert deliveries per day from alerts.json (gap vs DeepCore launch; test sends left out)
+//   alerts         alert deliveries per day from alerts.json (gap vs legacy launch alerts; test sends left out)
 //   ask            Gully AI questions per day from DATA_DIR/ask-log.jsonl, by channel
 //   payLinks       invoices made by pay links that were paid, per day (count and USD)
 //   webhooks       delivery outcomes per day: Gully Pay merchant webhooks (pay-webhooks.mjs) and alert

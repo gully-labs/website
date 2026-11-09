@@ -21,7 +21,7 @@ if (!out) {
 }
 fs.mkdirSync(out, { recursive: true })
 const PORT = Number(process.env.TEST_PORT) || 8794
-const PAGES = (process.env.HUB_PAGES || 'overview,activity,products,keys,billing,team,settings,tracker,alerts').split(',').filter(Boolean)
+const PAGES = (process.env.HUB_PAGES || 'overview,activity,chains,ipfs,analytics,services,keys,billing,team,settings').split(',').filter(Boolean)
 const WIDTHS = JSON.parse(process.env.HUB_WIDTHS || '[390,768,1024,1440,1920]')
 
 const { base: BASE } = await bootServer({ port: PORT })
@@ -59,7 +59,7 @@ const inspect = () => {
   }
   const small = []
   if (vw < 1024)
-    for (const el of document.querySelectorAll('nav[aria-label="App pages"] a, [data-testid="tab-bar"] a, [data-testid="tab-bar"] button, [data-testid="products"] a, [data-testid="products"] button, [data-testid="tools"] button')) {
+    for (const el of document.querySelectorAll('nav[aria-label="App pages"] a, [data-testid="tab-bar"] a, [data-testid="tab-bar"] button, [data-testid="services-row"] button, [data-testid="sidebar-footer"] a')) {
       const r = el.getBoundingClientRect()
       if (r.width && r.height && r.height < 43.5) small.push(`${(el.getAttribute('aria-label') || el.textContent || el.tagName).trim().slice(0, 24)} ${Math.round(r.width)}x${Math.round(r.height)}`)
     }
@@ -104,7 +104,7 @@ for (const w of WIDTHS) {
   }
   for (const id of PAGES) {
     await page.goto(`${BASE}/app#${id}`, { waitUntil: 'domcontentloaded' })
-    await shoot(`hub-${id}`, id === 'tracker' ? '[data-service="tracker"] [data-testid="service-header"]' : `main[data-page="${id}"]`)
+    await shoot(`hub-${id}`, `main[data-page="${id}"]`)
   }
   // The phone menu sheet (under 860 px) and the Gully AI drawer (every width; it needs Ask to be configured here).
   await page.goto(`${BASE}/app`, { waitUntil: 'domcontentloaded' })

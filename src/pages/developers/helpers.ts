@@ -15,7 +15,7 @@ const n = (v: number) => v.toLocaleString('en-US')
 export type Secret = { title: string; secret: string } | null
 
 export function alertName(a: GapAlert) {
-  return a.name || (a.condition.type === 'deepcore-launch' ? 'Launch alert' : a.condition.type === 'holders' ? `${a.condition.symbol ?? 'Token'} holder alert` : a.ticker ? `${a.ticker} alert` : 'Any-stock alert')
+  return a.name || (a.condition.type === 'deepcore-launch' ? 'Launch alert (retired)' : a.condition.type === 'holders' ? `${a.condition.symbol ?? 'Token'} holder alert` : a.ticker ? `${a.ticker} alert` : 'Any-stock alert')
 }
 
 export function alertRule(a: GapAlert) {

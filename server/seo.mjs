@@ -13,7 +13,7 @@ import { headBrand, PRODUCT_BRANDS } from './product-brand.mjs'
 import { scorePageMeta, scoreSitemapPaths } from './gully-score.mjs'
 import { publicChains } from './payments.mjs'
 // Guarded: holders.mjs exports holdersAvailable(chain, kind), read at call time (env keys), so stock pages come back
-// on their own once a chain's key is set. Without it every stock chain counts as unavailable (DeepCore launches only).
+// on their own once a chain's key is set. Without it every stock chain counts as unavailable.
 import * as holdersModule from './holders.mjs'
 import { topScans } from './holders-intel.mjs'
 
@@ -236,8 +236,8 @@ const TRACKER_LD = {
   distribution: [{ '@type': 'DataDownload', encodingFormat: 'application/json', contentUrl: `${SITE}/api/tracker` }],
 }
 
-export const APP_TITLE = 'Gully Labs App · keys, alerts, analytics, payments'
-const APP_DESCRIPTION = 'Sign in with your wallet to create Gully Labs API keys instantly, set gap and launch alerts, run Gully Analytics, and pay for plans and invoices in crypto, with your team in one workspace.'
+export const APP_TITLE = 'Gully Labs App · chains, IPFS, analytics, keys, billing'
+const APP_DESCRIPTION = 'Your Gully Labs account: order a chain, follow Gully IPFS, run Gully Analytics on your sites, request development work, create API keys and pay through Gully Pay, with your team in one workspace.'
 const isLocal = (host) => /^(localhost|127\.0\.0\.1|\[::1\])$/.test(host)
 
 /** Pay pages are noindex, but name their own host as canonical (links are shared on pay.gullylabs.xyz). */
@@ -408,10 +408,10 @@ function pageMetaFor(host, pathname) {
   // Gully Pay merchant checkouts and receipts (merchants.mjs): real pages for whoever holds the link, never indexed.
   if (/^\/pay\/m\/(mi_[\w-]{22}(\/receipt)?|l\/ml_[\w-]{16})$/.test(p)) return { title: p.endsWith('/receipt') ? 'Receipt · Gully Pay' : 'Pay · Gully Pay', description: 'Pay with crypto, wallet to wallet, through Gully Pay.', canonical: payCanonical(host, p), found: true, noindex: true }
   // The Telegram Mini App: a real page, but only inside Telegram; never indexed.
-  if (p === '/tg') return { title: 'Gully Labs · Telegram app', description: 'The Gully Labs tracker, DeepCore launches and your gap alerts, inside Telegram.', canonical: null, found: true, noindex: true }
+  if (p === '/tg') return { title: 'Gully Labs · Telegram app', description: 'The Gully Labs tracker and your gap alerts, inside Telegram.', canonical: null, found: true, noindex: true }
   // A Holder Map Deep check's report (holders-deep-routes.mjs): a real page for whoever holds the unguessable link, never indexed.
   if (/^\/holders\/deep\/hd_[\w-]{16}$/.test(p)) return { title: 'Deep check · Holder Map · Gully Labs', description: 'A Holder Map Deep check report: funding trace, shared-funder clusters, deployer record, snipers and bundles.', canonical: null, found: true, noindex: true, image: `${SITE}/social/og-holders.png` }
-  // Holder Maps (holders.mjs): a page per DeepCore launch or tracked stock token; the share image is the map's own card.
+  // Holder Maps (holders.mjs): a page per token or tracked stock token; the share image is the map's own card.
   const hm = p.match(/^\/(embed\/)?holders\/(robinhood|bsc|base|hyperevm|solana|gully)\/([A-Za-z0-9]{1,64})$/)
   if (hm) {
     const chainName = CHAIN_NAMES_ALL[hm[2]]

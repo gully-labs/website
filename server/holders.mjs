@@ -5,7 +5,7 @@
 //   GET /api/holders/:chain/:token/card.jpg the same card as a JPEG (Telegram inline photo results must be JPEG)
 //
 // Any ERC-20 on Robinhood Chain, BNB Chain, Base, HyperEVM and Gully Chain Testnet and any SPL token on Solana can be mapped
-// (kind 'token'), next to DeepCore launches ('deepcore-launch'), other launchpads' tokens (knownLaunch in
+// (kind 'token'), next to launchpad tokens (knownLaunch in
 // holders-launchpads.mjs: 'launch') and the tracker's stock tokens ('stock'). So the endpoint cannot be used to
 // hammer upstreams (holders-any.mjs): an address is first confirmed to be a token (ERC-20 decimals() and
 // totalSupply(), or a Solana mint); tokens nobody listed have a tighter per-IP budget, a global per-minute
@@ -18,12 +18,8 @@
 // Solana: every token account (getProgramAccounts) where the RPC allows it, else getTokenLargestAccounts.
 //
 // Where the data comes from, per chain (cheapest reliable source first; nothing is ever invented):
-//   DeepCore launches, every chain DeepCore runs on (Robinhood Chain, BNB Chain, Base, HyperEVM):
-//     DeepCore's own log index (GET /v1/chains/:id/logs, Transfer events of the launch token since its
-//     creation block; launch tokens are covered from creation). Balances are rebuilt exactly from every
-//     transfer, so the holder list, the links, the launch forensics and the replay all come from one
-//     complete history. A token with more than DC_MAX_LOGS transfers is not rebuilt (it falls back to a
-//     holder API below when one is configured).
+//   (The former partner launchpad's log index was retired on 2026-11-08: no launch is rebuilt from it; its
+//   tokens are mapped like any other token below. Cached maps of kind 'deepcore-launch' are legacy.)
 //   Stock tokens on Robinhood Chain (and Base / HyperEVM tokens): Blockscout's PRO API
 //     (BLOCKSCOUT_API_KEY, free key from dev.blockscout.com) for the top holders; links from the latest
 //     Transfer logs read over our own RPCs (bounded: RECENT_MAX_LOGS logs, RECENT_MAX_CALLS calls).
@@ -35,20 +31,19 @@
 //   Without the key a chain needs, the answer is state "unavailable" with the reason and the env var
 //   to set ("holder data not available on this chain yet"), never an empty or made-up map.
 //
-// Labels: burn addresses, the token's own contract, DeepCore's pool vault, pool managers, routers,
-// launch kit and lockers (GET /v1/venue/:chainId and the launch's own lock), our Gully Pay fee proxies,
+// Labels: burn addresses, the token's own contract, the launchpad's pools and lockers (other launchpads'
+// knownLaunch records), our Gully Pay fee proxies,
 // the tracker's pool, and public name tags (exchanges among them) from Blockscout's free metadata service.
 // Labelled addresses never join a cluster and are not counted as "wallets" in the concentration figures.
 //
-// Clusters: union-find over direct transfers between unlabelled holders (and, for DeepCore launches,
+// Clusters: union-find over direct transfers between unlabelled holders (and, for launches,
 // deployer -> wallet funding). Cached per (chain, token) for CACHE_MS (at least 5 minutes); failures for
 // a minute. Builds are deduplicated, at most MAX_BUILDS run at once, and each IP may cause at most
 // PER_IP_PER_MIN builds a minute (cached answers are free).
 
 import { clientIp, json } from './http.mjs'
 import { holderMapFeatures } from './plans.mjs'
-import { enrichLaunch, readLaunchFeed, readLive, readWalletDetail, recordScan, resolveHolders, setMapPeek, topScans } from './holders-intel.mjs'
-import { DEEPCORE_CHAINS } from './deepcore.mjs'
+import { readLaunchFeed, readLive, readWalletDetail, recordScan, resolveHolders, setMapPeek, topScans } from './holders-intel.mjs'
 import { FEE_PROXY_REGISTRY } from './fee-proxy-guard.mjs'
 import { readHistory, readTracker } from './tracker.mjs'
 import { isOnCurve, b58decode, isSolanaAddress, solanaRpc } from './solana.mjs'
@@ -71,8 +66,6 @@ const LINKS_MAX = 240
 const SNIPER_BLOCKS = 5
 const HIDDEN_MAX = 12
 const HIDDEN_MAX_PEERS = 20
-const DC_MAX_LOGS = 15_000
-const DC_PAGE = 1_000
 export const RECENT_MAX_LOGS = 5_000
 const RECENT_MAX_CALLS = 8
 export const FRAMES = 24
@@ -81,17 +74,15 @@ const MAX_BUILDS = 3
 const PER_IP_PER_MIN = 12
 const CACHE_MAX = 200
 const FAIL_TTL_MS = 60_000
-const DC_PER_MIN = 90
 const TIMEOUT_MS = 12_000
 export const cacheMs = () => Math.max(300_000, Number(process.env.HOLDERS_CACHE_MS) || 300_000)
-const DC_API = () => String(process.env.DEEPCORE_API ?? 'https://api.deepcore.fun').replace(/\/+$/, '')
 const BLOCKSCOUT_API = () => String(process.env.BLOCKSCOUT_API ?? 'https://api.blockscout.com').replace(/\/+$/, '')
 const BLOCKSCOUT_META = () => String(process.env.BLOCKSCOUT_METADATA_API ?? 'https://metadata.services.blockscout.com').replace(/\/+$/, '')
 const MORALIS_API = () => String(process.env.MORALIS_API ?? 'https://deep-index.moralis.io/api/v2.2').replace(/\/+$/, '')
 const blockscoutKey = () => String(process.env.BLOCKSCOUT_API_KEY ?? '').trim()
 const moralisKey = () => String(process.env.MORALIS_API_KEY ?? '').trim()
 
-/** The chains the map knows. `holders` is the holder API for tokens DeepCore's index does not rebuild. */
+/** The chains the map knows. `holders` is the holder API used past our own Transfer-log index. */
 export const HOLDER_CHAINS = {
   robinhood: { id: 4663, name: 'Robinhood Chain', explorer: 'https://robinhoodchain.blockscout.com', holders: 'blockscout', rpcs: ['https://rpc.mainnet.chain.robinhood.com', 'https://rpc.ordofi.network', 'https://robinhood.drpc.org'], span: 2_000_000 },
   bsc: { id: 56, name: 'BNB Chain', explorer: 'https://bscscan.com', holders: 'moralis', moralis: 'bsc', rpcs: ['https://bsc-rpc.publicnode.com', 'https://bsc-dataseed.bnbchain.org'], span: 5_000 },
@@ -116,14 +107,14 @@ const SOURCE_ENV = { blockscout: 'BLOCKSCOUT_API_KEY', moralis: 'MORALIS_API_KEY
 const solanaRpcSet = () => String(process.env.GULLY_RPC_SOLANA ?? '').trim() !== ''
 
 /** The words users see when a chain's holder source is not set up yet: no env names, no jargon. */
-export const comingSoonReason = (chainKey) => `Holder history is not available yet on ${HOLDER_CHAINS[chainKey]?.name ?? chainKey}. DeepCore launches already have live maps.`
+export const comingSoonReason = (chainKey) => `Holder history is not available yet on ${HOLDER_CHAINS[chainKey]?.name ?? chainKey}.`
 
 /**
  * Whether the Holder Map can draw tokens of `kind` on a chain right now.
  *   kind 'stock' (default): an archive-capable RPC of ours is answering (our own Transfer-log index,
  *     holders-logs.mjs), or a fallback is configured (Blockscout key, Moralis key, a private Solana RPC).
  *     Without any, every stock token on that chain is "coming soon".
- *   kind 'deepcore-launch': DeepCore runs on the chain (its own log index; no key needed).
+ *   kind 'deepcore-launch' (legacy, retired 2026-11-08): never available.
  * Used to keep "coming soon" pages out of the sitemap (seo.mjs) and to hide the bot's "👥 Holders" button.
  */
 export function holdersAvailable(chain, kind = 'stock') {
@@ -131,19 +122,19 @@ export function holdersAvailable(chain, kind = 'stock') {
   if (!ck) return false
   const c = HOLDER_CHAINS[ck]
   if (kind === 'token') kind = 'stock' // any token follows the same sources as a stock token
-  if (kind === 'deepcore-launch') return ck !== 'solana' && !!DEEPCORE_CHAINS[c.id]
+  if (kind === 'deepcore-launch') return false // the partner launchpad's launch maps were retired 2026-11-08
   if (c.holders === 'solana-rpc') return solanaRpcSet()
   return archiveKnown(ck) || blockscoutFor(ck) || moralisFor(ck)
 }
 
 /**
  * For the Telegram bot: show the "👥 Holders" button for (chain, token)? A tracked stock ticker or token
- * follows its chain's stock source; anything else is a DeepCore launch.
+ * follows its chain's stock source; any other token follows the same sources (kind 'token').
  */
 export function holdersButtonVisible(chain, token) {
   const ck = chainKeyOf(chain)
   if (!ck) return false
-  return findStock(ck, token) ? holdersAvailable(ck, 'stock') : holdersAvailable(ck, 'deepcore-launch')
+  return holdersAvailable(ck, findStock(ck, token) ? 'stock' : 'token')
 }
 
 const blockscoutFor = (ck) => HOLDER_CHAINS[ck]?.holders === 'blockscout' && blockscoutKey() !== ''
@@ -158,7 +149,7 @@ export function holdersSourceHealth() {
     const own = key !== 'solana' && archiveKnown(key)
     const active = key === 'solana' ? (solanaRpcSet() ? 'solana-rpc' : 'none') : own ? 'own-rpc' : blockscoutFor(key) ? 'blockscout' : moralisFor(key) ? 'moralis' : 'none'
     const label = { 'own-rpc': 'own RPC (archive)', blockscout: 'Blockscout (fallback)', moralis: 'Moralis (fallback)', 'solana-rpc': 'own Solana RPC', none: key === 'solana' ? 'no Solana RPC set' : 'no archive RPC answering' }[active]
-    return { chain: key, name: c.name, source: c.holders, active, label, archive: own, env: key === 'solana' ? SOURCE_ENV['solana-rpc'] : `GULLY_RPC_${c.id}`, fallbackEnv: SOURCE_ENV[c.holders] ?? null, stocks: holdersAvailable(key, 'stock'), launches: holdersAvailable(key, 'deepcore-launch'), tokens: holdersAvailable(key, 'token'), any: key === 'solana' ? (solanaRpcSet() ? 'top' : 'none') : own ? 'full' : blockscoutFor(key) || moralisFor(key) ? 'top' : 'none' }
+    return { chain: key, name: c.name, source: c.holders, active, label, archive: own, env: key === 'solana' ? SOURCE_ENV['solana-rpc'] : `GULLY_RPC_${c.id}`, fallbackEnv: SOURCE_ENV[c.holders] ?? null, stocks: holdersAvailable(key, 'stock'), launches: false, tokens: holdersAvailable(key, 'token'), any: key === 'solana' ? (solanaRpcSet() ? 'top' : 'none') : own ? 'full' : blockscoutFor(key) || moralisFor(key) ? 'top' : 'none' }
   })
 }
 
@@ -180,7 +171,7 @@ const round2 = (n) => (typeof n === 'number' && Number.isFinite(n) ? Math.round(
 const fmtPct = (n) => (n === null ? '?' : n >= 10 ? `${Math.round(n)}%` : n >= 1 ? `${n.toFixed(1)}%` : n > 0 ? `${n < 0.1 ? '<0.1' : n.toFixed(1)}%` : '0%')
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
-/** One Transfer log (DeepCore's index or eth_getLogs) to { from, to, value, block, tx, index, ts } or null. */
+/** One Transfer log (an indexer's shape or eth_getLogs) to { from, to, value, block, tx, index, ts } or null. */
 export function decodeTransfer(log) {
   if (!log || lower(log.topics?.[0]) !== TRANSFER_TOPIC || (log.topics?.length ?? 0) < 3) return null
   const from = topicAddr(log.topics[1])
@@ -248,59 +239,7 @@ async function getJson(url, headers = {}) {
   }
 }
 
-/* DeepCore: its own per-minute budget, separate from deepcore.mjs's poller and quotes. */
-let dcWindow = []
-function dcTake() {
-  const now = Date.now()
-  dcWindow = dcWindow.filter((t) => now - t < 60_000)
-  if (dcWindow.length >= DC_PER_MIN) return false
-  dcWindow.push(now)
-  return true
-}
-export async function dcGet(p) {
-  if (!dcTake()) return { ok: false, status: 429, body: null, error: 'local DeepCore budget spent' }
-  return getJson(DC_API() + p)
-}
-
-const venueCache = new Map()
-/** DeepCore's contracts on a chain (GET /v1/venue/:chainId), cached for an hour; null when unreadable. */
-async function readVenue(chainId) {
-  const hit = venueCache.get(chainId)
-  if (hit && Date.now() - hit.at < 3_600_000) return hit.v
-  const r = await dcGet(`/v1/venue/${chainId}`)
-  const v = r.ok ? r.body?.data ?? null : null
-  if (v) venueCache.set(chainId, { at: Date.now(), v })
-  return v ?? hit?.v ?? null
-}
-
-/** The DeepCore launch for a token, or null (not a launch) / undefined (DeepCore unreadable). */
-export async function readLaunch(chainId, token) {
-  const r = await dcGet(`/v1/chains/${chainId}/kit-v2/launches/token/${token}`)
-  if (r.status === 404) return null
-  if (!r.ok || !r.body?.data) return undefined
-  return r.body.data
-}
-
-/** Every Transfer of a launch token from DeepCore's index, oldest first. { transfers, complete, toBlock }. */
-async function readDeepcoreTransfers(chainId, token, fromBlock) {
-  const out = []
-  let cursor = null
-  let toBlock = null
-  for (let page = 0; page < DC_MAX_LOGS / DC_PAGE; page++) {
-    const q = `address=${token}&topic0=${TRANSFER_TOPIC}&fromBlock=${fromBlock}&toBlock=latest&limit=${DC_PAGE}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`
-    const r = await dcGet(`/v1/chains/${chainId}/logs?${q}`)
-    if (!r.ok || !Array.isArray(r.body?.data?.logs)) return { transfers: null, complete: false, error: r.status === 422 ? 'DeepCore does not index this token' : 'DeepCore log index unreadable' }
-    toBlock ??= hexNum(r.body.data.toBlock)
-    for (const l of r.body.data.logs) {
-      const t = decodeTransfer(l)
-      if (t) out.push(t)
-    }
-    if (!r.body.page?.hasMore) return { transfers: out, complete: true, toBlock, toBlockAt: r.body.provenance?.toBlockTimestamp ?? null }
-    cursor = r.body.page.nextCursor
-    if (!cursor) break
-  }
-  return { transfers: null, complete: false, error: `more than ${DC_MAX_LOGS.toLocaleString('en-US')} transfers` }
-}
+/* The former partner launchpad's API (venue contracts, launch records, log index) is not read any more: retired 2026-11-08. */
 
 /* EVM RPC with failover: GULLY_RPC_<chainId> first, then the defaults; a failing URL cools off. */
 const cooling = new Map()
@@ -636,24 +575,13 @@ export async function labelGullyPools(chainKey, contractAddrs, labels) {
 }
 
 /** Fixed labels for a chain and token: Map address -> { kind, name }. */
-export function staticLabels({ chainKey, token, venue, launch, trackerPool }) {
+export function staticLabels({ chainKey, token, launch, trackerPool }) {
   const m = new Map()
   const put = (a, kind, name) => isAddr(a) && !m.has(lower(a)) && m.set(lower(a), { kind, name })
   put(ZERO, 'burn', 'Burn (zero address)')
   put(DEAD, 'burn', 'Burn (dead address)')
   put(token, 'token', 'Token contract')
-  if (venue) {
-    put(venue.vault, 'pool', 'DeepCore pools (vault)')
-    for (const a of Object.values(venue.poolManagers ?? {})) put(a, 'pool', 'DeepCore pool manager')
-    for (const a of Object.values(venue.routers ?? {})) put(a, 'router', 'DeepCore router')
-    for (const a of venue.launchpadKitsV2 ?? []) put(a, 'deepcore', 'DeepCore launch kit')
-    put(venue.launchpadKitV2, 'deepcore', 'DeepCore launch kit')
-    for (const a of Object.values(venue.registries ?? {})) put(a, 'deepcore', 'DeepCore registry')
-  }
-  for (const g of launch?.legs ?? []) {
-    put(g?.lock?.locker, 'lock', 'DeepCore launch lock')
-    put(g?.launchFee?.guard, 'deepcore', 'DeepCore launch guard')
-  }
+  for (const g of launch?.legs ?? []) put(g?.lock?.locker, 'lock', 'Launch liquidity lock')
   put(UNIV4_POOL_MANAGERS[HOLDER_CHAINS[chainKey]?.id], 'pool', 'Uniswap v4 PoolManager (pools)')
   for (const [a, kind, name] of GULLY_CHAIN_LABELS[HOLDER_CHAINS[chainKey]?.id] ?? []) put(a, kind, name)
   // Then every other protocol contract of gully-ops' registry (server/gully-chain-registry.mjs): the Gully Core
@@ -712,7 +640,7 @@ export function recentFlowsOf({ transfers, labels, total, decimals, times = new 
  *   history   { transfers (oldest first), complete, fromBlock, toBlock } or null
  *   labels    Map address -> { kind, name }
  *   supply    BigInt total supply (null: shares are of the listed holders' total, and say so)
- *   launch    DeepCore launch (raw API item) or null; enables the forensics
+ *   launch    the launch record (knownLaunch, normalised) or null; enables the forensics
  *   funding   { checked, recipients: [address], reason } native-coin funding by the deployer, or null
  *   fair      tracker row for a stock (fair, onchain, gapPct, status) or null; history: [t, gap, onchain, fair][]
  */
@@ -753,7 +681,7 @@ export function buildMap({ chainKey, token, symbol, name, decimals, kind, holder
     linkMap.set(k, l)
   }
 
-  // 3. DeepCore launch forensics (complete history only).
+  // 3. Launch forensics (complete history only).
   let forensics = null
   const flags = new Map(ids.map((a) => [a, []]))
   const flag = (a, f) => flags.has(a) && !flags.get(a).includes(f) && flags.get(a).push(f)
@@ -896,15 +824,10 @@ export function buildMap({ chainKey, token, symbol, name, decimals, kind, holder
     plain.push(forensics.riskLine)
     if (forensics.deployerPct !== null) plain.push(forensics.deployerPct > 0 ? `The deployer still holds ${fmtPct(forensics.deployerPct)}.` : 'The deployer holds none now.')
     if (forensics.funded.wallets) plain.push(`${plural(forensics.funded.wallets, 'wallet')} got ${forensics.funded.coinChecked ? 'coins or tokens' : 'tokens'} from the deployer and hold ${fmtPct(forensics.funded.pct)}.`)
-    const vn = launch.venueName ?? 'DeepCore'
-    plain.push(forensics.liquidity.locked === true ? 'The launch liquidity sits in DeepCore’s launch lock.' : forensics.liquidity.locked === false ? 'DeepCore shows no lock on the launch liquidity.' : `${vn} does not say whether the liquidity is locked.`)
+    const vn = launch.venueName ?? 'The launchpad'
+    plain.push(forensics.liquidity.locked === true ? `The launch liquidity sits in ${vn}’s liquidity lock.` : forensics.liquidity.locked === false ? `${vn} shows no lock on the launch liquidity.` : `${vn} does not say whether the liquidity is locked.`)
   }
-  if (launch && !fromHistory && launch.venue) plain.push('The full transfer history of this launch is not available, so bundled buying and deployer funding were not checked.')
-  else if (launch && !fromHistory) {
-    plain.push('This launch has too many transfers to replay here, so bundled buying and deployer funding were not checked.')
-    const legs = Array.isArray(launch.legs) ? launch.legs : []
-    plain.push(legs.some((g) => g?.lock?.status === 'indexed') ? 'The launch liquidity sits in DeepCore’s launch lock.' : 'DeepCore does not say whether the liquidity is locked.')
-  }
+  if (launch && !fromHistory) plain.push('The full transfer history of this launch is not available, so bundled buying and deployer funding were not checked.')
   // Pools, locks, burn and protocol contracts are shown with their share but never counted as wallets.
   const excluded = nodes.filter((n) => INFRA.has(n.label?.kind)).map((n) => ({ id: n.id, short: n.short, kind: n.label.kind, tag: n.label.locked ? 'Pool (locked)' : (KIND_TAG[n.label.kind] ?? 'Contract'), name: n.label.name, pct: n.pct }))
   const byTag = new Map()
@@ -941,7 +864,7 @@ export function buildMap({ chainKey, token, symbol, name, decimals, kind, holder
     asOf: new Date(now).toISOString(),
     sources,
     coverage: coverage ?? { level: fromHistory ? 'full' : 'top', reason: null, shown: null },
-    venue: launch?.venueName ?? (launch ? 'DeepCore' : null),
+    venue: launch?.venueName ?? null,
     holders: { count: holderCount ?? (fromHistory ? positive.filter(([a]) => !INFRA.has(lbl.get(a)?.kind)).length : null), shown: nodes.length, graph: Math.min(graphMax, nodes.length), sharesOf: totalKnown ? 'total supply' : 'listed holders', partial },
     tier,
     locked: tier === 'pro' ? [] : ['replay', 'csv', 'more-holders', 'alerts'],
@@ -1140,10 +1063,9 @@ async function otherLaunch(chainKey, token) {
 }
 
 /**
- * What a token is, and whether it may be built now. { stock, token, launch, other, probe, release } or { done: body }.
+ * What a token is, and whether it may be built now. { stock, token, other, probe, release } or { done: body }.
  *   stock    a tracked stock token (a ticker is accepted)
- *   launch   a DeepCore launch (EVM chains DeepCore runs on)
- *   other    a launch of another launchpad (server/holders-launchpads.mjs), normalised like a launch
+ *   other    a launchpad's token (server/holders-launchpads.mjs knownLaunch), normalised as a launch
  *   probe    anything else: confirmed to be a token first (ERC-20 decimals and totalSupply, or a Solana mint), after
  *            the per-IP and global budgets for non-listed tokens
  */
@@ -1153,12 +1075,6 @@ async function admit(chainKey, tokenIn, ctx) {
   const stock = findStock(chainKey, tokenIn)
   const token = stock ? (evm ? lower(stock.token) : stock.token) : evm ? lower(tokenIn) : String(tokenIn)
   if (stock) return { stock, token }
-  let launch = null
-  if (evm && DEEPCORE_CHAINS[c.id]) {
-    launch = await readLaunch(c.id, token)
-    if (launch === undefined) return { done: { state: 'error', reason: 'DeepCore could not be read just now; try again in a minute.', chain: { key: chainKey, id: c.id, name: c.name }, token: { address: token }, asOf: new Date().toISOString() } }
-  }
-  if (launch) return { token, launch }
   const other = await otherLaunch(chainKey, token)
   if (other) return { token, other, probe: await probeToken(chainKey, token) }
   // A token nobody listed: the tighter budgets first, then the token check.
@@ -1193,17 +1109,15 @@ export async function computeHolderMap(chainKey, tokenIn, tier = 'pro', ctx = {}
   }
 }
 
-async function buildOne(chainKey, tier, { stock, token, launch: dcLaunch = null, other = null, probe = null }) {
+async function buildOne(chainKey, tier, { stock, token, other = null, probe = null }) {
   const want = (TIERS[tier] ?? TIERS.free).list
   const c = HOLDER_CHAINS[chainKey]
-  const launch = dcLaunch ?? other
-  const isDeepcore = !!dcLaunch
-  const kind = isDeepcore ? 'deepcore-launch' : other ? 'launch' : stock ? 'stock' : 'token'
-  const symbol = dcLaunch?.launchToken?.symbol ?? stock?.symbol ?? stock?.ticker ?? probe?.symbol ?? null
-  const decimalsHint = dcLaunch?.launchToken?.decimals ?? stock?.decimals ?? probe?.decimals ?? 18
-  const venue = c.id !== 'solana' && DEEPCORE_CHAINS[c.id] ? await readVenue(c.id) : null
+  const launch = other
+  const kind = other ? 'launch' : stock ? 'stock' : 'token'
+  const symbol = stock?.symbol ?? stock?.ticker ?? probe?.symbol ?? null
+  const decimalsHint = stock?.decimals ?? probe?.decimals ?? 18
   const trackerRow = stock ? await trackerRowFn(chainKey, stock.ticker).catch(() => null) : null
-  const labels = staticLabels({ chainKey, token, venue, launch, trackerPool: trackerRow?.pool })
+  const labels = staticLabels({ chainKey, token, launch, trackerPool: trackerRow?.pool })
   if (other) for (const p of other.pools) if (!labels.has(lower(p))) labels.set(lower(p), { kind: 'pool', name: `${other.venueName} pool` })
 
   let holders = null
@@ -1215,16 +1129,6 @@ async function buildOne(chainKey, tier, { stock, token, launch: dcLaunch = null,
   let coverage = null
   const sources = {}
 
-  if (isDeepcore) {
-    const from = hexNum(dcLaunch.createdAt?.blockNumber) ?? 0
-    const r = await readDeepcoreTransfers(c.id, token, from)
-    if (r.transfers) {
-      history = { transfers: r.transfers, complete: true, fromBlock: from, toBlock: r.toBlock }
-      supply = /^\d+$/.test(String(dcLaunch.totalSupply?.raw ?? '')) ? BigInt(dcLaunch.totalSupply.raw) : null
-      sources.holders = `DeepCore’s log index: all ${r.transfers.length.toLocaleString('en-US')} transfers since launch (exact balances)`
-      sources.links = 'Direct transfers between the mapped wallets, since launch'
-    } else sources.note = `Not rebuilt from DeepCore’s log index: ${r.error}.`
-  }
   // EVM tokens: our own Transfer-log index first (exact balances from every transfer since the deploy block;
   // tokens nobody listed get tighter caps), then Blockscout, then Moralis, each only when its key is set.
   let own = null
@@ -1244,7 +1148,6 @@ async function buildOne(chainKey, tier, { stock, token, launch: dcLaunch = null,
     if (own?.state === 'backfilling') return `its full history is still being read (${Math.round(own.progress * 100)}% so far)`
     if (own?.state === 'capped') return own.by === 'calls' ? 'rebuilding its full history would take too many chain reads' : `it has more than ${own.cap.toLocaleString('en-US')} transfers, too many to rebuild its full history`
     if (own?.state === 'no-archive') return `full history needs an archive node, and none is available on ${c.name} right now`
-    if (isDeepcore) return 'it has too many transfers for DeepCore’s log index to rebuild'
     return 'its full history could not be read just now'
   }
   if (!history) {
@@ -1349,7 +1252,6 @@ async function buildOne(chainKey, tier, { stock, token, launch: dcLaunch = null,
   })
   // Never an empty map drawn as if it were real.
   if (map.state === 'ok' && !map.nodes.length) return unavailable(chainKey, token, kind, 'No holder balances were found for this token yet.', { token: { symbol } })
-  if (map.state === 'ok' && map.forensics && isDeepcore) await enrichLaunch(map, { chainId: c.id, launch, tier })
   return map
 }
 
@@ -1406,9 +1308,9 @@ export function peekHolderMap(chainKey, token) {
 }
 setMapPeek(peekHolderMap)
 
-/** Test hook: puts a map in the cache for both tiers, as if it had just been built. */
-export function seedHolderMapForTest(chainKey, token, body) {
-  for (const tier of ['free', 'pro']) cache.set(`${chainKey}:${chainKey === 'solana' ? token : lower(token)}:${tier}`, { at: Date.now(), ttl: cacheMs(), body })
+/** Test hook: puts a map in the cache (both tiers unless `tiers` says which), as if it had just been built. */
+export function seedHolderMapForTest(chainKey, token, body, tiers = ['free', 'pro']) {
+  for (const tier of tiers) cache.set(`${chainKey}:${chainKey === 'solana' ? token : lower(token)}:${tier}`, { at: Date.now(), ttl: cacheMs(), body })
 }
 
 /** Test hook. */
@@ -1416,9 +1318,7 @@ export function resetHoldersForTest() {
   cache.clear()
   inflight.clear()
   ipHits.clear()
-  venueCache.clear()
   cooling.clear()
-  dcWindow = []
   building = 0
   resetAnyForTest()
 }
