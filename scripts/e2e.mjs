@@ -530,39 +530,6 @@ await step('portal', async () => {
   await page.getByRole('dialog', { name: 'Revoke key' }).getByRole('button', { name: 'Revoke key' }).click()
   await page.getByText('Key revoked').first().waitFor()
   check('keys: revoke', true)
-  // Alerts: create, test, pause.
-  // Alerts has no sidebar entry (a HolderMaps tool, opened from Products): its hash opens it.
-  await page.evaluate(() => (location.hash = 'alerts'))
-  await page.getByRole('button', { name: 'New alert' }).first().click()
-  const na = page.getByRole('dialog', { name: 'New gap alert' })
-  await na.getByLabel('Stock').selectOption('robinhood:NVDA')
-  await na.getByLabel('Percent').fill('2')
-  await na.getByPlaceholder('https://example.com/hooks/gully').fill(`http://127.0.0.1:${PORT}/healthz`)
-  await na.getByRole('button', { name: 'Create alert' }).click()
-  await page.getByText('Alert created').first().waitFor()
-  await page.getByRole('button', { name: 'I have saved it' }).click()
-  check('alerts: an alert is created', true)
-  await page.getByRole('button', { name: 'Test', exact: true }).first().click()
-  await page.getByText(/Test sent for/).first().waitFor({ timeout: 15_000 })
-  check('alerts: a test delivery succeeds', true)
-  await page.getByRole('button', { name: 'Pause', exact: true }).first().click()
-  await page.getByText(/paused/).first().waitFor()
-  check('alerts: pause', true)
-  check('alerts: the setup stepper shows Create and Test done', (await page.locator('[data-testid="alerts-stepper"] [data-state="done"]').count()) >= 2 || (await page.locator('[data-testid="alerts-stepper"][data-folded]').count()) === 1)
-  await page.getByRole('tab', { name: /^Deliveries/ }).click()
-  check('alerts: the Deliveries sub-tab deep-links as #alerts/deliveries', new URL(page.url()).hash === '#alerts/deliveries', page.url())
-  check('alerts: the deliveries-per-day chart draws from the test delivery', await drawnIn(page, '[data-testid="alert-fires"]'))
-  await page.getByRole('tab', { name: /^Alerts/ }).click()
-  // A failed refresh keeps the alerts on screen with a "couldn't refresh · retry" chip (never a blank tab).
-  w.expect(/\/api\/developer\/alerts$/)
-  await page.route('**/api/developer/alerts', (r) => r.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"e2e: upstream down"}' }))
-  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-  await page.getByTestId('refresh-chip').first().waitFor({ timeout: 10_000 })
-  check('alerts: a failed refresh keeps the list and shows the retry chip', (await page.locator('[data-alert]').count()) >= 1 && (await page.getByText(/Alerts could not be read/).count()) === 0)
-  await page.unroute('**/api/developer/alerts')
-  await page.getByTestId('refresh-chip').first().click()
-  await page.getByTestId('refresh-chip').first().waitFor({ state: 'detached', timeout: 10_000 })
-  check('alerts: retry clears the chip once the read answers', true)
   // Gully Analytics tab (sign-up is off on this server: it must say so, not break).
   await page.evaluate(() => (location.hash = 'analytics'))
   await page.getByText(/not switched on for this server/).first().waitFor()
@@ -609,7 +576,7 @@ await step('portal', async () => {
   // The heading renders before GET /api/developer/activity answers (skeleton rows meanwhile): wait for the list.
   await page.locator('[data-testid="activity-list"] > li').first().waitFor({ timeout: 10_000 })
   const actText = await page.locator('[data-testid="activity-list"]').textContent()
-  check('activity: the log shows the key, alert and team changes', /key/i.test(actText) && /alert/i.test(actText) && /invite|member|role/i.test(actText), actText?.slice(0, 160))
+  check('activity: the log shows the key and team changes', /key/i.test(actText) && /invite|member|role/i.test(actText), actText?.slice(0, 160))
   check('activity: events per day draw as stacked bars', await drawnIn(page, '[data-testid="activity-chart"]'))
   await page.getByRole('radiogroup', { name: 'Show' }).getByRole('radio', { name: /^Billing/ }).click()
   check('activity: a filter with nothing in 14 days shows the ghosted curve, not zero bars', (await page.locator('[data-testid="activity-chart"] [data-testid="ghost-chart"]').count()) === 1)
@@ -624,9 +591,6 @@ await step('portal', async () => {
   check('CSV: usage downloads with its header row', csv.startsWith('time,key,'), csv.slice(0, 40))
   check('billing: plan usage rings draw (keys and alerts against the plan)', await drawnIn(page, '[data-testid="plan-usage"]') && (await page.locator('[data-testid="plan-usage"] [data-chart]').count()) === 2)
   check('billing: with no payments the chart is the ghosted "Your payments will draw here"', (await page.getByTestId('ghost-chart').getByText('Your payments will draw here').count()) === 1)
-  await appNav.getByRole('link', { name: 'Products', exact: true }).click()
-  await page.locator('[data-testid="products"]').waitFor()
-  check('products hub: every card has its mark, a status and an Open link', await page.locator('[data-testid="products"] [data-product]').evaluateAll((cs) => cs.length >= 5 && cs.every((c) => c.querySelector('a[data-testid^="open-"]') && c.querySelector('img, svg'))))
   // Overview with a key but no traffic: the requests chart is the ghosted placeholder, not a flat zero.
   await appNav.getByRole('link', { name: 'Overview', exact: true }).click()
   await page.getByTestId('ghost-chart').waitFor({ timeout: 15_000 })
@@ -635,140 +599,133 @@ await step('portal', async () => {
   await ctx.close()
 })
 
-/* ------------------------------------------------------------- app services --- */
+/* ---------------------------------------------------------------- app pages --- */
 
-/** The Overview's market band draws live, non-zero network series: widest gaps, the 24h gap index, DeepCore launches per chain, the API round trip. */
-async function overviewIsLive(page, label) {
-  const band = page.getByTestId('market-band')
-  await band.waitFor({ timeout: 15_000 })
-  // Charts draw once scrolled into view, so each tile is brought on screen first (at 390 px the band is taller than the viewport).
-  const drawn = (id) => band.getByTestId(id).scrollIntoViewIfNeeded().then(() => band.getByTestId(id).locator('[data-chart].opacity-100 svg').first().waitFor({ timeout: 20_000 })).then(() => true, () => false)
-  const figure = async (id) => (await band.getByTestId(id).locator('[role="img"][aria-label]').first().getAttribute('aria-label').catch(() => null)) ?? ''
-  check(`${label}: the widest-gaps bars draw`, await drawn('mk-gaps'))
-  const gap = await figure('mk-gaps')
-  check(`${label}: the widest gap is a live, non-zero percent`, /^[+-]\d+\.\d{2}%$/.test(gap) && parseFloat(gap) !== 0, gap)
-  check(`${label}: the 24h gap index draws from the seeded history`, await drawn('mk-index'))
-  const idx = await figure('mk-index')
-  check(`${label}: the gap index figure is non-zero`, /^\d+\.\d{2}%$/.test(idx) && parseFloat(idx) > 0, idx)
-  check(`${label}: DeepCore launches per chain draw`, await drawn('mk-deepcore'))
-  const dc = await figure('mk-deepcore')
-  check(`${label}: five launches in the last 24 h, the newest named`, dc === '5' && /DTC on Robinhood Chain/.test(await band.getByTestId('mk-newest').textContent()), dc)
-  check(`${label}: the API round-trip sparkline draws from /healthz`, await drawn('mk-status'))
-  const ms = await figure('mk-status')
-  check(`${label}: the round trip is a live millisecond figure`, /^\d+ ms$/.test(ms), ms)
-}
-
-
-const SERVICES = [
-  ['tracker', 'Tracker'],
-  ['score', 'Gully Score'],
-  ['widgets', 'Widgets'],
-  ['telegram', 'Telegram'],
+/** The pages of the Gully Labs App (owner, 2026-11-08: only the services Gully Labs offers), each opened by its hash. */
+const APP_PAGES = ['overview', 'activity', 'chains', 'ipfs', 'analytics', 'services', 'keys', 'billing', 'team', 'settings']
+/** The hashes that left the app and where each goes (services/nav.ts REMOVED_TABS / HANDOFF_TABS). */
+const LEFT = [
+  ['products', 'https://gullylabs.xyz/products'],
+  ['alerts', 'https://holdermaps.xyz/'],
+  ['tracker', 'https://gullylabs.xyz/tracker'],
+  ['chain', 'https://kre8.fun'],
 ]
-await step('app services', async () => {
-  // A fresh wallet: the portal step above filled the Free plan's one alert, and "Alert" needs room.
+await step('app pages', async () => {
   const api3 = makeClient(BASE)
   check('a third wallet signs in', (await api3.signIn(privateKeyToAccount(generatePrivateKey()))).status === 200)
   const ctx = await newContext({ cookie: cookieOf(api3) })
+  // The destinations of the hashes that left: stubbed, so the browser can land there and the test read where it went.
+  const stubbed = []
+  await ctx.route(/^https:\/\/(gullylabs\.xyz|holdermaps\.xyz|kre8\.fun)\//, (route) => {
+    stubbed.push(route.request().url())
+    return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>stub</title>' })
+  })
   const page = await ctx.newPage()
-  const w = watch(page, 'app services 1440')
+  const w = watch(page, 'app pages 1440')
   await page.goto(BASE + '/app')
   const appNav = page.getByRole('navigation', { name: 'App pages' })
   await appNav.waitFor()
-  const navIds = await appNav.locator('a').evaluateAll((as) => as.map((a) => a.getAttribute('href')).filter((h) => h.startsWith('#') && h !== '#tracker').map((h) => h.slice(1)))
-  check('sidebar: the seven hub pages, in order, beside the Gully Core groups', JSON.stringify(navIds) === JSON.stringify(['overview', 'activity', 'products', 'keys', 'billing', 'team', 'settings']), JSON.stringify(navIds))
+  const navIds = await appNav.locator('a').evaluateAll((as) => as.map((a) => a.getAttribute('href')).filter((h) => h.startsWith('#')).map((h) => h.slice(1)))
+  check('sidebar: the ten Labs-services pages, in order, nothing else', JSON.stringify(navIds) === JSON.stringify(APP_PAGES), JSON.stringify(navIds))
   const iconless = await appNav.locator('a').evaluateAll((as) => as.filter((a) => !a.querySelector('svg')).map((a) => a.textContent))
   check('sidebar: every item has an icon', iconless.length === 0, iconless.join(', '))
-  check('sidebar: no product and no tool is listed (Products holds them)', (await appNav.getByRole('link', { name: /Merchant|Tracker|Gully AI|Gully Score|Widgets|Telegram|Alerts|Analytics|Gully Chain|Gully Pay|Gully RPC|HolderMaps|Gully Security|Gully Studio|Gully IPFS/ }).count()) === 0)
-  // The Overview of a brand-new workspace: live NETWORK charts first (the stubbed tracker, its seeded
-  // history, the launch list and this browser's /healthz round trips), then the workspace's own figures
-  // in words ("none yet") with ghosted placeholder curves, never flat zeros.
-  await overviewIsLive(page, 'overview, new workspace')
+  check('sidebar: no other product and no HolderMaps / Security tool is listed', (await appNav.getByRole('link', { name: /Products|Merchant|Tracker|Gully AI|Gully Score|Widgets|Telegram|Alerts|Gully Chain|Gully Pay|Gully RPC|HolderMaps|Gully Security|Gully Studio/ }).count()) === 0)
+  const prod = page.getByTestId('app-sidebar').getByTestId('products-link')
+  check('sidebar footer: one "All Gully products" link to the web, in a new tab', (await prod.count()) === 1 && (await prod.getAttribute('href')) === 'https://gullylabs.xyz/products' && (await prod.getAttribute('target')) === '_blank' && /noopener/.test((await prod.getAttribute('rel')) ?? ''))
+  check('sidebar: a flat list, no group headings (no Trade / Build / Manage)', (await appNav.locator('[data-nav-group]').count()) === 0)
+  check('header: no Gully Core chain picker', (await page.getByTestId('chain-picker').count()) === 0)
+  // The Overview of a brand-new workspace: the four Labs services, the workspace's own figures in words ("none yet"),
+  // ghosted placeholder curves, never flat zeros, and the recent-activity panel.
+  await page.locator('[data-testid="services-row"] [data-service-card]').first().waitFor({ timeout: 15_000 })
+  check('overview: the four Gully Labs services as cards (Chains, IPFS, Analytics, Development)', JSON.stringify(await page.locator('[data-testid="services-row"] [data-service-card]').evaluateAll((es) => es.map((e) => e.getAttribute('data-service-card')))) === JSON.stringify(['chains', 'ipfs', 'analytics', 'services']))
+  check('overview: no Create tiles, no market band, no product launcher', (await page.getByTestId('create-tiles').count()) === 0 && (await page.getByTestId('market-band').count()) === 0 && (await page.locator('[data-testid="products"], [data-testid="launch-grid"]').count()) === 0)
+  await page.locator('[data-kpi] [data-none]').first().waitFor({ timeout: 15_000 })
+  await page.waitForFunction(() => document.querySelectorAll('[data-kpi] [data-none]').length === 4, null, { timeout: 15_000 }).catch(() => {})
   const kpis = await page.locator('[data-kpi] [data-none]').evaluateAll((els) => els.map((e) => e.textContent.trim()))
-  check('overview: a new workspace reads "none yet", not 0', kpis.length === 4 && kpis.every((k) => /^none/.test(k)), JSON.stringify(kpis))
-  check('overview: the workspace band is labelled YOU, the market band NETWORK', (await page.getByTestId('you-title').getByText('YOU', { exact: true }).count()) === 1 && (await page.getByTestId('market-band').getByText('NETWORK · LIVE').count()) === 1)
+  check('overview: a new workspace reads "none yet" / "nothing yet", not 0', kpis.length === 4 && kpis.every((k) => /^(none|nothing)/.test(k)), JSON.stringify(kpis))
+  check('overview: the KPIs are requests, calls turned away, spend and keys', JSON.stringify(await page.locator('[data-kpi]').evaluateAll((es) => es.map((e) => e.getAttribute('data-kpi').split(' · ')[0]))) === JSON.stringify(['Requests', 'Calls turned away', 'Spent', 'Active keys']))
+  check('overview: the workspace band is labelled YOU', (await page.getByTestId('you-title').getByText('YOU', { exact: true }).count()) === 1)
   const ghost = page.getByTestId('ghost-chart')
   check('overview: with no keys the requests chart is a ghosted "Your traffic will draw here"', (await ghost.count()) === 1 && (await ghost.getByText('Your traffic will draw here').count()) === 1 && (await ghost.locator('svg path').count()) >= 2)
+  const recent = page.getByTestId('recent-activity')
+  await recent.getByText(/Nothing yet|ago/).first().waitFor({ timeout: 15_000 })
+  check('overview: the recent-activity panel renders (empty, in words)', (await recent.count()) === 1 && /Recent activity/.test((await recent.textContent()) ?? ''))
+  check('overview: "Get started" has no alert or widget step', (await page.getByTestId('get-started').count()) === 1 && !/alert|widget/i.test((await page.getByTestId('get-started').textContent()) ?? ''))
   await shot(page, 'app-1440-overview-new')
-  for (const [id, label] of SERVICES) {
-    // The tools have no sidebar entry (Products lists them), so each opens by its hash.
-    const navLink = appNav.getByRole('link', { name: label, exact: true })
-    if (await navLink.count()) await navLink.click()
-    else await page.evaluate((h) => (location.hash = h), id)
-    const view = page.locator(`[data-service="${id}"]`)
-    await view.getByTestId('service-header').waitFor({ timeout: 15_000 })
-    check(`app ${label}: the page renders with its header`, (await view.getByRole('heading', { level: 1 }).textContent())?.trim() === label)
-    check(`app ${label}: the hash deep-links it`, new URL(page.url()).hash === `#${id}`, page.url())
-    const ext = await view.getByTestId('service-header').locator('a').evaluateAll((as) => as.map((a) => [a.textContent, a.target, a.rel]))
-    check(`app ${label}: Docs and Public page open in a new tab`, ext.length >= 2 && ext.every(([, t, r]) => t === '_blank' && /noopener/.test(r)), JSON.stringify(ext))
-    await view.locator('[data-tile], [data-testid$="zero-line"]').first().waitFor()
-    if (id === 'tracker') await view.locator('tr[data-row]').first().waitFor({ timeout: 15_000 })
-    if (id === 'deepcore') await view.getByTestId('deepcore-launches').waitFor({ timeout: 15_000 })
-    if (id === 'widgets') await page.waitForFunction(() => [...document.querySelectorAll('[data-gully-widget]')].some((el) => /%/.test(el.shadowRoot?.textContent ?? '')), null, { timeout: 10_000 })
-    if (id === 'ai') check('app Gully AI: the full chat is on the page', (await view.getByPlaceholder('How do gap alerts work?').count()) === 1)
-    // DA2 group 5: no developer noise, ghosts for empty charts, logos on launch rows, no cut-off symbols.
-    const noise = await view.evaluate((el) => /\[object Object\]|\bundefined\b|\bnull\b/.test(el.innerText))
-    check(`app ${label}: no developer noise in the page text`, !noise)
-    if (id === 'deepcore') {
-      await view.getByTestId('deepcore-launches').locator('[data-logo="token"], img').first().waitFor({ timeout: 10_000 })
-      check('app DeepCore: launch rows carry a token logo and chain logo', (await view.getByTestId('deepcore-launches').locator('li').first().locator('img').count()) >= 2)
-      check('app DeepCore: LAUNCHES 24H is a number, not "not tracked yet"', !/not tracked yet/.test((await view.locator('[data-tile="LAUNCHES 24H"]').textContent()) ?? ''))
-    }
-    if (id === 'holders') {
-      const hrow = view.locator('[data-launch-holders] a').first()
-      await hrow.waitFor({ timeout: 10_000 })
-      check('app Holder Map: launch rows have a token logo and the whole symbol', (await hrow.locator('img').count()) >= 2 && !/…$/.test(((await hrow.locator('b').first().textContent()) ?? '').trim()))
-    }
-    if (id === 'tracker') check('app Tracker: no 24H cell says "not tracked yet"', (await view.locator('tr[data-row]').filter({ hasText: 'not tracked yet' }).count()) === 0)
-    if (id === 'pay' || id === 'telegram') check(`app ${label}: an empty chart is a ghost, not a dashed text box`, (await view.getByTestId('empty-chart').count()) === 0)
-    await page.waitForTimeout(600)
-    await shot(page, `app-1440-${id}`)
+  // Each Labs-services page renders with its header and no developer noise.
+  const open = async (id) => {
+    await page.goto(`${BASE}/app#${id}`)
+    await page.locator(`main[data-page="${id}"]`).waitFor({ timeout: 15_000 })
+    await page.locator(`main[data-page="${id}"] [data-testid="service-header"]`).waitFor({ timeout: 15_000 })
   }
-  // Tracker: chain filter and "Alert" from a row.
-  await page.evaluate(() => (location.hash = 'tracker'))
-  const rows = page.locator('[data-service="tracker"] tr[data-row]')
-  await rows.first().waitFor()
-  const all = await rows.count()
-  await page.locator('[data-testid="tracker-chains"] button').nth(2).click()
-  await page.waitForFunction((n) => document.querySelectorAll('[data-service="tracker"] tr[data-row]').length !== n, all)
-  const keys = await rows.evaluateAll((trs) => [...new Set(trs.map((tr) => tr.getAttribute('data-row').split(':')[0]))])
-  check('app Tracker: a chain filter narrows the rows to one chain', keys.length === 1 && (await rows.count()) < all, JSON.stringify(keys))
-  const first = await rows.first().getAttribute('data-row')
-  await rows.first().getByRole('button', { name: /^Add a gap alert/ }).click()
-  const na = page.getByRole('dialog', { name: 'New gap alert' })
-  await na.waitFor()
-  const picked = await na.getByLabel('Stock').inputValue()
-  check('app Tracker: "Alert" opens New gap alert preset to that stock', picked === first, `${picked} vs ${first}`)
-  await page.keyboard.press('Escape')
-  await na.waitFor({ state: 'hidden' })
-  // Gully AI in the app: floating button and Ctrl+K.
-  await appNav.getByRole('link', { name: 'Overview', exact: true }).click()
+  await open('chains')
+  check('chains: the page header', (await page.locator('main[data-page="chains"] h1').textContent())?.trim() === 'Chains')
+  await page.getByTestId('chains-needs-gully-id').waitFor({ timeout: 15_000 })
+  check('chains: a wallet session is told plainly that orders need Gully ID, with Create a chain', (await page.getByTestId('chains-needs-gully-id').locator('a[href="/create-chain"]').count()) === 1 && (await page.locator('main[data-page="chains"] a[href="/create-chain"]').count()) >= 1)
+  await page.getByTestId('chains-offer').waitFor({ timeout: 15_000 })
+  check('chains: the offer line comes from the server (free testnet days)', /testnet free for \d+ days/.test((await page.getByTestId('chains-offer').textContent()) ?? ''), await page.getByTestId('chains-offer').textContent())
+  await shot(page, 'app-1440-chains')
+  await open('ipfs')
+  check('ipfs: the page header and four live tiles', (await page.locator('main[data-page="ipfs"] h1').textContent())?.trim() === 'Gully IPFS' && (await page.locator('main[data-page="ipfs"] [data-tile]').count()) === 4)
+  await page.locator('main[data-page="ipfs"] [data-testid="ghost-chart"], main[data-page="ipfs"] [data-testid="ipfs-chart"]').first().waitFor({ timeout: 20_000 })
+  check('ipfs: the node chart draws, or the honest ghost while the hour fills', (await page.locator('main[data-page="ipfs"] [data-testid="ghost-chart"], main[data-page="ipfs"] [data-testid="ipfs-chart"]').count()) === 1)
+  check('ipfs: an unread figure says so, never 0', !(await page.locator('main[data-page="ipfs"] [data-tile]').evaluateAll((ts) => ts.some((t) => /^\s*0\s*$/.test(t.querySelector('.font-display')?.textContent ?? '')))))
+  check('ipfs: "your pins" is honest and points at Services', (await page.getByTestId('ipfs-your-pins').count()) === 1 && /not open yet/.test((await page.getByTestId('ipfs-your-pins').textContent()) ?? ''))
+  await shot(page, 'app-1440-ipfs')
+  await page.getByTestId('ipfs-ask').click()
+  await page.locator('main[data-page="services"]').waitFor({ timeout: 15_000 })
+  check('ipfs: "Ask for pinning" opens Services', new URL(page.url()).hash === '#services')
+  check('services: the page header, the honest projects state and the request form', (await page.locator('main[data-page="services"] h1').textContent())?.trim() === 'Development services' && (await page.getByTestId('projects-empty').count()) === 1 && (await page.getByTestId('request-form').count()) === 1 && !/waitlist/i.test((await page.locator('main[data-page="services"]').textContent()) ?? ''))
+  check('services: the catalogue lists every practice with a Request button', (await page.locator('[data-testid="services-catalog"] [data-service]').count()) >= 8)
+  await page.locator('[data-testid="services-catalog"] [data-service="chain"]').getByRole('button', { name: 'Request this' }).click()
+  check('services: "Request this" preselects the project type', (await page.getByTestId('request-type').inputValue()) === 'L2/L3 chain launch')
+  await page.getByTestId('request-email').fill('e2e@example.com')
+  await page.getByTestId('request-message').fill('An e2e request from the app.')
+  await page.getByTestId('request-send').click()
+  await page.getByTestId('request-sent').waitFor({ timeout: 15_000 })
+  check('services: the request is sent (POST /api/contact) and the page says so with a toast', (await page.getByText('Request sent').count()) >= 1 && /e2e@example\.com/.test((await page.getByTestId('request-sent').textContent()) ?? ''))
+  await shot(page, 'app-1440-services')
+  await open('analytics')
+  check('analytics: the page header', (await page.locator('main[data-page="analytics"] h1').textContent())?.trim() === 'Gully Analytics')
+  await open('keys')
+  check('keys: no Widget sub-tab (the widget builder is on the web)', (await page.getByRole('tab', { name: /Widget/ }).count()) === 0 && (await page.getByRole('tab', { name: /Quickstart/ }).count()) === 1)
+  await open('settings')
+  check('settings: the Gully ID card links gullyid.xyz in a new tab', (await page.getByTestId('gully-id-card').locator('a[href="https://gullyid.xyz"][target="_blank"]').count()) === 1)
+  for (const id of APP_PAGES) {
+    await open(id)
+    const noise = await page.locator(`main[data-page="${id}"]`).evaluate((el) => /\[object Object\]|\bundefined\b|\bnull\b|DeepCore/.test(el.innerText))
+    check(`app #${id}: renders with its header and no developer noise`, !noise)
+  }
+  // The hashes that left: the app shows the leaving line and the browser lands on the page on the web.
+  for (const [id, href] of LEFT) {
+    stubbed.length = 0
+    await page.goto(`${BASE}/app#${id}`)
+    await page.waitForURL((u) => u.href.startsWith(href), { timeout: 15_000 }).catch(() => {})
+    check(`app #${id}: leaves for ${href}`, page.url().startsWith(href) || stubbed.some((u) => u.startsWith(href)), `${page.url()} ${stubbed.slice(0, 2).join(' ')}`)
+  }
+  // Gully AI in the app: floating button and Ctrl+K; #ai opens the drawer over the Overview.
+  await page.goto(BASE + '/app')
+  await appNav.waitFor()
   await launcherWorks(page, 'app')
-  // A deep link opens its tool page directly; #ai opens the Gully AI drawer over the Overview.
-  await page.goto(BASE + '/app#score')
-  await page.locator('[data-service="score"]').getByTestId('service-header').waitFor()
-  check('app: #score deep-links to its page', (await page.locator('main[data-page]').getAttribute('data-page')) === 'score')
   await page.goto(BASE + '/app#ai')
   await page.getByTestId('ask-dialog').waitFor({ timeout: 10_000 })
   check('app: #ai opens the Gully AI drawer over the Overview', (await page.locator('main[data-page]').getAttribute('data-page')) === 'overview')
   await page.keyboard.press('Escape')
-  await w.verify()
+  await w.verify([/ERR_BLOCKED_BY_CLIENT/i])
   await ctx.close()
 
-  // The sidebar at 1440x840 and 1440x800: one full-height list with no inner scrollbar, folding groups that
-  // are remembered, and an icon rail with tooltips. The Overview's rows have no orphan card at 1440, 1280
-  // and 1024 (KPIs, market band), and "Get started" is a ring with the next step.
+  // The sidebar at 1440x840 and 1440x800: one full-height list with no inner scrollbar need, an icon rail with
+  // tooltips, and the Overview's rows with no orphan card at 1440, 1280 and 1024; "Get started" is a ring with the next step.
   const sc = await newContext({ width: 1440, height: 840, cookie: cookieOf(api3) })
   const sp = await sc.newPage()
   const sw = watch(sp, 'app sidebar 1440x840')
   await sp.goto(BASE + '/app')
   const sNav = sp.getByTestId('app-nav')
   await sNav.waitFor()
-  await overviewIsLive(sp, 'overview at 1440x840')
   await sp.waitForTimeout(900)
   await shot(sp, 'app-1440x840-overview-new')
-  const fits = async () => sNav.evaluate((el) => getComputedStyle(el).overflowY === 'auto' && el.clientHeight > 300)
-  check('sidebar at 1440x840: the grouped list scrolls inside the sidebar', await fits(), await sNav.evaluate((el) => `${el.scrollHeight}/${el.clientHeight}`))
+  const fits = async () => sNav.evaluate((el) => getComputedStyle(el).overflowY === 'auto' && el.clientHeight > 300 && el.scrollHeight <= el.clientHeight + 1)
+  check('sidebar at 1440x840: the ten pages fit without an inner scrollbar', await fits(), await sNav.evaluate((el) => `${el.scrollHeight}/${el.clientHeight}`))
   await sp.setViewportSize({ width: 1440, height: 800 })
   await sp.waitForTimeout(200)
   check('sidebar at 1440x800: the same', await fits(), await sNav.evaluate((el) => `${el.scrollHeight}/${el.clientHeight}`))
@@ -779,13 +736,11 @@ await step('app services', async () => {
   const st = sp.getByRole('dialog', { name: 'Status' })
   await st.getByTestId('status-view').waitFor()
   await st.locator('[data-chart].opacity-100 svg').first().waitFor({ timeout: 20_000 }).catch(() => {})
-  check('status: the Status button opens a Status view (API uptime and latency, tracker and launch poller health), not another tab', (await st.getByText('Tracker data').count()) >= 1 && (await st.getByText('Launch poller').count()) >= 1 && /checks this session/.test((await st.textContent()) ?? '') && new URL(sp.url()).hash === '')
+  check('status: the Status button opens a Status view, not another tab', /checks this session/.test((await st.textContent()) ?? '') && new URL(sp.url()).hash === '')
   await shot(sp, 'app-1440x840-status')
   await sp.keyboard.press('Escape')
   await st.waitFor({ state: 'hidden' })
   await sp.setViewportSize({ width: 1440, height: 900 })
-  check('sidebar: the groups are Trade, Build, Manage and Account', (await sNav.locator('[data-nav-group="Trade"], [data-nav-group="Build"], [data-nav-group="Manage"], [data-nav-group="Account"]').count()) === 4)
-  // Reload on a page without the market band (its history reads count against the anonymous limit).
   await sp.goto(BASE + '/app#keys')
   await sNav.waitFor()
   await sNav.getByRole('link', { name: 'Overview', exact: true }).click()
@@ -793,7 +748,7 @@ await step('app services', async () => {
   await gs.waitFor()
   check('overview: "Get started" opens folded as a thin progress bar with the next step', (await gs.getAttribute('data-folded')) !== null && /^Next: /.test(((await sp.getByTestId('get-started-next').textContent()) ?? '').trim()) && (await gs.boundingBox()).height <= 64)
   await sp.getByTestId('get-started-continue').click()
-  check('overview: "Get started" is a stepper whose current step shows one action button', (await gs.locator('[data-step]').count()) >= 3 && (await gs.locator('[data-state="current"]').count()) === 1 && (await sp.getByTestId('next-step').locator('button, a').count()) === 1 && !/not tracked or not available/.test((await gs.textContent()) ?? ''))
+  check('overview: "Get started" is a stepper whose current step shows one action button', (await gs.locator('[data-step]').count()) >= 2 && (await gs.locator('[data-state="current"]').count()) === 1 && (await sp.getByTestId('next-step').locator('button, a').count()) === 1)
   await sp.setViewportSize({ width: 1440, height: 840 })
   await shot(sp, 'app-1440x840-sidebar')
   await sp.getByTestId('sidebar-toggle').click()
@@ -803,6 +758,7 @@ await step('app services', async () => {
   await sp.waitForTimeout(300)
   const tip = keysRow.locator('[data-tooltip]')
   check('icon rail: hovering a row shows its name as a tooltip', (await tip.textContent())?.trim() === 'Keys' && Number(await tip.evaluate((el) => getComputedStyle(el).opacity)) > 0.9)
+  check('icon rail: the products link keeps its name for screen readers', (await sp.getByTestId('sidebar-footer').getByTestId('products-link').getAttribute('aria-label')) === 'All Gully products (opens in a new tab)')
   await shot(sp, 'app-1440x840-rail')
   await sp.getByTestId('sidebar-toggle').click()
   const perRow = async (sel) =>
@@ -813,7 +769,7 @@ await step('app services', async () => {
       return Object.values(counts)
     })
   // The pixel-pass design audit on every app page (signed in): 11 px minimum, token colours only, other hosts in a new tab.
-  for (const id of ['overview', 'products', 'tracker', 'merchant', 'security', 'score', 'widgets', 'telegram', 'keys', 'alerts', 'analytics', 'billing', 'team', 'activity', 'settings']) {
+  for (const id of [...APP_PAGES, 'merchant', 'security']) {
     await sp.goto(`${BASE}/app#${id}`)
     await sp.locator(`main[data-page="${id}"]`).waitFor({ timeout: 15_000 })
     await sp.waitForLoadState('networkidle').catch(() => {})
@@ -826,44 +782,44 @@ await step('app services', async () => {
     await sp.setViewportSize({ width, height: 840 })
     await sp.waitForTimeout(400)
     // The KPI cards rise in with a staggered animation (up to 0.65 s); measure their rows once it has played.
-    await sp.evaluate(() => Promise.all([...document.querySelectorAll('[data-kpi]')].flatMap((el) => el.getAnimations()).map((a) => a.finished)))
+    await sp.evaluate(() => Promise.all([...document.querySelectorAll('[data-kpi], [data-service-card]')].flatMap((el) => el.getAnimations()).map((a) => a.finished)))
     const k = await perRow('[data-kpi]')
-    const b = await perRow('[data-testid="mk-grid"] > section')
+    const c = await perRow('[data-service-card]')
     check(`overview at ${width}: KPI cards with no orphan`, k.length > 0 && k.every((n) => n === k[0]), JSON.stringify(k))
-    check(`overview at ${width}: market tiles with no orphan`, b.length > 0 && b.every((n) => n === b[0]), JSON.stringify(b))
+    check(`overview at ${width}: service cards with no orphan`, c.length > 0 && c.every((n) => n === c[0]), JSON.stringify(c))
   }
   await sw.verify()
   await sc.close()
 
-  // 390 px: the mobile menu sheet with the same groups, every service without horizontal scroll.
+  // 390 px: the tab bar, the mobile menu sheet with the ten pages, every page without horizontal scroll.
   const m = await newContext({ width: 390, height: 844, mobile: true, cookie: cookieOf(api3) })
   const mp = await m.newPage()
-  const mw = watch(mp, 'app services 390')
+  const mw = watch(mp, 'app pages 390')
   await mp.goto(BASE + '/app')
-  await overviewIsLive(mp, 'overview at 390')
+  await mp.locator('main[data-page="overview"]').waitFor({ timeout: 15_000 })
   await noHorizontalScroll(mp, 'app overview')
   await shot(mp, 'app-390-overview-new')
   const bar = mp.getByTestId('tab-bar')
-  check('app at 390: a bottom tab bar with Overview, Activity, Products, Keys and More', JSON.stringify(await bar.locator('a, button').evaluateAll((els) => els.map((e) => e.textContent.trim()))) === JSON.stringify(['Overview', 'Activity', 'Products', 'Keys', 'More']))
-  await bar.getByRole('link', { name: 'Products' }).tap()
-  await mp.getByTestId('products').waitFor({ timeout: 15_000 })
-  check('app at 390: a tab opens its page', new URL(mp.url()).hash === '#products')
+  check('app at 390: a bottom tab bar with Overview, Activity, Analytics, Billing and More', JSON.stringify(await bar.locator('a, button').evaluateAll((els) => els.map((e) => e.textContent.trim()))) === JSON.stringify(['Overview', 'Activity', 'Analytics', 'Billing', 'More']))
+  await bar.getByRole('link', { name: 'Analytics' }).tap()
+  await mp.locator('main[data-page="analytics"]').waitFor({ timeout: 15_000 })
+  check('app at 390: a tab opens its page', new URL(mp.url()).hash === '#analytics')
   await bar.getByRole('link', { name: 'Overview' }).tap()
   await mp.getByTestId('tab-more').tap()
   await mp.getByTestId('app-sheet').waitFor()
-  check('app at 390: More opens the full menu sheet with the seven hub pages', (await mp.getByTestId('app-sheet').getByRole('navigation', { name: 'App pages' }).locator('a[href^="#"]:not([href="#tracker"])').count()) === 7)
+  check('app at 390: More opens the full menu sheet with the ten pages and the products link', (await mp.getByTestId('app-sheet').getByRole('navigation', { name: 'App pages' }).locator('a[href^="#"]').count()) === 10 && (await mp.getByTestId('app-sheet').getByTestId('products-link').count()) === 1)
   await shot(mp, 'app-390-more')
   await mp.keyboard.press('Escape')
   await mp.getByTestId('app-sheet').waitFor({ state: 'hidden' })
   await mp.getByTestId('menu-button').tap()
   const sheet = mp.getByTestId('app-sheet')
   await sheet.waitFor()
-  check('app at 390: the menu sheet shows the seven hub pages', (await sheet.getByRole('navigation', { name: 'App pages' }).locator('a[href^="#"]:not([href="#tracker"])').count()) === 7)
+  check('app at 390: the menu sheet shows the ten pages', (await sheet.getByRole('navigation', { name: 'App pages' }).locator('a[href^="#"]').count()) === 10)
   await shot(mp, 'app-390-menu')
   await sheet.getByRole('link', { name: 'Overview', exact: true }).tap()
-  for (const [id] of SERVICES) {
+  for (const id of ['chains', 'ipfs', 'services']) {
     await mp.goto(`${BASE}/app#${id}`)
-    await mp.locator(`[data-service="${id}"]`).getByTestId('service-header').waitFor({ timeout: 15_000 })
+    await mp.locator(`main[data-page="${id}"] [data-testid="service-header"]`).waitFor({ timeout: 15_000 })
     await mp.waitForTimeout(700)
     await noHorizontalScroll(mp, `app #${id}`)
     await shot(mp, `app-390-${id}`)
@@ -871,9 +827,9 @@ await step('app services', async () => {
   // Design audit 3 (D1, D4, D9, D10, D28): narrow screens read in full, nothing clipped, no empty-count badges.
   for (const w of [390, 320]) {
     await mp.setViewportSize({ width: w, height: 760 })
-    for (const id of ['overview', 'keys', 'tracker', 'products']) {
+    for (const id of ['overview', 'keys', 'chains', 'services']) {
       await mp.goto(`${BASE}/app#${id}`)
-      await mp.locator(id === 'tracker' ? `[data-service="${id}"] [data-testid="service-header"]` : `main[data-page="${id}"]`).first().waitFor({ timeout: 15_000 })
+      await mp.locator(`main[data-page="${id}"]`).first().waitFor({ timeout: 15_000 })
       await mp.waitForTimeout(700)
       await noHorizontalScroll(mp, `app #${id} at ${w}`)
       const crumb = await mp.locator('[data-testid="breadcrumb"] [aria-current="page"]').evaluate((e) => [e.scrollWidth, e.clientWidth, e.textContent])
@@ -882,10 +838,8 @@ await step('app services', async () => {
       check(`app #${id} at ${w}: no stat label or note is clipped`, clipped.length === 0, JSON.stringify(clipped))
       const tip = await mp.locator('[data-testid="info-tip"] > span:first-child').evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).textOverflow === 'ellipsis').length)
       check(`app #${id} at ${w}: the hint line wraps instead of ending in an ellipsis`, tip === 0)
-      if (id === 'tracker') {
-        const small = await mp.locator('[data-service="tracker"] tbody tr').first().locator('button, a').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width < 43.5 || e.getBoundingClientRect().height < 43.5).map((e) => e.getAttribute('aria-label') || e.textContent))
-        check(`app #tracker at ${w}: row Alert and Page buttons are 44 px targets`, small.length === 0, JSON.stringify(small))
-      }
+      const small = await mp.locator('[data-testid="tab-bar"] a, [data-testid="tab-bar"] button, [data-testid="services-row"] button, main a[href], main button').evaluateAll((els) => els.filter((e) => { const r = e.getBoundingClientRect(); return r.width && r.height && r.height < 43.5 && !e.closest('[role="tab"], [role="radio"]') }).map((e) => (e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 30)))
+      check(`app #${id} at ${w}: taps are 44 px targets`, small.length === 0, JSON.stringify(small.slice(0, 6)))
       const zero = await mp.locator('[data-testid="sub-tabs"] [role="tab"] > span.font-mono').evaluateAll((els) => els.filter((e) => e.textContent.trim() === '0').length)
       check(`app #${id} at ${w}: no tab badge reads 0`, zero === 0)
     }
@@ -894,13 +848,12 @@ await step('app services', async () => {
   await m.close()
 
   // Page heights (owner rule, gap N-22): no app page is taller than 900 px at 1440x900. Every app page is measured
-  // on every run, the main pages and every service (Holder Map and Monitors included), at 1440 (asserted against the
-  // budget; E2E_MAX_PAGE_PX overrides 900) and at 390 (measured only: phones have no budget). With E2E_SHOTS the
-  // full-page screenshots and page-heights.json are saved as well.
+  // on every run at 1440 (asserted against the budget; E2E_MAX_PAGE_PX overrides 900) and at 390 (measured only:
+  // phones have no budget). With E2E_SHOTS the full-page screenshots and page-heights.json are saved as well.
   {
     const heights = {}
     const MAX_PX = Number(process.env.E2E_MAX_PAGE_PX) || 900
-    const pages = [...['overview', 'merchant', 'analytics', 'alerts', 'security', 'monitors'].map((id) => [id, `main[data-page="${id}"]`]), ...SERVICES.map(([id]) => [id, `[data-service="${id}"] [data-testid="service-header"]`])]
+    const pages = [...APP_PAGES, 'merchant', 'security', 'monitors'].map((id) => [id, `main[data-page="${id}"]`])
     for (const [width, height, mobile] of [[1440, 900, false], [390, 844, true]]) {
       const hc = await newContext({ width, height, mobile, cookie: cookieOf(api3) })
       const hp = await hc.newPage()
@@ -927,7 +880,7 @@ await step('app services', async () => {
       await hc.close()
     }
     const measured = Object.keys(heights)
-    check(`page heights: every app page is measured at 1440 and 390 (${measured.length} of ${pages.length * 2})`, ['overview', 'merchant', 'alerts', ...SERVICES.map(([id]) => id)].every((id) => heights[`${id}-1440`] > 0 && heights[`${id}-390`] > 0), JSON.stringify(heights))
+    check(`page heights: every app page is measured at 1440 and 390 (${measured.length} of ${pages.length * 2})`, [...APP_PAGES, 'merchant'].every((id) => heights[`${id}-1440`] > 0 && heights[`${id}-390`] > 0), JSON.stringify(heights))
     const over = Object.entries(heights).filter(([k, h]) => k.endsWith('-1440') && h > MAX_PX)
     console.log(`  page heights (px): ${Object.entries(heights).map(([k, h]) => `${k} ${h}`).join(', ')}`)
     if (SHOTS) fs.writeFileSync(path.join(SHOTS, 'page-heights.json'), JSON.stringify(heights, null, 2))

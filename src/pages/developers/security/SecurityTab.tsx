@@ -116,9 +116,9 @@ function MonitorLimits() {
           <b className="text-ink">{p.monitors}</b> on {p.name}
         </span>
       ))}
-      <a href="#score" className="ml-auto inline-flex min-h-11 items-center gap-2 text-gold underline-offset-4 hover:underline">
+      <ExtLink href={`${SITE_URL}/score`} className="ml-auto inline-flex min-h-11 items-center gap-2 text-gold underline-offset-4 hover:underline">
         <Gauge size={14} aria-hidden /> Gully Score
-      </a>
+      </ExtLink>
     </div>
   )
 }
