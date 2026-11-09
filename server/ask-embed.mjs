@@ -8,7 +8,7 @@
 // month here and keeps the server dependency-free.
 //
 // Chunks are embedded at runtime, not at build time: the key lives only in the server's env (never in the
-// image build), and the remote corpus (READMEs, DeepCore docs, blog) changes between builds anyway. Vectors
+// image build), and the remote corpus (READMEs, blog) changes between builds anyway. Vectors
 // are cached by a hash of (model, text) in DATA_DIR/ask-embeddings.json, so a restart or an unchanged
 // rebuild embeds nothing. A changed chunk is re-embedded on the next sync.
 //

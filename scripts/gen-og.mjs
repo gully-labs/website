@@ -111,7 +111,7 @@ const CARDS = [
   },
   {
     file: 'og-holders.png',
-    html: page({ eyebrow: 'Holder Map', title: 'Who really <em>holds it?</em>', body: 'The biggest wallets, the ones that trade with each other, and a plain check of every DeepCore launch.', url: 'gullylabs.xyz/holders', right: mascot, titleSize: 96 }),
+    html: page({ eyebrow: 'Holder Map', title: 'Who really <em>holds it?</em>', body: 'The biggest wallets, the ones that trade with each other, and a plain check of every launchpad launch.', url: 'gullylabs.xyz/holders', right: mascot, titleSize: 96 }),
   },
   {
     file: 'og-score.png',

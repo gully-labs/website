@@ -42,15 +42,6 @@ function figure(v: Venue | undefined, c: Col): { n: number | null; note?: string
   return { n: v.fees24hUsd, note: v.fees24hUsd === null ? undefined : '24h' }
 }
 
-/** Small secondary facts a venue publishes beyond the three figures (a launchpad, say: hosted sites,
-    launches in 24h, dollars in locks). A fact the venue left out reads "—", never 0. */
-function extrasOf(v: Venue | undefined): string | null {
-  if (!v || v.state !== 'ok' || v.key !== 'deepcore') return null
-  const c = v.counts
-  const n = (x: number | null | undefined) => (x === null || x === undefined ? '—' : x.toLocaleString('en-US'))
-  return `${n(c.sites)} hosted site${c.sites === 1 ? '' : 's'} · ${n(c.launches24h)} launch${c.launches24h === 1 ? '' : 'es'} 24h · ${fmtUsd(v.lockedUsd)} in locks`
-}
-
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five']
 const ease = [0.2, 0.8, 0.2, 1] as const
 
@@ -150,7 +141,7 @@ export function ProjectCards({ data, state }: { data: Stats | null; state: State
       <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,310px),1fr))] gap-3 p-0">
         {rows.map((p, i) => {
           const venue = venueOf(p.key)
-          const extras = extrasOf(venue)
+          const extras: string | null = null
           const provenance =
             venue?.state === 'ok'
               ? `Read from ${sourceHost(venue.source.url)} at ${fmtTime(venue.source.readAt)}${venue.notes.length ? ` · ${venue.notes.join(' ')}` : ''}`

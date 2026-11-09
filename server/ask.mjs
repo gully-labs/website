@@ -1,6 +1,6 @@
 // Gully AI (Gully Ask): retrieval-augmented answers about Gully Labs, from the docs, the site, the changelog,
 // the legal pages, the roadmap, the Gully Pay contract notes, the Telegram bot and Mini App, the public READMEs
-// and the blog, with live facts read through in-process tools first (a stock's gap, DeepCore launches and pools,
+// and the blog, with live facts read through in-process tools first (a stock's gap,
 // holders, plans, payment chains, the ledger, the Gully Security offer, a contract's Gully Score, published scan
 // reports) and, for a signed-in user, their own workspace (store, usage, alerts).
 //
@@ -295,7 +295,7 @@ export const TOOLS = [
   },
   {
     name: 'get_status',
-    description: 'The live status of every part of Gully Labs right now, from the public status checks (run every minute): the overall state, and each part (API, tracker per chain, DeepCore poller, Telegram bot and its News gate, Gully Pay RPCs and fee proxies, Gully AI, the security engine, monitors, Holder Map sources) with its state, a short detail and its 24-hour uptime, plus open incidents. Use it for "is X down", "is the tracker up to date" or any outage question.',
+    description: 'The live status of every part of Gully Labs right now, from the public status checks (run every minute): the overall state, and each part (API, tracker per chain, Telegram bot and its News gate, Gully Pay RPCs and fee proxies, Gully AI, the security engine, monitors, Holder Map sources) with its state, a short detail and its 24-hour uptime, plus open incidents. Use it for "is X down", "is the tracker up to date" or any outage question.',
     input_schema: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
@@ -320,7 +320,7 @@ export const TOOLS = [
   },
   {
     name: 'get_my_alerts',
-    description: "The signed-in user's own alerts, in their active workspace only: each alert's stock or DeepCore chain, condition, delivery (webhook host or Telegram), whether it is on, muted or waiting to re-arm, and when it last fired, plus the plan's alert allowance. Refuses when nobody is signed in.",
+    description: "The signed-in user's own alerts, in their active workspace only: each alert's stock, condition, delivery (webhook host or Telegram), whether it is on, muted or waiting to re-arm, and when it last fired, plus the plan's alert allowance. Refuses when nobody is signed in.",
     input_schema: { type: 'object', properties: {}, additionalProperties: false },
   },
 ]
@@ -601,13 +601,13 @@ export async function runTool(name, input = {}, ctx = null) {
 
 /* ----------------------------------------------------------------- prompt --- */
 
-const RULES = `You are Gully AI, the assistant on gullylabs.xyz, docs.gullylabs.xyz, the Gully Labs app and the Telegram bot. You answer questions about Gully Labs: its projects, the stock token tracker and its API, the widget, API keys, plans and alerts, Gully Analytics, Gully Pay and merchant stores, the Holder Map, Gully Security (scans, the Gully Score, monitors and reviews), Chain Kit, the Gully L3 roadmap, its open-source repositories, DeepCore, the bot, privacy, and its services.
+const RULES = `You are Gully AI, the assistant on gullylabs.xyz, docs.gullylabs.xyz, the Gully Labs app and the Telegram bot. You answer questions about Gully Labs: its projects, the stock token tracker and its API, the widget, API keys, plans and alerts, Gully Analytics, Gully Pay and merchant stores, the Holder Map, Gully Security (scans, the Gully Score, monitors and reviews), Chain Kit, the Gully L3 roadmap, its open-source repositories, Gully Core, the bot, privacy, and its services.
 
 Voice: short, direct, plain English, like the site's copy. Say what is true now and where it comes from. Never hype, never sell, never advise.
 
 How to answer:
 - Use ONLY the numbered sources in the user turn and the results of your tools. Do not use outside knowledge about Gully Labs, its products, prices or people.
-- Live data first. For a stock token, a DeepCore launch or token, a token's holders, a chain or what can be paid with, prices, plans, limits, the ledger, alert channels, Gully Security (the offer, a contract's Gully Score, published reports), or the user's own store, usage or alerts, call the matching tool BEFORE answering, even when a source seems to cover it; sources may be out of date.
+- Live data first. For a stock token, a token's holders, a chain or what can be paid with, prices, plans, limits, the ledger, alert channels, Gully Security (the offer, a contract's Gully Score, published reports), or the user's own store, usage or alerts, call the matching tool BEFORE answering, even when a source seems to cover it; sources may be out of date.
 - Cite every sentence that states a fact. A fact from a source gets its number in square brackets, like [1] or [2][3]. A fact from a tool gets the tool result's "cite" label, like [L1], and the time it was read when the tool gives one ("as of 10:01 UTC"). Cite only labels that exist.
 - The get_my_* tools read only the signed-in user's own workspace. If one answers "signed-out", say in one sentence that they need to sign in to the Gully Labs app (https://app.gullylabs.xyz) and that you can only see their own workspace then. Never guess about anyone's store, usage or alerts.
 - If the sources do not cover the question, call search_docs once with different words before saying you don't know.

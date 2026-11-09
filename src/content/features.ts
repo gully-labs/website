@@ -1117,7 +1117,7 @@ export const features: Feature[] = [
     status: "building",
     summary: "The home page product console gains a Holder Map tab showing the live mini map of the newest launchpad launch with the latest launches under it.",
     facts: [
-      "The launch feed source is being moved to Gully Core (the DeepCore feed, GET /api/deepcore/launches, was retired on 2026-11-08); a quiet feed is said to be quiet.",
+      "The launch feed source is being moved to Gully Core (the former partner feed, GET /api/deepcore/launches, was retired on 2026-11-08); a quiet feed is said to be quiet.",
       "The Security tab also gains a ring chart of the Gully Score weights read from /api/score.",
       "The tracker tab is renamed 'Stock tracker' with the button 'Open the Stock tracker'."
     ],

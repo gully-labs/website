@@ -1,7 +1,7 @@
 // Screenshots and a motion sequence of the Holder Map for review (not part of the test run):
 //   npm run build && TEST_PORT=9321 node scripts/bubble-shots.mjs <out-dir>
 // It boots the real server against dist/ with the e2e harness (scripts/e2e-harness.mjs) and drives Playwright
-// over the harness's holder fixtures: a DeepCore launch, a Solana token (top holders, no links), a stock token,
+// over the harness's holder fixtures: a launchpad launch, a Solana token (top holders, no links), a stock token,
 // a busy 320-wallet map and the embed, at 1440 and 390.
 import fs from 'node:fs'
 import path from 'node:path'

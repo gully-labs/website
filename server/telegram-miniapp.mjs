@@ -27,7 +27,7 @@
 //   GET  /api/tg/alerts                -> the linked account's alerts and limits
 //   POST /api/tg/alerts                { chain, ticker, pct, direction } -> 201 { alert }   (Telegram delivery)
 //                                      { kind: 'holders', chain, token, metric?, above?, dropPts? } -> a Holder Map alert
-//                                      { kind: 'deepcore-launch', chainId?: number | null } -> a new-launch alert (null: any chain)
+//                                      { kind: 'deepcore-launch' } -> 410 RETIRED (new-launch alerts were retired on 2026-11-08)
 //   POST /api/tg/alerts/:id/pause|resume|test|delete
 
 import crypto from 'node:crypto'
@@ -160,7 +160,7 @@ export async function handleMiniApp(req, res, url) {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
     const linked = link ? { chatType: link.chatType, chatTitle: link.chatTitle, account: `${link.address.slice(0, 6)}…${link.address.slice(-4)}`, blocked } : null
     // announcements: whether Gully Labs news reaches the user's private chat with the bot (bot-users.json).
-    // holderChains: the stock chains whose Holder Map has data (DeepCore launches always have one).
+    // holderChains: the stock chains whose Holder Map has data.
     return json(res, 200, { user, gate, linked, portal: `${PORTAL}/#alerts`, announcements: !botUser(user.id)?.optedOut, holderChains: holderStockChains() }), true
   }
   // Announcements on or off: account management, never gated (like the bot's Settings switch).
@@ -190,10 +190,9 @@ export async function handleMiniApp(req, res, url) {
     if (p === '/api/tg/alerts') {
       const body = await readJson(req, 2_000)
       // A holder alert (Holder Map): the token's top cluster (or top 10) passing a share; alerts.mjs validates it.
+      if (body?.kind === 'deepcore-launch') return json(res, 410, { error: 'New-launch alerts were retired on 2026-11-08. Gully Core, Gully Labs’ own launchpad, is at https://gullycore.xyz', code: 'RETIRED' }), true
       const r =
-        body?.kind === 'deepcore-launch'
-          ? await alertsRouteFor(link.address, 'POST', '/api/developer/alerts', { condition: { type: 'deepcore-launch', chainId: body?.chainId ? Number(body.chainId) : null }, telegram: true })
-          : body?.kind === 'holders'
+        body?.kind === 'holders'
           ? await alertsRouteFor(link.address, 'POST', '/api/developer/alerts', {
               condition: { type: 'holders', chain: body?.chain, token: body?.token, metric: body?.metric ?? 'cluster', above: body?.above ?? null, dropPts: body?.dropPts ?? null },
               telegram: true,

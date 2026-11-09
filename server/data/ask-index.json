@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-08T23:47:13.346Z",
+ "updatedAt": "2026-11-09T01:22:51.928Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -233,8 +233,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#holders",
    "section": "Holder Map: /api/holders",
-   "text": "list: rank,address,label,balance,percent_of_supply,cluster,flags (percent_of_listed when the supply is unknown). UTF-8, as a download.): private, no-store GET /api/holders/:chain/:token/card.png (A 1200 × 630 share card of the map. Free for everyone.): public, max-age=300 GET /api/holders/:chain/:token/live?since= (Transfers since block since (default: the map’s cursor): { state, since, cursor, transfers[] (from, to, pct, block, at), pcts, asOf, note }, 200 at most. state: unsupported on Solana. EVM only.): no-store (10 s server cache) GET /api/holders/:chain/:token/wallet/:address (One wallet on a launchpad launch: firstBuy, buys, sells, entryPrice, priceNow, pnlPct, otherLaunches. state: unsupported on Solana.): public, max-age=60 The map state (string): ok, not-found (404: the token is neither a launchpad launch nor a tracked stock), unavailable (200, with reason and needs: the chain’s holder source is not set up on this server), error (502) or busy (429 or 503). kind (string): deepcore-launch or stock. chain, token (object): Chain key, id, name; token address, symbol, name, decimals, supply (empty when unknown) and explorer url. holders (object): count (empty when unknown), shown, graph, sharesOf (total supply or listed holders), partial. nodes (Node[]): Ranked wallets: id, rank, balance, pct, label (kind: deployer, pool, lock, burn, token, deepcore, router, gully, exchange, known), contract, cluster, flags (sniper, bundled, funded-by-deployer, deployer), url; stocks add valueAtFairUsd, premiumUsd, boughtGapPct. links, clusters, hidden (array): Transfers and funding between mapped wallets; clusters (id, wallets, count, pct, hasDeployer), largest first; wallets outside the map that connect two groups. summary (object): top10Pct, largestCluster, line, plain (sentences).",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "text": "list: rank,address,label,balance,percent_of_supply,cluster,flags (percent_of_listed when the supply is unknown). UTF-8, as a download.): private, no-store GET /api/holders/:chain/:token/card.png (A 1200 × 630 share card of the map. Free for everyone.): public, max-age=300 GET /api/holders/:chain/:token/live?since= (Transfers since block since (default: the map’s cursor): { state, since, cursor, transfers[] (from, to, pct, block, at), pcts, asOf, note }, 200 at most. state: unsupported on Solana. EVM only.): no-store (10 s server cache) GET /api/holders/:chain/:token/wallet/:address (One wallet on a launchpad launch: firstBuy, buys, sells, entryPrice, priceNow, pnlPct, otherLaunches. state: unsupported on Solana.): public, max-age=60 The map state (string): ok, not-found (404: the token is neither a launchpad launch nor a tracked stock), unavailable (200, with reason and needs: the chain’s holder source is not set up on this server), error (502) or busy (429 or 503). kind (string): stock, launch (a launchpad's token) or token. chain, token (object): Chain key, id, name; token address, symbol, name, decimals, supply (empty when unknown) and explorer url. holders (object): count (empty when unknown), shown, graph, sharesOf (total supply or listed holders), partial. nodes (Node[]): Ranked wallets: id, rank, balance, pct, label (kind: deployer, pool, lock, burn, token, deepcore, router, gully, exchange, known), contract, cluster, flags (sniper, bundled, funded-by-deployer, deployer), url; stocks add valueAtFairUsd, premiumUsd, boughtGapPct. links, clusters, hidden (array): Transfers and funding between mapped wallets; clusters (id, wallets, count, pct, hasDeployer), largest first; wallets outside the map that connect two groups. summary (object): top10Pct, largestCluster, line, plain (sentences).",
+   "updatedAt": "2026-11-09T01:22:22.638Z"
   },
   {
    "id": "b252d7188290",
@@ -269,8 +269,8 @@
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#stats",
    "section": "GET /api/stats",
-   "text": "The live totals on the Gully Labs home page: volume, TVL and fees across our projects, each read from that project’s own public API (and DefiLlama where noted) and added up in USD. No parameters, no key; cached on the server for a minute. No CORS header: read it from a server, not a browser on another site. generatedAt (string (ISO)): When this answer was built. totals (object): volumeAllUsd, volume24hUsd, tvlUsd, fees24hUsd, feesAllUsd: each the sum over the venues that publish it, or empty when none does. covers names the venues in each total; unread the venues that could not be read. daily ({ t, v }[]): Daily volume in USD summed across the venues read; t in Unix seconds. venues (Venue[]): One per project (deepcore, peddleswap, peddles, peddlequest): state: ok with its figures, daily, series ({ volume, fees, tvl }, each { t, v }[] in USD, the last 120 days), sources (who supplied each series: the venue's own API, or DefiLlama with fallback: true), lastActivity (when the last day with non-zero volume was, or absent when none is known), counts, notes and source (url, readAt), or state: error with error. A venue that fails is unreadable, never zero. Cache-Control: public, max-age=30. 502 only if the whole answer could not be built.",
-   "updatedAt": "2026-10-19T23:00:40.805Z"
+   "text": "The live totals on the Gully Labs home page: volume, TVL and fees across our projects, each read from that project’s own public API (and DefiLlama where noted) and added up in USD. No parameters, no key; cached on the server for a minute. No CORS header: read it from a server, not a browser on another site. generatedAt (string (ISO)): When this answer was built. totals (object): volumeAllUsd, volume24hUsd, tvlUsd, fees24hUsd, feesAllUsd: each the sum over the venues that publish it, or empty when none does. covers names the venues in each total; unread the venues that could not be read. daily ({ t, v }[]): Daily volume in USD summed across the venues read; t in Unix seconds. venues (Venue[]): One per project (peddleswap, peddles, peddlequest, gullychain): state: ok with its figures, daily, series ({ volume, fees, tvl }, each { t, v }[] in USD, the last 120 days), sources (who supplied each series: the venue's own API, or DefiLlama with fallback: true), lastActivity (when the last day with non-zero volume was, or absent when none is known), counts, notes and source (url, readAt), or state: error with error. A venue that fails is unreadable, never zero. Cache-Control: public, max-age=30. 502 only if the whole answer could not be built.",
+   "updatedAt": "2026-11-09T01:22:22.638Z"
   },
   {
    "id": "1ad89c4b87c3",
@@ -291,13 +291,13 @@
    "updatedAt": "2026-10-19T08:04:51.615Z"
   },
   {
-   "id": "4fff1428f04e",
+   "id": "f4dd73644060",
    "source": "Docs",
    "title": "API reference",
    "url": "https://docs.gullylabs.xyz/api#launchpad",
-   "section": "Launchpad: /api/deepcore",
-   "text": "GET /api/deepcore/launches?chain=&limit= (The launchpad’s newest launches from the server’s poller: { state (ok, stale, unreadable), launches[], asOf, chains[], error, pollSeconds }. Each launch: key, chainId, chainName, token, symbol, createdAt, creator, totalSupply, legs[] (pools, lock), links, locked. chain is 56, 999, 4663 or 8453; limit 1–50, default 50.): public, max-age=30; no key GET /api/deepcore/quote?chain=&token=&amount= (A launchpad router quote for buying a stock token with the native coin, for comparison only (nothing is signed): { quote } with pay, out (amount, minimum), priceImpactPct, fee, route (venues, hops), alternatives, expiresAt, links. chain is robinhood or bsc; token a tracked stock token; amount up to 1000 of the native coin.): 10 a minute per address (429, RATE_LIMITED); answers cached 20 s (cached: true). Region-gated (451). Quote errors carry a code: BAD_CHAIN, BAD_TOKEN, BAD_AMOUNT (400), NO_ROUTE (404), BUSY (429, the launchpad’s own limit), UNREADABLE (502).",
-   "updatedAt": "2026-11-07T01:38:40.876Z"
+   "section": "Launchpad: /api/deepcore (retired)",
+   "text": "GET /api/deepcore/launches and GET /api/deepcore/quote answer 410 since 2026-11-08: the former partner launchpad's integrations were retired. Gully Core, Gully Labs’ own launchpad and DEX core, publishes its own data at gullycore.xyz (docs.gullycore.xyz).",
+   "updatedAt": "2026-11-09T01:22:22.638Z"
   },
   {
    "id": "146aab6f6202",
@@ -656,17 +656,8 @@
    "title": "Plans & alerts",
    "url": "https://docs.gullylabs.xyz/plans-alerts#launch-alerts",
    "section": "New launch alerts",
-   "text": "A second kind of alert watches the launchpad for new token launches. It has no stock: it watches one launchpad chain, or every chain when chainId is left empty. deepcore-launch ({ type: \"deepcore-launch\", chainId }): A token launches on the launchpad on that chain: 56 BNB Chain, 999 HyperEVM, 4663 Robinhood Chain or 8453 Base; empty for any of them. The launchpad’s public API (GET /v1/launches) is read every 90 seconds. Each launch fires once, the first time it is seen; after a restart nothing already seen is sent again. Only launches made after the alert was created count (with an hour of slack for indexer lag), so a new alert does not replay the backlog. One delivery at most every 5 minutes per alert: launches seen in the meantime wait and go out together, up to the 20 most recent. A paused, muted or over-the-plan alert neither sends nor queues: launches it missed are not sent later. It counts against your plan’s alerts like a gap alert, and delivers the same way: webhook, Telegram or both, signed the same way (see below). When the launchpad cannot be read, nothing fires and nothing is invented; the next good read catches up on launches it has not seen.",
-   "updatedAt": "2026-11-07T01:38:40.876Z"
-  },
-  {
-   "id": "f1a512c660b5",
-   "source": "Docs",
-   "title": "Plans & alerts",
-   "url": "https://docs.gullylabs.xyz/plans-alerts#launch-alerts",
-   "section": "New launch alerts",
-   "text": "signed the same way (see below). When the launchpad cannot be read, nothing fires and nothing is invented; the next good read catches up on launches it has not seen. In Telegram, anyone can ask the bot /launches for the five latest launchpad launches on every chain, or /launches base (also bsc, robinhood, hyperevm, or a chain id) for one chain. It reads the same 90-second cache as the alerts, says when the list is older because the launchpad could not be read, and names any chain the launchpad itself could not read. Launch information is not advice.",
-   "updatedAt": "2026-11-07T01:38:40.876Z"
+   "text": "A second kind of alert watches the launchpad for new token launches. It has no stock: it watches one launchpad chain, or every chain when chainId is left empty. New-launch alerts (deepcore-launch) were retired on 2026-11-08 together with the former partner launchpad's feed: creating one answers 410, and existing ones no longer fire. Gully Core, Gully Labs’ own launchpad and DEX core, is at gullycore.xyz.",
+   "updatedAt": "2026-11-09T01:22:22.638Z"
   },
   {
    "id": "034735424bbd",
@@ -953,8 +944,8 @@
    "title": "Integrate the Holder Map",
    "url": "https://docs.gullylabs.xyz/holder-map-integrate#response",
    "section": "The map JSON",
-   "text": "Always check state first. HTTP status is 200 for ok and unavailable, 404 for not-found, 429 or 503 for busy and 502 for error. state (\"ok\" | \"unavailable\" | \"not-found\" | \"busy\" | \"error\"): Only ok carries the fields below. The others carry reason (plain words), chain, token.address and asOf; unavailable adds comingSoon. kind (string): What was mapped, for example stock or deepcore-launch. chain ({ key, id, name }): The chain. token ({ address, symbol, name, decimals, supply, url }): supply is empty when the total supply is not known; url is the explorer page. asOf (ISO time): When the map was built. holders ({ count, shown, graph, sharesOf, partial }): sharesOf says whether percentages are of total supply or of the listed holders; count may be empty. nodes[] (wallet): id, short, rank, balance, pct, label ({ kind, name } or empty), contract, cluster (a cluster id or empty), flags[] and url. On stock tokens also valueAtFairUsd, premiumUsd and boughtGapPct. links[] (edge): source, target, transfers, pct and kind (transfer, funding or via). clusters[] (group): id, wallets[], count, pct, hasDeployer. summary ({ top10Pct, largestCluster, line, plain[] }): The concentration in numbers and in plain sentences. forensics (object, or empty): Launch checks (deployer share, bundled and sniped buying, funding, liquidity lock). Empty for tokens without a complete history. fair (object, or empty): Stock tokens: the fair-price overlay. timeline (frames, or empty): Replay frames; empty on the free view. recentFlows[] (transfers): The latest large movements.",
-   "updatedAt": "2026-10-19T08:04:51.615Z"
+   "text": "Always check state first. HTTP status is 200 for ok and unavailable, 404 for not-found, 429 or 503 for busy and 502 for error. state (\"ok\" | \"unavailable\" | \"not-found\" | \"busy\" | \"error\"): Only ok carries the fields below. The others carry reason (plain words), chain, token.address and asOf; unavailable adds comingSoon. kind (string): What was mapped: stock, launch or token. chain ({ key, id, name }): The chain. token ({ address, symbol, name, decimals, supply, url }): supply is empty when the total supply is not known; url is the explorer page. asOf (ISO time): When the map was built. holders ({ count, shown, graph, sharesOf, partial }): sharesOf says whether percentages are of total supply or of the listed holders; count may be empty. nodes[] (wallet): id, short, rank, balance, pct, label ({ kind, name } or empty), contract, cluster (a cluster id or empty), flags[] and url. On stock tokens also valueAtFairUsd, premiumUsd and boughtGapPct. links[] (edge): source, target, transfers, pct and kind (transfer, funding or via). clusters[] (group): id, wallets[], count, pct, hasDeployer. summary ({ top10Pct, largestCluster, line, plain[] }): The concentration in numbers and in plain sentences. forensics (object, or empty): Launch checks (deployer share, bundled and sniped buying, funding, liquidity lock). Empty for tokens without a complete history. fair (object, or empty): Stock tokens: the fair-price overlay. timeline (frames, or empty): Replay frames; empty on the free view. recentFlows[] (transfers): The latest large movements.",
+   "updatedAt": "2026-11-09T01:22:22.638Z"
   },
   {
    "id": "657025100ea7",
@@ -1268,8 +1259,8 @@
    "title": "Gully AI",
    "url": "https://docs.gullylabs.xyz/gully-ai#tools",
    "section": "Live tools",
-   "text": "For anything that changes, Gully AI reads live data first, even when a page seems to cover it. At most three rounds of tool calls happen per answer. get_stock (everyone): One stock token’s latest tracker reading: onchain and fair price, gap, status, pool liquidity, feed session get_top_gaps (everyone): The widest trusted gaps right now get_ledger (everyone): The live figures of the Gully Labs projects, as each venue publishes them deepcore_launches (everyone): The newest or most traded launchpad launches, with when they were read deepcore_pool (everyone): One token’s launchpad pools: price, liquidity, lock, swaps get_holders (everyone): A token’s Holder Map in summary: top-10 share, clusters, the launch checks get_plans (everyone): Current plans, limits, payment chains and whether checkout is open get_pay_chains (everyone): What Gully Pay accepts on which chain, and the confirmations needed get_alert_channels (everyone): Which alert delivery channels this server offers search_docs (everyone): Searches the docs, site and blog again in other words get_my_store (signed in): Your own Gully Pay store, in your active workspace get_my_usage (signed in): Your own API usage and plan, in your active workspace get_my_alerts (signed in): Your own alerts, in your active workspace The “my” tools take no workspace from the question: the workspace comes from your signed-in session in the app, never from the model. Signed out, they refuse, and the answer says to sign in to the app.",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "text": "For anything that changes, Gully AI reads live data first, even when a page seems to cover it. At most three rounds of tool calls happen per answer. get_stock (everyone): One stock token’s latest tracker reading: onchain and fair price, gap, status, pool liquidity, feed session get_top_gaps (everyone): The widest trusted gaps right now get_ledger (everyone): The live figures of the Gully Labs projects, as each venue publishes them get_holders (everyone): A token’s Holder Map in summary: top-10 share, clusters, the launch checks get_plans (everyone): Current plans, limits, payment chains and whether checkout is open get_pay_chains (everyone): What Gully Pay accepts on which chain, and the confirmations needed get_alert_channels (everyone): Which alert delivery channels this server offers search_docs (everyone): Searches the docs, site and blog again in other words get_my_store (signed in): Your own Gully Pay store, in your active workspace get_my_usage (signed in): Your own API usage and plan, in your active workspace get_my_alerts (signed in): Your own alerts, in your active workspace The “my” tools take no workspace from the question: the workspace comes from your signed-in session in the app, never from the model. Signed out, they refuse, and the answer says to sign in to the app.",
+   "updatedAt": "2026-11-09T01:22:22.638Z"
   },
   {
    "id": "fa803e66bcf6",
@@ -1457,8 +1448,8 @@
    "title": "Telegram Mini App",
    "url": "https://docs.gullylabs.xyz/telegram-mini-app#api",
    "section": "The /api/tg routes",
-   "text": "These routes exist for the Mini App and need Telegram’s signed initData, so they cannot be called from a script of your own. They are listed so you can see what the app does. GET /api/tg/me (Your Telegram user, the News channel status (gate), the linked account (shortened), the dashboard link, whether announcements are on, and the chains that have Holder Map data.): ?fresh=1 re-reads channel membership POST /api/tg/announcements (Body { on: boolean }. Turns Gully Labs announcements in your private chat on or off.): 20 a minute; never gated GET /api/tg/sparks (Each tracked token’s last 24 hours of gap, thinned to about 24 points, keyed chain:TICKER.): cached a minute GET /api/tg/launches (Up to 20 latest launchpad launches, optionally ?chain=<id> (56, 999, 4663 or 8453).): 400 for another chain id GET /api/tg/alerts (The linked account’s alerts and plan limits, each alert with its last three deliveries.): never gated POST /api/tg/alerts (Creates a gap alert, a Holder Map alert (kind: holders) or a new-launch alert (kind: deepcore-launch), all delivered to Telegram.): 30 changes a minute POST /api/tg/alerts/:id/(pause|resume|test|delete) (Changes one alert.): pause and delete never gated",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "text": "These routes exist for the Mini App and need Telegram’s signed initData, so they cannot be called from a script of your own. They are listed so you can see what the app does. GET /api/tg/me (Your Telegram user, the News channel status (gate), the linked account (shortened), the dashboard link, whether announcements are on, and the chains that have Holder Map data.): ?fresh=1 re-reads channel membership POST /api/tg/announcements (Body { on: boolean }. Turns Gully Labs announcements in your private chat on or off.): 20 a minute; never gated GET /api/tg/sparks (Each tracked token’s last 24 hours of gap, thinned to about 24 points, keyed chain:TICKER.): cached a minute GET /api/tg/launches (Up to 20 latest launchpad launches, optionally ?chain=<id> (56, 999, 4663 or 8453).): 400 for another chain id GET /api/tg/alerts (The linked account’s alerts and plan limits, each alert with its last three deliveries.): never gated POST /api/tg/alerts (Creates a gap alert or a Holder Map alert (kind: holders), delivered to Telegram.): 30 changes a minute POST /api/tg/alerts/:id/(pause|resume|test|delete) (Changes one alert.): pause and delete never gated",
+   "updatedAt": "2026-11-09T01:22:22.638Z"
   },
   {
    "id": "09afa4823122",
@@ -1655,8 +1646,8 @@
    "title": "Swaps",
    "url": "https://docs.gullylabs.xyz/swaps#evm",
    "section": "EVM chains: LI.FI",
-   "text": "On and the card is the widget, locked to the token’s chain and connected to the site’s own wallet connection. For comparison it also shows what the router would give for the same payment (read through our cached GET /api/deepcore/quote); “Swap on the launchpad” opens the site, nothing is executed from here.",
-   "updatedAt": "2026-11-07T01:38:40.876Z"
+   "text": "On and the card is the widget, locked to the token’s chain and connected to the site’s own wallet connection. Nothing is executed from here.",
+   "updatedAt": "2026-11-09T01:22:22.638Z"
   },
   {
    "id": "302950459016",
@@ -1970,8 +1961,8 @@
    "title": "Status",
    "url": "https://docs.gullylabs.xyz/status#checks",
    "section": "What each check means",
-   "text": "Checks run every 60 seconds on the server. Public API (platform): This server is answering. The detail says how long it has been up Tracker: (tracker): The chain’s token prices were read on chain in the last 10 minutes (the newest price reading, not the hourly pool discovery). 10 to 30 minutes old is degraded; older, or no price read at all, is down Launch poller (deepcore): The last good poll is within three poll intervals; within ten is degraded Telegram bot webhook (telegram): Telegram’s getWebhookInfo shows a webhook registered. A delivery error in the last 10 minutes, or more than 100 updates waiting, is degraded. See the Telegram bot page Telegram bot: News channel gate (telegram): Telegram’s getChatMember shows the bot is an admin of the News channel. If it is not, the gate cannot check membership and lets everyone through: degraded Gully Pay RPC, per payment chain (payments): A node answers eth_blockNumber (Solana: getSlot). Slower than 4 s is degraded Gully Pay fee proxies (payments): The treasury is not a fee proxy contract (if it is, checkout is refused: down), and no payment sits on a fee proxy waiting for recovery (degraded) Gully AI (ai): Configured, with a non-empty search index, and the AI provider answering for our account (a billing or key problem is degraded until an answer succeeds again) Security scan engine (security): The AI scan is configured. The detail says whether the static-analysis tools are running and what is queued",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "text": "Checks run every 60 seconds on the server. Public API (platform): This server is answering. The detail says how long it has been up Tracker: (tracker): The chain’s token prices were read on chain in the last 10 minutes (the newest price reading, not the hourly pool discovery). 10 to 30 minutes old is degraded; older, or no price read at all, is down Telegram bot webhook (telegram): Telegram’s getWebhookInfo shows a webhook registered. A delivery error in the last 10 minutes, or more than 100 updates waiting, is degraded. See the Telegram bot page Telegram bot: News channel gate (telegram): Telegram’s getChatMember shows the bot is an admin of the News channel. If it is not, the gate cannot check membership and lets everyone through: degraded Gully Pay RPC, per payment chain (payments): A node answers eth_blockNumber (Solana: getSlot). Slower than 4 s is degraded Gully Pay fee proxies (payments): The treasury is not a fee proxy contract (if it is, checkout is refused: down), and no payment sits on a fee proxy waiting for recovery (degraded) Gully AI (ai): Configured, with a non-empty search index, and the AI provider answering for our account (a billing or key problem is degraded until an answer succeeds again) Security scan engine (security): The AI scan is configured. The detail says whether the static-analysis tools are running and what is queued Contract monitors (security): Watched contracts are read without errors; a chain failing in the last 10 minutes is degraded",
+   "updatedAt": "2026-11-09T01:22:22.638Z"
   },
   {
    "id": "7a1040e6d346",
@@ -1979,8 +1970,8 @@
    "title": "Status",
    "url": "https://docs.gullylabs.xyz/status#checks",
    "section": "What each check means",
-   "text": "problem is degraded until an answer succeeds again) Security scan engine (security): The AI scan is configured. The detail says whether the static-analysis tools are running and what is queued Contract monitors (security): Watched contracts are read without errors; a chain failing in the last 10 minutes is degraded Holder Map sources, per chain (holders): The chain has a holder data source configured on this server off means the part is not configured on this server (for example the bot without its token): it is shown, but it is not an outage. unknown means the check could not tell, for example before the first read after a restart. “Security scan engine: up” means the AI scan can run. It is not an audit, and a clean scan is not a guarantee. See Gully Security.",
-   "updatedAt": "2026-10-19T07:56:51.355Z"
+   "text": "says whether the static-analysis tools are running and what is queued Contract monitors (security): Watched contracts are read without errors; a chain failing in the last 10 minutes is degraded Holder Map sources, per chain (holders): The chain has a holder data source configured on this server off means the part is not configured on this server (for example the bot without its token): it is shown, but it is not an outage. unknown means the check could not tell, for example before the first read after a restart. “Security scan engine: up” means the AI scan can run. It is not an audit, and a clean scan is not a guarantee. See Gully Security.",
+   "updatedAt": "2026-11-09T01:22:22.638Z"
   },
   {
    "id": "47cabdcd093b",
@@ -3482,8 +3473,8 @@
    "title": "Gully Labs Telegram bot (@GullyLabsBot)",
    "url": "https://t.me/GullyLabsBot",
    "section": "Help",
-   "text": "Gully Labs · see if stock tokens trade above or below the real share price. 📈 Stock tokens on Robinhood Chain, BNB Chain and Solana · 🔔 alerts right here · 🤖 Gully AI answers. Information only, not investment advice. Gully Labs bot See how far each stock token trades above or below the real share price (the share price comes from Chainlink). Tap the buttons below, or type: /start or /menu · the main menu /gap NVDA · one stock (add bsc , robinhood or solana ) /top · biggest gaps right now /movers · biggest changes /launches · newest tokens on DeepCore /holders · 👥 Holder Map: who holds a token, and which wallets belong together /security · 🛡 Gully Security: contract scans, Gully Score and monitors /score 0x… · the Gully Score of a contract (add base , ethereum …) /ask · ask Gully AI a question /more · every Gully product: Gully Pay, Gully RPC, Gully Chain, HolderMaps, Gully Security, Gully AI, Gully Studio /contact · 💬 write to the Gully Labs team (we reply here) /app · open the Gully app inside Telegram 🔔 Want alerts? Link your wallet: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram. /stop announcements · no more news from Gully Labs (alerts keep coming) Information only, not investment advice. /alerts · your alerts /monitors · your contract monitors /stop · unlink this chat To use the bot you follow the Gully Labs News channel (https://t.me/GullyLabsNews); alerts you already set up still arrive either way.",
-   "updatedAt": "2026-10-28T13:04:45.052Z"
+   "text": "Gully Labs · see if stock tokens trade above or below the real share price. 📈 Stock tokens on Robinhood Chain, BNB Chain and Solana · 🔔 alerts right here · 🤖 Gully AI answers. Information only, not investment advice. Gully Labs bot See how far each stock token trades above or below the real share price (the share price comes from Chainlink). Tap the buttons below, or type: /start or /menu · the main menu /gap NVDA · one stock (add bsc , robinhood or solana ) /top · biggest gaps right now /movers · biggest changes /holders · 👥 Holder Map: who holds a token, and which wallets belong together /security · 🛡 Gully Security: contract scans, Gully Score and monitors /score 0x… · the Gully Score of a contract (add base , ethereum …) /ask · ask Gully AI a question /more · every Gully product: Gully Pay, Gully RPC, Gully Chain, HolderMaps, Gully Security, Gully AI, Gully Studio /contact · 💬 write to the Gully Labs team (we reply here) /app · open the Gully app inside Telegram 🔔 Want alerts? Link your wallet: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram. /stop announcements · no more news from Gully Labs (alerts keep coming) Information only, not investment advice. /alerts · your alerts /monitors · your contract monitors /stop · unlink this chat To use the bot you follow the Gully Labs News channel (https://t.me/GullyLabsNews); alerts you already set up still arrive either way.",
+   "updatedAt": "2026-11-09T01:22:22.638Z"
   },
   {
    "id": "44e023f8910c",
@@ -3491,8 +3482,8 @@
    "title": "Gully Labs Telegram bot (@GullyLabsBot)",
    "url": "https://t.me/GullyLabsBot",
    "section": "Commands",
-   "text": "The bot's commands. /start: Main menu. /app: Open the Gully app inside Telegram. /gap: One stock token, e.g. /gap NVDA. /top: Furthest from the real share price. /movers: Biggest gap moves in 24 hours. /launches: Newest tokens launched on DeepCore. /holders: Holder Map: who holds a token. /alerts: Your alerts: pause, mute, test or delete. /security: Contract scans, Gully Score and monitors. /score: A contract’s Gully Score, e.g. /score 0x…. /ask: Ask Gully AI a question. /contact: Write to the Gully Labs team. /help: What this bot does. /stop: Stop announcements, or unlink this chat. 🤖 Gully AI Answers from the Gully Labs docs, with sources. Type your question in the reply box below, or tap an example. Information only, not investment advice.",
-   "updatedAt": "2026-10-19T19:43:50.826Z"
+   "text": "The bot's commands. /start: Main menu. /app: Open the Gully app inside Telegram. /gap: One stock token, e.g. /gap NVDA. /top: Furthest from the real share price. /movers: Biggest gap moves in 24 hours. /holders: Holder Map: who holds a token. /alerts: Your alerts: pause, mute, test or delete. /security: Contract scans, Gully Score and monitors. /score: A contract’s Gully Score, e.g. /score 0x…. /ask: Ask Gully AI a question. /contact: Write to the Gully Labs team. /help: What this bot does. /stop: Stop announcements, or unlink this chat. 🤖 Gully AI Answers from the Gully Labs docs, with sources. Type your question in the reply box below, or tap an example. Information only, not investment advice.",
+   "updatedAt": "2026-11-09T01:22:22.638Z"
   },
   {
    "id": "dd88463c294b",
@@ -3500,8 +3491,8 @@
    "title": "Gully Labs Mini App in Telegram",
    "url": "https://gullylabs.xyz/tg",
    "section": null,
-   "text": "The Gully Labs Mini App opens inside Telegram from @GullyLabsBot's \"Open app\" button. It shows the stock token gaps, DeepCore launches and your alerts. This is the Gully Labs Telegram app. Open it from the bot's menu button, or use the full tracker at gullylabs.xyz/tracker . The widest stock-token gaps, new launchpad launches as they happen and product drops. Join the channel, then tap I've joined. ↗ (opens outside the app) Gap = how far the token trades above or below the real share price. Information only, not advice. This stock token isn’t one we follow yet. Gap to the real share price Open the full page Custom threshold in percent% Fires when . Delivered to , at most once every 30 minutes. Alerts belong to a wallet account. Link this Telegram account once: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram, then follow the link back to the bot. Your alerts show up here. Manage in the app dashboard ↗ The biggest wallets on , sized by how much they hold. Wallets that sent tokens to each other are joined into a connected cluster, and a cluster is often one person or team. The deployer is the wallet that created the token. When the largest connected cluster holds at least Gully Labs announcements News in your chat with the bot. Alerts keep arriving either way.",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "text": "The Gully Labs Mini App opens inside Telegram from @GullyLabsBot's \"Open app\" button. It shows the stock token gaps and your alerts. This is the Gully Labs Telegram app. Open it from the bot's menu button, or use the full tracker at gullylabs.xyz/tracker . The widest stock-token gaps, alerts in your chat and product drops. Join the channel, then tap I've joined. ↗ (opens outside the app) Gap = how far the token trades above or below the real share price. Information only, not advice. This stock token isn’t one we follow yet. Gap to the real share price Open the full page Custom threshold in percent% Fires when . Delivered to , at most once every 30 minutes. Alerts belong to a wallet account. Link this Telegram account once: app dashboard (app.gullylabs.xyz), Alerts tab, Connect Telegram, then follow the link back to the bot. Your alerts show up here. Manage in the app dashboard ↗ The biggest wallets on , sized by how much they hold. Wallets that sent tokens to each other are joined into a connected cluster, and a cluster is often one person or team. The deployer is the wallet that created the token. When the largest connected cluster holds at least Gully Labs announcements News in your chat with the bot. Alerts keep arriving either way.",
+   "updatedAt": "2026-11-09T01:22:51.928Z"
   },
   {
    "id": "90312bbd13cb",
@@ -4082,8 +4073,8 @@
    "title": "Gully AI assistant (Gully AI)",
    "url": "https://gullylabs.xyz/ask",
    "section": "Gully AI assistant",
-   "text": "Gully AI assistant is part of Gully AI. Status: live now. Answers questions about Gully Labs from its own docs and live data, cites its sources and says it does not know when it does not. Retrieval is hybrid: BM25, a synonym-expanded BM25 and, when VOYAGE_API_KEY is set, embeddings, fused by reciprocal-rank fusion. Live tools include get_plans, get_stock, get_top_gaps, deepcore_launches, deepcore_pool, get_holders, get_gully_score, get_published_reports, get_pay_chains, get_status and get_pay_gas; signed-in users also get get_my_store, get_my_usage and get_my_alerts. Default answer model is claude-haiku-5-5 (ASK_MODEL); the log keeps a salted IP hash only, for 90 days. Per-visitor limits default to 6 a minute and 60 a day; ASK_DAILY_LIMIT caps all surfaces at 2000 a day. It runs on the site (/ask), the docs, the app, ⌘K and Telegram (/ask).",
-   "updatedAt": "2026-10-19T01:11:03.920Z",
+   "text": "Gully AI assistant is part of Gully AI. Status: live now. Answers questions about Gully Labs from its own docs and live data, cites its sources and says it does not know when it does not. Retrieval is hybrid: BM25, a synonym-expanded BM25 and, when VOYAGE_API_KEY is set, embeddings, fused by reciprocal-rank fusion. Live tools include get_plans, get_stock, get_top_gaps, get_holders, get_gully_score, get_published_reports, get_pay_chains, get_status and get_pay_gas; signed-in users also get get_my_store, get_my_usage and get_my_alerts. Default answer model is claude-haiku-5-5 (ASK_MODEL); the log keeps a salted IP hash only, for 90 days. Per-visitor limits default to 6 a minute and 60 a day; ASK_DAILY_LIMIT caps all surfaces at 2000 a day. It runs on the site (/ask), the docs, the app, ⌘K and Telegram (/ask).",
+   "updatedAt": "2026-11-09T01:22:22.638Z",
    "feature": "ai-ask",
    "status": "live"
   },
@@ -4118,17 +4109,6 @@
    "text": "Telegram Mini App is part of Mini App. Status: live now. The Gully app inside Telegram, with stock gaps, launchpad launches and alerts for the account linked to your chat. Served at gullylabs.xyz/tg; each request carries Telegram initData, validated with HMAC-SHA256 and refused after 24 hours. Routes: /api/tg/me, /sparks, /launches, /alerts and /announcements.",
    "updatedAt": "2026-11-06T16:07:55.653Z",
    "feature": "telegram-mini-app",
-   "status": "live"
-  },
-  {
-   "id": "662f12ebac72",
-   "source": "Features",
-   "title": "New launch alerts (Telegram bot)",
-   "url": "https://docs.gullylabs.xyz/telegram",
-   "section": "New launch alerts",
-   "text": "New launch alerts is part of Telegram bot. Status: live now. Alerts when a new token launches on the launchpad, on any chain or one you pick. Launchpad chains: BNB Chain (56), HyperEVM (999), Robinhood Chain (4663) and Base (8453).",
-   "updatedAt": "2026-11-06T16:07:55.653Z",
-   "feature": "telegram-deepcore-launch-alerts",
    "status": "live"
   },
   {
@@ -4434,8 +4414,8 @@
    "title": "Roadmap: Holder Map tab in the home console (Holder Map), not available yet",
    "url": "https://docs.gullylabs.xyz/holder-map",
    "section": "Holder Map tab in the home console (building)",
-   "text": "Holder Map tab in the home console (Holder Map) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. The home page product console gains a Holder Map tab showing the live mini map of the newest launchpad launch with the latest launches under it. Data comes from GET /api/deepcore/launches; a quiet feed is said to be quiet. The Security tab also gains a ring chart of the Gully Score weights read from /api/score. The tracker tab is renamed 'Stock tracker' with the button 'Open the Stock tracker'.",
-   "updatedAt": "2026-11-06T16:07:55.653Z",
+   "text": "Holder Map tab in the home console (Holder Map) is being built and is NOT available yet: coming soon, with no date. Do not tell anyone they can use it today. The home page product console gains a Holder Map tab showing the live mini map of the newest launchpad launch with the latest launches under it. The launch feed source is being moved to Gully Core (the former partner feed, GET /api/deepcore/launches, was retired on 2026-11-08); a quiet feed is said to be quiet. The Security tab also gains a ring chart of the Gully Score weights read from /api/score. The tracker tab is renamed 'Stock tracker' with the button 'Open the Stock tracker'.",
+   "updatedAt": "2026-11-09T01:22:22.638Z",
    "feature": "home-console-holder-map-tab",
    "status": "building"
   },

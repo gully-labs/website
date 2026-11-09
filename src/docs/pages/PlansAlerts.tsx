@@ -196,7 +196,7 @@ export function PlansAlerts() {
           A second kind of alert watches the launchpad for new token launches. It has no stock: it watches one launchpad chain, or every chain when <C>chainId</C> is left empty.
         </P>
         <P>
-          New-launch alerts (<C>deepcore-launch</C>) were retired on 2026-11-08 together with the DeepCore launch feed: creating one answers <C>410</C>, and existing ones no longer fire. Gully Core, Gully Labs’ own launchpad and DEX core, is at gullycore.xyz.
+          New-launch alerts (<C>deepcore-launch</C>) were retired on 2026-11-08 together with the former partner launchpad's feed: creating one answers <C>410</C>, and existing ones no longer fire. Gully Core, Gully Labs’ own launchpad and DEX core, is at gullycore.xyz.
         </P>
       </Section>
 

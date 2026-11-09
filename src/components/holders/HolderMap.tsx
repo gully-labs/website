@@ -1451,10 +1451,10 @@ function Trade({ m, embed, tradeHref, onTrade, pageUrl }: { m: HolderMapOk; embe
   const sym = m.token.symbol ?? 'this token'
   const launch = m.kind === 'deepcore-launch'
   const generic = m.kind === 'token' || m.kind === 'launch'
-  const net = { robinhood: 'robinhood', bsc: 'bsc', base: 'base', hyperevm: 'hyperevm' }[m.chain.key] ?? m.chain.key
-  const href = embed ? pageUrl : (tradeHref ?? (generic ? m.token.url : launch ? `https://deepcore.fun/app/swap?net=${net}&in=0x0000000000000000000000000000000000000000&out=${m.token.address}` : `/tracker/${m.chain.key}/${sym}#swap`))
+  // Legacy maps of the retired partner launchpad (kind 'deepcore-launch') open the explorer like any token.
+  const href = embed ? pageUrl : (tradeHref ?? (generic || launch ? m.token.url : `/tracker/${m.chain.key}/${sym}#swap`))
   const external = embed || /^https?:/.test(href)
-  const note = generic ? 'Opens the block explorer; Gully Labs has no swap for this token.' : launch ? `Opens the launchpad’s own swap; Gully Labs takes no fee there.` : m.chain.key === 'solana' ? jupiterFeeText() : feeText()
+  const note = generic || launch ? 'Opens the block explorer; Gully Labs has no swap for this token.' : m.chain.key === 'solana' ? jupiterFeeText() : feeText()
   return (
     <div className="flex flex-col gap-2 rounded-[12px] border border-line-strong p-4" style={{ background: K.night }} data-holder-trade>
       <p className="m-0 text-[14px] leading-[1.5] text-ink">

@@ -1,10 +1,10 @@
 // DeepCore is RETIRED (owner, 2026-11-08). This test proves the retirement end to end in the real server (in this
 // process, fresh DATA_DIR): no poller, no store, no network; the two public endpoints and the Telegram Mini App feed
 // answer 410 with a pointer to Gully Core; the "DeepCore new launch" alert kind is neither offered nor creatable; the
-// status page has no DeepCore rows; Gully AI has no DeepCore tools. Nothing upstream is read: DEEPCORE_API points at a
-// port that must never be called.
+// status page has no DeepCore rows; Gully AI has no DeepCore tools; the admin health has no poller. Nothing upstream is
+// read: DEEPCORE_API points at a port that must never be called, and the module has no reader to call it with.
 //
-//   npm run test:deepcore-alerts        (no build needed; TEST_PORT overrides the port, default 8796)
+//   npm run test:deepcore-retired        (no build needed; TEST_PORT overrides the port, default 8796)
 
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -73,15 +73,7 @@ const get = async (p) => {
 
 try {
   /* ------------------------------------------------------------- the module --- */
-  const read = await dc.readLaunches({ limit: 5 })
-  check('readLaunches answers state "retired", an empty list and the reason', read.state === 'retired' && read.launches.length === 0 && /retired on 2026-11-08/.test(read.error))
-  const poll = await dc.pollLaunchesNow()
-  check('a poll is a no-op that says so', poll.ok === false && poll.fresh.length === 0 && /retired/.test(poll.error))
-  check('the health view says retired, nothing cached', dc.deepcoreHealth().retired === true && dc.deepcoreHealth().cached === 0)
-  check('no DeepCore chain is offered any more', dc.deepcoreAlertChains().length === 0 && Object.keys(dc.DEEPCORE_CHAINS).length === 0)
-  const markets = await dc.readDeepcoreMarkets({ chain: 'base' })
-  const pool = await dc.readDeepcorePool({ token: 'PEPE' })
-  check('the Gully AI reads answer retired with empty lists', markets.state === 'retired' && markets.launches.length === 0 && pool.state === 'retired' && pool.matches.length === 0)
+  check('the module exports only the two 410 handlers and the retired note (no reader, no poller, no chains)', Object.keys(dc).sort().join() === 'RETIRED,handleDeepcoreLaunches,handleDeepcoreQuote' && /retired on 2026-11-08/.test(dc.RETIRED), Object.keys(dc).join())
   check('nothing was written to DATA_DIR/deepcore.json', !fs.existsSync(path.join(tmp, 'deepcore.json')))
 
   /* ----------------------------------------------------------- the endpoints --- */
@@ -109,6 +101,12 @@ try {
   const rows = st.j?.components ?? st.j?.results ?? st.j?.rows ?? []
   const names = JSON.stringify(st.j ?? {})
   check('the status page has no DeepCore poller row and no DeepCore Holder Map row', st.status === 200 && !/DeepCore launch poller|Holder Map: DeepCore/.test(names), `${st.status} ${rows.length} rows`)
+  const ids = (st.j?.components ?? []).map((c) => c.id)
+  check('the status page has no deepcore component or group', !ids.some((id) => /deepcore/.test(id)) && !(st.j?.components ?? []).some((c) => c.group === 'deepcore'), ids.join())
+  const ask = await get('/api/ask/status')
+  check('GET /api/ask/status lists no deepcore_* tool', ask.status === 200 && !/deepcore/.test(JSON.stringify(ask.j)), `${ask.status}`)
+  const logo = await get('/api/logo/base/0x1111111111111111111111111111111111111111.png?s=64')
+  check('the logo service answers without the partner list (any status, no call to it)', logo.status > 0)
   const tg = await get('/api/tg/launches')
   check('the Telegram Mini App launch feed answers 410 (or is gated before it, never 200 with launches)', tg.status === 410 || (tg.status !== 200 && !(tg.j?.launches?.length > 0)), `${tg.status}`)
 

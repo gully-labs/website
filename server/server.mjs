@@ -8,8 +8,8 @@ import { startStatsWatchdog } from './stats-watchdog.mjs'
 import { handlePeddlesOnchain, startPeddlesLoop } from './peddles.mjs'
 import { onSnapshot, readGapIndex, readHistory, readHistoryDays, readMovers, readTracker, startTrackerLoop } from './tracker.mjs'
 import { shapeMovers } from './movers.mjs'
-import { evaluateAlerts, evaluateLaunchAlerts, startHolderAlerts } from './alerts.mjs'
-import { handleDeepcoreLaunches, handleDeepcoreQuote, onLaunches } from './deepcore.mjs' // retired 2026-11-08: both handlers answer 410, onLaunches never fires
+import { evaluateAlerts, startHolderAlerts } from './alerts.mjs'
+import { handleDeepcoreLaunches, handleDeepcoreQuote } from './deepcore.mjs' // retired 2026-11-08: both answer 410
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { handleMiniApp } from './telegram-miniapp.mjs'
 import { handleHolders } from './holders.mjs'
@@ -488,7 +488,7 @@ async function handleRequest(req, res) {
     for (const [k, v] of Object.entries(CORS)) res.setHeader(k, v)
   }
 
-  // Holder Map (holders.mjs): who holds a DeepCore launch or a stock token, with the same key limits as the tracker.
+  // Holder Map (holders.mjs): who holds a token or a stock token, with the same key limits as the tracker.
   if (url.pathname.startsWith('/api/holders/')) {
     // The front page's map on holdermaps.xyz, never waiting on a build (holders-hero.mjs).
     if (url.pathname === '/api/holders/hero') {
@@ -676,8 +676,6 @@ server.listen(PORT, () => console.log(`gully-web listening on :${PORT}`))
 for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => (flushUsage(), flushAnalyticsUsage(), flushStatus(), process.exit(0)))
 // Gap alerts are evaluated on every recorded tracker snapshot.
 onSnapshot((rows, at) => evaluateAlerts(rows, at))
-// DeepCore launch alerts run on every DeepCore poll (DEEPCORE_LOOP=off in tests: polled on demand).
-onLaunches((fresh, at) => evaluateLaunchAlerts(fresh, at))
 
 /* Background loops (upstream polls that fire alerts, the Telegram webhook, Gully Ask's refresh). During a
    zero-downtime deploy (ops/deploy.sh) the new container starts with GULLY_STANDBY=1: it answers requests
@@ -693,7 +691,6 @@ function startLoops() {
   if (process.env.TRACKER_LOOP !== 'off') startTrackerLoop()
   // Peddles and PeddleQuest read on chain: backfill once, then every 30 s (peddles.mjs). PEDDLES_LOOP=off skips it.
   startPeddlesLoop()
-  // startDeepcore(): retired 2026-11-08, no DeepCore poll
   // Holder Map alerts: each watched token's map is re-read every ten minutes (alerts.mjs).
   startHolderAlerts()
   // The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.

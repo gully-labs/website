@@ -75,8 +75,6 @@ export function GullyAiDocs() {
             ['get_stock', 'everyone', 'One stock token’s latest tracker reading: onchain and fair price, gap, status, pool liquidity, feed session'],
             ['get_top_gaps', 'everyone', 'The widest trusted gaps right now'],
             ['get_ledger', 'everyone', 'The live figures of the Gully Labs projects, as each venue publishes them'],
-            ['deepcore_launches', 'everyone', 'The newest or most traded launchpad launches, with when they were read'],
-            ['deepcore_pool', 'everyone', 'One token’s launchpad pools: price, liquidity, lock, swaps'],
             ['get_holders', 'everyone', 'A token’s Holder Map in summary: top-10 share, clusters, the launch checks'],
             ['get_plans', 'everyone', 'Current plans, limits, payment chains and whether checkout is open'],
             ['get_pay_chains', 'everyone', 'What Gully Pay accepts on which chain, and the confirmations needed'],

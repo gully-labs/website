@@ -114,7 +114,7 @@ export function TelegramMiniAppDocs() {
             ['GET /api/tg/sparks', 'Each tracked token’s last 24 hours of gap, thinned to about 24 points, keyed chain:TICKER.', 'cached a minute'],
             ['GET /api/tg/launches', 'Up to 20 latest launchpad launches, optionally ?chain=<id> (56, 999, 4663 or 8453).', '400 for another chain id'],
             ['GET /api/tg/alerts', 'The linked account’s alerts and plan limits, each alert with its last three deliveries.', 'never gated'],
-            ['POST /api/tg/alerts', 'Creates a gap alert, a Holder Map alert (kind: holders) or a new-launch alert (kind: deepcore-launch), all delivered to Telegram.', '30 changes a minute'],
+            ['POST /api/tg/alerts', 'Creates a gap alert or a Holder Map alert (kind: holders), delivered to Telegram.', '30 changes a minute'],
             ['POST /api/tg/alerts/:id/(pause|resume|test|delete)', 'Changes one alert.', 'pause and delete never gated'],
           ]}
         />
