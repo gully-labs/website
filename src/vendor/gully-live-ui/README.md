@@ -34,4 +34,4 @@ never edit a copy.
 
 First adopter: the gullycore.xyz hero live panel (head block, seconds per block, transactions, bars per block).
 
-Version 1.0.0 (2026-11-09).
+Version 1.0.2 (2026-11-09): a flat or near-flat chart shows one axis label, not the same label repeated, and keeps a span of at least 1 % of the value. 1.0.1 (2026-11-09): numbers under 1 keep four significant digits (token prices). 1.0.0 (2026-11-09).

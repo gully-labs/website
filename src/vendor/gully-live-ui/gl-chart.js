@@ -7,7 +7,7 @@
  * bars ≤ 24 px with 4 px rounded data-ends and a 2 px surface gap, hairline grid, crosshair + tooltip, table view for
  * screen readers. Colours come from --gl-accent / --gl-line / --gl-muted / --gl-surface (tokens.css).
  */
-import { define, fmtValue, pickRung, reducedMotion, token, esc, niceStep } from './gl-core.js';
+import { define, fmtValue, pickRung, reducedMotion, token, esc, axisScale } from './gl-core.js';
 
 const CSS = `:host{display:block;position:relative;font:var(--gl-font);color:var(--gl-ink);min-width:0}
 .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px}
@@ -71,21 +71,20 @@ export class GlChart extends HTMLElement {
     const w = cv.clientWidth, h = cv.clientHeight, pad = { l: 4, r: 52, t: 8, b: 20 };
     const p = this._pts, vs = p.map((x) => Number(x[1]));
     const kind = this.getAttribute('kind') || 'area';
-    let mn = Math.min(...vs), mx = Math.max(...vs); if (kind === 'bars' || mn > 0 && (mx - mn) / mx > .5) mn = Math.min(0, mn);
-    if (mx === mn) { mx += 1; mn -= kind === 'bars' ? 0 : 1; }
-    const step = niceStep((mx - mn) / 3); mn = Math.floor(mn / step + 1e-9) * step; mx = Math.ceil(mx / step - 1e-9) * step; if (mx === mn) mx = mn + step;
+    const u = this.getAttribute('unit') || '';
+    const { mn, mx, step, ticks } = axisScale(vs, kind, (v) => fmtValue(v, u, { digits: 2 }));
     const span = mx - mn, x = (i) => pad.l + (p.length < 2 ? 0.5 : i / (p.length - 1)) * (w - pad.l - pad.r), y = (v) => pad.t + (1 - (v - mn) / span) * (h - pad.t - pad.b);
-    return { cv, w, h, pad, p, vs, mn, mx, x, y, kind, step };
+    return { cv, w, h, pad, p, vs, mn, mx, x, y, kind, step, ticks };
   }
   draw() {
-    const g = this.geom(); if (!g) return; const { cv, w, h, pad, p, mn, mx, x, y, kind, step } = g;
+    const g = this.geom(); if (!g) return; const { cv, w, h, pad, p, mn, mx, x, y, kind, ticks } = g;
     const dpr = Math.min(2, globalThis.devicePixelRatio || 1); cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     const c = cv.getContext('2d'); if (!c) return; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
     const acc = token(this, '--gl-series-1', '#D45F00'), line = token(this, '--gl-line', '#E3D9C7'), muted = token(this, '--gl-muted', '#6B655A'), surf = token(this, '--gl-surface', '#fff');
     const u = this.getAttribute('unit') || '';
     // hairline grid + right-hand ticks (one axis, clean values)
     c.strokeStyle = line; c.lineWidth = 1; c.fillStyle = muted; c.font = '11px system-ui, sans-serif'; c.textBaseline = 'middle';
-    for (let v = mn; v <= mx + step / 2; v += step) { const yy = Math.round(y(v)) + .5; c.beginPath(); c.moveTo(pad.l, yy); c.lineTo(w - pad.r, yy); c.stroke(); c.fillText(fmtValue(v, u, { digits: 2 }), w - pad.r + 6, yy); }
+    for (const t of ticks) { const yy = Math.round(y(t.v)) + .5; c.beginPath(); c.moveTo(pad.l, yy); c.lineTo(w - pad.r, yy); c.stroke(); c.fillText(t.label, w - pad.r + 6, yy); }
     const k = this._k, from = this._from;
     const val = (i) => { const v = Number(p[i][1]); if (!from || !from[i] || k >= 1) return k >= 1 || from ? v : mn + (v - mn) * k; return Number(from[i][1]) + (v - Number(from[i][1])) * k; };
     if (kind === 'bars') {

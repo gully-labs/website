@@ -2,7 +2,7 @@
  * Gully Live UI: shared helpers (gl-core.js). Canonical source: gully-labs/gully-ops sites/_shared/gully-live-ui/.
  * Copy files byte-identical; theme with CSS custom properties (tokens.css), never by editing a component.
  */
-export const GULLY_LIVE_UI_VERSION = '1.0.0';
+export const GULLY_LIVE_UI_VERSION = '1.0.2';
 
 /** true when the visitor asked for less motion (and in environments without matchMedia). */
 export const reducedMotion = () => typeof matchMedia !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -29,7 +29,9 @@ export function fmtNum(n, { digits = 2, compact = true } = {}) {
     for (const [v, u] of units) if (a >= v) return `${(x / v).toFixed(a / v >= 100 ? 0 : 1)}${u}`;
   }
   if (a >= 1000) return Math.round(x).toLocaleString('en-US');
-  return x.toLocaleString('en-US', { maximumFractionDigits: a < 1 && a > 0 ? Math.max(digits, 4) : digits });
+  // Under 1: significant digits, so a token priced 0.00000123 reads 0.00000123, not 0.0000 (1.0.1).
+  if (a > 0 && a < 1) return x.toLocaleString('en-US', { maximumSignificantDigits: Math.max(digits + 1, 4), maximumFractionDigits: 20 });
+  return x.toLocaleString('en-US', { maximumFractionDigits: digits });
 }
 
 /** Format with a unit: usd → $1.2M, pct → +3.4%, plain → fmtNum. */
@@ -108,6 +110,23 @@ export function identicon(address, palette = ['#FD7716', '#0F0E0B', '#FEF4E3', '
 export function niceStep(raw) {
   if (!(raw > 0)) return 1; const e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e;
   return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e;
+}
+
+/** The chart's value axis: range, step and the labelled ticks (1.0.2). Lines and areas keep a span of at least 1 % of
+ * the value, so a near-flat series is not stretched into a cliff; ticks whose labels would read the same (a flat $101K
+ * printing "$101K" four times) collapse to one label at the middle of the data. */
+export function axisScale(vs, kind, fmt) {
+  const lo = Math.min(...vs), hi = Math.max(...vs);
+  let mn = lo, mx = hi;
+  if (kind === 'bars' || mn > 0 && (mx - mn) / mx > .5) mn = Math.min(0, mn);
+  if (kind !== 'bars') { const minSpan = Math.max(Math.abs(mn), Math.abs(mx)) * 0.01; if (mx - mn < minSpan) { const c = (mn + mx) / 2; mn = c - minSpan / 2; mx = c + minSpan / 2; } }
+  if (mx === mn) { mx += 1; mn -= kind === 'bars' ? 0 : 1; }
+  const step = niceStep((mx - mn) / 3); mn = Math.floor(mn / step + 1e-9) * step; mx = Math.ceil(mx / step - 1e-9) * step; if (mx === mn) mx = mn + step;
+  const n = Math.round((mx - mn) / step), all = [];
+  for (let i = 0; i <= n; i++) { const v = mn + i * step; all.push({ v, label: fmt(v) }); }
+  let ticks = all.filter((t, i) => i === 0 || t.label !== all[i - 1].label);
+  if (ticks.length < all.length) { const mid = (lo + hi) / 2; ticks = new Set(all.map((t) => t.label)).size === 1 ? [{ v: mid, label: fmt(mid) }] : ticks; }
+  return { mn, mx, step, ticks };
 }
 
 /** Escape text for innerHTML. */
