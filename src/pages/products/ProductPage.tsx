@@ -287,7 +287,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
           { label: 'Gully Chain', text: x ? <Dot s={x.gullyChain ? 'up' : 'coming'} label={x.gullyChain ? 'supported' : 'not yet'} /> : '—', sub: 'settlement on chain 485590' },
           { label: 'Payments processed', text: <span className="gt-zero">no payments yet</span>, sub: 'sign-up is open · no volume to show' },
         ],
-        main: <TChart label="Gully Pay · response time" tabs={[latencyTab(live, ['pay', 'x402', 'pay-admin'])]} />,
+        main: <TChart label="Gully Pay · response time" tabs={[latencyTab(live, ['pay', 'x402'])]} />,
         side: (
           <Panel label="x402 facilitator · networks and assets" right={x ? <Dot s="up" label={`${x.networks.length} networks`} /> : <Dot s={hub ? 'down' : 'reading'} />}>
             {x ? (

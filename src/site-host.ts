@@ -1,13 +1,12 @@
 /* One bundle, several hosts: the host decides which app renders.
    gullylabs.xyz             the site
    docs.gullylabs.xyz        the docs (also /docs on the main host in development)
-   admin.gullylabs.xyz       the admin dashboard (also /admin on localhost in development)
+   admin.*                   the admin dashboard (also /admin on localhost in development); its address is never
+                             written in the public bundle (owner, 2026-11-10: no admin data on public sites)
    app.gullylabs.xyz         the Gully Labs App, the app dashboard: keys, alerts, analytics, payments and
                              every service (also /app, and the old /developers path, on localhost). */
 export const DOCS_HOST = 'docs.gullylabs.xyz'
 export const DOCS_URL = `https://${DOCS_HOST}`
-export const ADMIN_HOST = 'admin.gullylabs.xyz'
-export const ADMIN_URL = `https://${ADMIN_HOST}`
 export const APP_HOST = 'app.gullylabs.xyz'
 export const APP_URL = `https://${APP_HOST}`
 export const SITE_URL = 'https://gullylabs.xyz'
