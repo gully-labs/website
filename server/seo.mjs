@@ -170,6 +170,7 @@ export function pricingChains() {
 
 const DOCS_PAGES = {
   '/': ['Gully Labs docs', 'Docs for Gully Labs: the stock token tracker on Robinhood Chain, BNB Chain and Solana, its public API, the widget and API keys, plus the Holder Map, Gully Score, Gully AI, the Telegram bot, swaps and status. Gully Chain, Gully Pay, Gully RPC and Gully Security have their own docs on their own domains.'],
+  '/integrate': ['Integrate in 5 minutes · Gully Labs docs', 'Put a Gully product in your own site or app in five minutes: the published @gullylabs packages, the hosted scripts and the public APIs for HolderMaps, the tracker, Gully ID, Gully Pay, Gully Chain and Gully Security.'],
   '/methodology': ['Methodology · Gully Labs docs', 'How fair prices, onchain prices, gaps and staleness are read and computed for every tokenised stock.'],
   '/api': ['API reference · Gully Labs docs', 'The public tracker API: endpoints, fields, rate limits and errors. Free to call with no key.'],
   '/widget': ['Widget guide · Gully Labs docs', 'Embed the live tracker with one script tag: ticker, badge and table, with every option.'],
