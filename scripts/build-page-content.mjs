@@ -66,6 +66,7 @@ export async function build() {
   const H = await load('src/pages/hub/hubData.ts')
   const P = await load('src/content/projects.ts')
   const K = await load('src/content/stockCopy.ts')
+  const GC = await load('src/content/gullyCore.generated.ts')
 
   /* ---- titles and descriptions ---- */
   const meta = {}
@@ -202,7 +203,7 @@ export async function build() {
       sections: [
         sec(null, {
           // (The line itself is the page's description, served just above.)
-          p: [p.group === 'chain' ? 'Runs on Gully Chain.' : 'Supports Gully Chain.'],
+          p: [`${C.runsLine(p)}.`],
           links: [[p.url, p.cta ?? `Open ${p.urlLabel}`], ...(p.cta2 ? [[p.cta2[1], p.cta2[0]]] : []), ...(p.docs ? [[p.docs, `${p.name} docs`]] : [])],
         }),
         sec(C.PRODUCT_SECTIONS.features, { list: p.features.map((f) => `${f.t}: ${f.d}`) }),
@@ -247,7 +248,8 @@ export async function build() {
     lede: H.LANDING_LEDE,
     productsTitle: 'Where to go',
     productsSub: dir.p[0],
-    products: [...H.HUB_PRODUCTS.map(productCard), chainProduct('safe', 'multisig', 'Live', 'Anubis Network mainnet'), chainProduct('gully-core', 'core', 'Testnet', '0.30% for builders')],
+    // Gully Multisig and Gully Core: state and chains from the Gully Core manifest reading (src/content/gullyCore.generated.ts).
+    products: [...H.HUB_PRODUCTS.map(productCard), chainProduct('safe', 'multisig', 'Live', GC.GULLY_CORE.multisigChains.map((n) => n.replace(/ (Network|Chain)$/, '').replace(/^Gully Chain testnet$/, 'Gully Chain')).join(' · ')), chainProduct('gully-core', 'core', GC.GULLY_CORE.liveMainnets.length ? 'Live' : 'Testnet', `${GC.GULLY_CORE.liveMainnets.length} mainnets · ${GC.GULLY_CORE.builderFeePct}% for builders`)],
     peddleTitle: 'Peddle family',
     peddleSub: 'Gully Labs projects for trading and DeFi, each on its own site.',
     peddle: H.PEDDLE_FAMILY.map((p) => ({ key: p.key, name: p.name, line: p.line, icon: p.logo, kind: p.kind, fact: P.projects.find((x) => x.slug === p.page).chains.join(', '), href: `/projects/${p.page}` })),

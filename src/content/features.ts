@@ -1396,101 +1396,113 @@ export const features: Feature[] = [
     id: "deepcore-launchpad",
     product: "Gully Core",
     name: "Launchpad",
-    status: "planned",
+    status: "live",
     summary: "A token, its pool and locked liquidity created in one transaction, with a decaying anti-snipe fee at the open.",
     facts: [
-      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
+      "Live on the Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium mainnets and on Gully Chain testnet (the chain list is the Gully Core manifest, gullycore.xyz/manifest.json; scripts/test-core-sync.mjs fails when this sentence lags it).",
+      "The app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet); every contract is source-verified on verify.gullychain.xyz and owned by that chain's Gully Safe.",
+      "LaunchpadKitV2 makes the token and its pool in one transaction; LaunchGuardHook runs the opening fee schedule (fair launch, anti-sniper, stealth, no tax or custom) and the launch liquidity is locked in the LP locker.",
+      "Outside builders pay a flat 0.30% of every trade on the pools they create and nothing else (FeeControllerV5 on each chain, cap 0.40%)."
     ],
     url: "https://gullycore.xyz/",
     source: [
-      "deepcore:README.md",
-      "deepcore:packages/launchpad/src/LaunchpadKitV2.sol",
-      "deepcore:packages/hooks/src/launch/LaunchGuardHook.sol",
-      "deepcore:packages/hooks/src/launch/LaunchTaxModule.sol",
-      "deepcore:packages/sdk/src/deployments/index.ts"
+      "gully-ops:l3/gully-core/packages/launchpad/src/LaunchpadKitV2.sol",
+      "gully-ops:l3/gully-core/packages/hooks/src/launch/LaunchGuardHook.sol",
+      "website:src/content/gullyCore.generated.ts"
     ]
   },
   {
     id: "deepcore-hosted-pads",
     product: "Gully Core",
     name: "Hosted Launchpads and DEXes",
-    status: "planned",
+    status: "live",
     summary: "Builders open their own launchpad or DEX on Gully Core.",
     facts: [
-      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
+      "Live on the Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium mainnets and on Gully Chain testnet (the chain list is the Gully Core manifest, gullycore.xyz/manifest.json; scripts/test-core-sync.mjs fails when this sentence lags it).",
+      "The app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet); every contract is source-verified on verify.gullychain.xyz and owned by that chain's Gully Safe.",
+      "A launchpad, DEX or stock market is a tenant on the shared core (GullyCorePadFactory, GullyCorePad): the builder publishes a site, deploys no contracts and sets its own fee share and launch presets.",
+      "Outside builders pay a flat 0.30% of every trade on the pools they create and nothing else (FeeControllerV5 on each chain, cap 0.40%)."
     ],
     url: "https://gullycore.xyz/",
     source: [
-      "deepcore:README.md",
-      "deepcore:packages/launchpad/src/pad",
-      "deepcore:packages/sdk/src/deployments/index.ts",
-      "deepcore:docs/custom-domains.md"
+      "gully-ops:l3/gully-core/packages/launchpad/src/pad/GullyCorePadFactory.sol",
+      "gully-ops:l3/gully-core/packages/launchpad/src/pad/GullyCorePad.sol",
+      "website:src/content/gullyCore.generated.ts"
     ]
   },
   {
     id: "deepcore-router",
     product: "Gully Core",
     name: "Best-price router",
-    status: "planned",
+    status: "live",
     summary: "Swaps routed across Gully Core pools and other venues.",
     facts: [
-      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
+      "Live on the Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium mainnets and on Gully Chain testnet (the chain list is the Gully Core manifest, gullycore.xyz/manifest.json; scripts/test-core-sync.mjs fails when this sentence lags it).",
+      "The app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet); every contract is source-verified on verify.gullychain.xyz and owned by that chain's Gully Safe.",
+      "The UniversalRouter and the quoters (CL, Bin and mixed) route a swap across Gully Core pools on the same chain; the swap box (/embed) and the app's Swap screen use them.",
+      "Outside builders pay a flat 0.30% of every trade on the pools they create and nothing else (FeeControllerV5 on each chain, cap 0.40%)."
     ],
     url: "https://gullycore.xyz/",
     source: [
-      "deepcore:README.md",
-      "deepcore:packages/routing/src",
-      "deepcore:packages/sdk/src/deployments/index.ts"
+      "gully-ops:l3/gully-core/packages/router",
+      "gully-ops:l3/gully-core/packages/routing",
+      "website:src/content/gullyCore.generated.ts"
     ]
   },
   {
     id: "deepcore-locks-airdrops-splits",
     product: "Gully Core",
     name: "Locks, vesting, airdrops, splits and multisend",
-    status: "planned",
+    status: "live",
     summary: "Utility contracts for locking liquidity or tokens, distributing tokens and splitting revenue.",
     facts: [
-      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
+      "Live on the Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium mainnets and on Gully Chain testnet (the chain list is the Gully Core manifest, gullycore.xyz/manifest.json; scripts/test-core-sync.mjs fails when this sentence lags it).",
+      "The app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet); every contract is source-verified on verify.gullychain.xyz and owned by that chain's Gully Safe.",
+      "GullyCoreTokenLock and GullyCorePositionLock lock tokens and liquidity until a date; GullyCoreDropFactory sends a token to a list of wallets; GullyCoreSplitFactory splits income; GullyCoreMultisend batches transfers."
     ],
     url: "https://gullycore.xyz/",
     source: [
-      "deepcore:README.md",
-      "deepcore:packages/launchpad/src/lock",
-      "deepcore:packages/launchpad/src/drop",
-      "deepcore:packages/launchpad/src/split",
-      "deepcore:packages/sdk/src/deployments/index.ts"
+      "gully-ops:l3/gully-core/packages/launchpad/src/lock/GullyCoreTokenLock.sol",
+      "gully-ops:l3/gully-core/packages/launchpad/src/drop/GullyCoreDropFactory.sol",
+      "gully-ops:l3/gully-core/packages/launchpad/src/split/GullyCoreSplitFactory.sol",
+      "website:src/content/gullyCore.generated.ts"
     ]
   },
   {
     id: "deepcore-limit-orders-dca",
     product: "Gully Core",
     name: "Limit orders and DCA",
-    status: "planned",
+    status: "live",
     summary: "On-chain range (limit) orders and dollar-cost averaging contracts.",
     facts: [
-      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
+      "Live on the Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium mainnets and on Gully Chain testnet (the chain list is the Gully Core manifest, gullycore.xyz/manifest.json; scripts/test-core-sync.mjs fails when this sentence lags it).",
+      "The app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet); every contract is source-verified on verify.gullychain.xyz and owned by that chain's Gully Safe.",
+      "GullyCoreRangeOrders places range (limit) orders as single-sided liquidity; GullyCoreDCA runs dollar-cost averaging schedules; both are on the Orders screen of the app."
     ],
     url: "https://gullycore.xyz/",
     source: [
-      "deepcore:packages/orders/src",
-      "deepcore:packages/sdk/src/deployments/index.ts",
-      "deepcore:packages/vaults/src"
+      "gully-ops:l3/gully-core/packages/orders/src/GullyCoreDCA.sol",
+      "gully-ops:l3/gully-core/packages/orders/src",
+      "website:src/content/gullyCore.generated.ts"
     ]
   },
   {
     id: "deepcore-four-chains",
     product: "Gully Core",
-    name: "Gully Core on more chains",
-    status: "planned",
-    summary: "Gully Core on Anubis Network and other chains, as a service for builders.",
+    name: "Gully Core on five mainnets",
+    status: "live",
+    summary: "Gully Core on five mainnets (Anubis Network, Robinhood Chain, Base, BNB Chain, Kinetiq Elysium) and the Gully Chain testnet, as a service for builders: the same contracts and the same flat fee on each.",
     facts: [
-      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
+      "Live on the Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium mainnets and on Gully Chain testnet (the chain list is the Gully Core manifest, gullycore.xyz/manifest.json; scripts/test-core-sync.mjs fails when this sentence lags it).",
+      "Every chain shows the same release (3.0.0) and the same addresses for the 45 release-3 contracts (Anubis adds createX, Multicall3 and Permit2; the testnet keeps older versions beside them); HyperEVM (999) is marked coming in the manifest and nothing is deployed there.",
+      "Each chain's contracts are handed to that chain's 2-of-3 Gully Safe; the Ops address 0x5aD50DdE058b2c41298D9C5A33527a7E2150CD78 can pause and curate but cannot move funds.",
+      "Outside builders pay a flat 0.30% of every trade on the pools they create and nothing else (FeeControllerV5 on each chain, cap 0.40%)."
     ],
     url: "https://gullycore.xyz/",
     source: [
-      "deepcore:README.md",
-      "deepcore:packages/sdk/src/deployments/index.ts",
-      "website:src/content/projects.ts"
+      "gully-ops:l3/gully-core/release",
+      "website:server/data/gully-core-manifest.json",
+      "website:src/content/gullyCore.generated.ts"
     ]
   },
   {
@@ -1498,15 +1510,15 @@ export const features: Feature[] = [
     product: "Gully Core",
     name: "SDK, widgets and scaffolders",
     status: "planned",
-    summary: "An SDK, swap widgets and project scaffolders for builders.",
+    summary: "An SDK, a CLI, swap widgets and project scaffolders for builders; the packages are not on npm yet.",
     facts: [
-      "Planned for Gully Core. Its app runs at testnet.gullycore.xyz (Gully Chain testnet); nothing is on any mainnet yet."
+      "The SDK (@gullylabs/gully-core-sdk), the CLI and the Mini App are built and tested but the manifest lists them as planned until the packages are published on npm (owner rule: only once Gully Core is live on every chain it targets).",
+      "The HTTP API (/v1 on app.gullycore.xyz) and the swap box embed are live on every chain the manifest lists as live; the Telegram buy bot and the listings kit run on testnet."
     ],
     url: "https://gullycore.xyz/",
     source: [
-      "deepcore:README.md",
-      "deepcore:packages/sdk/src/deployments/index.ts",
-      "deepcore:packages/hooks/src/dex"
+      "gully-ops:l3/gully-core/packages/router",
+      "website:src/content/gullyCore.generated.ts"
     ]
   },
   {
@@ -1838,7 +1850,7 @@ export const features: Feature[] = [
     summary: "Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve.",
     facts: [
       "GET /api/hub probes every public Gully surface once a minute from the server and caches the answer for 60 seconds (server/hub.mjs).",
-      "New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.kre8.fun), Gully Multisig (multisig.gullychain.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals.",
+      "New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.kre8.fun), Gully Multisig (gullymultisig.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals.",
       "A surface still being set up reads \"coming\" until it answers 200; it is never shown as up or down before that.",
       "The same launcher and board appear on gullylabs.xyz, /products and the Gully Labs App (app.gullylabs.xyz)."
     ],
@@ -1853,16 +1865,17 @@ export const features: Feature[] = [
     product: "Gully Chain",
     name: "Gully Multisig",
     status: "live",
-    summary: "Multisig wallets for teams and treasuries at multisig.gullychain.xyz: several owners, a confirmation threshold and batched transactions, on Anubis Network (chain 6714) and, for developers, on Gully Chain Testnet (chain 485590).",
+    summary: "Multisig wallets for teams and treasuries at gullymultisig.xyz: several owners, a confirmation threshold and batched transactions, on Anubis Network (chain 6714) and Kinetiq Elysium (chain 99901) mainnets and, for developers, on Gully Chain Testnet (chain 485590).",
     facts: [
       "Runs the open-source Safe stack on Gully infrastructure: Gully Labs' build of the Safe{Wallet} web app, a config service, a client gateway and one Safe transaction service per chain. It is run by Gully Labs, not by Safe.",
       "On Anubis Network (chain 6714, a mainnet) the contracts are the unmodified Safe 1.4.1 contracts at the canonical addresses, deployed through Safe's singleton factory.",
-      "The 16 Safe contracts on Anubis are an exact match on verify.gullychain.xyz, Gully's source verification service.",
+      "The 16 Safe contracts on Anubis are an exact match on verify.gullychain.xyz, Gully's source verification service; on Kinetiq Elysium the Safe 1.4.1 set and the passkey signer contracts are deployed through Gully's own route at Gully Chain's addresses and verified there too.",
+      "A Gully ID passkey wallet can be a Safe owner and sign (approveHash); a chain switcher in the header moves between the served chains.",
       "On Anubis gasDAI pays gas only and cannot be sent as a value: a Safe there holds and sends ERC-20 tokens.",
       "On Gully Chain Testnet (chain 485590, test funds only) the same Safe 1.4.1 code is deployed at Gully's own addresses, because Safe's singleton factory is not on that chain.",
-      "The hub shows Gully Multisig as live only while multisig.gullychain.xyz answers 200 (server/hub.mjs); the docs are at docs.gullychain.xyz/multisig/."
+      "The hub shows Gully Multisig as live while gullymultisig.xyz answers (server/hub.mjs); multisig.gullychain.xyz redirects there; the docs are at docs.gullychain.xyz/multisig/."
     ],
-    url: "https://multisig.gullychain.xyz",
+    url: "https://gullymultisig.xyz",
     source: [
       "gully-ops:l3/safe/README.md",
       "website:server/hub.mjs"

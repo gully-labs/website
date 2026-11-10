@@ -330,7 +330,7 @@
   ],
   "/products/safe": [
    "Gully Multisig · Gully Labs",
-   "Multisig wallets for teams and treasuries on Anubis Network, built on the unmodified Safe 1.4.1 contracts. Live charts on this page."
+   "Multisig wallets for teams and treasuries on Anubis Network, Kinetiq Elysium and Gully Chain testnet, built on the Safe 1.4.1 contracts and run by Gully Labs."
   ],
   "/products/gully-sentry": [
    "Gully Sentry · Gully Labs",
@@ -1682,9 +1682,9 @@
   },
   "safe": {
    "name": "Gully Multisig",
-   "line": "Multisig wallets for teams and treasuries on Anubis Network, built on the unmodified Safe 1.4.1 contracts.",
-   "url": "https://multisig.gullychain.xyz",
-   "urlLabel": "multisig.gullychain.xyz",
+   "line": "Multisig wallets for teams and treasuries on Anubis Network, Kinetiq Elysium and Gully Chain testnet, built on the Safe 1.4.1 contracts and run by Gully Labs.",
+   "url": "https://gullymultisig.xyz",
+   "urlLabel": "gullymultisig.xyz",
    "cta": null,
    "cta2": null,
    "docs": "https://docs.gullychain.xyz/multisig/",
@@ -1704,14 +1704,18 @@
      "d": "Hold launch proceeds and protocol fees under shared control."
     },
     {
-     "t": "On Gully Chain",
-     "d": "Deployed on chain 485590 alongside the rest of the stack."
+     "t": "Where it runs",
+     "d": "Anubis Network, Kinetiq Elysium and Gully Chain testnet: Gully runs its own Safe transaction service for each, with a chain switcher in the app."
+    },
+    {
+     "t": "Gully ID as a signer",
+     "d": "A Gully ID passkey wallet can sign as one of the owners."
     }
    ],
    "how": [
     [
-     "Create a Safe",
-     "Add owners and set the threshold."
+     "Create a multisig",
+     "Pick the chain, add owners and set the threshold."
     ],
     [
      "Fund it",
@@ -1722,11 +1726,15 @@
      "Owners sign until the threshold is met, then it executes."
     ]
    ],
-   "price": "Free on testnet. Mainnet pricing is published when mainnet opens.",
+   "price": "Free to use. You pay only the chain’s gas.",
    "faq": [
     [
      "Is Gully Multisig live?",
-     "This page shows its real state, checked every minute at multisig.gullychain.xyz, its only address."
+     "Yes, on Anubis Network, Kinetiq Elysium and Gully Chain testnet. This page shows its real state, checked every minute at gullymultisig.xyz, its only address."
+    ],
+    [
+     "Which contracts does it use?",
+     "Safe 1.4.1, verified on verify.gullychain.xyz for every chain it serves. Gully Labs runs the app and the services; Safe does not."
     ],
     [
      "Does Gully Multisig support Gully Chain?",
@@ -2550,7 +2558,7 @@
      "It trades from the first block."
     ]
    ],
-   "price": "Free on testnet. Mainnet pricing is published when mainnet opens.",
+   "price": "Builders pay 0.3% of every trade on the pools they create, and nothing else; the Safe can lower it per pool and never raises it above 0.4%. Gully’s own surfaces (kre8) keep their own fee schedule.",
    "faq": [
     [
      "Who builds Gully Core?",
@@ -2558,7 +2566,7 @@
     ],
     [
      "Where is it live?",
-     "On Anubis, Robinhood Chain, BNB Chain and Base mainnets and on Gully Chain testnet. The home is gullycore.xyz; the app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet)."
+     "On Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium mainnets and on Gully Chain testnet. The home is gullycore.xyz; the app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet). The list comes from the Gully Core manifest, gullycore.xyz/manifest.json."
     ],
     [
      "Does Gully Core support Gully Chain?",
@@ -2753,19 +2761,19 @@
    {
     "key": "multisig",
     "name": "Gully Multisig",
-    "line": "Team and treasury multisigs on Anubis Network.",
+    "line": "Team and treasury multisigs on Anubis Network, Kinetiq Elysium and Gully Chain testnet.",
     "icon": "/brand/web/logos/gc-icon.svg",
     "label": "Live",
-    "fact": "Anubis Network mainnet",
+    "fact": "Anubis · Kinetiq Elysium · Gully Chain",
     "href": "/products/safe"
    },
    {
     "key": "core",
     "name": "Gully Core",
-    "line": "Launchpads and DEXes on one core.",
+    "line": "Launchpads and DEXes on one core, live on 5 mainnets.",
     "icon": "/brand/web/logos/gc-icon.svg",
-    "label": "Testnet",
-    "fact": "0.30% for builders",
+    "label": "Live",
+    "fact": "5 mainnets · 0.3% for builders",
     "href": "/products/gully-core"
    }
   ],
@@ -2803,24 +2811,24 @@
   "newsTitle": "What's new",
   "news": [
    {
-    "d": "2026-11-05",
-    "t": "Gully Multisig on Anubis Network: the unmodified Safe 1.4.1 contracts at the canonical addresses",
-    "href": "https://multisig.gullychain.xyz"
+    "d": "2026-11-09",
+    "t": "Gully Core live on five mainnets: Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium, beside the Gully Chain testnet",
+    "href": "https://gullycore.xyz"
    },
    {
-    "d": "2026-11-05",
-    "t": "Gully RPC plans: Free, Developer and Business",
-    "href": "https://gullyrpc.xyz/pricing"
+    "d": "2026-11-09",
+    "t": "Gully Multisig on Kinetiq Elysium, at its own address gullymultisig.xyz, with Gully ID passkeys as signers",
+    "href": "https://gullymultisig.xyz"
    },
    {
-    "d": "2026-11-05",
-    "t": "Direct payouts on Gully Pay: paid to your own wallet",
-    "href": "https://gullypay.xyz/docs/payouts"
+    "d": "2026-11-08",
+    "t": "Gully Explorer moves to gullyscan.xyz; the testnet explorer is testnet.gullyscan.xyz",
+    "href": "https://testnet.gullyscan.xyz"
    },
    {
-    "d": "2026-10-28",
-    "t": "USDC.e is the dollar on Gully Chain: checkout and x402 on Gully Chain testnet settle in USDC.e",
-    "href": "https://gullypay.xyz"
+    "d": "2026-11-07",
+    "t": "Gully Core release 3 on Anubis Network mainnet: 48 contracts, source-verified",
+    "href": "https://gullycore.xyz"
    }
   ],
   "buildTitle": "We build with you, on the same stack we run.",
@@ -4001,7 +4009,7 @@
       ],
       [
        "/products/safe",
-       "Gully Multisig: Multisig wallets for teams and treasuries on Anubis Network, built on the unmodified Safe 1.4.1 contracts."
+       "Gully Multisig: Multisig wallets for teams and treasuries on Anubis Network, Kinetiq Elysium and Gully Chain testnet, built on the Safe 1.4.1 contracts and run by Gully Labs."
       ],
       [
        "/products/gully-sentry",
@@ -4382,6 +4390,10 @@
       "Every item is live or shipped this week."
      ],
      "list": [
+      "2026-11-09 · Gully Chain: Gully Core live on five mainnets: Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium, beside the Gully Chain testnet (live)",
+      "2026-11-09 · Gully Chain: Gully Multisig on Kinetiq Elysium, at its own address gullymultisig.xyz, with Gully ID passkeys as signers (live)",
+      "2026-11-08 · Gully Chain: Gully Explorer moves to gullyscan.xyz; the testnet explorer is testnet.gullyscan.xyz (live)",
+      "2026-11-07 · Gully Chain: Gully Core release 3 on Anubis Network mainnet: 48 contracts, source-verified (live)",
       "2026-11-05 · Gully Chain: Gully Multisig on Anubis Network: the unmodified Safe 1.4.1 contracts at the canonical addresses (live)",
       "2026-11-05 · Gully RPC: Gully RPC plans: Free, Developer and Business (live)",
       "2026-11-05 · Gully Pay: Direct payouts on Gully Pay: paid to your own wallet (testnet)",
@@ -5672,13 +5684,13 @@
      "h": null,
      "level": 2,
      "p": [
-      "Runs on Gully Chain."
+      "Runs on Anubis Network, Kinetiq Elysium and Gully Chain testnet."
      ],
      "list": [],
      "links": [
       [
-       "https://multisig.gullychain.xyz",
-       "Open multisig.gullychain.xyz"
+       "https://gullymultisig.xyz",
+       "Open gullymultisig.xyz"
       ],
       [
        "https://docs.gullychain.xyz/multisig/",
@@ -5694,7 +5706,8 @@
      "list": [
       "M-of-N signing: Any number of owners and a threshold you choose.",
       "Team treasuries: Hold launch proceeds and protocol fees under shared control.",
-      "On Gully Chain: Deployed on chain 485590 alongside the rest of the stack."
+      "Where it runs: Anubis Network, Kinetiq Elysium and Gully Chain testnet: Gully runs its own Safe transaction service for each, with a chain switcher in the app.",
+      "Gully ID as a signer: A Gully ID passkey wallet can sign as one of the owners."
      ],
      "links": [],
      "qa": []
@@ -5704,7 +5717,7 @@
      "level": 2,
      "p": [],
      "list": [
-      "Create a Safe: Add owners and set the threshold.",
+      "Create a multisig: Pick the chain, add owners and set the threshold.",
       "Fund it: Send ETH or tokens to the Safe address.",
       "Propose and sign: Owners sign until the threshold is met, then it executes."
      ],
@@ -5715,7 +5728,7 @@
      "h": "Prices in USD",
      "level": 2,
      "p": [
-      "Free on testnet. Mainnet pricing is published when mainnet opens."
+      "Free to use. You pay only the chain’s gas."
      ],
      "list": [],
      "links": [],
@@ -5730,7 +5743,11 @@
      "qa": [
       [
        "Is Gully Multisig live?",
-       "This page shows its real state, checked every minute at multisig.gullychain.xyz, its only address."
+       "Yes, on Anubis Network, Kinetiq Elysium and Gully Chain testnet. This page shows its real state, checked every minute at gullymultisig.xyz, its only address."
+      ],
+      [
+       "Which contracts does it use?",
+       "Safe 1.4.1, verified on verify.gullychain.xyz for every chain it serves. Gully Labs runs the app and the services; Safe does not."
       ],
       [
        "Does Gully Multisig support Gully Chain?",
@@ -7138,7 +7155,7 @@
      "h": null,
      "level": 2,
      "p": [
-      "Runs on Gully Chain."
+      "Runs on Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium mainnets and on Gully Chain testnet."
      ],
      "list": [],
      "links": [
@@ -7187,7 +7204,7 @@
      "h": "Prices in USD",
      "level": 2,
      "p": [
-      "Free on testnet. Mainnet pricing is published when mainnet opens."
+      "Builders pay 0.3% of every trade on the pools they create, and nothing else; the Safe can lower it per pool and never raises it above 0.4%. Gully’s own surfaces (kre8) keep their own fee schedule."
      ],
      "list": [],
      "links": [],
@@ -7206,7 +7223,7 @@
       ],
       [
        "Where is it live?",
-       "On Anubis, Robinhood Chain, BNB Chain and Base mainnets and on Gully Chain testnet. The home is gullycore.xyz; the app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet)."
+       "On Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium mainnets and on Gully Chain testnet. The home is gullycore.xyz; the app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet). The list comes from the Gully Core manifest, gullycore.xyz/manifest.json."
       ],
       [
        "Does Gully Core support Gully Chain?",

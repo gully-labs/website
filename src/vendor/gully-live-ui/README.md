@@ -34,4 +34,4 @@ never edit a copy.
 
 First adopter: the gullycore.xyz hero live panel (head block, seconds per block, transactions, bars per block).
 
-Version 1.0.2 (2026-11-09): a flat or near-flat chart shows one axis label, not the same label repeated, and keeps a span of at least 1 % of the value. 1.0.1 (2026-11-09): numbers under 1 keep four significant digits (token prices). 1.0.0 (2026-11-09).
+Version 1.0.4 (2026-11-09): `unit="percent"` on gl-stat (and `fmtValue`) prints a plain share or fee rate with no sign (0.3%, 12.5%, 100%; up to two fraction digits, trailing zeros dropped), so fee tiers, split shares and vault shares can be live tiles; `pct` stays the signed change (+3.4%). 1.0.3 (2026-11-09): gl-stepper stays on one row at any width; connectors stretch between steps, and under 480 px only the current step shows its label (the others stay readable to screen readers). 1.0.2 (2026-11-09): a flat or near-flat chart shows one axis label, not the same label repeated, and keeps a span of at least 1 % of the value. 1.0.1 (2026-11-09): numbers under 1 keep four significant digits (token prices). 1.0.0 (2026-11-09).

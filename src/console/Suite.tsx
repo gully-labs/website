@@ -39,7 +39,7 @@ const SURF_LINE: Record<string, string> = {
   'rpc-public': 'The free, rate-limited RPC. Keys at Gully RPC.',
   indexer: 'Tokens, trades, names and quests as JSON.',
   copy: 'The engine behind copy trading in kre8.fun.',
-  safe: 'Multisig wallets on Gully Chain.',
+  safe: 'Multisig wallets on Anubis, Kinetiq Elysium and Gully Chain.',
 }
 /** A sparkline once there are two readings; before that a small pulsing note (history builds one point a minute). */
 function Trend({ values, color, h }: { values: (number | null)[]; color: string; h: number }) {
@@ -129,7 +129,7 @@ const CHAIN_ORDER: { k: string; name: string; url: string }[] = [
   { k: 'devportal', name: 'Developer portal', url: 'https://dev.gullychain.xyz' },
   { k: 'rpc-public', name: 'Public RPC', url: 'https://testnet-rpc.gullychain.xyz' },
   { k: 'copy', name: 'Copy trading', url: 'https://copy.kre8.fun' },
-  { k: 'safe', name: 'Gully Multisig', url: 'https://multisig.gullychain.xyz' },
+  { k: 'safe', name: 'Gully Multisig', url: 'https://gullymultisig.xyz' },
 ]
 
 /** Every Gully Chain surface, live: kre8.fun with its features, then explorer, faucet, bridge, docs, developer portal, public RPC. */
