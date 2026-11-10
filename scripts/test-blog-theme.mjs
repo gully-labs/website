@@ -89,7 +89,10 @@ test('every menu icon exists and every nav entry has one', () => {
 test('the Products menu names the same products and links as gullylabs.xyz', () => {
   const cat = fs.readFileSync(path.join(ROOT, 'src/terminal/catalog.ts'), 'utf8')
   const street = (cat.match(/const STREET = '([^']+)'/) || [])[1]
-  const site = [...cat.matchAll(/\n    name: '([^']+)',[\s\S]*?\n    url: (?:'([^']+)'|`\$\{STREET\}([^`]*)`|STREET),/g)].map((m) => [m[1], m[2] || street + (m[3] || '')])
+  // Gully Multisig's address is read from the Gully Core manifest (src/content/gullyCore.generated.ts), as the catalog does.
+  const multisig = (fs.readFileSync(path.join(ROOT, 'src/content/gullyCore.generated.ts'), 'utf8').match(/"multisigUrl": "([^"]+)"/) || [])[1]
+  assert.ok(multisig, 'multisigUrl in the generated Gully Core view')
+  const site = [...cat.matchAll(/\n    name: '([^']+)',[\s\S]*?\n    url: (?:'([^']+)'|`\$\{STREET\}([^`]*)`|STREET|GULLY_CORE\.multisigUrl),/g)].map((m) => [m[1], m[2] || (m[0].endsWith('GULLY_CORE.multisigUrl,') ? multisig : street + (m[3] || ''))])
   assert.ok(site.length >= 15, `catalog parsed: ${site.length}`)
   const menu = [...read('partials/links/products.hbs').matchAll(/href="([^"]+)" icon="[^"]+" label="([^"]+)"/g)].map((m) => [m[2], m[1]])
   for (const [name, url] of site) {

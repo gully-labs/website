@@ -46,6 +46,7 @@ function liveUnit(t: Tile): string | null {
   if (t.tone || (t.prefix && t.prefix !== '$')) return null
   if (t.prefix === '$') return t.suffix ? null : 'usd'
   if (!t.suffix) return t.format && t.format !== NF.int ? null : 'plain'
+  if (t.suffix === '%') return 'percent' // a plain share or rate (0.3%, 92.3%), Live UI 1.0.4
   return t.suffix === ' GB' || t.suffix === ' ms' ? t.suffix.trim() : null
 }
 
@@ -55,7 +56,7 @@ export function KpiTile({ t, i }: { t: Tile; i: number }) {
     <div className="group relative flex min-w-0 flex-col gap-1 bg-surface px-4 py-3 shadow-[1px_0_0_var(--color-line),0_1px_0_var(--color-line)]" style={{ animation: `gl-rise .4s ${i * 0.04}s ease both` }} data-tile={t.label} title={t.title} tabIndex={t.title ? 0 : undefined}>
       <span className="font-mono text-[11px] tracking-[1px] [overflow-wrap:anywhere] text-faint">{t.label}</span>
       {known && liveUnit(t) !== null ? (
-        // Gully Live UI: the number counts up in the kit's live stat (units it prints itself: $, GB, ms, plain).
+        // Gully Live UI: the number counts up in the kit's live stat (units it prints itself: $, %, GB, ms, plain).
         <LiveStat bare small value={t.value as number} unit={liveUnit(t) as LiveUnit} />
       ) : known ? (
         <AnimatedNumber className="font-display text-[26px] leading-none font-bold" style={{ color: t.tone }} value={t.value} format={t.format ?? NF.int} prefix={t.prefix} suffix={t.suffix} countUp />
