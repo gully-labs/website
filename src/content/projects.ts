@@ -1,5 +1,6 @@
 // The projects Gully Labs has shipped. Every figure shown beside them is read live from the
 // project's own API (server/stats.mjs, keyed by `key`); nothing numeric is written here.
+import { PRODUCT_BRANDS } from '../data/productBrands.ts'
 
 export interface Project {
   slug: string
@@ -106,7 +107,7 @@ export const projects: Project[] = [
     status: 'Beta',
     tagline: 'Our own chain, with a launchpad built in',
     description: 'Gully Labs’ L3 testnet: the Gully Launchpad (bonding curve, graduation into a locked Gully Swap pool), .gully names and USDC.e. Figures are in test ETH and read from our own indexer.',
-    logo: '/brand/web/logos/gc-icon.svg',
+    logo: PRODUCT_BRANDS.chain.icon.src,
     bg: '#0f0f10',
     accent: '#d9b563',
     fit: 'contain',

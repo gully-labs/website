@@ -8,6 +8,8 @@
 
    Known kit gaps (owner to supply, not hand-cut here):
    - Gully Studio's kit has no logo without the "WEB3 GAMING STUDIO & AD NETWORK" tagline. */
+import { PRODUCT_BRANDS } from '../data/productBrands.ts'
+
 export type KitLogoKey = 'chain' | 'pay' | 'rpc' | 'holders' | 'security' | 'studio'
 /** 'ipfs' is Gully IPFS, a Gully Labs service with no kit of its own: the Gully Labs mark plus its name, set in the
     kit's Poppins 700 so its cap height matches the other logos (16 px at desktop). */
@@ -24,15 +26,23 @@ interface LogoFile {
   display: number
 }
 
+/** A registry logo (src/data/productBrands.ts) with its display height. */
+const fromRegistry = (key: keyof typeof PRODUCT_BRANDS, display: number, file: 'icon' | 'logo' = 'logo'): LogoFile => {
+  const b = PRODUCT_BRANDS[key]
+  const f = file === 'icon' ? b.icon : b.logo!
+  const x2 = file === 'logo' ? b.logo?.src2x : undefined
+  return { name: b.name, src: f.src, ...(x2 ? { src2x: x2.src } : {}), w: x2?.w ?? f.w ?? 1, h: x2?.h ?? f.h ?? 1, display }
+}
+
 export const PRODUCT_LOGOS: Record<KitLogoKey, LogoFile> = {
   // Gully Chain kit v4 ships no wordmark: its dark badge carries the name (brand-kit-v4/badge-dark.png, byte-exact).
-  chain: { name: 'Gully Chain', src: '/brand/products/gc-badge-dark.png', w: 960, h: 256, display: 40 },
-  pay: { name: 'Gully Pay', src: '/brand/products/gullypay-logo-ondark.svg', w: 895.23, h: 230.4, display: 34 },
-  rpc: { name: 'Gully RPC', src: '/brand/products/gullyrpc-logo-transparent.png', w: 860, h: 247, display: 39 },
-  // The HolderMaps kit (2026-10-26) transparent lockup, PNG (the kit SVG's globe image has no source): public/brand/holdermaps, byte-exact.
-  holders: { name: 'HolderMaps', src: '/brand/holdermaps/holdermaps-logo-on-dark-sm.png', src2x: '/brand/holdermaps/holdermaps-logo-on-dark.png', w: 744, h: 154, display: 36 },
-  security: { name: 'Gully Security', src: '/brand/products/gullysecurity-logo-primary.svg', w: 627, h: 104, display: 31 },
-  studio: { name: 'Gully Studio', src: '/brand/products/gullystudio-logo-transparent.png', w: 2070, h: 593, display: 50 },
+  chain: fromRegistry('chain', 40),
+  pay: fromRegistry('pay', 34),
+  rpc: fromRegistry('rpc', 39),
+  // The HolderMaps kit (2026-10-26) transparent lockup, PNG (the kit SVG's globe image has no source), 1x and 2x.
+  holders: fromRegistry('holdermaps', 36),
+  security: fromRegistry('security', 31),
+  studio: fromRegistry('studio', 50),
 }
 
 /** The slot's fixed height in CSS px at desktop size (Studio's taller lockup overflows it evenly, by design). */
@@ -79,7 +89,7 @@ export function MarkLogo({ label, scale = 1, className = '', decorative = false 
       aria-label={decorative ? undefined : label}
       aria-hidden={decorative || undefined}
     >
-      <img src="/brand/kit/mark-reversed.svg" width={Math.round(h * 1.042)} height={h} alt="" decoding="async" draggable={false} className="block shrink-0" style={{ height: `calc(${h}px * var(--pl, 1))`, width: 'auto' }} />
+      <img src={PRODUCT_BRANDS.labs.icon.src} width={Math.round((h * 100) / 96)} height={h} alt="" decoding="async" draggable={false} className="block shrink-0" style={{ height: `calc(${h}px * var(--pl, 1))`, width: 'auto' }} />
       <span aria-hidden className="font-[Poppins,system-ui,sans-serif] leading-none font-bold tracking-[-.02em] whitespace-nowrap text-white">
         {label}
       </span>

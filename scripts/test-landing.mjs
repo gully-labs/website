@@ -98,7 +98,9 @@ test('the owl, logotype, badge and the Gully Core mark are the official files, b
   }
   for (const [f, h] of Object.entries(want)) assert.equal(sha(f), h, f)
   assert.ok(html.includes('/brand/kit/owl/owl-presenting.png') && !html.includes('owl-presenting-400.webp'), 'the page serves the kit owl')
-  assert.ok(!html.includes('gully-core-emblem-192.png'), 'Gully Core shows gc-icon.svg')
+  assert.ok(!html.includes('gully-core-emblem-192.png'), 'no old Gully Core emblem')
+  // Gully Core's own kit (2026-11-08): the hex-C (scripts/test-product-brands.mjs checks every product mark).
+  assert.ok(html.includes('/brand/products/gully-core-icon-ink.svg'), 'Gully Core shows its own hex-C')
 })
 
 test('an all-zero chart keeps its resting line and says so; a chart with activity does not', () => {

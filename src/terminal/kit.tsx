@@ -8,6 +8,7 @@ import { lineChart, bars as drawBars, type LineChart, type Series } from '../con
 import { Count, Spark } from '../console/ui'
 import { hubState, type HubBody } from '../console/live'
 import type { LogoDef, ProductDef } from './catalog'
+import { PRODUCT_BRANDS } from '../data/productBrands.ts'
 
 /* ---------------------------------------------------------------- data ---- */
 export interface HourRow {
@@ -86,12 +87,8 @@ export function Logo({ def, name, scale = 1, decorative = false }: { def: LogoDe
     const h = Math.round(28 * scale)
     return (
       <span className="gt-logo gt-logo-mark" style={{ height: Math.round(40 * scale), fontSize: Math.round(19 * scale) }} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : name} aria-hidden={decorative || undefined}>
-        {def.mark === 'chain' ? (
-          // GullyChain brand kit v4 icon (gc-icon.svg, byte-identical to the kit; kit v4 is icon-only)
-          <img src="/brand/web/logos/gc-icon.svg" width={h} height={h} alt="" decoding="async" draggable={false} />
-        ) : (
-          <img src="/brand/kit/mark-reversed.svg" width={Math.round(h * 1.042)} height={h} alt="" decoding="async" draggable={false} />
-        )}
+        {/* The product's own kit mark from the brand registry (src/data/productBrands.ts), byte-identical. */}
+        <img src={PRODUCT_BRANDS[def.mark].icon.src} width={Math.round((h * (PRODUCT_BRANDS[def.mark].icon.w ?? 1)) / (PRODUCT_BRANDS[def.mark].icon.h ?? 1))} height={h} alt="" decoding="async" draggable={false} data-brand={def.mark} />
         <span aria-hidden>{def.label}</span>
       </span>
     )

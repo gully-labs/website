@@ -3,6 +3,7 @@
    server/seo.mjs restates each product's title and description (PRODUCT_PAGES) for crawlers; keep the two in step. */
 
 import { GULLY_CORE } from '../content/gullyCore.generated.ts'
+import { PRODUCT_BRANDS, type BrandKey } from '../data/productBrands.ts'
 
 export type Group = 'chain' | 'labs'
 export type Slug = 'gully-id' | 'chain' | 'street' | 'bridge' | 'safe' | 'pay' | 'rpc' | 'holders' | 'security' | 'ai' | 'studio' | 'ipfs' | 'quests' | 'offerwall' | 'gully-social' | 'copy-trading' | 'gully-core' | 'gully-sentry'
@@ -11,7 +12,7 @@ export type Slug = 'gully-id' | 'chain' | 'street' | 'bridge' | 'safe' | 'pay' |
     no kit of its own, the Gully Chain (or Gully Labs) kit mark with the product's name beside it. */
 export type LogoDef =
   | { kind: 'kit'; webp?: string; src: string; w: number; h: number; display: number }
-  | { kind: 'mark'; mark: 'chain' | 'labs'; label: string }
+  | { kind: 'mark'; mark: BrandKey; label: string }
 
 export interface Feature {
   t: string
@@ -46,15 +47,23 @@ export interface ProductDef {
   runs?: string
 }
 
+/** A product's kit logo from the brand registry (src/data/productBrands.ts), at a display height tuned per file. */
+const kitLogo = (key: BrandKey, display: number, file: 'icon' | 'logo' = 'logo'): LogoDef => {
+  const f = file === 'icon' ? PRODUCT_BRANDS[key].icon : PRODUCT_BRANDS[key].logo!
+  return { kind: 'kit', src: f.src, w: f.w ?? 1, h: f.h ?? 1, display }
+}
 const LOGO = {
   // GullyChain brand kit v4 is icon-only (no wordmark file): the kit gc-icon.svg, byte-identical
-  chain: { kind: 'kit', src: '/brand/web/logos/gc-icon.svg', w: 220, h: 220, display: 36 },
-  pay: { kind: 'kit', src: '/brand/products/gullypay-logo-ondark.svg', w: 895.23, h: 230.4, display: 34 },
-  rpc: { kind: 'kit', webp: '/brand/web/logos/gullyrpc-logo.webp', src: '/brand/web/logos/gullyrpc-logo.png', w: 279, h: 80, display: 38 },
-  holders: { kind: 'kit', webp: '/brand/web/logos/holdermaps-logo.webp', src: '/brand/web/logos/holdermaps-logo.png', w: 388, h: 80, display: 34 },
-  security: { kind: 'kit', src: '/brand/products/gullysecurity-logo-primary.svg', w: 627, h: 104, display: 30 },
-  ai: { kind: 'kit', webp: '/brand/web/logos/gullyai-logo.webp', src: '/brand/web/logos/gullyai-logo.png', w: 267, h: 96, display: 40 },
-  studio: { kind: 'kit', webp: '/brand/web/logos/gullystudio-logo.webp', src: '/brand/web/logos/gullystudio-logo.png', w: 419, h: 120, display: 44 },
+  chain: kitLogo('chain', 36, 'icon'),
+  core: kitLogo('core', 34),
+  kre8: kitLogo('kre8', 40),
+  id: kitLogo('id', 34),
+  pay: kitLogo('pay', 34),
+  rpc: kitLogo('rpc', 38),
+  holders: kitLogo('holdermaps', 34),
+  security: kitLogo('security', 30),
+  ai: kitLogo('ai', 40),
+  studio: kitLogo('studio', 44),
 } satisfies Record<string, LogoDef>
 
 const STREET = 'https://kre8.fun'
@@ -71,7 +80,7 @@ export const PRODUCTS: ProductDef[] = [
     group: 'labs',
     line: 'Passwordless sign-in for any app: passkeys, wallets and email over OpenID Connect, with per-app consent.',
     short: 'Passwordless sign-in for any app.',
-    logo: { kind: 'mark', mark: 'labs', label: 'Gully ID' },
+    logo: LOGO.id,
     url: 'https://gullyid.xyz',
     urlLabel: 'gullyid.xyz',
     docs: 'https://gullyid.xyz/developers',
@@ -135,7 +144,7 @@ export const PRODUCTS: ProductDef[] = [
     group: 'chain',
     line: 'The Gully Chain app: a social feed, five wallets per passkey, copy trading, Quests and the launchpad.',
     short: 'Social trading app on Gully Chain.',
-    logo: { kind: 'mark', mark: 'chain', label: 'kre8.fun' },
+    logo: LOGO.kre8,
     url: STREET,
     urlLabel: 'kre8.fun',
     docs: 'https://docs.gullychain.xyz',
@@ -198,7 +207,7 @@ export const PRODUCTS: ProductDef[] = [
     line: `Multisig wallets for teams and treasuries on ${MSIG_CHAINS}, built on the Safe 1.4.1 contracts and run by Gully Labs.`,
     short: `Team and treasury multisigs on ${MSIG_CHAINS}.`,
     runs: `Runs on ${MSIG_CHAINS}`,
-    logo: { kind: 'mark', mark: 'chain', label: 'Gully Multisig' },
+    logo: { kind: 'mark', mark: 'multisig', label: 'Gully Multisig' },
     url: GULLY_CORE.multisigUrl,
     urlLabel: MSIG_HOST,
     docs: 'https://docs.gullychain.xyz/multisig/',
@@ -578,7 +587,7 @@ export const PRODUCTS: ProductDef[] = [
     line: 'Launch a token, run a launchpad or own a DEX on one shared core, on the chains your users already use.',
     short: `Launchpads and DEXes on one core, live on ${CORE_MAINNETS} mainnets.`,
     runs: GULLY_CORE.whereLive.replace(/^On /, 'Runs on ').replace(/\.$/, ''),
-    logo: { kind: 'mark', mark: 'chain', label: 'Gully Core' },
+    logo: LOGO.core,
     url: 'https://gullycore.xyz',
     urlLabel: 'gullycore.xyz',
     cta2: ['Launch on kre8.fun', `${STREET}/launch`],
