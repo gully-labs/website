@@ -267,7 +267,12 @@ export const LEGAL_INDEX_LINKS = [
   ['https://kre8.fun/copyright', 'kre8.fun Copyright'],
 ]
 /** The pre-render's legal links (shellBody): this site's Terms and Privacy Policy, and the index of every product's. */
-const SHELL_LEGAL = { main: [['/terms', 'Terms'], ['/privacy', 'Privacy'], ['/legal', 'Legal']], holdermaps: [['/terms', 'Terms'], ['/privacy', 'Privacy'], ['https://gullylabs.xyz/legal', 'Legal']] }
+const SHELL_LEGAL = {
+  main: [['/terms', 'Terms'], ['/privacy', 'Privacy'], ['/legal', 'Legal']],
+  holdermaps: [['/terms', 'Terms'], ['/privacy', 'Privacy'], ['https://gullylabs.xyz/legal', 'Legal']],
+  // app.gullylabs.xyz and docs.gullylabs.xyz: their footers link the site's policies (AppShell.tsx, DocsLayout.tsx).
+  site: [['https://gullylabs.xyz/terms', 'Terms'], ['https://gullylabs.xyz/privacy', 'Privacy'], ['https://gullylabs.xyz/legal', 'Legal']],
+}
 
 /* holdermaps.xyz (hosts.mjs): the Holder Map's own domain. Its pages are the main site's Holder Map pages under short
    paths, named HolderMaps, with holdermaps.xyz canonicals. */
@@ -315,7 +320,8 @@ function holderMapsMeta(p) {
   if (HM_LEGAL[p]) {
     const [title, description] = HM_LEGAL[p]
     const canonical = `${HOLDERMAPS_URL}${p}`
-    return { title, description, canonical, found: true, image: HM_OG, brand: HOLDERMAPS_BRAND, legal: 'holdermaps', ld: legalLd(canonical, title.replace(/ · HolderMaps$/, ''), description, { name: 'HolderMaps', url: `${HOLDERMAPS_URL}/` }) }
+    // The policy's own text (scripts/build-page-content.mjs reads HmLegal.tsx one page at a time) is pre-rendered too.
+    return { title, description, canonical, found: true, image: HM_OG, brand: HOLDERMAPS_BRAND, legal: 'holdermaps', body: CONTENT.body[`holdermaps:${p}`] ?? null, ld: legalLd(canonical, title.replace(/ · HolderMaps$/, ''), description, { name: 'HolderMaps', url: `${HOLDERMAPS_URL}/` }) }
   }
   const internal = holderInternalPath(p)
   if (!internal) return { title: 'Not found · HolderMaps', description: HOLDERMAPS_HOME[1], canonical: null, found: false, image: HM_OG, brand: HOLDERMAPS_BRAND }
@@ -371,7 +377,7 @@ function securityMeta(p) {
 export function pageMeta(host, pathname) {
   const m = pageMetaFor(host, pathname)
   const h = String(host ?? '').split(':')[0].toLowerCase()
-  const kind = isHolderMapsHost(h) ? 'holdermaps' : h === 'gullylabs.xyz' || isLocal(h) ? 'main' : null
+  const kind = isHolderMapsHost(h) ? 'holdermaps' : h === 'gullylabs.xyz' || isLocal(h) ? 'main' : isAppHost(h) || h.startsWith('docs.') ? 'site' : null
   // gullylabs.xyz pages are served with the site's header and footer links too (CONTENT.nav), like the page draws them.
   return kind ? { ...m, shellLegal: SHELL_LEGAL[kind], ...(kind === 'main' ? { shellNav: pathname === '/' ? 'home' : 'page' } : {}) } : m
 }
