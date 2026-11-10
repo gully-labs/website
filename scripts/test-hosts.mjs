@@ -550,7 +550,8 @@ try {
     //    row; not on gullylabs.xyz's own pages (it IS Gully Labs).
     const badge = read('src/components/PoweredByBadge.tsx')
     check('badge component: the kit SVG, 30 px (26 px on phones), new tab to gullylabs.xyz, alt text', badge.includes('/brand/kit/powered-by-clear-white.svg') && /height=\{30\}/.test(badge) && badge.includes('h-[30px]') && badge.includes('max-[600px]:h-[26px]') && badge.includes('href="https://gullylabs.xyz/"') && badge.includes('alt="Powered by Gully Labs"'))
-    for (const [f, tag] of [['src/docs/DocsLayout.tsx', '<PoweredByBadge />'], ['src/pages/developers/AppShell.tsx', '<BadgeFooterRow />'], ['src/pages/developers/DevelopersPage.tsx', '<BadgeFooterRow />']]) check(`badge in the footer: ${f}`, read(f).includes(tag))
+    // The app's footer is one component (AppFooter: legal row + badge row), rendered by the signed-in shell and the signed-out page.
+    for (const [f, tag] of [['src/docs/DocsLayout.tsx', '<PoweredByBadge />'], ['src/pages/developers/AppFooter.tsx', '<BadgeFooterRow />'], ['src/pages/developers/AppShell.tsx', '<AppFooter />'], ['src/pages/developers/DevelopersPage.tsx', '<AppFooter />']]) check(`badge in the footer: ${f}`, read(f).includes(tag))
     check('HolderMaps footer: the kit SVG badge, no old PNG', read('src/holdermaps/HmChrome.tsx').includes('/brand/kit/powered-by-clear-white.svg') && !read('src/holdermaps/HmChrome.tsx').includes('powered-by-gully-labs'))
     check('main site: no 48 px Powered-by badge in the trust band', !read('src/console/ui.tsx').includes('powered-by-gully-labs-dark.png'))
     const kit = 'C:/Users/Admin/Desktop/GULLY LABS GRAPHICS/Gully Labs/brand-kit/badges'

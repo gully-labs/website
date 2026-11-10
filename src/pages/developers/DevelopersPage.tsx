@@ -9,7 +9,7 @@ import { Dashboard } from './Dashboard'
 import { InviteLanding } from './Invite'
 import { APP_DESCRIPTION, APP_TITLE, inviteTokenFromHash, PortalContext, restoreFocusSoon, type Portal } from './portal'
 import { mono, pillGold, pillLine } from './styles'
-import { BadgeFooterRow } from '../../components/PoweredByBadge'
+import { AppFooter } from './AppFooter'
 import { GullyIdButton, gullyIdAccessToken, gullyIdRedirectToken, isGullyIdReturn } from './gullyId'
 import { PublicOverview } from './PublicOverview'
 
@@ -270,12 +270,9 @@ export function DevelopersPage() {
           </div>
         </section>
       )}
-      {/* Signed out (and while loading or on an error) the page has no app shell: its own footer row with the badge. */}
-      {session.state !== 'in' && (
-        <footer className="border-t border-line px-6 py-4 max-[480px]:px-4">
-          <BadgeFooterRow />
-        </footer>
-      )}
+      {/* Signed out (and while loading or on an error) the page has no app shell: the same footer the shell renders
+          (AppFooter: Terms, Privacy, Legal and the badge), so the rendered page always carries the legal links. */}
+      {session.state !== 'in' && <AppFooter />}
       {session.state === 'in' && (
         <PortalContext.Provider value={portal}>
           <Dashboard account={session.account} reload={loadAccount} onSignOut={signOut} />

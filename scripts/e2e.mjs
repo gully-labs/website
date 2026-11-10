@@ -475,6 +475,9 @@ await step('terms of service', async () => {
   await page.getByTestId('connect-wallet').waitFor()
   const note = page.getByTestId('signin-terms')
   check('app sign-in: says continuing accepts the Terms and the Privacy Policy, both linked in a new tab', (await note.locator('a[href="https://gullylabs.xyz/terms"][target="_blank"]').count()) === 1 && (await note.locator('a[href="https://gullylabs.xyz/privacy"][target="_blank"]').count()) === 1)
+  // Signed out, the rendered footer itself carries Terms, Privacy and Legal (2026-11-10: a real browser showed only the badge).
+  const outFoot = page.getByTestId('app-footer').getByRole('navigation', { name: 'Legal' })
+  check('app signed out: the rendered footer links Terms, Privacy and Legal on gullylabs.xyz in a new tab', (await outFoot.locator('a[href="https://gullylabs.xyz/terms"][target="_blank"]').count()) === 1 && (await outFoot.locator('a[href="https://gullylabs.xyz/privacy"][target="_blank"]').count()) === 1 && (await outFoot.locator('a[href="https://gullylabs.xyz/legal"][target="_blank"]').count()) === 1)
   // Signed out, the app asks /api/developer/session (always 200) first: no 401s in the console (D4-12).
   await w.verify()
   await ctx.close()
