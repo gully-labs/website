@@ -113,6 +113,10 @@ test('the public hub lists no admin console', async () => {
   assert.equal(out.code, 200)
   assert.ok(!/admin/i.test(out.body), 'the /api/hub answer mentions admin')
   _resetHub()
+  // The status page lists admin consoles among its components: they are left out of the public answer.
+  const sp = readStatusPage('<span class="banner ok" role="status">x</span><section class="svc"><span class="nm">Gully Studio</span><span class="pill up">Operational</span></section><section class="svc"><span class="nm">Gully Studio admin</span><span class="pill up">Operational</span></section>')
+  assert.deepEqual(sp.services.map((s) => s.name), ['Gully Studio'])
+  assert.equal(sp.total, 1)
 })
 
 test('surfaces still being set up read "coming" until they answer 200, never "down"', async () => {
