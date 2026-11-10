@@ -1,4 +1,4 @@
-/* Gully Live UI in React (gully-ops sites/_shared/gully-live-ui 1.0.0, vendored byte-identical in src/vendor/gully-live-ui).
+/* Gully Live UI in React (gully-ops sites/_shared/gully-live-ui 1.0.4, vendored byte-identical in src/vendor/gully-live-ui).
    LiveStat = <gl-stat> (count-up value, sparkline that draws in, skeleton or "No data yet", never a fake 0);
    LiveChart = <gl-chart> (area / line / bars on canvas, crosshair tooltip, a table for screen readers, never an empty
    frame: series, then the honest `empty` line).
@@ -35,7 +35,8 @@ function setAttrs(el: HTMLElement, attrs: Record<string, string | boolean | null
   }
 }
 
-export type LiveUnit = 'usd' | 'pct' | 'plain' | 'GB' | 'ms' | ''
+/** `pct` is a signed change (+3.4%); `percent` a plain share or rate (0.3%, 92.3%), Live UI 1.0.4. */
+export type LiveUnit = 'usd' | 'pct' | 'percent' | 'plain' | 'GB' | 'ms' | ''
 
 /** A stat. `bare` puts it inside one of our tiles (no border, no label: the tile has them). `value` null = loading
     (skeleton) when `loading`, else "No data yet". */

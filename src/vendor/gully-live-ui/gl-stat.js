@@ -1,6 +1,7 @@
 /*
- * <gl-stat label="Trades today" value="1234" unit="usd|pct|plain" delta="3.2" spark="1,3,2,5,4" live full>
- * `full` prints the whole number (block heights), never compact (12.4K).
+ * <gl-stat label="Trades today" value="1234" unit="usd|pct|percent|plain" delta="3.2" spark="1,3,2,5,4" live full>
+ * `full` prints the whole number (block heights), never compact (12.4K). `pct` is a signed change (+3.4%); `percent` is a
+ * plain share or fee rate with no sign (0.3%, 12.5%), for fee tiers, splits and vault shares (1.0.4).
  * Live stat tile: the value counts up when it changes, the delta chip flashes up/down, an optional sparkline draws in.
  * No value yet → skeleton (while `loading`) or "No data yet" (never a fake 0). Set .value / .spark from script for live data.
  */

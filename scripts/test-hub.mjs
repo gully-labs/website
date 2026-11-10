@@ -105,7 +105,7 @@ test('every surface links to https and Gully Chain pieces are all listed', () =>
 test('surfaces still being set up read "coming" until they answer 200, never "down"', async () => {
   _resetHub(async (url, init = {}) => {
     const u = String(url)
-    if (u.includes('multisig.gullychain')) throw new TypeError('fetch failed')
+    if (u.includes('admin.gullypay')) throw new TypeError('fetch failed')
     if (u.includes('ai.gullylabs.xyz')) return new Response('', { status: 404 })
     if (u.includes('dev.gullystudio')) return new Response('ok', { status: 200 })
     if (u.includes('copy.kre8.fun')) return new Response('', { status: 502 })
@@ -116,8 +116,8 @@ test('surfaces still being set up read "coming" until they answer 200, never "do
   await handleHub({ method: 'GET' }, {}, new URL('http://x/api/hub'), (_r, code, body) => (out = { code, body }))
   const b = JSON.parse(out.body)
   const by = (k) => b.services.find((s) => s.key === k)
-  assert.equal(by('safe').state, 'coming')
-  assert.equal(by('safe').up, false)
+  assert.equal(by('pay-admin').state, 'coming')
+  assert.equal(by('pay-admin').up, false)
   assert.equal(by('ai-api').state, 'coming')
   assert.equal(by('ai-api').ms, null)
   assert.equal(by('studio-dev').state, 'up')

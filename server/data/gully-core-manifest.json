@@ -1,0 +1,4817 @@
+{
+ "$schema": "./manifest.schema.json",
+ "name": "Gully Core",
+ "tagline": "Swap. Pool. Lock. Deploy.",
+ "lineage": "Built on PancakeSwap Infinity's audited core. GPL-2.0-or-later.",
+ "sources": {
+  "chains": "sites/_gullycore/chains.json",
+  "records": "sites/_gullycore/records/gully-core-<chainId>.json",
+  "nav": "sites/_shared/gullycore-nav/nav.json",
+  "fees": "sites/_gullycore/live-reads.json",
+  "appRoutes": "sites/_gullycore/app-routes.json @ 24047d15",
+  "docs": "sites/_gullycore/docs/*.md"
+ },
+ "ia": {
+  "menu": [
+   {
+    "id": "trade",
+    "label": "Trade",
+    "icon": "arrow-left-right",
+    "line": "Swap, orders, routing and prices on Gully Core pools.",
+    "features": [
+     "terminal",
+     "router",
+     "oracle",
+     "embed"
+    ]
+   },
+   {
+    "id": "build",
+    "label": "Build",
+    "icon": "rocket",
+    "line": "Launch a token or run your own launchpad, DEX, stock market, vault or hook pool.",
+    "features": [
+     "launch",
+     "launchpad",
+     "dex",
+     "stocks",
+     "vaults",
+     "hooks"
+    ]
+   },
+   {
+    "id": "earn",
+    "label": "Earn",
+    "icon": "coins",
+    "line": "Rewards, locks, vesting, splits and airdrops, enforced by contracts.",
+    "features": [
+     "rewards",
+     "locks",
+     "splits",
+     "fee"
+    ]
+   },
+   {
+    "id": "manage",
+    "label": "Manage",
+    "icon": "key-round",
+    "line": "Your domain, governance, verified source, badges, sign-in and payments.",
+    "features": [
+     "domain",
+     "safe",
+     "verify",
+     "badge",
+     "signin"
+    ]
+   },
+   {
+    "id": "developers",
+    "label": "Developers",
+    "icon": "terminal",
+    "line": "SDK, CLI, API, listings, Mini App and the buy bot.",
+    "features": [
+     "sdk",
+     "cli",
+     "api",
+     "listings",
+     "mini",
+     "bot"
+    ]
+   }
+  ],
+  "header": [
+   {
+    "id": "trade",
+    "label": "Trade",
+    "icon": "arrow-left-right",
+    "href": "https://gullycore.xyz/#products",
+    "group": "trade"
+   },
+   {
+    "id": "build",
+    "label": "Build",
+    "icon": "rocket",
+    "href": "https://gullycore.xyz/#products",
+    "group": "build"
+   },
+   {
+    "id": "earn",
+    "label": "Earn",
+    "icon": "coins",
+    "href": "https://gullycore.xyz/#products",
+    "group": "earn"
+   },
+   {
+    "id": "manage",
+    "label": "Manage",
+    "icon": "key-round",
+    "href": "https://gullycore.xyz/#products",
+    "group": "manage"
+   },
+   {
+    "id": "developers",
+    "label": "Developers",
+    "icon": "terminal",
+    "href": "https://gullycore.xyz/#products",
+    "group": "developers"
+   }
+  ],
+  "cta": [
+   {
+    "id": "sign-in",
+    "label": "Sign in",
+    "icon": "key-round",
+    "href": "https://gullyid.xyz",
+    "style": "secondary"
+   },
+   {
+    "id": "open-app",
+    "label": "Open app",
+    "icon": "arrow-right",
+    "href": "https://app.gullycore.xyz/",
+    "style": "primary"
+   }
+  ],
+  "footer": [
+   {
+    "group": "Developers",
+    "links": [
+     {
+      "label": "Start building",
+      "icon": "terminal",
+      "href": "https://docs.gullycore.xyz/start/"
+     },
+     {
+      "label": "SDK",
+      "icon": "package",
+      "href": "https://docs.gullycore.xyz/sdk/"
+     },
+     {
+      "label": "CLI",
+      "icon": "terminal",
+      "href": "https://docs.gullycore.xyz/cli/"
+     },
+     {
+      "label": "Contracts",
+      "icon": "file-text",
+      "href": "https://docs.gullycore.xyz/contracts/"
+     },
+     {
+      "label": "Manifest",
+      "icon": "file-text",
+      "href": "https://gullycore.xyz/manifest.json"
+     }
+    ]
+   },
+   {
+    "group": "Gully Core",
+    "links": [
+     {
+      "label": "App",
+      "icon": "app-window",
+      "href": "https://app.gullycore.xyz/"
+     },
+     {
+      "label": "Testnet app",
+      "icon": "flask-conical",
+      "href": "https://testnet.gullycore.xyz/"
+     },
+     {
+      "label": "Console",
+      "icon": "gauge",
+      "href": "https://admin.gullycore.xyz/"
+     },
+     {
+      "label": "Chains",
+      "icon": "network",
+      "href": "https://gullycore.xyz/#chains"
+     },
+     {
+      "label": "Gully Multisig",
+      "icon": "shield-check",
+      "href": "https://gullymultisig.xyz"
+     },
+     {
+      "label": "Explorer",
+      "icon": "search",
+      "href": "https://gullyscan.xyz"
+     }
+    ]
+   },
+   {
+    "group": "Gully Labs",
+    "links": [
+     {
+      "label": "Sign in with Gully ID",
+      "icon": "key-round",
+      "href": "https://gullyid.xyz"
+     },
+     {
+      "label": "Gully Pay",
+      "icon": "credit-card",
+      "href": "https://gullypay.xyz"
+     },
+     {
+      "label": "Gully Labs",
+      "icon": "landmark",
+      "href": "https://gullylabs.xyz"
+     }
+    ]
+   }
+  ],
+  "navIds": [
+   "trade",
+   "build",
+   "earn",
+   "manage",
+   "developers"
+  ]
+ },
+ "groups": [
+  {
+   "id": "trade",
+   "name": "Trade",
+   "icon": "arrow-left-right",
+   "line": "Swap, orders, routing and prices on Gully Core pools.",
+   "features": [
+    "terminal",
+    "router",
+    "oracle",
+    "embed"
+   ]
+  },
+  {
+   "id": "build",
+   "name": "Build",
+   "icon": "rocket",
+   "line": "Launch a token or run your own launchpad, DEX, stock market, vault or hook pool.",
+   "features": [
+    "launch",
+    "launchpad",
+    "dex",
+    "stocks",
+    "vaults",
+    "hooks"
+   ]
+  },
+  {
+   "id": "earn",
+   "name": "Earn",
+   "icon": "coins",
+   "line": "Rewards, locks, vesting, splits and airdrops, enforced by contracts.",
+   "features": [
+    "rewards",
+    "locks",
+    "splits",
+    "fee"
+   ]
+  },
+  {
+   "id": "manage",
+   "name": "Manage",
+   "icon": "key-round",
+   "line": "Your domain, governance, verified source, badges, sign-in and payments.",
+   "features": [
+    "domain",
+    "safe",
+    "verify",
+    "badge",
+    "signin"
+   ]
+  },
+  {
+   "id": "developers",
+   "name": "Developers",
+   "icon": "terminal",
+   "line": "SDK, CLI, API, listings, Mini App and the buy bot.",
+   "features": [
+    "sdk",
+    "cli",
+    "api",
+    "listings",
+    "mini",
+    "bot"
+   ]
+  }
+ ],
+ "features": [
+  {
+   "id": "terminal",
+   "name": "Orders and DCA",
+   "group": "trade",
+   "line": "Limit orders and DCA slices, filled on chain.",
+   "note": null,
+   "motif": "terminal",
+   "state": null,
+   "contracts": [
+    "rangeOrders",
+    "dca"
+   ],
+   "app": {
+    "path": "swap",
+    "url": "https://app.gullycore.xyz/app/swap",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/swap"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/orders/",
+    "slug": "orders",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "router",
+   "name": "Router",
+   "group": "trade",
+   "line": "The best fill across Gully Core and other venues.",
+   "note": null,
+   "motif": "router",
+   "state": null,
+   "contracts": [
+    "fillRouter"
+   ],
+   "app": {
+    "path": "swap",
+    "url": "https://app.gullycore.xyz/app/swap",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/swap"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/router/",
+    "slug": "router",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "oracle",
+   "name": "Price oracle",
+   "group": "trade",
+   "line": "A time-weighted price one trade can’t move.",
+   "note": null,
+   "motif": "oracle",
+   "state": null,
+   "contracts": [
+    "oracleHook"
+   ],
+   "app": {
+    "path": "pool",
+    "url": "https://app.gullycore.xyz/app/pool",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/pool"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/price-oracle/",
+    "slug": "price-oracle",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "embed",
+   "name": "Swap box",
+   "group": "trade",
+   "line": "The swap box on any page with one line of HTML.",
+   "note": null,
+   "motif": "embed",
+   "state": null,
+   "contracts": [
+    "universalRouter"
+   ],
+   "app": null,
+   "docs": {
+    "href": "https://docs.gullycore.xyz/router/",
+    "slug": "router",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "launch",
+   "name": "Launch kit",
+   "group": "build",
+   "line": "Name, supply and opening fee. One transaction, liquidity locked.",
+   "note": null,
+   "motif": "launch",
+   "state": null,
+   "contracts": [
+    "launchpadKitV2"
+   ],
+   "app": {
+    "path": "launch/v2/new",
+    "url": "https://app.gullycore.xyz/app/launch/v2/new",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/launch/v2/new"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/launch-a-token/",
+    "slug": "launch-a-token",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "launchpad",
+   "name": "Your launchpad",
+   "group": "build",
+   "line": "Your brand and fee share on shared contracts.",
+   "note": null,
+   "motif": "launchpad",
+   "state": null,
+   "contracts": [
+    "padFactory"
+   ],
+   "app": {
+    "path": "pads/new",
+    "url": "https://app.gullycore.xyz/app/pads/new",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/pads/new"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/build-a-launchpad/",
+    "slug": "build-a-launchpad",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "dex",
+   "name": "DEX, CL and Bin",
+   "group": "build",
+   "line": "Concentrated-liquidity and bin pools on a site of your own.",
+   "note": null,
+   "motif": "dex",
+   "state": null,
+   "contracts": [
+    "padFactory"
+   ],
+   "app": {
+    "path": "dexes/new?kind=dex",
+    "url": "https://app.gullycore.xyz/app/dexes/new?kind=dex",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/dexes/new?kind=dex"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/build-a-dex/",
+    "slug": "build-a-dex",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "stocks",
+   "name": "Stock market",
+   "group": "build",
+   "line": "Tokenised stocks that trade in market hours.",
+   "note": "Contracts live. Trading opens with the price router.",
+   "motif": "stocks",
+   "state": null,
+   "contracts": [
+    "padFactory"
+   ],
+   "app": {
+    "path": "pads/new?kind=stocks",
+    "url": "https://app.gullycore.xyz/app/pads/new?kind=stocks",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/pads/new?kind=stocks"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/stock-market/",
+    "slug": "stock-market",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "vaults",
+   "name": "Vaults",
+   "group": "build",
+   "line": "Managed liquidity that follows the price for you.",
+   "note": null,
+   "motif": "vaults",
+   "state": null,
+   "contracts": [
+    "vaultFactory"
+   ],
+   "app": {
+    "path": "vaults/new",
+    "url": "https://app.gullycore.xyz/app/vaults/new",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/vaults/new"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/vaults/",
+    "slug": "vaults",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "hooks",
+   "name": "Hook pools",
+   "group": "build",
+   "line": "Dynamic fee, oracle, revenue-share and RWA hooks.",
+   "note": null,
+   "motif": "hooks",
+   "state": null,
+   "contracts": [
+    "dynamicFeeHook"
+   ],
+   "app": {
+    "path": "marketplace",
+    "url": "https://app.gullycore.xyz/app/marketplace",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/marketplace"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/hook-pools/",
+    "slug": "hook-pools",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "rewards",
+   "name": "Liquidity rewards",
+   "group": "earn",
+   "line": "Streams paid each second to liquidity in range.",
+   "note": null,
+   "motif": "rewards",
+   "state": null,
+   "contracts": [
+    "liquidityRewardsHook"
+   ],
+   "app": null,
+   "docs": {
+    "href": "https://docs.gullycore.xyz/liquidity-rewards/",
+    "slug": "liquidity-rewards",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "locks",
+   "name": "Locks and vesting",
+   "group": "earn",
+   "line": "Lock liquidity or tokens, vest on a schedule.",
+   "note": null,
+   "motif": "locks",
+   "state": null,
+   "contracts": [
+    "positionLock",
+    "tokenLock"
+   ],
+   "app": {
+    "path": "locks",
+    "url": "https://app.gullycore.xyz/app/locks",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/locks"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/locks/",
+    "slug": "locks",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "splits",
+   "name": "Splits and airdrops",
+   "group": "earn",
+   "line": "Team splits, Merkle airdrops and multisend.",
+   "note": null,
+   "motif": "splits",
+   "state": null,
+   "contracts": [
+    "splitFactory",
+    "dropFactory",
+    "multisend"
+   ],
+   "app": {
+    "path": "distribute",
+    "url": "https://app.gullycore.xyz/app/distribute",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/distribute"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/splits/",
+    "slug": "splits",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "fee",
+   "name": "Flat 0.30% fee",
+   "group": "earn",
+   "line": "One flat fee on your trades. Cap 0.40%, only goes down.",
+   "note": null,
+   "motif": "fee",
+   "state": null,
+   "contracts": [
+    "feeControllerV5"
+   ],
+   "app": {
+    "path": "governance",
+    "url": "https://app.gullycore.xyz/app/governance",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/governance"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/fees/",
+    "slug": "fees",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "domain",
+   "name": "Your domain",
+   "group": "manage",
+   "line": "Your launchpad on your domain: a free subdomain, or your own.",
+   "note": null,
+   "motif": "domain",
+   "state": {
+    "kind": "coming",
+    "label": "Building"
+   },
+   "contracts": [],
+   "app": {
+    "path": "pads/mine",
+    "url": "https://app.gullycore.xyz/app/pads/mine",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/pads/mine"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/bring-your-own-domain/",
+    "slug": "bring-your-own-domain",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "coming",
+    "999": "coming",
+    "4663": "coming",
+    "6714": "coming",
+    "8453": "coming",
+    "99901": "coming",
+    "485590": "coming"
+   }
+  },
+  {
+   "id": "safe",
+   "name": "Safe governance",
+   "group": "manage",
+   "line": "Fees fall at once and rise only after a public notice.",
+   "note": null,
+   "motif": "safe",
+   "state": {
+    "kind": "governance"
+   },
+   "contracts": [],
+   "app": {
+    "path": "governance",
+    "url": "https://app.gullycore.xyz/app/governance",
+    "testnetUrl": "https://testnet.gullycore.xyz/app/governance"
+   },
+   "docs": {
+    "href": "https://docs.gullycore.xyz/trust/",
+    "slug": "trust",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "verify",
+   "name": "Verified source",
+   "group": "manage",
+   "line": "Every contract’s source is public on our Sourcify.",
+   "note": null,
+   "motif": "verify",
+   "state": {
+    "kind": "live",
+    "label": "On Sourcify"
+   },
+   "contracts": [],
+   "app": null,
+   "docs": {
+    "href": "https://docs.gullycore.xyz/contracts/",
+    "slug": "contracts",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "live"
+   }
+  },
+  {
+   "id": "badge",
+   "name": "Powered by badge",
+   "group": "manage",
+   "line": "Show the Powered by Gully Core badge on your site.",
+   "note": null,
+   "motif": "badge",
+   "state": {
+    "kind": "live",
+    "label": "Free to use"
+   },
+   "contracts": [],
+   "app": null,
+   "docs": {
+    "href": "https://gullycore.xyz/brand/07-badges/powered-by-ink-680x240.svg",
+    "slug": null,
+    "exists": null,
+    "external": true
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "live"
+   }
+  },
+  {
+   "id": "signin",
+   "name": "Gully ID and Pay",
+   "group": "manage",
+   "line": "Sign in with Gully ID, bill through Gully Pay.",
+   "note": null,
+   "motif": "signin",
+   "state": {
+    "kind": "live",
+    "label": "Live"
+   },
+   "contracts": [],
+   "app": null,
+   "docs": {
+    "href": "https://gullyid.xyz",
+    "slug": null,
+    "exists": null,
+    "external": true
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "live"
+   }
+  },
+  {
+   "id": "sdk",
+   "name": "SDK",
+   "group": "developers",
+   "line": "TypeScript modules for every feature.",
+   "note": null,
+   "motif": "sdk",
+   "state": {
+    "kind": "planned",
+    "label": "From a checkout"
+   },
+   "contracts": [],
+   "app": null,
+   "docs": {
+    "href": "https://docs.gullycore.xyz/sdk/",
+    "slug": "sdk",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "planned",
+    "999": "coming",
+    "4663": "planned",
+    "6714": "planned",
+    "8453": "planned",
+    "99901": "planned",
+    "485590": "planned"
+   }
+  },
+  {
+   "id": "cli",
+   "name": "CLI",
+   "group": "developers",
+   "line": "Swaps, pools, launches and fees from a terminal.",
+   "note": null,
+   "motif": "cli",
+   "state": {
+    "kind": "planned",
+    "label": "From a checkout"
+   },
+   "contracts": [],
+   "app": null,
+   "docs": {
+    "href": "https://docs.gullycore.xyz/cli/",
+    "slug": "cli",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "planned",
+    "999": "coming",
+    "4663": "planned",
+    "6714": "planned",
+    "8453": "planned",
+    "99901": "planned",
+    "485590": "planned"
+   }
+  },
+  {
+   "id": "api",
+   "name": "API",
+   "group": "developers",
+   "line": "Read pools, launches, locks and quotes over HTTP.",
+   "note": null,
+   "motif": "api",
+   "state": {
+    "kind": "live",
+    "label": "Live"
+   },
+   "contracts": [],
+   "app": null,
+   "docs": {
+    "href": "https://docs.gullycore.xyz/listing-kit/",
+    "slug": "listing-kit",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "live",
+    "999": "coming",
+    "4663": "live",
+    "6714": "live",
+    "8453": "live",
+    "99901": "live",
+    "485590": "live"
+   }
+  },
+  {
+   "id": "listings",
+   "name": "Listings kit",
+   "group": "developers",
+   "line": "DEX Screener and GeckoTerminal feeds, DefiLlama adapters.",
+   "note": null,
+   "motif": "listings",
+   "state": {
+    "kind": "testnet",
+    "label": "Adapters live"
+   },
+   "contracts": [],
+   "app": null,
+   "docs": {
+    "href": "https://docs.gullycore.xyz/listing-kit/",
+    "slug": "listing-kit",
+    "exists": true,
+    "external": false
+   },
+   "status": {
+    "56": "testnet",
+    "999": "coming",
+    "4663": "testnet",
+    "6714": "testnet",
+    "8453": "testnet",
+    "99901": "testnet",
+    "485590": "testnet"
+   }
+  },
+  {
+   "id": "mini",
+   "name": "Mini App",
+   "group": "developers",
+   "line": "A Gully Core mini app inside the Base App.",
+   "note": null,
+   "motif": "mini",
+   "state": {
+    "kind": "planned",
+    "label": "Planned"
+   },
+   "contracts": [],
+   "app": null,
+   "docs": {
+    "href": "https://docs.gullycore.xyz/mini-app/",
+    "slug": "mini-app",
+    "exists": false,
+    "external": false
+   },
+   "status": {
+    "56": "planned",
+    "999": "coming",
+    "4663": "planned",
+    "6714": "planned",
+    "8453": "planned",
+    "99901": "planned",
+    "485590": "planned"
+   }
+  },
+  {
+   "id": "bot",
+   "name": "Telegram buy bot",
+   "group": "developers",
+   "line": "Every buy of your token, posted to your group.",
+   "note": "Posts Gully Core launches and buys on Gully Chain testnet via @GullyBuyBot. Mainnet chains follow when the bots get a multi-chain feed.",
+   "motif": "bot",
+   "state": {
+    "kind": "testnet",
+    "label": "Live on testnet"
+   },
+   "contracts": [],
+   "app": null,
+   "docs": {
+    "href": "https://t.me/GullyBuyBot",
+    "slug": null,
+    "exists": null,
+    "external": true
+   },
+   "status": {
+    "56": "testnet",
+    "999": "coming",
+    "4663": "testnet",
+    "6714": "testnet",
+    "8453": "testnet",
+    "99901": "testnet",
+    "485590": "testnet"
+   }
+  }
+ ],
+ "chains": [
+  {
+   "chainId": 6714,
+   "key": "anubis",
+   "name": "Anubis Network",
+   "kind": "mainnet",
+   "status": "live",
+   "native": "gasDAI",
+   "quote": "DAI",
+   "note": "gasDAI pays gas only, so pools quote in DAI.",
+   "rpc": "https://rpc.anubispace.org",
+   "explorer": "https://browser.anubispace.org",
+   "app": "https://app.gullycore.xyz/",
+   "governance": "2-of-3 Safe",
+   "icon": "https://gullycore.xyz/chains/anubis.svg",
+   "statusBy": {},
+   "surfaces": {
+    "site": true,
+    "docs": true,
+    "core": true,
+    "explorer": "https://browser.anubispace.org",
+    "multisig": true,
+    "bridge": false,
+    "offerwall": false,
+    "kre8": false
+   },
+   "health": {
+    "rpc": "https://rpc.anubispace.org"
+   },
+   "deployment": {
+    "version": "3.0.0",
+    "release": 3,
+    "deployedAt": "2026-11-07",
+    "commit": "34067cba9f7d38c053b2ba468b838bcaae247514",
+    "deployer": "0x92cFC047652d6aEf7eb0fa2744B912d9f627fA41",
+    "governanceSafe": "0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+    "ops": "0x5aD50DdE058b2c41298D9C5A33527a7E2150CD78",
+    "feeRecipient": "0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+    "gasUsed": 152631332
+   },
+   "sourcify": "https://verify.gullychain.xyz/v2/contracts/6714",
+   "contracts": {
+    "governanceSafe": {
+     "address": "0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+     "contract": "Safe L2 1.4.1 proxy",
+     "package": "-",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+      "sourcifyMatch": "exact_match",
+      "explorer": "https://browser.anubispace.org/address/0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+      "explorerVerified": false
+     }
+    },
+    "vault": {
+     "address": "0x080afe8C30e48e126e9EFAd6F455BaF53c16Ec91",
+     "contract": "Vault",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x080afe8C30e48e126e9EFAd6F455BaF53c16Ec91",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x080afe8C30e48e126e9EFAd6F455BaF53c16Ec91",
+      "explorerVerified": false
+     }
+    },
+    "clPoolManager": {
+     "address": "0xC85Edc14Fc6053151066f6D497B11E6982946a50",
+     "contract": "CLPoolManager",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xC85Edc14Fc6053151066f6D497B11E6982946a50",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xC85Edc14Fc6053151066f6D497B11E6982946a50",
+      "explorerVerified": false
+     }
+    },
+    "binPoolManager": {
+     "address": "0x4f5c8F759912BbcE685B2315136615Bb13DDe509",
+     "contract": "BinPoolManager",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x4f5c8F759912BbcE685B2315136615Bb13DDe509",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x4f5c8F759912BbcE685B2315136615Bb13DDe509",
+      "explorerVerified": false
+     }
+    },
+    "clPoolManagerOwner": {
+     "address": "0x90A2f18177d6f26989A68243878C2F75DccAefad",
+     "contract": "CLPoolManagerOwner",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x90A2f18177d6f26989A68243878C2F75DccAefad",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x90A2f18177d6f26989A68243878C2F75DccAefad",
+      "explorerVerified": false
+     }
+    },
+    "binPoolManagerOwner": {
+     "address": "0x3cfA5C87C0C87c91cA0d74d55a4ef537b9B85f85",
+     "contract": "BinPoolManagerOwner",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x3cfA5C87C0C87c91cA0d74d55a4ef537b9B85f85",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x3cfA5C87C0C87c91cA0d74d55a4ef537b9B85f85",
+      "explorerVerified": false
+     }
+    },
+    "clPositionDescriptor": {
+     "address": "0x698F2f44853EfF532a64C4eB5E28E1ED7d100367",
+     "contract": "CLPositionDescriptorOffChain",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x698F2f44853EfF532a64C4eB5E28E1ED7d100367",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x698F2f44853EfF532a64C4eB5E28E1ED7d100367",
+      "explorerVerified": false
+     }
+    },
+    "clPositionManager": {
+     "address": "0xD6b8c02DF7439EC9375A788eC0170e2C6165d66f",
+     "contract": "CLPositionManager",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xD6b8c02DF7439EC9375A788eC0170e2C6165d66f",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xD6b8c02DF7439EC9375A788eC0170e2C6165d66f",
+      "explorerVerified": false
+     }
+    },
+    "binPositionManager": {
+     "address": "0xC1AeDb36E3A7aa65ed6e57C6a92e4F77CF4A1059",
+     "contract": "BinPositionManager",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xC1AeDb36E3A7aa65ed6e57C6a92e4F77CF4A1059",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xC1AeDb36E3A7aa65ed6e57C6a92e4F77CF4A1059",
+      "explorerVerified": false
+     }
+    },
+    "clQuoter": {
+     "address": "0xDf09efdcD7fCe3161b4827451438F326A876Ab85",
+     "contract": "CLQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xDf09efdcD7fCe3161b4827451438F326A876Ab85",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xDf09efdcD7fCe3161b4827451438F326A876Ab85",
+      "explorerVerified": false
+     }
+    },
+    "binQuoter": {
+     "address": "0x22e92D7CAACD03240ac5112e0fcDDD637723bF4a",
+     "contract": "BinQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x22e92D7CAACD03240ac5112e0fcDDD637723bF4a",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x22e92D7CAACD03240ac5112e0fcDDD637723bF4a",
+      "explorerVerified": false
+     }
+    },
+    "mixedQuoter": {
+     "address": "0x692FFd043C357E5d9b54A5558Ce69d73F1e5c923",
+     "contract": "MixedQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x692FFd043C357E5d9b54A5558Ce69d73F1e5c923",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x692FFd043C357E5d9b54A5558Ce69d73F1e5c923",
+      "explorerVerified": false
+     }
+    },
+    "clTickLens": {
+     "address": "0x889d17041635DAbaecE32862f831Bffc1bc93872",
+     "contract": "TickLens",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x889d17041635DAbaecE32862f831Bffc1bc93872",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x889d17041635DAbaecE32862f831Bffc1bc93872",
+      "explorerVerified": false
+     }
+    },
+    "universalRouter": {
+     "address": "0xB364DE5817a37507D1E83A113Ed738f8c01d4bF6",
+     "contract": "UniversalRouter",
+     "package": "router",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xB364DE5817a37507D1E83A113Ed738f8c01d4bF6",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xB364DE5817a37507D1E83A113Ed738f8c01d4bF6",
+      "explorerVerified": false
+     }
+    },
+    "registry": {
+     "address": "0x25f7B2B9e5875CdB338D90B9e5D8049919b5179e",
+     "contract": "GullyCoreRegistry",
+     "package": "registry",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x25f7B2B9e5875CdB338D90B9e5D8049919b5179e",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x25f7B2B9e5875CdB338D90B9e5D8049919b5179e",
+      "explorerVerified": false
+     }
+    },
+    "launchRegistry": {
+     "address": "0x2B8Fde685b5Cb053F1A02B0918c33471b30EA79b",
+     "contract": "GullyCoreLaunchRegistry",
+     "package": "registry",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x2B8Fde685b5Cb053F1A02B0918c33471b30EA79b",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x2B8Fde685b5Cb053F1A02B0918c33471b30EA79b",
+      "explorerVerified": false
+     }
+    },
+    "lpLocker": {
+     "address": "0x0a8448CdbbAEE70F70C05aA6e724F65a0137C7ac",
+     "contract": "GullyCoreLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x0a8448CdbbAEE70F70C05aA6e724F65a0137C7ac",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x0a8448CdbbAEE70F70C05aA6e724F65a0137C7ac",
+      "explorerVerified": false
+     }
+    },
+    "launchTokenFactory": {
+     "address": "0x5d5Ff065fBE83F2aD5710A1A5919B90720AAc7de",
+     "contract": "LaunchTokenFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x5d5Ff065fBE83F2aD5710A1A5919B90720AAc7de",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x5d5Ff065fBE83F2aD5710A1A5919B90720AAc7de",
+      "explorerVerified": false
+     }
+    },
+    "binLpLocker": {
+     "address": "0xbecB073A8726F2c8D115281E9416b11d11b6D843",
+     "contract": "GullyCoreBinLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xbecB073A8726F2c8D115281E9416b11d11b6D843",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xbecB073A8726F2c8D115281E9416b11d11b6D843",
+      "explorerVerified": false
+     }
+    },
+    "launchGuardHook": {
+     "address": "0xC456f2870c38131823d165F53b52954c6B275313",
+     "contract": "LaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xC456f2870c38131823d165F53b52954c6B275313",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xC456f2870c38131823d165F53b52954c6B275313",
+      "explorerVerified": false
+     }
+    },
+    "binLaunchGuardHook": {
+     "address": "0x24E6fc761907293336521C5bf9658B04F80275dd",
+     "contract": "BinLaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x24E6fc761907293336521C5bf9658B04F80275dd",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x24E6fc761907293336521C5bf9658B04F80275dd",
+      "explorerVerified": false
+     }
+    },
+    "launchLegs": {
+     "address": "0x10bE54546E0462a998AA6F5251B4E84816e1Ec00",
+     "contract": "LaunchLegs",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x10bE54546E0462a998AA6F5251B4E84816e1Ec00",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x10bE54546E0462a998AA6F5251B4E84816e1Ec00",
+      "explorerVerified": false
+     }
+    },
+    "launchPolicy": {
+     "address": "0x2812776ff40Ee0d2849E2F85458855f615011d13",
+     "contract": "LaunchPolicy",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x2812776ff40Ee0d2849E2F85458855f615011d13",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x2812776ff40Ee0d2849E2F85458855f615011d13",
+      "explorerVerified": false
+     }
+    },
+    "launchpadKitV2": {
+     "address": "0xb0BBe5b05A97Bd57DccF3fBd9CF420483b441a23",
+     "contract": "LaunchpadKitV2",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xb0BBe5b05A97Bd57DccF3fBd9CF420483b441a23",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xb0BBe5b05A97Bd57DccF3fBd9CF420483b441a23",
+      "explorerVerified": false
+     }
+    },
+    "feeControllerV5": {
+     "address": "0xC576eBFE93B3e524b2310d283E5eA6A91869cc7F",
+     "contract": "GullyCoreProtocolFeeControllerV5",
+     "package": "fees",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xC576eBFE93B3e524b2310d283E5eA6A91869cc7F",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xC576eBFE93B3e524b2310d283E5eA6A91869cc7F",
+      "explorerVerified": false
+     }
+    },
+    "dynamicFeeHook": {
+     "address": "0x899a4142927E87650f1aE36771acaf53da673c1A",
+     "contract": "GullyCoreDynamicFeeHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x899a4142927E87650f1aE36771acaf53da673c1A",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x899a4142927E87650f1aE36771acaf53da673c1A",
+      "explorerVerified": false
+     }
+    },
+    "binDynamicFeeHook": {
+     "address": "0x77847893f16CC3d6D71f7A4dB121Dbfbc4fb7eeD",
+     "contract": "GullyCoreBinDynamicFeeHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x77847893f16CC3d6D71f7A4dB121Dbfbc4fb7eeD",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x77847893f16CC3d6D71f7A4dB121Dbfbc4fb7eeD",
+      "explorerVerified": false
+     }
+    },
+    "dexHook": {
+     "address": "0xEb5213F79280d64E93521dB81b4DbCD32016D239",
+     "contract": "GullyCoreDexHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xEb5213F79280d64E93521dB81b4DbCD32016D239",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xEb5213F79280d64E93521dB81b4DbCD32016D239",
+      "explorerVerified": false
+     }
+    },
+    "oracleHook": {
+     "address": "0x9A8ecfF94Bc5e1381A74Bcfb71d5E0d6bc194C7C",
+     "contract": "GullyCoreOracleHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x9A8ecfF94Bc5e1381A74Bcfb71d5E0d6bc194C7C",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x9A8ecfF94Bc5e1381A74Bcfb71d5E0d6bc194C7C",
+      "explorerVerified": false
+     }
+    },
+    "revShareHook": {
+     "address": "0xC3B2E38Bc1Ed53D2B759E70308EAC2c89C57c4CB",
+     "contract": "RevShareHook",
+     "package": "hooks-revshare",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xC3B2E38Bc1Ed53D2B759E70308EAC2c89C57c4CB",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xC3B2E38Bc1Ed53D2B759E70308EAC2c89C57c4CB",
+      "explorerVerified": false
+     }
+    },
+    "tunerGate": {
+     "address": "0x204CE69ED339A4A304ff99cb07B9935e19642023",
+     "contract": "GullyCoreTunerGate",
+     "package": "governance",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x204CE69ED339A4A304ff99cb07B9935e19642023",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x204CE69ED339A4A304ff99cb07B9935e19642023",
+      "explorerVerified": false
+     }
+    },
+    "padFactory": {
+     "address": "0x5b86f33c0EE370e898aEdAc5183aF988A8D9ed78",
+     "contract": "GullyCorePadFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x5b86f33c0EE370e898aEdAc5183aF988A8D9ed78",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x5b86f33c0EE370e898aEdAc5183aF988A8D9ed78",
+      "explorerVerified": false
+     }
+    },
+    "splitFactory": {
+     "address": "0x60C2042F1F2dFC40854746D580c17B69E8D6A87E",
+     "contract": "GullyCoreSplitFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x60C2042F1F2dFC40854746D580c17B69E8D6A87E",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x60C2042F1F2dFC40854746D580c17B69E8D6A87E",
+      "explorerVerified": false
+     }
+    },
+    "positionLock": {
+     "address": "0x26B21b16A406c2B49764b8D5b8DCbFD2E18A8e16",
+     "contract": "GullyCorePositionLock",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x26B21b16A406c2B49764b8D5b8DCbFD2E18A8e16",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x26B21b16A406c2B49764b8D5b8DCbFD2E18A8e16",
+      "explorerVerified": false
+     }
+    },
+    "tokenLock": {
+     "address": "0x21083D362A572852ca8B554BBA68C3219716e570",
+     "contract": "GullyCoreTokenLock",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x21083D362A572852ca8B554BBA68C3219716e570",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x21083D362A572852ca8B554BBA68C3219716e570",
+      "explorerVerified": false
+     }
+    },
+    "multisend": {
+     "address": "0x71A999Cf87C6D55d5F01D630d9796dccF20c8e38",
+     "contract": "GullyCoreMultisend",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x71A999Cf87C6D55d5F01D630d9796dccF20c8e38",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x71A999Cf87C6D55d5F01D630d9796dccF20c8e38",
+      "explorerVerified": false
+     }
+    },
+    "dropFactory": {
+     "address": "0x267dB93A69dB8B9aCF9fda6fF38c7A087427fa0A",
+     "contract": "GullyCoreDropFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x267dB93A69dB8B9aCF9fda6fF38c7A087427fa0A",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x267dB93A69dB8B9aCF9fda6fF38c7A087427fa0A",
+      "explorerVerified": false
+     }
+    },
+    "launchAndBuy": {
+     "address": "0x899A91d4821484cf7D21184dA95EB98F579E8eaE",
+     "contract": "GullyCoreLaunchAndBuy",
+     "package": "launch-periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x899A91d4821484cf7D21184dA95EB98F579E8eaE",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x899A91d4821484cf7D21184dA95EB98F579E8eaE",
+      "explorerVerified": false
+     }
+    },
+    "fillRouter": {
+     "address": "0x40f2a66CaBFa88380a47A1f9368Bb0896Fc6FAB8",
+     "contract": "GullyCoreFillRouter",
+     "package": "routing",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x40f2a66CaBFa88380a47A1f9368Bb0896Fc6FAB8",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x40f2a66CaBFa88380a47A1f9368Bb0896Fc6FAB8",
+      "explorerVerified": false
+     }
+    },
+    "rangeOrders": {
+     "address": "0xe829227F33631c0aE0ef56Ed60E24D8CAC0E88c6",
+     "contract": "GullyCoreRangeOrders",
+     "package": "orders",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xe829227F33631c0aE0ef56Ed60E24D8CAC0E88c6",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xe829227F33631c0aE0ef56Ed60E24D8CAC0E88c6",
+      "explorerVerified": false
+     }
+    },
+    "dca": {
+     "address": "0xCAEe747229149bA8BAf030f86DB8585752a32a70",
+     "contract": "GullyCoreDCA",
+     "package": "orders",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xCAEe747229149bA8BAf030f86DB8585752a32a70",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xCAEe747229149bA8BAf030f86DB8585752a32a70",
+      "explorerVerified": false
+     }
+    },
+    "vaultFactory": {
+     "address": "0xE7824a44A624E77563d8bF739504F5F72Ff5b877",
+     "contract": "GullyCoreVaultFactory",
+     "package": "vaults",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xE7824a44A624E77563d8bF739504F5F72Ff5b877",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xE7824a44A624E77563d8bF739504F5F72Ff5b877",
+      "explorerVerified": false
+     }
+    },
+    "managedVaultImplementation": {
+     "address": "0x7677f401973f11478042Cd9e15C2A3233807fAe7",
+     "contract": "GullyCoreManagedVault",
+     "package": "vaults",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x7677f401973f11478042Cd9e15C2A3233807fAe7",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x7677f401973f11478042Cd9e15C2A3233807fAe7",
+      "explorerVerified": false
+     }
+    },
+    "liquidityRewardsHook": {
+     "address": "0xCb3A1c38B34607373c0C2E82faF458FF6d638cea",
+     "contract": "GullyCoreLiquidityRewardsHook",
+     "package": "lp-rewards",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xCb3A1c38B34607373c0C2E82faF458FF6d638cea",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xCb3A1c38B34607373c0C2E82faF458FF6d638cea",
+      "explorerVerified": false
+     }
+    },
+    "padImplementation": {
+     "address": "0xAe1C538aAfC81A50842A70539145C6A8e2abe5cf",
+     "contract": "GullyCorePad",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xAe1C538aAfC81A50842A70539145C6A8e2abe5cf",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xAe1C538aAfC81A50842A70539145C6A8e2abe5cf",
+      "explorerVerified": false
+     }
+    },
+    "createX": {
+     "address": "0x657c2DEeA3f5250cb0CC2a486A7ada028dE3e405",
+     "contract": "CreateX (unmodified)",
+     "package": "-",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x657c2DEeA3f5250cb0CC2a486A7ada028dE3e405",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0x657c2DEeA3f5250cb0CC2a486A7ada028dE3e405",
+      "explorerVerified": false
+     }
+    },
+    "permit2": {
+     "address": "0xFB8D25F84898b6Cd01468c6cc8692cf950784838",
+     "contract": "Permit2 (unmodified)",
+     "package": "-",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0xFB8D25F84898b6Cd01468c6cc8692cf950784838",
+      "sourcifyMatch": "match",
+      "explorer": "https://browser.anubispace.org/address/0xFB8D25F84898b6Cd01468c6cc8692cf950784838",
+      "explorerVerified": false
+     }
+    },
+    "multicall3": {
+     "address": "0x72119Ec596C04f6696ADF9b49EDC219232Ac5513",
+     "contract": "Multicall3 (unmodified)",
+     "package": "-",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/6714/0x72119Ec596C04f6696ADF9b49EDC219232Ac5513",
+      "sourcifyMatch": "exact_match",
+      "explorer": "https://browser.anubispace.org/address/0x72119Ec596C04f6696ADF9b49EDC219232Ac5513",
+      "explorerVerified": false
+     }
+    }
+   }
+  },
+  {
+   "chainId": 485590,
+   "key": "gully-chain-testnet",
+   "name": "Gully Chain Testnet",
+   "kind": "testnet",
+   "status": "testnet",
+   "native": "ETH",
+   "quote": "ETH",
+   "note": null,
+   "rpc": "https://rpc.gullychain.xyz",
+   "explorer": "https://testnet.gullyscan.xyz",
+   "app": "https://testnet.gullycore.xyz/",
+   "governance": "1-of-1 Safe",
+   "icon": "https://gullycore.xyz/chains/gully-chain-testnet.svg",
+   "statusBy": {},
+   "surfaces": {
+    "site": true,
+    "docs": true,
+    "core": true,
+    "explorer": "https://testnet.gullyscan.xyz",
+    "multisig": true,
+    "bridge": true,
+    "offerwall": true,
+    "kre8": true
+   },
+   "health": {
+    "rpc": "https://rpc.gullychain.xyz"
+   },
+   "deployment": {
+    "version": "1.0.0-testnet",
+    "release": 3,
+    "deployedAt": "2026-11-06",
+    "commit": "2402c049c748cccf4cc4cce57717bd3824ab70e7",
+    "deployer": "0x92cFC047652d6aEf7eb0fa2744B912d9f627fA41",
+    "governanceSafe": "0xC5526E28B5cDe3C5962A224896804a499d5bb240",
+    "ops": "0x12Fa4F1F2b90422Da4D425FbcF4BE50e80Fd7a93",
+    "feeRecipient": "0xC5526E28B5cDe3C5962A224896804a499d5bb240",
+    "gasUsed": 39074050
+   },
+   "sourcify": "https://verify.gullychain.xyz/v2/contracts/485590",
+   "contracts": {
+    "governanceSafe": {
+     "address": "0xC5526E28B5cDe3C5962A224896804a499d5bb240",
+     "contract": "Safe L2 1.4.1 proxy",
+     "package": "-",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xC5526E28B5cDe3C5962A224896804a499d5bb240",
+      "sourcifyMatch": "exact_match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xC5526E28B5cDe3C5962A224896804a499d5bb240",
+      "explorerVerified": null
+     }
+    },
+    "vault": {
+     "address": "0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
+     "contract": "Vault",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
+      "explorerVerified": null
+     }
+    },
+    "clPoolManager": {
+     "address": "0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
+     "contract": "CLPoolManager",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
+      "explorerVerified": null
+     }
+    },
+    "binPoolManager": {
+     "address": "0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
+     "contract": "BinPoolManager",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
+      "explorerVerified": null
+     }
+    },
+    "clPoolManagerOwner": {
+     "address": "0xAC57987b453533e3D67881026dA5CA271A7c7438",
+     "contract": "CLPoolManagerOwner",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xAC57987b453533e3D67881026dA5CA271A7c7438",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xAC57987b453533e3D67881026dA5CA271A7c7438",
+      "explorerVerified": null
+     }
+    },
+    "binPoolManagerOwner": {
+     "address": "0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
+     "contract": "BinPoolManagerOwner",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
+      "explorerVerified": null
+     }
+    },
+    "clPositionDescriptor": {
+     "address": "0x8504aD36c38D34b31B431169530eC56340e1dF5f",
+     "contract": "CLPositionDescriptorOffChain",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x8504aD36c38D34b31B431169530eC56340e1dF5f",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x8504aD36c38D34b31B431169530eC56340e1dF5f",
+      "explorerVerified": null
+     }
+    },
+    "clPositionManager": {
+     "address": "0x337c8E7B40132B677db2b99445EbC6B3835fd7A4",
+     "contract": "CLPositionManager",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x337c8E7B40132B677db2b99445EbC6B3835fd7A4",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x337c8E7B40132B677db2b99445EbC6B3835fd7A4",
+      "explorerVerified": null
+     }
+    },
+    "binPositionManager": {
+     "address": "0xC1EEF3aaf142dffDe6551a557E9700DB12817719",
+     "contract": "BinPositionManager",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xC1EEF3aaf142dffDe6551a557E9700DB12817719",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xC1EEF3aaf142dffDe6551a557E9700DB12817719",
+      "explorerVerified": null
+     }
+    },
+    "clQuoter": {
+     "address": "0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
+     "contract": "CLQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
+      "explorerVerified": null
+     }
+    },
+    "binQuoter": {
+     "address": "0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
+     "contract": "BinQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
+      "explorerVerified": null
+     }
+    },
+    "mixedQuoter": {
+     "address": "0x8b9F914e7a6CF966D6826dAC965499E43a91e55F",
+     "contract": "MixedQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x8b9F914e7a6CF966D6826dAC965499E43a91e55F",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x8b9F914e7a6CF966D6826dAC965499E43a91e55F",
+      "explorerVerified": null
+     }
+    },
+    "clTickLens": {
+     "address": "0x46B2C141271f676c1bdd1174BB05120e48990e64",
+     "contract": "TickLens",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x46B2C141271f676c1bdd1174BB05120e48990e64",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x46B2C141271f676c1bdd1174BB05120e48990e64",
+      "explorerVerified": null
+     }
+    },
+    "universalRouter": {
+     "address": "0xb6ab6f0D23c769329DB4b3CFB947fDe3a9e797A5",
+     "contract": "UniversalRouter",
+     "package": "router",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xb6ab6f0D23c769329DB4b3CFB947fDe3a9e797A5",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xb6ab6f0D23c769329DB4b3CFB947fDe3a9e797A5",
+      "explorerVerified": null
+     }
+    },
+    "feeControllerV2": {
+     "address": "0x241F54124d43A6c921c5f6e8D2915b6a1DD94592",
+     "contract": "GullyCoreProtocolFeeControllerV2",
+     "package": "fees",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x241F54124d43A6c921c5f6e8D2915b6a1DD94592",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x241F54124d43A6c921c5f6e8D2915b6a1DD94592",
+      "explorerVerified": null
+     }
+    },
+    "registry": {
+     "address": "0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
+     "contract": "GullyCoreRegistry",
+     "package": "registry",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
+      "explorerVerified": null
+     }
+    },
+    "launchRegistry": {
+     "address": "0x232B22f21cF12Db740df21DE09915eC7F6e61039",
+     "contract": "GullyCoreLaunchRegistry",
+     "package": "registry",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x232B22f21cF12Db740df21DE09915eC7F6e61039",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x232B22f21cF12Db740df21DE09915eC7F6e61039",
+      "explorerVerified": null
+     }
+    },
+    "lpLocker": {
+     "address": "0x9a88B84193F790CD3E8d99594d67F83cE6900097",
+     "contract": "GullyCoreLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x9a88B84193F790CD3E8d99594d67F83cE6900097",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x9a88B84193F790CD3E8d99594d67F83cE6900097",
+      "explorerVerified": null
+     }
+    },
+    "launchTokenFactory": {
+     "address": "0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
+     "contract": "LaunchTokenFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
+      "explorerVerified": null
+     }
+    },
+    "binLpLocker": {
+     "address": "0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
+     "contract": "GullyCoreBinLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
+      "explorerVerified": null
+     }
+    },
+    "launchGuardHook": {
+     "address": "0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
+     "contract": "LaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
+      "explorerVerified": null
+     }
+    },
+    "binLaunchGuardHook": {
+     "address": "0x9D3B43CD5c5df9810B044b0694669b206646A70E",
+     "contract": "BinLaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x9D3B43CD5c5df9810B044b0694669b206646A70E",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x9D3B43CD5c5df9810B044b0694669b206646A70E",
+      "explorerVerified": null
+     }
+    },
+    "launchLegs": {
+     "address": "0x72f5d873464899C163C7330909b371B452D37cA6",
+     "contract": "LaunchLegs",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x72f5d873464899C163C7330909b371B452D37cA6",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x72f5d873464899C163C7330909b371B452D37cA6",
+      "explorerVerified": null
+     }
+    },
+    "launchpadKitV2": {
+     "address": "0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
+     "contract": "LaunchpadKitV2",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
+      "explorerVerified": null
+     }
+    },
+    "feeControllerV4": {
+     "address": "0xffCB8992d5B221ED85c05b0Fe642bF329b3A4cf4",
+     "contract": "GullyCoreProtocolFeeControllerV4",
+     "package": "fees",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xffCB8992d5B221ED85c05b0Fe642bF329b3A4cf4",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xffCB8992d5B221ED85c05b0Fe642bF329b3A4cf4",
+      "explorerVerified": null
+     }
+    },
+    "dynamicFeeHook": {
+     "address": "0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
+     "contract": "GullyCoreDynamicFeeHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
+      "explorerVerified": null
+     }
+    },
+    "binDynamicFeeHook": {
+     "address": "0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
+     "contract": "GullyCoreBinDynamicFeeHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
+      "explorerVerified": null
+     }
+    },
+    "dexHook": {
+     "address": "0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
+     "contract": "GullyCoreDexHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
+      "explorerVerified": null
+     }
+    },
+    "oracleHook": {
+     "address": "0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
+     "contract": "GullyCoreOracleHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
+      "explorerVerified": null
+     }
+    },
+    "revShareHook": {
+     "address": "0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
+     "contract": "RevShareHook",
+     "package": "hooks-revshare",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
+      "explorerVerified": null
+     }
+    },
+    "tunerGate": {
+     "address": "0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
+     "contract": "GullyCoreTunerGate",
+     "package": "governance",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
+      "explorerVerified": null
+     }
+    },
+    "padFactory": {
+     "address": "0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
+     "contract": "GullyCorePadFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
+      "explorerVerified": null
+     }
+    },
+    "splitFactory": {
+     "address": "0x6e38c46A7f836896E635c28afE98b022f93D01df",
+     "contract": "GullyCoreSplitFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x6e38c46A7f836896E635c28afE98b022f93D01df",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x6e38c46A7f836896E635c28afE98b022f93D01df",
+      "explorerVerified": null
+     }
+    },
+    "positionLock": {
+     "address": "0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
+     "contract": "GullyCorePositionLock",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
+      "explorerVerified": null
+     }
+    },
+    "tokenLock": {
+     "address": "0x593a98b20A78538432571cb90704A234fa9D7ED5",
+     "contract": "GullyCoreTokenLock",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x593a98b20A78538432571cb90704A234fa9D7ED5",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x593a98b20A78538432571cb90704A234fa9D7ED5",
+      "explorerVerified": null
+     }
+    },
+    "multisend": {
+     "address": "0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
+     "contract": "GullyCoreMultisend",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
+      "explorerVerified": null
+     }
+    },
+    "dropFactory": {
+     "address": "0x3259f54374e4970c908112c1682F000612d5D422",
+     "contract": "GullyCoreDropFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x3259f54374e4970c908112c1682F000612d5D422",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x3259f54374e4970c908112c1682F000612d5D422",
+      "explorerVerified": null
+     }
+    },
+    "launchAndBuy": {
+     "address": "0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
+     "contract": "GullyCoreLaunchAndBuy",
+     "package": "launch-periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
+      "explorerVerified": null
+     }
+    },
+    "fillRouter": {
+     "address": "0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
+     "contract": "GullyCoreFillRouter",
+     "package": "routing",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
+      "explorerVerified": null
+     }
+    },
+    "rangeOrders": {
+     "address": "0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
+     "contract": "GullyCoreRangeOrders",
+     "package": "orders",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
+      "explorerVerified": null
+     }
+    },
+    "dca": {
+     "address": "0x5D39079CE27819682613b67D3EB13D88B3A1146F",
+     "contract": "GullyCoreDCA",
+     "package": "orders",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x5D39079CE27819682613b67D3EB13D88B3A1146F",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x5D39079CE27819682613b67D3EB13D88B3A1146F",
+      "explorerVerified": null
+     }
+    },
+    "vaultFactory": {
+     "address": "0xDB61faBF2B15654edB01c25E162ae579f729407F",
+     "contract": "GullyCoreVaultFactory",
+     "package": "vaults",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xDB61faBF2B15654edB01c25E162ae579f729407F",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xDB61faBF2B15654edB01c25E162ae579f729407F",
+      "explorerVerified": null
+     }
+    },
+    "managedVaultImplementation": {
+     "address": "0xe0Dc3211294F5e00677051B00816015934cCD835",
+     "contract": "GullyCoreManagedVault",
+     "package": "vaults",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xe0Dc3211294F5e00677051B00816015934cCD835",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xe0Dc3211294F5e00677051B00816015934cCD835",
+      "explorerVerified": null
+     }
+    },
+    "liquidityRewardsHook": {
+     "address": "0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
+     "contract": "GullyCoreLiquidityRewardsHook",
+     "package": "lp-rewards",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
+      "explorerVerified": null
+     }
+    },
+    "launchGuardHookV1": {
+     "address": "0xAc79571DB68bF84012Ea986d25Bd09c6de6d4935",
+     "contract": "LaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xAc79571DB68bF84012Ea986d25Bd09c6de6d4935",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xAc79571DB68bF84012Ea986d25Bd09c6de6d4935",
+      "explorerVerified": null
+     }
+    },
+    "binLaunchGuardHookV1": {
+     "address": "0x01c7F3E6d9715FB5240b666ef963C61138694Cab",
+     "contract": "BinLaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x01c7F3E6d9715FB5240b666ef963C61138694Cab",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x01c7F3E6d9715FB5240b666ef963C61138694Cab",
+      "explorerVerified": null
+     }
+    },
+    "launchLegsV1": {
+     "address": "0xE3e49aF19f2ed8Dfe8F0380e70796e7Bd69Cf777",
+     "contract": "LaunchLegs",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xE3e49aF19f2ed8Dfe8F0380e70796e7Bd69Cf777",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xE3e49aF19f2ed8Dfe8F0380e70796e7Bd69Cf777",
+      "explorerVerified": null
+     }
+    },
+    "launchpadKitV2V1": {
+     "address": "0xd46543Fcb42878868eBA0C62ea1F7801a357B12D",
+     "contract": "LaunchpadKitV2",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xd46543Fcb42878868eBA0C62ea1F7801a357B12D",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xd46543Fcb42878868eBA0C62ea1F7801a357B12D",
+      "explorerVerified": null
+     }
+    },
+    "feeControllerV4V1": {
+     "address": "0x31bC6C47df76225f3A3172A239B9BB485224b847",
+     "contract": "GullyCoreProtocolFeeControllerV4",
+     "package": "fees",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x31bC6C47df76225f3A3172A239B9BB485224b847",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x31bC6C47df76225f3A3172A239B9BB485224b847",
+      "explorerVerified": null
+     }
+    },
+    "padFactoryV1": {
+     "address": "0x2D7dcdfC94C014f64E5F23b7A3E79df759183080",
+     "contract": "GullyCorePadFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x2D7dcdfC94C014f64E5F23b7A3E79df759183080",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x2D7dcdfC94C014f64E5F23b7A3E79df759183080",
+      "explorerVerified": null
+     }
+    },
+    "launchAndBuyV1": {
+     "address": "0x3A447F552146Aa05262fd98603C9B1394267ce5B",
+     "contract": "GullyCoreLaunchAndBuy",
+     "package": "launch-periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x3A447F552146Aa05262fd98603C9B1394267ce5B",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x3A447F552146Aa05262fd98603C9B1394267ce5B",
+      "explorerVerified": null
+     }
+    },
+    "lpLockerV1": {
+     "address": "0x0Ca509787bf2C6a241761586d02885b9719aca5f",
+     "contract": "GullyCoreLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x0Ca509787bf2C6a241761586d02885b9719aca5f",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x0Ca509787bf2C6a241761586d02885b9719aca5f",
+      "explorerVerified": null
+     }
+    },
+    "binLpLockerV1": {
+     "address": "0x444719a68d039639655EDC943F1826cC2835c5a5",
+     "contract": "GullyCoreBinLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x444719a68d039639655EDC943F1826cC2835c5a5",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x444719a68d039639655EDC943F1826cC2835c5a5",
+      "explorerVerified": null
+     }
+    },
+    "launchTokenFactoryV1": {
+     "address": "0xC36E33Ef98Bf83d4D3A016dBa32822303f30cCB8",
+     "contract": "LaunchTokenFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xC36E33Ef98Bf83d4D3A016dBa32822303f30cCB8",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xC36E33Ef98Bf83d4D3A016dBa32822303f30cCB8",
+      "explorerVerified": null
+     }
+    },
+    "launchGuardHookV2": {
+     "address": "0x0Cf9A6a75F7C83dDb8B22b59757d7118931aE2A9",
+     "contract": "LaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x0Cf9A6a75F7C83dDb8B22b59757d7118931aE2A9",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x0Cf9A6a75F7C83dDb8B22b59757d7118931aE2A9",
+      "explorerVerified": null
+     }
+    },
+    "binLaunchGuardHookV2": {
+     "address": "0x9a8dD4f4710708cAEE94E5704e5D45b93235b59B",
+     "contract": "BinLaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x9a8dD4f4710708cAEE94E5704e5D45b93235b59B",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x9a8dD4f4710708cAEE94E5704e5D45b93235b59B",
+      "explorerVerified": null
+     }
+    },
+    "launchLegsV2": {
+     "address": "0xFfF4ac7F8Dcf9a9d74691099fc2FEdd67F6E19f9",
+     "contract": "LaunchLegs",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xFfF4ac7F8Dcf9a9d74691099fc2FEdd67F6E19f9",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xFfF4ac7F8Dcf9a9d74691099fc2FEdd67F6E19f9",
+      "explorerVerified": null
+     }
+    },
+    "launchpadKitV2V2": {
+     "address": "0xE8Bbf42a7583C71085F26dd5c31Cb1e5448B0545",
+     "contract": "LaunchpadKitV2",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xE8Bbf42a7583C71085F26dd5c31Cb1e5448B0545",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xE8Bbf42a7583C71085F26dd5c31Cb1e5448B0545",
+      "explorerVerified": null
+     }
+    },
+    "padFactoryV2": {
+     "address": "0xfDC3c29332ED2E77663178A9E85F6844961928D2",
+     "contract": "GullyCorePadFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xfDC3c29332ED2E77663178A9E85F6844961928D2",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xfDC3c29332ED2E77663178A9E85F6844961928D2",
+      "explorerVerified": null
+     }
+    },
+    "launchAndBuyV2": {
+     "address": "0xB75Cf5dbAFde7E896412Cd9b8a4cE22f881B593a",
+     "contract": "GullyCoreLaunchAndBuy",
+     "package": "launch-periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xB75Cf5dbAFde7E896412Cd9b8a4cE22f881B593a",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xB75Cf5dbAFde7E896412Cd9b8a4cE22f881B593a",
+      "explorerVerified": null
+     }
+    },
+    "launchPolicy": {
+     "address": "0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
+     "contract": "LaunchPolicy",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
+      "explorerVerified": null
+     }
+    },
+    "padImplementation": {
+     "address": "0x9199602A03696401bc7E15343E7D9CA00997Efb4",
+     "contract": "GullyCorePad",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x9199602A03696401bc7E15343E7D9CA00997Efb4",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x9199602A03696401bc7E15343E7D9CA00997Efb4",
+      "explorerVerified": null
+     }
+    },
+    "padImplementationV1": {
+     "address": "0xC7dbdf8f76A7b3b9A32ac278c80aeE5368cd89cf",
+     "contract": "GullyCorePad",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0xC7dbdf8f76A7b3b9A32ac278c80aeE5368cd89cf",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0xC7dbdf8f76A7b3b9A32ac278c80aeE5368cd89cf",
+      "explorerVerified": null
+     }
+    },
+    "padImplementationV2": {
+     "address": "0x3642DB547c0B2D967242a4BA2c74362A4c87Eb76",
+     "contract": "GullyCorePad",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x3642DB547c0B2D967242a4BA2c74362A4c87Eb76",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x3642DB547c0B2D967242a4BA2c74362A4c87Eb76",
+      "explorerVerified": null
+     }
+    },
+    "feeControllerV5": {
+     "address": "0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+     "contract": "GullyCoreProtocolFeeControllerV5",
+     "package": "fees",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/485590/0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+      "sourcifyMatch": "match",
+      "explorer": "https://testnet.gullyscan.xyz/address/0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+      "explorerVerified": null
+     }
+    }
+   }
+  },
+  {
+   "chainId": 4663,
+   "key": "robinhood",
+   "name": "Robinhood Chain",
+   "kind": "mainnet",
+   "status": "live",
+   "native": "ETH",
+   "quote": "ETH",
+   "note": null,
+   "rpc": "https://rpc.mainnet.chain.robinhood.com",
+   "explorer": "https://robinhoodchain.blockscout.com",
+   "app": "https://app.gullycore.xyz/",
+   "governance": null,
+   "icon": "https://gullycore.xyz/chains/robinhood.svg",
+   "statusBy": {},
+   "surfaces": {
+    "site": true,
+    "docs": true,
+    "core": true,
+    "explorer": "https://robinhoodchain.blockscout.com",
+    "multisig": false,
+    "bridge": false,
+    "offerwall": false,
+    "kre8": false
+   },
+   "health": {
+    "rpc": "https://rpc.mainnet.chain.robinhood.com"
+   },
+   "deployment": {
+    "version": "3.0.0",
+    "release": 3,
+    "deployedAt": "2026-11-08",
+    "commit": "8c7b7f175c543320cd094fb790d7a762ca5443a8",
+    "deployer": "0x92cFC047652d6aEf7eb0fa2744B912d9f627fA41",
+    "governanceSafe": "0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+    "ops": "0x5aD50DdE058b2c41298D9C5A33527a7E2150CD78",
+    "feeRecipient": "0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+    "gasUsed": 152771064
+   },
+   "sourcify": "https://verify.gullychain.xyz/v2/contracts/4663",
+   "contracts": {
+    "vault": {
+     "address": "0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
+     "contract": "Vault",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clPoolManager": {
+     "address": "0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
+     "contract": "CLPoolManager",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binPoolManager": {
+     "address": "0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
+     "contract": "BinPoolManager",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clPoolManagerOwner": {
+     "address": "0xAC57987b453533e3D67881026dA5CA271A7c7438",
+     "contract": "CLPoolManagerOwner",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xAC57987b453533e3D67881026dA5CA271A7c7438",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binPoolManagerOwner": {
+     "address": "0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
+     "contract": "BinPoolManagerOwner",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clPositionDescriptor": {
+     "address": "0x8504aD36c38D34b31B431169530eC56340e1dF5f",
+     "contract": "CLPositionDescriptorOffChain",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x8504aD36c38D34b31B431169530eC56340e1dF5f",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clPositionManager": {
+     "address": "0x37FDD4837436a5085D800FCAF88A3736dAA668cf",
+     "contract": "CLPositionManager",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x37FDD4837436a5085D800FCAF88A3736dAA668cf",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binPositionManager": {
+     "address": "0xc691B4F3DfFB408Cd18fa65E4B45d88eD00A50A0",
+     "contract": "BinPositionManager",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xc691B4F3DfFB408Cd18fa65E4B45d88eD00A50A0",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clQuoter": {
+     "address": "0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
+     "contract": "CLQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binQuoter": {
+     "address": "0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
+     "contract": "BinQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "mixedQuoter": {
+     "address": "0xd87f1125411831c2C5B914116401539761AD65Ee",
+     "contract": "MixedQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xd87f1125411831c2C5B914116401539761AD65Ee",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clTickLens": {
+     "address": "0x46B2C141271f676c1bdd1174BB05120e48990e64",
+     "contract": "TickLens",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x46B2C141271f676c1bdd1174BB05120e48990e64",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "universalRouter": {
+     "address": "0xFaa8dde77A6EE0c654078f5490aFA19e86e2712b",
+     "contract": "UniversalRouter",
+     "package": "router",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xFaa8dde77A6EE0c654078f5490aFA19e86e2712b",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "governanceSafe": {
+     "address": "0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+     "contract": "Safe L2 1.4.1 proxy",
+     "package": "-",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+      "sourcifyMatch": "exact_match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "registry": {
+     "address": "0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
+     "contract": "GullyCoreRegistry",
+     "package": "registry",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchRegistry": {
+     "address": "0x232B22f21cF12Db740df21DE09915eC7F6e61039",
+     "contract": "GullyCoreLaunchRegistry",
+     "package": "registry",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x232B22f21cF12Db740df21DE09915eC7F6e61039",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "lpLocker": {
+     "address": "0x9a88B84193F790CD3E8d99594d67F83cE6900097",
+     "contract": "GullyCoreLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x9a88B84193F790CD3E8d99594d67F83cE6900097",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchTokenFactory": {
+     "address": "0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
+     "contract": "LaunchTokenFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binLpLocker": {
+     "address": "0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
+     "contract": "GullyCoreBinLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchGuardHook": {
+     "address": "0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
+     "contract": "LaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binLaunchGuardHook": {
+     "address": "0x9D3B43CD5c5df9810B044b0694669b206646A70E",
+     "contract": "BinLaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x9D3B43CD5c5df9810B044b0694669b206646A70E",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchLegs": {
+     "address": "0x72f5d873464899C163C7330909b371B452D37cA6",
+     "contract": "LaunchLegs",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x72f5d873464899C163C7330909b371B452D37cA6",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchPolicy": {
+     "address": "0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
+     "contract": "LaunchPolicy",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchpadKitV2": {
+     "address": "0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
+     "contract": "LaunchpadKitV2",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "feeControllerV5": {
+     "address": "0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+     "contract": "GullyCoreProtocolFeeControllerV5",
+     "package": "fees",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "dynamicFeeHook": {
+     "address": "0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
+     "contract": "GullyCoreDynamicFeeHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binDynamicFeeHook": {
+     "address": "0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
+     "contract": "GullyCoreBinDynamicFeeHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "dexHook": {
+     "address": "0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
+     "contract": "GullyCoreDexHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "oracleHook": {
+     "address": "0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
+     "contract": "GullyCoreOracleHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "revShareHook": {
+     "address": "0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
+     "contract": "RevShareHook",
+     "package": "hooks-revshare",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "tunerGate": {
+     "address": "0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
+     "contract": "GullyCoreTunerGate",
+     "package": "governance",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "padFactory": {
+     "address": "0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
+     "contract": "GullyCorePadFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "splitFactory": {
+     "address": "0x6e38c46A7f836896E635c28afE98b022f93D01df",
+     "contract": "GullyCoreSplitFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x6e38c46A7f836896E635c28afE98b022f93D01df",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "positionLock": {
+     "address": "0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
+     "contract": "GullyCorePositionLock",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "tokenLock": {
+     "address": "0x593a98b20A78538432571cb90704A234fa9D7ED5",
+     "contract": "GullyCoreTokenLock",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x593a98b20A78538432571cb90704A234fa9D7ED5",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "multisend": {
+     "address": "0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
+     "contract": "GullyCoreMultisend",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "dropFactory": {
+     "address": "0x3259f54374e4970c908112c1682F000612d5D422",
+     "contract": "GullyCoreDropFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x3259f54374e4970c908112c1682F000612d5D422",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchAndBuy": {
+     "address": "0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
+     "contract": "GullyCoreLaunchAndBuy",
+     "package": "launch-periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "fillRouter": {
+     "address": "0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
+     "contract": "GullyCoreFillRouter",
+     "package": "routing",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "rangeOrders": {
+     "address": "0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
+     "contract": "GullyCoreRangeOrders",
+     "package": "orders",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "dca": {
+     "address": "0x5D39079CE27819682613b67D3EB13D88B3A1146F",
+     "contract": "GullyCoreDCA",
+     "package": "orders",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x5D39079CE27819682613b67D3EB13D88B3A1146F",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "vaultFactory": {
+     "address": "0xDB61faBF2B15654edB01c25E162ae579f729407F",
+     "contract": "GullyCoreVaultFactory",
+     "package": "vaults",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xDB61faBF2B15654edB01c25E162ae579f729407F",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "managedVaultImplementation": {
+     "address": "0xe0Dc3211294F5e00677051B00816015934cCD835",
+     "contract": "GullyCoreManagedVault",
+     "package": "vaults",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xe0Dc3211294F5e00677051B00816015934cCD835",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "liquidityRewardsHook": {
+     "address": "0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
+     "contract": "GullyCoreLiquidityRewardsHook",
+     "package": "lp-rewards",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "padImplementation": {
+     "address": "0x9199602A03696401bc7E15343E7D9CA00997Efb4",
+     "contract": "GullyCorePad",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/4663/0x9199602A03696401bc7E15343E7D9CA00997Efb4",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    }
+   }
+  },
+  {
+   "chainId": 8453,
+   "key": "base",
+   "name": "Base",
+   "kind": "mainnet",
+   "status": "live",
+   "native": "ETH",
+   "quote": "ETH",
+   "note": null,
+   "rpc": "https://mainnet.base.org",
+   "explorer": "https://basescan.org",
+   "app": "https://app.gullycore.xyz/",
+   "governance": null,
+   "icon": "https://gullycore.xyz/chains/base.svg",
+   "statusBy": {},
+   "surfaces": {
+    "site": true,
+    "docs": true,
+    "core": true,
+    "explorer": "https://basescan.org",
+    "multisig": false,
+    "bridge": false,
+    "offerwall": false,
+    "kre8": false
+   },
+   "health": {
+    "rpc": "https://mainnet.base.org"
+   },
+   "deployment": {
+    "version": "3.0.0",
+    "release": 3,
+    "deployedAt": "2026-11-08",
+    "commit": "8c7b7f175c543320cd094fb790d7a762ca5443a8",
+    "deployer": "0x92cFC047652d6aEf7eb0fa2744B912d9f627fA41",
+    "governanceSafe": "0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+    "ops": "0x5aD50DdE058b2c41298D9C5A33527a7E2150CD78",
+    "feeRecipient": "0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+    "gasUsed": 0
+   },
+   "sourcify": "https://verify.gullychain.xyz/v2/contracts/8453",
+   "contracts": {
+    "vault": {
+     "address": "0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
+     "contract": "Vault",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clPoolManager": {
+     "address": "0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
+     "contract": "CLPoolManager",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binPoolManager": {
+     "address": "0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
+     "contract": "BinPoolManager",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clPoolManagerOwner": {
+     "address": "0xAC57987b453533e3D67881026dA5CA271A7c7438",
+     "contract": "CLPoolManagerOwner",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xAC57987b453533e3D67881026dA5CA271A7c7438",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binPoolManagerOwner": {
+     "address": "0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
+     "contract": "BinPoolManagerOwner",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clPositionDescriptor": {
+     "address": "0x8504aD36c38D34b31B431169530eC56340e1dF5f",
+     "contract": "CLPositionDescriptorOffChain",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x8504aD36c38D34b31B431169530eC56340e1dF5f",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clPositionManager": {
+     "address": "0x280199Ba005Ec176119013E92a53BEf69710a7c2",
+     "contract": "CLPositionManager",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x280199Ba005Ec176119013E92a53BEf69710a7c2",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binPositionManager": {
+     "address": "0x5D7A825b95d734d787574AF8078E217B810D86c9",
+     "contract": "BinPositionManager",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x5D7A825b95d734d787574AF8078E217B810D86c9",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clQuoter": {
+     "address": "0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
+     "contract": "CLQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binQuoter": {
+     "address": "0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
+     "contract": "BinQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "mixedQuoter": {
+     "address": "0x733673ab38a076ebAdf91B2887435E5190F9EfEc",
+     "contract": "MixedQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x733673ab38a076ebAdf91B2887435E5190F9EfEc",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clTickLens": {
+     "address": "0x46B2C141271f676c1bdd1174BB05120e48990e64",
+     "contract": "TickLens",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x46B2C141271f676c1bdd1174BB05120e48990e64",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "universalRouter": {
+     "address": "0xf3Db66192Eb693E7Aa579B318FA7629fd258c81D",
+     "contract": "UniversalRouter",
+     "package": "router",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xf3Db66192Eb693E7Aa579B318FA7629fd258c81D",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "governanceSafe": {
+     "address": "0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+     "contract": "Safe L2 1.4.1 proxy",
+     "package": "-",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "registry": {
+     "address": "0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
+     "contract": "GullyCoreRegistry",
+     "package": "registry",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchRegistry": {
+     "address": "0x232B22f21cF12Db740df21DE09915eC7F6e61039",
+     "contract": "GullyCoreLaunchRegistry",
+     "package": "registry",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x232B22f21cF12Db740df21DE09915eC7F6e61039",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "lpLocker": {
+     "address": "0x9a88B84193F790CD3E8d99594d67F83cE6900097",
+     "contract": "GullyCoreLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x9a88B84193F790CD3E8d99594d67F83cE6900097",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchTokenFactory": {
+     "address": "0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
+     "contract": "LaunchTokenFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binLpLocker": {
+     "address": "0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
+     "contract": "GullyCoreBinLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchGuardHook": {
+     "address": "0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
+     "contract": "LaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binLaunchGuardHook": {
+     "address": "0x9D3B43CD5c5df9810B044b0694669b206646A70E",
+     "contract": "BinLaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x9D3B43CD5c5df9810B044b0694669b206646A70E",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchLegs": {
+     "address": "0x72f5d873464899C163C7330909b371B452D37cA6",
+     "contract": "LaunchLegs",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x72f5d873464899C163C7330909b371B452D37cA6",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchPolicy": {
+     "address": "0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
+     "contract": "LaunchPolicy",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchpadKitV2": {
+     "address": "0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
+     "contract": "LaunchpadKitV2",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "feeControllerV5": {
+     "address": "0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+     "contract": "GullyCoreProtocolFeeControllerV5",
+     "package": "fees",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "dynamicFeeHook": {
+     "address": "0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
+     "contract": "GullyCoreDynamicFeeHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binDynamicFeeHook": {
+     "address": "0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
+     "contract": "GullyCoreBinDynamicFeeHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "dexHook": {
+     "address": "0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
+     "contract": "GullyCoreDexHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "oracleHook": {
+     "address": "0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
+     "contract": "GullyCoreOracleHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "revShareHook": {
+     "address": "0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
+     "contract": "RevShareHook",
+     "package": "hooks-revshare",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "tunerGate": {
+     "address": "0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
+     "contract": "GullyCoreTunerGate",
+     "package": "governance",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "padFactory": {
+     "address": "0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
+     "contract": "GullyCorePadFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "splitFactory": {
+     "address": "0x6e38c46A7f836896E635c28afE98b022f93D01df",
+     "contract": "GullyCoreSplitFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x6e38c46A7f836896E635c28afE98b022f93D01df",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "positionLock": {
+     "address": "0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
+     "contract": "GullyCorePositionLock",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "tokenLock": {
+     "address": "0x593a98b20A78538432571cb90704A234fa9D7ED5",
+     "contract": "GullyCoreTokenLock",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x593a98b20A78538432571cb90704A234fa9D7ED5",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "multisend": {
+     "address": "0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
+     "contract": "GullyCoreMultisend",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "dropFactory": {
+     "address": "0x3259f54374e4970c908112c1682F000612d5D422",
+     "contract": "GullyCoreDropFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x3259f54374e4970c908112c1682F000612d5D422",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchAndBuy": {
+     "address": "0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
+     "contract": "GullyCoreLaunchAndBuy",
+     "package": "launch-periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "fillRouter": {
+     "address": "0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
+     "contract": "GullyCoreFillRouter",
+     "package": "routing",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "rangeOrders": {
+     "address": "0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
+     "contract": "GullyCoreRangeOrders",
+     "package": "orders",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "dca": {
+     "address": "0x5D39079CE27819682613b67D3EB13D88B3A1146F",
+     "contract": "GullyCoreDCA",
+     "package": "orders",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x5D39079CE27819682613b67D3EB13D88B3A1146F",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "vaultFactory": {
+     "address": "0xDB61faBF2B15654edB01c25E162ae579f729407F",
+     "contract": "GullyCoreVaultFactory",
+     "package": "vaults",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xDB61faBF2B15654edB01c25E162ae579f729407F",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "managedVaultImplementation": {
+     "address": "0xe0Dc3211294F5e00677051B00816015934cCD835",
+     "contract": "GullyCoreManagedVault",
+     "package": "vaults",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xe0Dc3211294F5e00677051B00816015934cCD835",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "liquidityRewardsHook": {
+     "address": "0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
+     "contract": "GullyCoreLiquidityRewardsHook",
+     "package": "lp-rewards",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "padImplementation": {
+     "address": "0x9199602A03696401bc7E15343E7D9CA00997Efb4",
+     "contract": "GullyCorePad",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0x9199602A03696401bc7E15343E7D9CA00997Efb4",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    }
+   }
+  },
+  {
+   "chainId": 56,
+   "key": "bnb",
+   "name": "BNB Chain",
+   "kind": "mainnet",
+   "status": "live",
+   "native": "BNB",
+   "quote": "BNB",
+   "note": null,
+   "rpc": "https://bsc-dataseed.bnbchain.org",
+   "explorer": "https://bscscan.com",
+   "app": "https://app.gullycore.xyz/",
+   "governance": null,
+   "icon": "https://gullycore.xyz/chains/bnb.svg",
+   "statusBy": {},
+   "surfaces": {
+    "site": true,
+    "docs": true,
+    "core": true,
+    "explorer": "https://bscscan.com",
+    "multisig": false,
+    "bridge": false,
+    "offerwall": false,
+    "kre8": false
+   },
+   "health": {
+    "rpc": "https://bsc-dataseed.bnbchain.org"
+   },
+   "deployment": {
+    "version": "3.0.0",
+    "release": 3,
+    "deployedAt": "2026-11-08",
+    "commit": "8c7b7f175c543320cd094fb790d7a762ca5443a8",
+    "deployer": "0x92cFC047652d6aEf7eb0fa2744B912d9f627fA41",
+    "governanceSafe": "0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+    "ops": "0x5aD50DdE058b2c41298D9C5A33527a7E2150CD78",
+    "feeRecipient": "0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+    "gasUsed": 152770980
+   },
+   "sourcify": "https://verify.gullychain.xyz/v2/contracts/56",
+   "contracts": {
+    "vault": {
+     "address": "0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
+     "contract": "Vault",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clPoolManager": {
+     "address": "0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
+     "contract": "CLPoolManager",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binPoolManager": {
+     "address": "0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
+     "contract": "BinPoolManager",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clPoolManagerOwner": {
+     "address": "0xAC57987b453533e3D67881026dA5CA271A7c7438",
+     "contract": "CLPoolManagerOwner",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xAC57987b453533e3D67881026dA5CA271A7c7438",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binPoolManagerOwner": {
+     "address": "0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
+     "contract": "BinPoolManagerOwner",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clPositionDescriptor": {
+     "address": "0x8504aD36c38D34b31B431169530eC56340e1dF5f",
+     "contract": "CLPositionDescriptorOffChain",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x8504aD36c38D34b31B431169530eC56340e1dF5f",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clPositionManager": {
+     "address": "0x35519E3e97c086Ae2A86AEDEc5Ea3fDc101158C6",
+     "contract": "CLPositionManager",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x35519E3e97c086Ae2A86AEDEc5Ea3fDc101158C6",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binPositionManager": {
+     "address": "0xC8D9E309B85702EDD34D0EeA1aaA2110dbe5a324",
+     "contract": "BinPositionManager",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xC8D9E309B85702EDD34D0EeA1aaA2110dbe5a324",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clQuoter": {
+     "address": "0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
+     "contract": "CLQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binQuoter": {
+     "address": "0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
+     "contract": "BinQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "mixedQuoter": {
+     "address": "0x100Bd86A918345027aD29B33396630D14fd41435",
+     "contract": "MixedQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x100Bd86A918345027aD29B33396630D14fd41435",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "clTickLens": {
+     "address": "0x46B2C141271f676c1bdd1174BB05120e48990e64",
+     "contract": "TickLens",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x46B2C141271f676c1bdd1174BB05120e48990e64",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "universalRouter": {
+     "address": "0x142aEaf5f2c7Fd0A1d562a75A977d15a06523673",
+     "contract": "UniversalRouter",
+     "package": "router",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x142aEaf5f2c7Fd0A1d562a75A977d15a06523673",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "governanceSafe": {
+     "address": "0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+     "contract": "Safe L2 1.4.1 proxy",
+     "package": "-",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xaaa3ee4e1c7b6241156516D4B630A3bF2541f786",
+      "sourcifyMatch": "exact_match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "registry": {
+     "address": "0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
+     "contract": "GullyCoreRegistry",
+     "package": "registry",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchRegistry": {
+     "address": "0x232B22f21cF12Db740df21DE09915eC7F6e61039",
+     "contract": "GullyCoreLaunchRegistry",
+     "package": "registry",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x232B22f21cF12Db740df21DE09915eC7F6e61039",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "lpLocker": {
+     "address": "0x9a88B84193F790CD3E8d99594d67F83cE6900097",
+     "contract": "GullyCoreLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x9a88B84193F790CD3E8d99594d67F83cE6900097",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchTokenFactory": {
+     "address": "0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
+     "contract": "LaunchTokenFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binLpLocker": {
+     "address": "0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
+     "contract": "GullyCoreBinLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchGuardHook": {
+     "address": "0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
+     "contract": "LaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binLaunchGuardHook": {
+     "address": "0x9D3B43CD5c5df9810B044b0694669b206646A70E",
+     "contract": "BinLaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x9D3B43CD5c5df9810B044b0694669b206646A70E",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchLegs": {
+     "address": "0x72f5d873464899C163C7330909b371B452D37cA6",
+     "contract": "LaunchLegs",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x72f5d873464899C163C7330909b371B452D37cA6",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchPolicy": {
+     "address": "0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
+     "contract": "LaunchPolicy",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchpadKitV2": {
+     "address": "0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
+     "contract": "LaunchpadKitV2",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "feeControllerV5": {
+     "address": "0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+     "contract": "GullyCoreProtocolFeeControllerV5",
+     "package": "fees",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "dynamicFeeHook": {
+     "address": "0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
+     "contract": "GullyCoreDynamicFeeHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "binDynamicFeeHook": {
+     "address": "0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
+     "contract": "GullyCoreBinDynamicFeeHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "dexHook": {
+     "address": "0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
+     "contract": "GullyCoreDexHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "oracleHook": {
+     "address": "0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
+     "contract": "GullyCoreOracleHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "revShareHook": {
+     "address": "0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
+     "contract": "RevShareHook",
+     "package": "hooks-revshare",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "tunerGate": {
+     "address": "0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
+     "contract": "GullyCoreTunerGate",
+     "package": "governance",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "padFactory": {
+     "address": "0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
+     "contract": "GullyCorePadFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "splitFactory": {
+     "address": "0x6e38c46A7f836896E635c28afE98b022f93D01df",
+     "contract": "GullyCoreSplitFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x6e38c46A7f836896E635c28afE98b022f93D01df",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "positionLock": {
+     "address": "0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
+     "contract": "GullyCorePositionLock",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "tokenLock": {
+     "address": "0x593a98b20A78538432571cb90704A234fa9D7ED5",
+     "contract": "GullyCoreTokenLock",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x593a98b20A78538432571cb90704A234fa9D7ED5",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "multisend": {
+     "address": "0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
+     "contract": "GullyCoreMultisend",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "dropFactory": {
+     "address": "0x3259f54374e4970c908112c1682F000612d5D422",
+     "contract": "GullyCoreDropFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x3259f54374e4970c908112c1682F000612d5D422",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "launchAndBuy": {
+     "address": "0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
+     "contract": "GullyCoreLaunchAndBuy",
+     "package": "launch-periphery",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "fillRouter": {
+     "address": "0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
+     "contract": "GullyCoreFillRouter",
+     "package": "routing",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "rangeOrders": {
+     "address": "0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
+     "contract": "GullyCoreRangeOrders",
+     "package": "orders",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "dca": {
+     "address": "0x5D39079CE27819682613b67D3EB13D88B3A1146F",
+     "contract": "GullyCoreDCA",
+     "package": "orders",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x5D39079CE27819682613b67D3EB13D88B3A1146F",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "vaultFactory": {
+     "address": "0xDB61faBF2B15654edB01c25E162ae579f729407F",
+     "contract": "GullyCoreVaultFactory",
+     "package": "vaults",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xDB61faBF2B15654edB01c25E162ae579f729407F",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "managedVaultImplementation": {
+     "address": "0xe0Dc3211294F5e00677051B00816015934cCD835",
+     "contract": "GullyCoreManagedVault",
+     "package": "vaults",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xe0Dc3211294F5e00677051B00816015934cCD835",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "liquidityRewardsHook": {
+     "address": "0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
+     "contract": "GullyCoreLiquidityRewardsHook",
+     "package": "lp-rewards",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    },
+    "padImplementation": {
+     "address": "0x9199602A03696401bc7E15343E7D9CA00997Efb4",
+     "contract": "GullyCorePad",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://sourcify.dev/server/v2/contract/56/0x9199602A03696401bc7E15343E7D9CA00997Efb4",
+      "sourcifyMatch": "match",
+      "explorer": null,
+      "explorerVerified": null
+     }
+    }
+   }
+  },
+  {
+   "chainId": 999,
+   "key": "hyperevm",
+   "name": "HyperEVM",
+   "kind": "mainnet",
+   "status": "coming",
+   "native": "HYPE",
+   "quote": "HYPE",
+   "note": null,
+   "rpc": null,
+   "explorer": null,
+   "app": "https://app.gullycore.xyz/",
+   "governance": null,
+   "icon": "https://gullycore.xyz/chains/hyperevm.svg",
+   "statusBy": {},
+   "surfaces": {
+    "site": true,
+    "docs": true,
+    "core": false,
+    "explorer": null,
+    "multisig": false,
+    "bridge": false,
+    "offerwall": false,
+    "kre8": false
+   },
+   "health": {
+    "rpc": null
+   },
+   "deployment": null,
+   "sourcify": null,
+   "contracts": {}
+  },
+  {
+   "chainId": 99901,
+   "key": "elysium",
+   "name": "Kinetiq Elysium",
+   "kind": "mainnet",
+   "status": "live",
+   "native": "HYPE",
+   "quote": "HYPE",
+   "note": "HYPE is the gas coin and settles to HyperEVM. Gully Core is live on Kinetiq Elysium since 2026-11-09 (45 contracts, verified on our Sourcify, owned by the chain Safe 2-of-3).",
+   "rpc": "https://rpc.elysium.kinetiq.xyz",
+   "explorer": "https://scan.elysp.com",
+   "app": "https://app.gullycore.xyz/",
+   "governance": null,
+   "icon": "https://gullycore.xyz/chains/elysium.png",
+   "statusBy": {
+    "multisig": "live"
+   },
+   "surfaces": {
+    "site": true,
+    "docs": true,
+    "core": true,
+    "explorer": "https://scan.elysp.com",
+    "multisig": true,
+    "bridge": false,
+    "offerwall": false,
+    "kre8": false
+   },
+   "health": {
+    "rpc": "https://rpc.elysium.kinetiq.xyz"
+   },
+   "deployment": {
+    "version": "3.0.0",
+    "release": 3,
+    "deployedAt": "2026-11-09",
+    "commit": "21b6054bb33a2a1998f37f5f018ea8c25de5b3f7",
+    "deployer": "0x92cFC047652d6aEf7eb0fa2744B912d9f627fA41",
+    "governanceSafe": "0xeeA52db4B0233c4170cca7ef109aE70FE8f67F4c",
+    "ops": "0x5aD50DdE058b2c41298D9C5A33527a7E2150CD78",
+    "feeRecipient": "0xeeA52db4B0233c4170cca7ef109aE70FE8f67F4c",
+    "gasUsed": 0
+   },
+   "sourcify": "https://verify.gullychain.xyz/v2/contracts/99901",
+   "contracts": {
+    "governanceSafe": {
+     "address": "0xeeA52db4B0233c4170cca7ef109aE70FE8f67F4c",
+     "contract": "Safe L2 1.4.1 proxy",
+     "package": "-",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xeeA52db4B0233c4170cca7ef109aE70FE8f67F4c",
+      "sourcifyMatch": "exact_match",
+      "explorer": "https://scan.elysp.com/address/0xeeA52db4B0233c4170cca7ef109aE70FE8f67F4c",
+      "explorerVerified": null
+     }
+    },
+    "vault": {
+     "address": "0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
+     "contract": "Vault",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
+      "explorerVerified": null
+     }
+    },
+    "clPoolManager": {
+     "address": "0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
+     "contract": "CLPoolManager",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
+      "explorerVerified": null
+     }
+    },
+    "binPoolManager": {
+     "address": "0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
+     "contract": "BinPoolManager",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
+      "explorerVerified": null
+     }
+    },
+    "clPoolManagerOwner": {
+     "address": "0xAC57987b453533e3D67881026dA5CA271A7c7438",
+     "contract": "CLPoolManagerOwner",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xAC57987b453533e3D67881026dA5CA271A7c7438",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xAC57987b453533e3D67881026dA5CA271A7c7438",
+      "explorerVerified": null
+     }
+    },
+    "binPoolManagerOwner": {
+     "address": "0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
+     "contract": "BinPoolManagerOwner",
+     "package": "core",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
+      "explorerVerified": null
+     }
+    },
+    "clPositionDescriptor": {
+     "address": "0x8504aD36c38D34b31B431169530eC56340e1dF5f",
+     "contract": "CLPositionDescriptorOffChain",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x8504aD36c38D34b31B431169530eC56340e1dF5f",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x8504aD36c38D34b31B431169530eC56340e1dF5f",
+      "explorerVerified": null
+     }
+    },
+    "clPositionManager": {
+     "address": "0xb943e41CB331722c21bD5905B7F3EEc8aBC8f040",
+     "contract": "CLPositionManager",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xb943e41CB331722c21bD5905B7F3EEc8aBC8f040",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xb943e41CB331722c21bD5905B7F3EEc8aBC8f040",
+      "explorerVerified": null
+     }
+    },
+    "binPositionManager": {
+     "address": "0x824Fa9019B69BBCCB86066D9BA6590B13Dcb70B1",
+     "contract": "BinPositionManager",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x824Fa9019B69BBCCB86066D9BA6590B13Dcb70B1",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x824Fa9019B69BBCCB86066D9BA6590B13Dcb70B1",
+      "explorerVerified": null
+     }
+    },
+    "clQuoter": {
+     "address": "0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
+     "contract": "CLQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
+      "explorerVerified": null
+     }
+    },
+    "binQuoter": {
+     "address": "0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
+     "contract": "BinQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
+      "explorerVerified": null
+     }
+    },
+    "mixedQuoter": {
+     "address": "0x167737D0d044808d7b786D6E1Ead25Bd6B75C2Ce",
+     "contract": "MixedQuoter",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x167737D0d044808d7b786D6E1Ead25Bd6B75C2Ce",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x167737D0d044808d7b786D6E1Ead25Bd6B75C2Ce",
+      "explorerVerified": null
+     }
+    },
+    "clTickLens": {
+     "address": "0x46B2C141271f676c1bdd1174BB05120e48990e64",
+     "contract": "TickLens",
+     "package": "periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x46B2C141271f676c1bdd1174BB05120e48990e64",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x46B2C141271f676c1bdd1174BB05120e48990e64",
+      "explorerVerified": null
+     }
+    },
+    "universalRouter": {
+     "address": "0x202965D0Bd6735050bE2A6EfDB9b9F04f4Df2B90",
+     "contract": "UniversalRouter",
+     "package": "router",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x202965D0Bd6735050bE2A6EfDB9b9F04f4Df2B90",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x202965D0Bd6735050bE2A6EfDB9b9F04f4Df2B90",
+      "explorerVerified": null
+     }
+    },
+    "registry": {
+     "address": "0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
+     "contract": "GullyCoreRegistry",
+     "package": "registry",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
+      "explorerVerified": null
+     }
+    },
+    "launchRegistry": {
+     "address": "0x232B22f21cF12Db740df21DE09915eC7F6e61039",
+     "contract": "GullyCoreLaunchRegistry",
+     "package": "registry",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x232B22f21cF12Db740df21DE09915eC7F6e61039",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x232B22f21cF12Db740df21DE09915eC7F6e61039",
+      "explorerVerified": null
+     }
+    },
+    "lpLocker": {
+     "address": "0x9a88B84193F790CD3E8d99594d67F83cE6900097",
+     "contract": "GullyCoreLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x9a88B84193F790CD3E8d99594d67F83cE6900097",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x9a88B84193F790CD3E8d99594d67F83cE6900097",
+      "explorerVerified": null
+     }
+    },
+    "launchTokenFactory": {
+     "address": "0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
+     "contract": "LaunchTokenFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
+      "explorerVerified": null
+     }
+    },
+    "binLpLocker": {
+     "address": "0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
+     "contract": "GullyCoreBinLPLocker",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
+      "explorerVerified": null
+     }
+    },
+    "launchGuardHook": {
+     "address": "0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
+     "contract": "LaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
+      "explorerVerified": null
+     }
+    },
+    "binLaunchGuardHook": {
+     "address": "0x9D3B43CD5c5df9810B044b0694669b206646A70E",
+     "contract": "BinLaunchGuardHook",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x9D3B43CD5c5df9810B044b0694669b206646A70E",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x9D3B43CD5c5df9810B044b0694669b206646A70E",
+      "explorerVerified": null
+     }
+    },
+    "launchLegs": {
+     "address": "0x72f5d873464899C163C7330909b371B452D37cA6",
+     "contract": "LaunchLegs",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x72f5d873464899C163C7330909b371B452D37cA6",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x72f5d873464899C163C7330909b371B452D37cA6",
+      "explorerVerified": null
+     }
+    },
+    "launchPolicy": {
+     "address": "0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
+     "contract": "LaunchPolicy",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
+      "explorerVerified": null
+     }
+    },
+    "launchpadKitV2": {
+     "address": "0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
+     "contract": "LaunchpadKitV2",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
+      "explorerVerified": null
+     }
+    },
+    "feeControllerV5": {
+     "address": "0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+     "contract": "GullyCoreProtocolFeeControllerV5",
+     "package": "fees",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+      "explorerVerified": null
+     }
+    },
+    "dynamicFeeHook": {
+     "address": "0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
+     "contract": "GullyCoreDynamicFeeHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
+      "explorerVerified": null
+     }
+    },
+    "binDynamicFeeHook": {
+     "address": "0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
+     "contract": "GullyCoreBinDynamicFeeHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
+      "explorerVerified": null
+     }
+    },
+    "dexHook": {
+     "address": "0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
+     "contract": "GullyCoreDexHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
+      "explorerVerified": null
+     }
+    },
+    "oracleHook": {
+     "address": "0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
+     "contract": "GullyCoreOracleHook",
+     "package": "hooks",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
+      "explorerVerified": null
+     }
+    },
+    "revShareHook": {
+     "address": "0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
+     "contract": "RevShareHook",
+     "package": "hooks-revshare",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
+      "explorerVerified": null
+     }
+    },
+    "tunerGate": {
+     "address": "0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
+     "contract": "GullyCoreTunerGate",
+     "package": "governance",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
+      "explorerVerified": null
+     }
+    },
+    "padFactory": {
+     "address": "0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
+     "contract": "GullyCorePadFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
+      "explorerVerified": null
+     }
+    },
+    "splitFactory": {
+     "address": "0x6e38c46A7f836896E635c28afE98b022f93D01df",
+     "contract": "GullyCoreSplitFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x6e38c46A7f836896E635c28afE98b022f93D01df",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x6e38c46A7f836896E635c28afE98b022f93D01df",
+      "explorerVerified": null
+     }
+    },
+    "positionLock": {
+     "address": "0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
+     "contract": "GullyCorePositionLock",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
+      "explorerVerified": null
+     }
+    },
+    "tokenLock": {
+     "address": "0x593a98b20A78538432571cb90704A234fa9D7ED5",
+     "contract": "GullyCoreTokenLock",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x593a98b20A78538432571cb90704A234fa9D7ED5",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x593a98b20A78538432571cb90704A234fa9D7ED5",
+      "explorerVerified": null
+     }
+    },
+    "multisend": {
+     "address": "0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
+     "contract": "GullyCoreMultisend",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
+      "explorerVerified": null
+     }
+    },
+    "dropFactory": {
+     "address": "0x3259f54374e4970c908112c1682F000612d5D422",
+     "contract": "GullyCoreDropFactory",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x3259f54374e4970c908112c1682F000612d5D422",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x3259f54374e4970c908112c1682F000612d5D422",
+      "explorerVerified": null
+     }
+    },
+    "launchAndBuy": {
+     "address": "0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
+     "contract": "GullyCoreLaunchAndBuy",
+     "package": "launch-periphery",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
+      "explorerVerified": null
+     }
+    },
+    "fillRouter": {
+     "address": "0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
+     "contract": "GullyCoreFillRouter",
+     "package": "routing",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
+      "explorerVerified": null
+     }
+    },
+    "rangeOrders": {
+     "address": "0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
+     "contract": "GullyCoreRangeOrders",
+     "package": "orders",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
+      "explorerVerified": null
+     }
+    },
+    "dca": {
+     "address": "0x5D39079CE27819682613b67D3EB13D88B3A1146F",
+     "contract": "GullyCoreDCA",
+     "package": "orders",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x5D39079CE27819682613b67D3EB13D88B3A1146F",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x5D39079CE27819682613b67D3EB13D88B3A1146F",
+      "explorerVerified": null
+     }
+    },
+    "vaultFactory": {
+     "address": "0xDB61faBF2B15654edB01c25E162ae579f729407F",
+     "contract": "GullyCoreVaultFactory",
+     "package": "vaults",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xDB61faBF2B15654edB01c25E162ae579f729407F",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xDB61faBF2B15654edB01c25E162ae579f729407F",
+      "explorerVerified": null
+     }
+    },
+    "managedVaultImplementation": {
+     "address": "0xe0Dc3211294F5e00677051B00816015934cCD835",
+     "contract": "GullyCoreManagedVault",
+     "package": "vaults",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xe0Dc3211294F5e00677051B00816015934cCD835",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xe0Dc3211294F5e00677051B00816015934cCD835",
+      "explorerVerified": null
+     }
+    },
+    "liquidityRewardsHook": {
+     "address": "0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
+     "contract": "GullyCoreLiquidityRewardsHook",
+     "package": "lp-rewards",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
+      "explorerVerified": null
+     }
+    },
+    "padImplementation": {
+     "address": "0x9199602A03696401bc7E15343E7D9CA00997Efb4",
+     "contract": "GullyCorePad",
+     "package": "launchpad",
+     "verification": {
+      "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x9199602A03696401bc7E15343E7D9CA00997Efb4",
+      "sourcifyMatch": "match",
+      "explorer": "https://scan.elysp.com/address/0x9199602A03696401bc7E15343E7D9CA00997Efb4",
+      "explorerVerified": null
+     }
+    }
+   }
+  }
+ ],
+ "fees": {
+  "outsideBuilders": {
+   "builderFeePct": 0.3,
+   "capPct": 0.4,
+   "launchFee": "none from Gully",
+   "kitSplit": "none",
+   "creatorTaxShare": "none",
+   "note": "Developers and launchpads outside Gully Labs pay Gully 0.30% of every trade on every pool they create, and nothing else. The Safe may lower the fee per pool; a raise waits a public notice. Source: FeeControllerV5 on each chain."
+  },
+  "gullySurfaces": {
+   "tradeFeePct": 1,
+   "split": "50/50 creator and Gully",
+   "creatorTaxSharePct": 10,
+   "launchFee": "per release-2 rules",
+   "note": "Gully's own surfaces (kre8) keep the release-2 rules."
+  },
+  "reads": {
+   "builderFee": {
+    "contract": "feeControllerV5",
+    "sig": "builderFee()",
+    "fmt": "pips",
+    "label": "Builder fee",
+    "default": "0.30% (default, read from the fee controller)"
+   },
+   "builderFeeCap": {
+    "contract": "feeControllerV5",
+    "sig": "MAX_PROTOCOL_FEE()",
+    "fmt": "pips",
+    "label": "Fee cap",
+    "default": "0.40% (the controller's cap)"
+   },
+   "feeRaiseNotice": {
+    "contract": "feeControllerV5",
+    "sig": "FEE_RAISE_NOTICE()",
+    "fmt": "dur",
+    "label": "Notice before a raise",
+    "default": "7 days (the controller's notice)"
+   }
+  },
+  "sources": {
+   "56": "0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+   "4663": "0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+   "6714": "0xC576eBFE93B3e524b2310d283E5eA6A91869cc7F",
+   "8453": "0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+   "99901": "0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+   "485590": "0x8aE0C023A4e345Ff9D14E123848816ad332fDe95"
+  }
+ },
+ "links": {
+  "site": "https://gullycore.xyz",
+  "docs": "https://docs.gullycore.xyz",
+  "app": "https://app.gullycore.xyz",
+  "testnetApp": "https://testnet.gullycore.xyz/",
+  "admin": "https://admin.gullycore.xyz",
+  "multisig": "https://gullymultisig.xyz",
+  "explorer": "https://gullyscan.xyz",
+  "testnetExplorer": "https://testnet.gullyscan.xyz",
+  "status": "https://status.gullychain.xyz",
+  "blog": "https://blog.gullychain.xyz",
+  "labs": "https://gullylabs.xyz",
+  "id": "https://gullyid.xyz",
+  "pay": "https://gullypay.xyz",
+  "manifest": "https://gullycore.xyz/manifest.json"
+ },
+ "docsPages": {
+  "bring-your-own-domain": {
+   "title": "Bring your own domain",
+   "nav": "Your domain",
+   "description": "Serve your Gully Core launchpad, DEX or stock market on a domain you own: two DNS records, no transaction, a certificate issued for you."
+  },
+  "build-a-dex": {
+   "title": "Build a DEX",
+   "nav": "Build a DEX",
+   "description": "A hosted exchange over Gully Core pools with your name and brand. It is the same contract as a Launchpad, and only what the site shows changes."
+  },
+  "build-a-launchpad": {
+   "title": "Build a Launchpad",
+   "nav": "Build a Launchpad",
+   "description": "A launch site of your own on the shared core: your name, your brand, your terms. No contracts to deploy and nothing to host."
+  },
+  "chains": {
+   "title": "Chains",
+   "nav": "Chains",
+   "description": "Where Gully Core runs, mainnets and testnet, with status read from the deployment records: a chain is live only when its record exists."
+  },
+  "cli": {
+   "title": "Command line",
+   "nav": "CLI",
+   "description": "The gullycore command: swaps, pools, liquidity, launches, locks and fees from a terminal, with the review, the simulation and the guards built in."
+  },
+  "contracts": {
+   "title": "Contracts",
+   "nav": "Contracts",
+   "description": "Every Gully Core contract address on every chain with a deployment record, with its Sourcify verification. Read from the records, never from a copy."
+  },
+  "fees": {
+   "title": "Fees",
+   "nav": "Fees",
+   "description": "What Gully charges outside builders on Gully Core: a flat 0.30% of every trade, no kit split and no share of creator tax. How the fee can change."
+  },
+  "hook-pools": {
+   "title": "Hook pools",
+   "nav": "Hook pools",
+   "description": "Write a hook contract, deploy it, register it and back a live pool with it on the shared core. Covers dynamic fees, oracles, revenue share and stock hooks."
+  },
+  "index": {
+   "title": "Gully Core docs",
+   "nav": "Overview",
+   "description": "Gully Core docs for builders: launchpads, DEXes, stock markets, vaults, hook pools, orders, router, locks and splits, the SDK, the CLI, fees, chains and contracts."
+  },
+  "launch-a-token": {
+   "title": "Launch a token",
+   "nav": "Launch a token",
+   "description": "One transaction creates the token, opens its pool at the market cap you choose and locks the liquidity forever. No bonding curve and no migration."
+  },
+  "liquidity-rewards": {
+   "title": "Liquidity rewards",
+   "nav": "Liquidity rewards",
+   "description": "A project funds a stream of tokens and the pool pays it out every second to the liquidity that is in range, in proportion to each position."
+  },
+  "listing-kit": {
+   "title": "Listing kit",
+   "nav": "Listing kit",
+   "description": "How the pools of your launchpad or DEX get listed on DEX Screener, GeckoTerminal and DefiLlama, and what you do to make sure they show up with the right name and links."
+  },
+  "locks": {
+   "title": "Locks and vesting",
+   "nav": "Locks",
+   "description": "Launch liquidity is locked forever by contracts with no owner. Any CL position or token can be time-locked or vested, and every lock is public."
+  },
+  "orders": {
+   "title": "Limit orders and DCA",
+   "nav": "Orders",
+   "description": "Sell at a price you choose, or buy a fixed amount on a schedule, on Gully Core pools. Your tokens stay in a contract you can leave at any time."
+  },
+  "price-oracle": {
+   "title": "Price oracle",
+   "nav": "Price oracle",
+   "description": "A time-weighted average price recorded by a pool's own hook, which one trade cannot move and any contract can read for free."
+  },
+  "products": {
+   "title": "Products",
+   "nav": "Products",
+   "description": "What you can build on Gully Core: launchpad, DEX, stock market, vaults, hook pools, orders, router, locks and splits."
+  },
+  "router": {
+   "title": "Router and swaps",
+   "nav": "Router",
+   "description": "Put a working swap on your page with one line of HTML, quote and swap from your own code, and see what a trade costs through the Gully Core router."
+  },
+  "sdk": {
+   "title": "SDK reference",
+   "nav": "SDK",
+   "description": "The Gully Core TypeScript SDK, module by module: chains, address book, launches, launchpads and DEXes, market data, locks, drops, splits and routing."
+  },
+  "splits": {
+   "title": "Splits, airdrops and multisend",
+   "nav": "Splits",
+   "description": "Pay a team by fixed weights, airdrop a token with Merkle proofs, or send to up to 1,000 addresses in one transaction."
+  },
+  "start": {
+   "title": "Start building",
+   "nav": "Start building",
+   "description": "Start building on Gully Core: use the app, pick a chain, create a launchpad, DEX or stock market in one transaction, and use the CLI from a checkout."
+  },
+  "stock-market": {
+   "title": "Stock market",
+   "nav": "Stock market",
+   "description": "A hosted site that lists only tokenised-stock pairs, with market hours, price bands and issuer notes shown for each pair."
+  },
+  "trust": {
+   "title": "Trust and audits",
+   "nav": "Trust",
+   "description": "What to trust about Gully Core: the audited core it is built on, what has no external audit, verified source, governance and licence."
+  },
+  "vaults": {
+   "title": "Vaults",
+   "nav": "Vaults",
+   "description": "Put both tokens of a pool in a vault and it keeps your liquidity concentrated around the price for you, following the pool's average price."
+  }
+ },
+ "appRoutes": [
+  "",
+  "swap",
+  "marketplace",
+  "marketplace/:address",
+  "explorer",
+  "ecosystem",
+  "ecosystem/submit",
+  "deploy",
+  "pads",
+  "pads/new",
+  "pads/mine",
+  "dexes",
+  "dexes/new",
+  "splits",
+  "splits/new",
+  "splits/:address",
+  "vaults",
+  "vaults/new",
+  "vaults/:address",
+  "distribute",
+  "locks",
+  "locks/new",
+  "locks/pool/:poolId",
+  "locks/token/:address",
+  "airdrops",
+  "airdrop/new",
+  "airdrop/:drop",
+  "launch/v2",
+  "launch/v2/new",
+  "launch/v2/:token",
+  "launch",
+  "pool",
+  "portfolio",
+  "protocol",
+  "protocol/:poolId",
+  "protocol/:poolId/epochs",
+  "claim",
+  "analytics",
+  "pricing",
+  "governance",
+  "settings",
+  "drafts",
+  "soon/:slug",
+  "*"
+ ],
+ "generated": {
+  "by": "sites/_gullycore/tools/build-manifest.mjs",
+  "commit": "47373df70b21f5f3e4f9d649d44c0dd95c55c64c"
+ }
+}

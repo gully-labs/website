@@ -9,9 +9,9 @@ import { hubLive } from './hub-live.mjs'
 import { readStats } from './stats.mjs'
 import { BUILD, CSS, TILES, cap, esc, icon, pageFoot, pageTop } from './landing.mjs'
 import { feeCurve, productView, ptTime } from './landing-graphs.mjs'
+import { gullyCore } from './gully-core.mjs'
 
 const CONTENT = JSON.parse(fs.readFileSync(new URL('./data/page-content.json', import.meta.url), 'utf8'))
-const CHAINS = JSON.parse(fs.readFileSync(new URL('./data/core-chains.json', import.meta.url), 'utf8'))
 const SLUGS = Object.keys(CONTENT.product)
 const ext = (h) => /^https?:/.test(h)
 const within = (p, ms) => Promise.race([p.catch(() => null), new Promise((r) => setTimeout(() => r(null), ms))])
@@ -94,7 +94,7 @@ function pageFor(kind, id) {
   const at = (d) => BUILD.find((x) => x.key === keys[(i + d + keys.length) % keys.length])
   return {
     id, name: b.title, line: b.body, icon: CORE_ICON, stage: 'Gully Core', hub: CORE_HUB, card: 'core', metric: b.metric,
-    primary: [b.href, b.cta], second: null, docs: 'https://docs.gullychain.xyz/gully-core/', features: own.features, how: b.steps.map((s, n) => [s, ['Start in the Gully Core app.', 'Each choice says what it does before you sign.', 'It is on chain and open to everyone.'][n]]), price: CORE_PRICE, faq: own.faq,
+    primary: [b.href, b.cta], second: null, docs: gullyCore().links.docs, features: own.features, how: b.steps.map((s, n) => [s, ['Start in the Gully Core app.', 'Each choice says what it does before you sign.', 'It is on chain and open to everyone.'][n]]), price: CORE_PRICE, faq: own.faq,
     prev: [`/preview/build/${at(-1).key}`, at(-1).title], next: [`/preview/build/${at(1).key}`, at(1).title], crumb: ['/preview/products/gully-core', 'Gully Core'],
     extra: own.presets ? presetPicker(own.presets) : '',
   }
@@ -127,7 +127,7 @@ export async function renderProduct(head, kind, id, given = null) {
   const page = { card: pg.card, hub: pg.hub, metric: pg.metric }
   const v = productView(data, page)
   const boot = JSON.stringify({ ...slim(data), page }).replace(/</g, '\\u003c')
-  const where = pg.card === 'core' ? `<section class="s"><div class="w"><h2 class="t">Where it runs</h2><div class="tiles">${CHAINS.map((c) => `<div class="tile">${c.logo ? `<img class="pad" src="${esc(c.logo)}" alt="" width="40" height="40" loading="lazy">` : ''}<span><b>${esc(c.name)}</b><span class="pl">${esc(c.state)}</span></span></div>`).join('')}</div></div></section>` : ''
+  const where = pg.card === 'core' ? `<section class="s"><div class="w"><h2 class="t">Where it runs</h2><div class="tiles">${gullyCore().chains.map((c) => `<div class="tile">${c.logo ? `<img class="pad" src="${esc(c.logo)}" alt="" width="40" height="40" loading="lazy">` : ''}<span><b>${esc(c.name)}</b><span class="pl">${esc(c.state)}</span></span></div>`).join('')}</div></div></section>` : ''
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${head}<link rel="preload" href="/fonts/figtree-latin-700.woff2" as="font" type="font/woff2" crossorigin><link rel="modulepreload" href="/landing/graphs.mjs"><script src="/landing/fx.js"></script><style>${CSS}${PCSS}</style></head><body>
 ${pageTop()}
 <main>

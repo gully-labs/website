@@ -2,7 +2,7 @@
  * Gully Live UI: shared helpers (gl-core.js). Canonical source: gully-labs/gully-ops sites/_shared/gully-live-ui/.
  * Copy files byte-identical; theme with CSS custom properties (tokens.css), never by editing a component.
  */
-export const GULLY_LIVE_UI_VERSION = '1.0.2';
+export const GULLY_LIVE_UI_VERSION = '1.0.4';
 
 /** true when the visitor asked for less motion (and in environments without matchMedia). */
 export const reducedMotion = () => typeof matchMedia !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -34,11 +34,13 @@ export function fmtNum(n, { digits = 2, compact = true } = {}) {
   return x.toLocaleString('en-US', { maximumFractionDigits: digits });
 }
 
-/** Format with a unit: usd → $1.2M, pct → +3.4%, plain → fmtNum. */
+/** Format with a unit: usd → $1.2M, pct → +3.4% (a signed change), percent → 0.3% (a plain share or fee, no sign, 1.0.4),
+ * plain → fmtNum. `percent` keeps up to opts.digits (default 2) fraction digits and drops trailing zeros: 0.3%, 12.5%, 100%. */
 export function fmtValue(n, unit = '', opts = {}) {
   if (n === null || n === undefined || Number.isNaN(Number(n))) return '–';
   if (unit === 'usd') return (Number(n) < 0 ? '-$' : '$') + fmtNum(Math.abs(Number(n)), opts);
   if (unit === 'pct') return `${Number(n) >= 0 ? '+' : ''}${Number(n).toFixed(1)}%`;
+  if (unit === 'percent') return `${Number(n).toLocaleString('en-US', { maximumFractionDigits: opts.digits ?? 2 })}%`;
   return fmtNum(n, opts) + (unit && unit !== 'plain' ? ` ${unit}` : '');
 }
 
