@@ -57,12 +57,17 @@ const HM_JSX_PAGES = {
   '/privacy': ['src/holdermaps/HmLegal.tsx', 'HmPrivacyPage'],
 }
 
+/** Self-closing components that draw one fixed string, read from the file that draws them: <Mail /> is the contact
+    address of src/pages/legal/kit.tsx (LEGAL.email), so a sentence ending in it is served whole. */
+const TEXT = { Mail: constLiteral(path.join(ROOT, 'src/pages/legal/kit.tsx'), 'LEGAL')?.email }
+if (!TEXT.Mail) throw new Error('src/pages/legal/kit.tsx: LEGAL.email not found (needed to pre-render <Mail />)')
+
 const link = (d) => [d.to ?? d.href, d.label]
 const sec = (h, { p = [], list = [], links = [], qa = [], level = 2 } = {}) => ({ h, level, p, list, links, qa })
 /** A page's own headline (its h1, when it is plain text) and sentences, as sections. Links to this site's API are
     not page links. */
 function fromJsx(file, within = null) {
-  const { h1, sections: s } = sections(fileOutline(path.join(ROOT, file), within))
+  const { h1, sections: s } = sections(fileOutline(path.join(ROOT, file), within, TEXT))
   return { ...(h1 ? { h1 } : {}), sections: s.map((x) => sec(x.h, { level: x.level ?? 2, p: x.p, links: x.links.filter(([href]) => !href.startsWith('/api/')) })) }
 }
 

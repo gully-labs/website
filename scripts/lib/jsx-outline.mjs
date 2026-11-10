@@ -68,8 +68,10 @@ function prose(t) {
   return (words >= 5 || (words >= 3 && /[.!?]$/.test(t))) && !/[→←]\s*$/.test(t)
 }
 
-/** The outline of one JSX tree: [{ h: level, t } | { p: t } | { a: [href, t] }]. */
-export function outlineOf(root) {
+/** The outline of one JSX tree: [{ h: level, t } | { p: t } | { a: [href, t] }]. `text` names self-closing components
+    that draw one fixed string (`<Mail />` draws the contact address): their word stays in the sentence, so "write to
+    <Mail />." is served as "write to team@…." and not "write to ." */
+export function outlineOf(root, text = {}) {
   const out = []
   let cur = ''
   /** The same paragraph without its links' words: a line that is only links is a row of links, not a sentence. */
@@ -101,7 +103,9 @@ export function outlineOf(root) {
         if (tag === 'br') s += ' '
         else if (!SKIP.has(tag)) x.children.forEach(walk)
       } else if (ts.isJsxSelfClosingElement(x)) {
-        if (tagName(x) === 'br') s += ' '
+        const tag = tagName(x)
+        if (tag === 'br') s += ' '
+        else if (text[tag] != null) s += ` ${text[tag]} `
       } else if (ts.isJsxFragment(x)) x.children.forEach(walk)
     }
     walk(n)
@@ -128,7 +132,7 @@ export function outlineOf(root) {
       flush()
       if (t) out.push({ h: viaAttr[1], t: clean(t) })
     }
-    if (ts.isJsxSelfClosingElement(n)) return
+    if (ts.isJsxSelfClosingElement(n)) return void (text[tag] != null && add(` ${text[tag]} `))
     if (HEADING[tag]) {
       flush()
       const t = textOf(n)
@@ -157,7 +161,7 @@ export function outlineOf(root) {
 /** Every top-level JSX tree of a source file (the page and its helper components), in source order. With `within`,
     only the trees inside the function (declaration or `const X = () =>`) of that name: a file that holds two pages
     (src/holdermaps/HmLegal.tsx) is read one page at a time. */
-export function fileOutline(file, within = null) {
+export function fileOutline(file, within = null, text = {}) {
   const sf = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   const insideJsx = (n) => {
     for (let a = n.parent; a; a = a.parent) if (ts.isJsxElement(a) || ts.isJsxFragment(a) || ts.isJsxSelfClosingElement(a)) return true
@@ -180,7 +184,7 @@ export function fileOutline(file, within = null) {
   const seen = new Set()
   const out = []
   for (const r of roots)
-    for (const b of outlineOf(r)) {
+    for (const b of outlineOf(r, text)) {
       // The same sentence drawn twice in one file (a desktop and a phone layout) is one sentence.
       const k = JSON.stringify(b)
       if (seen.has(k)) continue

@@ -4504,7 +4504,7 @@
      "p": [
       "You must be at least 18 years old and able to enter into a binding contract.",
       "Self-custody. You sign in with your own wallet (Sign-In with Ethereum): you sign a message, which sends no transaction and costs no gas. We never receive, generate or store your private keys, seed phrase or funds, and we can never move, freeze or recover your assets. If you lose access to your wallet, we cannot restore it. Never share a seed phrase with anyone, including anyone claiming to be us.",
-      "Your account and workspace. Your wallet address is your account, and its workspace is created the first time you change something in it. You are responsible for everything done through your account and workspace, by you and by the members you invite, and for their roles. Tell us at at once if you think someone else is using it.",
+      "Your account and workspace. Your wallet address is your account, and its workspace is created the first time you change something in it. You are responsible for everything done through your account and workspace, by you and by the members you invite, and for their roles. Tell us at team@gullylabs.xyz at once if you think someone else is using it.",
       "API keys and secrets. API keys, webhook signing secrets and similar values are shown once. Keep them private; anything done with your key counts as done by you. Revoke a key in the app if it leaks.",
       "You are responsible for following the laws that apply to you, including tax law, when you use the services."
      ],
@@ -4531,7 +4531,7 @@
       "5.1 Prices. Prices for plans, AI Security Scans, Holder Map Deep checks and other paid services are shown on the pricing page and at checkout, which is the price you pay.",
       "5.2 Paying in crypto. You pay with a wallet, in the asset and on the chain the checkout quotes, straight to the Gully Labs treasury wallet. A payment counts when it meets the checkout’s rules: the exact quoted amount (for a plan paid in a stablecoin from your signed-in wallet, at least the price), in the quoted asset and chain, within the quote’s time, with the chain’s confirmations. Sending a different amount, a different asset, to another address or on another chain may mean the payment cannot be matched.",
       "5.3 Plans. A plan runs for 30 days from the payment that confirms, or from the end of the same plan if it is still running. Switching to a different plan starts it the day you pay; days left on the old plan are not carried over. A plan does not renew by itself: nothing is ever taken from your wallet without you sending it.",
-      "5.4 Final, and refunds. Blockchain payments are final and cannot be charged back. Payments are not refundable, except where these terms, the product’s own terms or the law say otherwise. A paid Holder Map Deep check or AI Security Scan that fails gives you a credit for one free re-run instead of an on-chain refund. If you think you paid by mistake or were charged wrongly, write to and we will look at it in good faith.",
+      "5.4 Final, and refunds. Blockchain payments are final and cannot be charged back. Payments are not refundable, except where these terms, the product’s own terms or the law say otherwise. A paid Holder Map Deep check or AI Security Scan that fails gives you a credit for one free re-run instead of an on-chain refund. If you think you paid by mistake or were charged wrongly, write to team@gullylabs.xyz and we will look at it in good faith.",
       "5.5 Taxes. Prices exclude taxes. You are responsible for any taxes on what you buy, except Gully Labs’ own income taxes."
      ],
      "list": [],
@@ -4547,7 +4547,7 @@
      "h": "Cancellation and termination",
      "level": 2,
      "p": [
-      "You may stop using the services at any time; a plan simply runs out at the end of its 30 days. To have your account’s off-chain data deleted, write to (the app has no self-service delete button yet).",
+      "You may stop using the services at any time; a plan simply runs out at the end of its 30 days. To have your account’s off-chain data deleted, write to team@gullylabs.xyz (the app has no self-service delete button yet).",
       "We may suspend or end your access, block an API key, a workspace or a Telegram user, or unpublish content, with or without notice, if you break these terms, if your use puts the services or others at risk, or if the law or a sanctions rule requires it. Where practical we tell you first. Sections 5.4, 9, 12, 15 and 19 to 20 survive the end of these terms."
      ],
      "list": [],
@@ -4571,7 +4571,7 @@
       "We work to keep the services up, but they are provided “as is” and “as available”, with no promise of any level of uptime.",
       "We use HTTPS everywhere, store hashes instead of secrets where we can, and back our data up every night. The Privacy Policy says what we collect, where it is kept and for how long.",
       "Your data travels through and is stored by the outside providers listed in the Privacy Policy, such as Cloudflare (network) and OVHcloud (servers).",
-      "Found a security problem? Tell us at. Responsible disclosure is welcome and we will not pursue good-faith research that respects users and stops at a proof."
+      "Found a security problem? Tell us at team@gullylabs.xyz. Responsible disclosure is welcome and we will not pursue good-faith research that respects users and stops at a proof."
      ],
      "list": [],
      "links": [],
@@ -4594,7 +4594,7 @@
      "h": "Features and bugs",
      "level": 2,
      "p": [
-      "We design the services with care, but no software is perfect. They can have bugs, and a figure, map, score or answer can be wrong. We don’t promise every feature will keep working the same way, and we don’t guarantee the services will meet your needs. If you find a bug, tell us at or with /contact in @GullyLabsBot."
+      "We design the services with care, but no software is perfect. They can have bugs, and a figure, map, score or answer can be wrong. We don’t promise every feature will keep working the same way, and we don’t guarantee the services will meet your needs. If you find a bug, tell us at team@gullylabs.xyz or with /contact in @GullyLabsBot."
      ],
      "list": [],
      "links": [],
@@ -4687,7 +4687,7 @@
      "p": [
       "You will not, and will not help anyone else to:",
       "use the services for anything illegal, for fraud, market manipulation, phishing or scams, or to launder money or hide where funds come from;",
-      "break, probe, overload or get around the security, rate limits, quotas, payments or access controls of the services, or access accounts or data that are not yours (responsible disclosure to is welcome);",
+      "break, probe, overload or get around the security, rate limits, quotas, payments or access controls of the services, or access accounts or data that are not yours (responsible disclosure to team@gullylabs.xyz is welcome);",
       "run automated traffic that degrades the services for others, or resell or offer the services to others as your own, except as the API and embed terms allow;",
       "upload malware or code you have no right to share, or try to make Gully AI or a scan reveal secrets or act against its instructions;",
       "harass, threaten or impersonate anyone, including Gully Labs or its team;",
@@ -4718,7 +4718,7 @@
       "Changes to these terms. We may update these terms. The “Last updated” date at the top changes, and for a material change we say so on the site or in the app before it takes effect. Using the services after that means you accept the new version.",
       "Governing law. These terms are governed by the laws of the State of Oregon, USA, without regard to its conflict-of-laws rules. Any dispute goes to the state and federal courts located in Oregon, and you and we agree to their jurisdiction, except where consumer law gives you the right to bring a claim where you live.",
       "Whole agreement. These terms, with the product terms and policies they name, are the whole agreement between us about the services. If a part is invalid, the rest stays in force; not enforcing a part is not a waiver of it. You may not transfer these terms without our consent; we may transfer them with the business they relate to.",
-      "Contact. Questions, notices and requests: Gully Labs LLC, Oregon, USA,, or /contact in @GullyLabsBot."
+      "Contact. Questions, notices and requests: Gully Labs LLC, Oregon, USA, team@gullylabs.xyz, or /contact in @GullyLabsBot."
      ],
      "list": [],
      "links": [],
@@ -4733,7 +4733,7 @@
      "level": 2,
      "p": [
       "Gully Labs LLC, based in Oregon, USA (“Gully Labs”, “we”, “us”), builds and runs these sites and services. We decide what personal data they collect and why, so we are responsible for it. If you run a Gully Pay store or use Gully Analytics on your own site, you are responsible for your own customers’ and visitors’ data, and we process it for you to provide the service.",
-      "Questions or requests about your data:."
+      "Questions or requests about your data: team@gullylabs.xyz."
      ],
      "list": [],
      "links": [],
@@ -4899,7 +4899,7 @@
       "tell you what we hold about you, and give you a copy;",
       "correct it, or delete it (the app has no self-service “delete my account” button yet, so email us and we will do it);",
       "stop or limit a use of it, or explain why we use it.",
-      "You can also act yourself: sign out or revoke any session in the app’s Settings; revoke API keys, delete alerts, remove webhooks and switch off pay links; unlink Telegram with /stop; delete a monitor or unpublish a scan report; and opt out of Gully Analytics as described above. Write to for anything else. We may keep payment records where the law requires, and we can’t delete anything that is on a public blockchain. Depending on where you live, you may also complain to your data protection authority.",
+      "You can also act yourself: sign out or revoke any session in the app’s Settings; revoke API keys, delete alerts, remove webhooks and switch off pay links; unlink Telegram with /stop; delete a monitor or unpublish a scan report; and opt out of Gully Analytics as described above. Write to team@gullylabs.xyz for anything else. We may keep payment records where the law requires, and we can’t delete anything that is on a public blockchain. Depending on where you live, you may also complain to your data protection authority.",
       "You must be at least 18 years old to use the services, and we don’t knowingly collect data from anyone younger."
      ],
      "list": [],
@@ -4920,7 +4920,7 @@
      "h": "Changes and questions",
      "level": 2,
      "p": [
-      "We may update this policy as needed. When we do, the “Last updated” date at the top changes, and for a material change we say so on the site before it takes effect. Questions, requests or complaints: Gully Labs LLC, Oregon, USA,. The Terms of Service and the",
+      "We may update this policy as needed. When we do, the “Last updated” date at the top changes, and for a material change we say so on the site before it takes effect. Questions, requests or complaints: Gully Labs LLC, Oregon, USA, team@gullylabs.xyz. The Terms of Service and the",
       "say more about how the services work."
      ],
      "list": [],
@@ -4952,7 +4952,7 @@
      "h": "Accounts and wallets",
      "level": 2,
      "p": [
-      "2.1 Your workspace. You are responsible for everything done through your workspace and by its members, and for their compliance with these terms. Keep your wallets and sign-in secure, and tell us at at once if you suspect misuse.",
+      "2.1 Your workspace. You are responsible for everything done through your workspace and by its members, and for their compliance with these terms. Keep your wallets and sign-in secure, and tell us at team@gullylabs.xyz at once if you suspect misuse.",
       "2.2 Receiving wallets. You choose the receiving address on each chain and you are responsible for controlling it. We check the address’s checksum and, for a contract wallet, that it is deployed on that chain before the chain can take payments; we cannot check that you hold its keys. A payment sent to the address you set is final."
      ],
      "list": [],
@@ -4987,7 +4987,7 @@
      "h": "Fees, statements and taxes",
      "level": 2,
      "p": [
-      "5.3 Disputes. If you disagree in good faith with a statement, tell us at before it is due and pay any undisputed part on time. We will work with you to resolve it within 15 days.",
+      "5.3 Disputes. If you disagree in good faith with a statement, tell us at team@gullylabs.xyz before it is due and pay any undisputed part on time. We will work with you to resolve it within 15 days.",
       "5.4 Taxes. You are responsible for all taxes on your sales, on the payments you receive and on our fees (including sales, use, VAT, GST and withholding), except for Gully Labs’ own income taxes. We do not collect, report or remit taxes for you."
      ],
      "list": [],
@@ -5065,7 +5065,7 @@
       "Changes. We may update these terms with at least 30 days’ notice in the Gully Labs App; continuing to use the Service after that accepts the new version. Fee changes follow Section 5.1.",
       "Severability and waiver. If a term is invalid, the rest stays in force. Not enforcing a term is not a waiver of it.",
       "Assignment. Neither party may assign these terms without the other’s written consent, except on notice in a merger, change of control or sale of the business they relate to.",
-      "Notices. We send notices in the Gully Labs App, to your workspace’s activity log, and to your linked Telegram chat or email when set. You send notices to.",
+      "Notices. We send notices in the Gully Labs App, to your workspace’s activity log, and to your linked Telegram chat or email when set. You send notices to team@gullylabs.xyz.",
       "Force majeure. Neither party is liable for a delay or failure caused by events beyond its reasonable control, including blockchain or network failures; this does not excuse paying fees already due.",
       "Independent parties. We are independent contractors, not agents, partners or joint venturers, and there are no third-party beneficiaries.",
       "Governing law. These terms are governed by the laws of the State of Oregon, USA, without regard to its conflict-of-laws rules, and any dispute goes to the state and federal courts located in Oregon.",
@@ -5190,7 +5190,7 @@
      "level": 2,
      "p": [
       "We may change these terms; the “Last updated” date above changes with them, and a change applies to scans started after it is published. These terms sit alongside the Gully Labs Terms of Service, which cover everything else about the app. They are governed by the laws of the State of Oregon, USA, and any dispute goes to the state and federal courts located in Oregon, except where consumer law gives you the right to bring a claim where you live. You must be at least 18 years old to run a scan.",
-      "Questions: Gully Labs LLC, Oregon, USA,."
+      "Questions: Gully Labs LLC, Oregon, USA, team@gullylabs.xyz."
      ],
      "list": [],
      "links": [
@@ -5233,7 +5233,7 @@
      "level": 2,
      "p": [
       "You pay through a Gully Pay invoice, in crypto, from your own wallet. Blockchain payments are final and cannot be charged back.",
-      "A check works within fixed limits. It says what it could not read and can finish partial. A paid check that fails gives you a credit for one free re-run instead of an on-chain refund. If you think something went wrong, write to.",
+      "A check works within fixed limits. It says what it could not read and can finish partial. A paid check that fails gives you a credit for one free re-run instead of an on-chain refund. If you think something went wrong, write to team@gullylabs.xyz.",
       "Paying buys the work, never a better result: nobody can pay to change what a map or a check finds.",
       "Anyone with a report’s link can read it. You decide who you share it with."
      ],
@@ -5255,7 +5255,7 @@
      "h": "Labels and clusters can be wrong",
      "level": 2,
      "p": [
-      "Wallet labels (exchanges, pools, routers, lockers, burn addresses and the like) come from public name tags and our own lists, and can be missing, out of date or wrong. Clusters are drawn from transfers and shared funders: two wallets in one cluster are linked on chain, which does not prove one person controls them. A label, a cluster or a flag is a signal, not a statement about anyone’s identity or intent. If a label about your address is wrong, tell us at and we will look at it."
+      "Wallet labels (exchanges, pools, routers, lockers, burn addresses and the like) come from public name tags and our own lists, and can be missing, out of date or wrong. Clusters are drawn from transfers and shared funders: two wallets in one cluster are linked on chain, which does not prove one person controls them. A label, a cluster or a flag is a signal, not a statement about anyone’s identity or intent. If a label about your address is wrong, tell us at team@gullylabs.xyz and we will look at it."
      ],
      "list": [],
      "links": [],
@@ -5296,7 +5296,7 @@
      "level": 2,
      "p": [
       "HolderMaps is provided “as is”, with no warranty that a map, label or check is complete or correct. The disclaimers, the cap on liability and the indemnity in the Gully Labs Terms apply to HolderMaps. These terms are governed by the laws of the State of Oregon, USA, and any dispute goes to the state and federal courts located in Oregon, except where consumer law gives you the right to bring a claim where you live.",
-      "We may update these terms; the “Last updated” date above changes with them. Questions: Gully Labs LLC, Oregon, USA,."
+      "We may update these terms; the “Last updated” date above changes with them. Questions: Gully Labs LLC, Oregon, USA, team@gullylabs.xyz."
      ],
      "list": [],
      "links": [],
@@ -5310,7 +5310,7 @@
      "h": "Who we are",
      "level": 2,
      "p": [
-      "Gully Labs LLC, based in Oregon, USA (“we”), runs HolderMaps and is responsible for the data it collects. Questions or requests:."
+      "Gully Labs LLC, based in Oregon, USA (“we”), runs HolderMaps and is responsible for the data it collects. Questions or requests: team@gullylabs.xyz."
      ],
      "list": [],
      "links": [],
@@ -5371,7 +5371,7 @@
      "h": "Your rights",
      "level": 2,
      "p": [
-      "Wherever you live, you can ask us to tell you what we hold about you, give you a copy, correct it or delete it: write to. We can’t delete anything that is on a public blockchain. Depending on where you live, you may also complain to your data protection authority. You must be at least 18 years old to use HolderMaps."
+      "Wherever you live, you can ask us to tell you what we hold about you, give you a copy, correct it or delete it: write to team@gullylabs.xyz. We can’t delete anything that is on a public blockchain. Depending on where you live, you may also complain to your data protection authority. You must be at least 18 years old to use HolderMaps."
      ],
      "list": [],
      "links": [],
@@ -5381,7 +5381,7 @@
      "h": "Changes and questions",
      "level": 2,
      "p": [
-      "We may update this policy; the “Last updated” date above changes with it, and for a material change we say so on the site. Questions, requests or complaints: Gully Labs LLC, Oregon, USA,."
+      "We may update this policy; the “Last updated” date above changes with it, and for a material change we say so on the site. Questions, requests or complaints: Gully Labs LLC, Oregon, USA, team@gullylabs.xyz."
      ],
      "list": [],
      "links": [],
