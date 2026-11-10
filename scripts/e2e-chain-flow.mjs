@@ -22,7 +22,7 @@ if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true })
 const USER = { sub: 'sub-e2e', address: '0x' + 'a'.repeat(40) }
 const gid = await fakeGullyId({ 'tok-e2e': USER })
 const pay = await fakeGullyPay()
-for (const k of ['MAINNET_ORDERS', 'MAINNET_PRICE_CONFIRMED', 'CHAIN_GULLYPAY_MODE']) delete process.env[k]
+for (const k of ['PRICE_CONFIRMED', 'MAINNET_ORDERS', 'MAINNET_PRICE_CONFIRMED', 'CHAIN_GULLYPAY_MODE']) delete process.env[k]
 // The journey below needs a charge. The default of $0, with no Gully Pay settings, has its own journey at the end.
 Object.assign(process.env, { CHAIN_TESTNET_TEST_CHARGE_USD: '1', GULLY_ID_ISSUER: gid.url, GULLYPAY_API_URL: pay.url, GULLYPAY_CHECKOUT_URL: pay.url, CHAIN_GULLYPAY_MERCHANT_ID: GP.merchantId, CHAIN_GULLYPAY_STORE_ID: GP.storeId, CHAIN_GULLYPAY_API_KEY: GP.apiKey, CHAIN_GULLYPAY_WEBHOOK_SECRET: GP.secret })
 const { admin, base: BASE } = await bootServer({ port: PORT })
@@ -68,12 +68,25 @@ async function toPay(page, chainId, { width, first = false, due = '$1.00', tag =
 
   await page.getByTestId('tier-testnet').waitFor()
   if (first) {
-    check(`${width} step 2: mainnet says Talk to us`, (await page.getByTestId('tier-mainnet-talk').getByRole('link', { name: /Talk to us/ }).count()) === 1 && (await page.getByTestId('tier-mainnet').count()) === 0)
-    check(`${width} step 2: the Talk to us link opens a new tab`, (await page.getByTestId('tier-mainnet-talk').getByRole('link').getAttribute('target')) === '_blank')
+    const INC = ['explorer', 'bridge', 'faucet', 'rpc', 'verify', 'monitoring', 'multisig', 'aa']
+    check(`${width} step 2: the standard bundle is listed, each line set up by our team`, (await page.locator('[data-testid^="included-"]').count()) === INC.length && (await Promise.all(INC.map((i) => page.getByTestId(`included-${i}`).innerText()))).every((x) => x.includes('Set up by our team')))
+    check(`${width} step 2: a planned add-on cannot be picked`, await page.getByTestId('addon-usdc-gas').isDisabled())
+    await page.getByTestId('tier-mainnet').click()
+    await page.getByTestId('mainnet-soon').waitFor()
+    check(`${width} step 2: mainnet says coming soon, and Next waits`, (await page.getByTestId('mainnet-soon').innerText()).includes('Mainnet chains: coming soon') && (await page.getByTestId('next').isDisabled()))
+    await page.getByTestId('mainnet-email').fill(`soon-${width}@example.com`)
+    await page.getByTestId('mainnet-notify').click()
+    await page.getByTestId('mainnet-notified').waitFor()
+    check(`${width} step 2: notify me records the email on the order system`, (await adminCall('/api/admin/chain-orders')).notify.some((x) => x.email === `soon-${width}@example.com`))
+    await shot(page, `${tag}2-mainnet-${width}`)
+    await page.getByTestId('tier-testnet').click()
+    await page.getByTestId('licence-note').waitFor()
     check(`${width} step 2: the Nitro licence note shows`, /Arbitrum One, Arbitrum Nova or Arbitrum Sepolia/.test(await page.getByTestId('licence-note').innerText()))
     check(`${width} step 2: no price comparison on the page`, !/conduit|caldera/i.test(await page.locator('main').innerText()))
     check(`${width} live price: starts on the free testnet`, (await page.getByTestId('price-headline').innerText()) === 'Free for 30 days')
     check(`${width} live price: due today is ${due}`, (await page.getByTestId('due-today').innerText()) === due)
+    check(`${width} live price: no price after the trial`, /never charged without a checkout you start/.test(await page.getByTestId('price-after').innerText()) && !/212|a month|invoiced/.test(await page.getByTestId('price-summary').innerText()))
+    check(`${width} your chain: the diagram lists the bundle, each marked`, (await page.locator('[data-testid^="tile-"]').count()) === 8 && (await page.locator('[data-testid^="tile-"][data-delivery="team"]').count()) === 8)
     const before = await page.getByTestId('price-summary').innerText()
     await page.getByTestId('addon-gully-core').click()
     await page.getByTestId('price-summary').getByText('0.30% of every trade').first().waitFor()
@@ -81,7 +94,7 @@ async function toPay(page, chainId, { width, first = false, due = '$1.00', tag =
     await shot(page, `${tag}2-plan-${width}`)
   }
   await next(page)
-  await page.getByRole('heading', { name: 'Check your order' }).waitFor()
+  await page.getByRole('heading', { name: 'Check your request' }).waitFor()
   if (first) await shot(page, `${tag}3-price-${width}`)
   await next(page)
 
@@ -116,6 +129,8 @@ async function layoutChecks(width) {
   check(`${width} layout: a name over 40 characters says so inline and blocks Next`, (await page.getByText('Too long: keep it to 40').count()) >= 1 && (await page.getByTestId('next').isDisabled()))
   await page.getByTestId('chain-name').fill('Acme Chain')
   await page.getByTestId('chain-diagram').waitFor()
+  await page.getByTestId('tile-explorer').waitFor()
+  check(`${width} layout: the title promises the setup time`, (await page.locator('h1').innerText()) === 'Request a testnet chain' && /within 3 business days/.test(await page.getByTestId('setup-promise').innerText()))
   check(`${width} layout: the chain diagram names the chain, its parent and the included services`, (await page.getByTestId('chain-diagram').innerText()).includes('Acme Chain') && (await page.getByTestId('chain-diagram').innerText()).includes('Arbitrum Sepolia') && (await page.getByTestId('tile-explorer').count()) === 1)
   await page.getByTestId('chain-id').fill('485590')
   await page.getByText('That chain id is taken').first().waitFor()
@@ -159,6 +174,7 @@ for (const width of [390, 1440]) {
   await page.goto(`${BASE}/create-chain/orders/${id}?checkout=cancelled`)
   await status(page).waitFor()
   check(`${width} order: Awaiting payment after a closed checkout`, (await status(page).innerText()) === 'Awaiting payment')
+  check(`${width} order: says updates appear on this page, and no price after the trial`, /Updates appear on this page/.test(await page.getByTestId('order-updates').innerText()) && !/212|invoiced/.test(await page.locator('main').innerText()))
   await page.getByText('Nothing was charged. You can pay when you are ready.').waitFor()
   await shot(page, `6-order-awaiting-${width}`)
   await noScroll(page, `${width} order page`)
@@ -240,6 +256,8 @@ for (const width of [390, 1440]) {
   await page.waitForURL('**/create-chain/orders/**')
   await status(page).waitFor()
   check(`${width} default: the order is recorded as Received`, (await status(page).innerText()) === 'Received')
+  check(`${width} default: the timeline reads Received, Setting up, Live`, (await page.getByTestId('order-progress').innerText()).replace(/\s+/g, ' ').includes('Received') && (await page.getByTestId('stage-setting_up').count()) === 1 && (await page.getByTestId('stage-live').count()) === 1)
+  check(`${width} default: the order page lists the bundle with who sets it up`, (await page.locator('[data-testid^="tile-"][data-delivery="team"]').count()) >= 8)
   check(`${width} default: Gully Pay was never called`, pay.sessions.length === before)
   check(`${width} default: the page does not call it paid`, !/\bPaid\b/.test(await page.locator('main').innerText()))
   await shot(page, `free-order-${width}`)

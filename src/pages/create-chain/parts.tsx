@@ -1,9 +1,9 @@
-import { Activity, ArrowLeftRight, Droplets, KeyRound, Layers, Search, Server, Shield, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowLeftRight, BadgeCheck, Coins, CreditCard, Droplets, Fuel, KeyRound, Layers, Search, Server, Shield, Shuffle, Wallet, type LucideIcon } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { toastError } from '../../components/ui/toast'
 import { gullyIdAccessToken } from '../developers/gullyId'
-import { gullyExchange, hasGullySession, usd, type Quote } from './chainApi'
+import { deliveryLabel, gullyExchange, hasGullySession, usd, type Quote, type QuoteLine } from './chainApi'
 
 /* The pieces the wizard and the order page share. The site's own header and footer come from the Layout the routes sit in
    (src/router.tsx); this file adds the Gully ID chip to that header, the page frame, the chain diagram and the price card. */
@@ -71,10 +71,16 @@ export function GullyIdChip() {
   )
 }
 
-export const ADDON_ICONS: Record<string, LucideIcon> = { explorer: Search, bridge: ArrowLeftRight, faucet: Droplets, rpc: Server, monitoring: Activity, 'gully-core': Layers, multisig: Shield }
+export const ADDON_ICONS: Record<string, LucideIcon> = { explorer: Search, bridge: ArrowLeftRight, faucet: Droplets, rpc: Server, verify: BadgeCheck, monitoring: Activity, multisig: Shield, aa: Wallet, 'gully-core': Layers, paymaster: Fuel, pay: CreditCard, hyperlane: Shuffle, 'usdc-gas': Coins }
+
+/** The lines of a quote as the chain diagram lists them: the bundle, then the add-ons, each with how it is delivered. */
+export const quoteServices = (q: Quote | null) => [...(q?.included ?? []), ...(q?.addons ?? [])].map((a) => ({ id: a.id, label: a.name, note: deliveryLabel(a.delivery), delivery: a.delivery ?? 'team' }))
+
+/** An add-on's terms in the price card. */
+export const termsOf = (a: QuoteLine) => [a.fee, a.billing].filter(Boolean).join(' · ') || (a.usd === null ? 'Priced with you' : a.usd === 0 ? 'Included' : `$${a.usd}/month`)
 
 /** One chain, drawn: it settles to its parent chain (batches flow up), and the services it gets sit under it as tiles. */
-export function ChainDiagram({ name, chainId, logo, parent, services }: { name: string; chainId: string; logo: string | null; parent: string; services: { id: string; label: string; note: string }[] }) {
+export function ChainDiagram({ name, chainId, logo, parent, services }: { name: string; chainId: string; logo: string | null; parent: string; services: { id: string; label: string; note: string; delivery?: string }[] }) {
   const title = name.trim() || 'Your chain'
   return (
     <figure className="m-0 flex flex-col gap-3" aria-label={`${title} settles to ${parent}`} data-testid="chain-diagram">
@@ -101,15 +107,15 @@ export function ChainDiagram({ name, chainId, logo, parent, services }: { name: 
           {chainId ? `Chain id ${chainId}` : 'Chain id not set'}
         </text>
       </svg>
-      <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0" aria-label="Services on your chain">
+      <ul className="m-0 grid list-none grid-cols-1 gap-1.5 p-0" aria-label="Services on your chain">
         {services.map((s) => {
           const Icon = ADDON_ICONS[s.id] ?? Layers
           return (
-            <li key={s.id} className="gl-tile flex min-w-0 items-center gap-2 rounded-input border border-line bg-bg px-2.5 py-2" data-testid={`tile-${s.id}`}>
+            <li key={s.id} className="gl-tile flex min-w-0 items-center gap-2 rounded-input border border-line bg-bg px-2.5 py-2" data-testid={`tile-${s.id}`} data-delivery={s.delivery}>
               <Icon size={16} className="shrink-0 text-gold" aria-hidden />
-              <span className="flex min-w-0 flex-col leading-tight">
-                <span className="truncate text-[13px] font-medium text-ink">{s.label}</span>
-                <span className="truncate text-[11px] text-faint">{s.note}</span>
+              <span className="flex min-w-0 flex-1 items-baseline justify-between gap-2 leading-tight">
+                <span className="min-w-0 text-[13px] font-medium text-ink">{s.label}</span>
+                <span className={`shrink-0 text-[11px] ${s.note === 'Automatic' ? 'text-green' : 'text-faint'}`}>{s.note}</span>
               </span>
             </li>
           )
@@ -133,17 +139,25 @@ export function PriceSummary({ quote, children }: { quote: Quote | null; childre
             <p className="m-0 text-[20px] leading-tight font-semibold text-ink" data-testid="price-headline">
               {quote.headline}
             </p>
-            <p className="m-0 text-[13px] text-muted">{quote.after}</p>
+            <p className="m-0 text-[13px] text-muted" data-testid="price-after">
+              {quote.after}
+            </p>
           </>
         )}
       </div>
       {quote && (
         <>
           <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-[13px]">
+            {!!quote.included?.length && (
+              <li className="flex items-baseline justify-between gap-3">
+                <span className="text-muted">Standard bundle, {quote.included.length} services</span>
+                <span className="text-right text-ink-2">Included</span>
+              </li>
+            )}
             {quote.addons.map((a) => (
               <li key={a.id} className="flex items-baseline justify-between gap-3">
                 <span className="text-muted">{a.name}</span>
-                <span className="text-right text-ink-2">{a.fee ?? (a.usd === null ? 'Priced with you' : a.usd === 0 ? 'Included' : `$${a.usd}/month`)}</span>
+                <span className="text-right text-ink-2">{termsOf(a)}</span>
               </li>
             ))}
           </ul>

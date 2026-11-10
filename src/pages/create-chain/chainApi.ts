@@ -2,20 +2,30 @@ import { api } from '../developers/api'
 
 /* Create a chain: the types and calls shared by the wizard and the order page (server/chain-orders.mjs). */
 
+export type Delivery = 'team' | 'automatic'
+
+/** One item of the standard bundle or an add-on (server/chains-plans.mjs BUNDLE). */
 export interface Addon {
   id: string
   name: string
   icon: string
   body: string
-  standard: boolean
+  delivery: Delivery
+  status: 'available' | 'planned'
   testnetOnly: boolean
   fee: string | null
+  billing: string | null
 }
+
+/** How a line is delivered, in the words the page uses. */
+export const deliveryLabel = (d: Delivery | undefined) => (d === 'automatic' ? 'Automatic' : 'Set up by our team')
 
 export interface Offer {
   flags: { testnetOrders: boolean; mainnetOrders: boolean }
   checkout: { enabled: boolean; mode: 'test' | 'live' }
   freeDays: number
+  setupDays: number
+  included: Addon[]
   addons: Addon[]
   parents: Record<Tier, { id: number; name: string }[]>
   gasTokens: { id: string; name: string }[]
@@ -25,13 +35,25 @@ export interface Offer {
 
 export type Tier = 'testnet' | 'mainnet'
 
+export interface QuoteLine {
+  id: string
+  name: string
+  usd: number | null
+  fee: string | null
+  billing?: string | null
+  delivery?: Delivery
+}
+
 export interface Quote {
   tier: Tier
-  addons: { id: string; name: string; usd: number | null; fee: string | null }[]
+  included?: QuoteLine[]
+  addons: QuoteLine[]
   dueCents: number
   testCharge: boolean
   freeDays: number
-  monthlyUsd: number
+  setupDays?: number
+  priceConfirmed?: boolean
+  monthlyUsd: number | null
   sequencerProfitPct: number | null
   daAtCost: boolean
   priceWithUs: boolean
@@ -56,7 +78,7 @@ export interface Order {
   email: string | null
   createdAt: string
   paidAt: string | null
-  history: { at: string; status: OrderStatus; by: string; note: string | null }[]
+  history: { at: string; status: OrderStatus; note: string | null }[]
   payment: { mode: 'test' | 'live'; testCharge: boolean; dueCents: number; lastError: string | null; sessionOpen: boolean; onHold: boolean }
 }
 
@@ -66,6 +88,8 @@ export const usd = (cents: number) => `$${(cents / 100).toLocaleString('en-US', 
 
 export const getOffer = () => api<Offer>('/api/chain-orders/offer')
 export const getQuote = (tier: Tier, addons: string[]) => api<{ quote: Quote }>(`/api/chain-orders/quote?tier=${tier}&addons=${encodeURIComponent(addons.join(','))}`)
+/** Mainnet: records an email to tell when it opens. */
+export const notifyMainnet = (email: string) => api<{ ok: boolean; already?: boolean }>('/api/chain-orders/notify', { method: 'POST', body: { email } })
 export const checkChainId = (id: string) => api<{ free: boolean; reason?: string }>(`/api/chain-orders/check?chainId=${encodeURIComponent(id)}`)
 export const getOrder = (id: string) => api<{ order: Order }>(`/api/chain-orders/${encodeURIComponent(id)}`)
 export const startCheckout = (id: string) => api<{ payUrl: string }>(`/api/chain-orders/${encodeURIComponent(id)}/checkout`, { method: 'POST' })
