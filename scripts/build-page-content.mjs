@@ -49,13 +49,20 @@ const JSX_PAGES = {
   '/legal/merchant-terms': 'src/pages/legal/MerchantTerms.tsx',
   '/legal/scan-terms': 'src/pages/legal/ScanTerms.tsx',
 }
+/** holdermaps.xyz pages whose copy is read from their own TSX: path -> [source file, the page's component]. Both
+    policies live in one file, so each is read from its own component (server/seo.mjs serves them as
+    `holdermaps:<path>`). */
+const HM_JSX_PAGES = {
+  '/terms': ['src/holdermaps/HmLegal.tsx', 'HmTermsPage'],
+  '/privacy': ['src/holdermaps/HmLegal.tsx', 'HmPrivacyPage'],
+}
 
 const link = (d) => [d.to ?? d.href, d.label]
 const sec = (h, { p = [], list = [], links = [], qa = [], level = 2 } = {}) => ({ h, level, p, list, links, qa })
 /** A page's own headline (its h1, when it is plain text) and sentences, as sections. Links to this site's API are
     not page links. */
-function fromJsx(file) {
-  const { h1, sections: s } = sections(fileOutline(path.join(ROOT, file)))
+function fromJsx(file, within = null) {
+  const { h1, sections: s } = sections(fileOutline(path.join(ROOT, file), within))
   return { ...(h1 ? { h1 } : {}), sections: s.map((x) => sec(x.h, { level: x.level ?? 2, p: x.p, links: x.links.filter(([href]) => !href.startsWith('/api/')) })) }
 }
 
@@ -116,6 +123,7 @@ export async function build() {
   /* ---- page bodies ---- */
   const body = {}
   for (const [p, file] of Object.entries(JSX_PAGES)) body[p] = fromJsx(file)
+  for (const [p, [file, within]] of Object.entries(HM_JSX_PAGES)) body[`holdermaps:${p}`] = fromJsx(file, within)
 
   // /analytics: the page is drawn from one data object (ANALYTICS in src/pages/Products.tsx); the same object here.
   const an = constLiteral(path.join(ROOT, JSX_PAGES['/analytics']), 'ANALYTICS')
@@ -228,7 +236,8 @@ export async function build() {
 
   // Nothing may be empty, repeated or left with a runtime gap.
   for (const [p, b] of Object.entries(body)) {
-    if (!meta[p]) throw new Error(`${p}: a page body with no title and description in src/content/seoPages.ts`)
+    // holdermaps:<path> bodies take their title and description from server/seo.mjs (HM_LEGAL), not seoPages.ts.
+    if (!meta[p] && !p.startsWith('holdermaps:')) throw new Error(`${p}: a page body with no title and description in src/content/seoPages.ts`)
     b.sections = b.sections.filter((s) => s.p.length || s.list.length || s.links.length || s.qa.length)
     if (!b.sections.length) throw new Error(`${p}: nothing could be read from its source`)
   }

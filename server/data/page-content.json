@@ -4250,11 +4250,11 @@
      "level": 3,
      "p": [
       "Review. Validate. Defend.",
-      "AI security scans of smart contracts on seven mainnets and Gully Chain, published reports, contract monitors and human Security Reviews. A scan is not an audit."
+      "AI security scans of any smart contract on seven mainnets and Gully Chain, reports you can publish at a public link, the Gully Score and contract monitors, and human Security Reviews quoted on request. A scan is not an audit."
      ],
      "list": [
       "AI Security Scan",
-      "Published reports",
+      "Publish a report at a public link",
       "Gully Score and contract monitors"
      ],
      "links": [
@@ -5199,6 +5199,192 @@
        "Terms of Service"
       ]
      ],
+     "qa": []
+    }
+   ]
+  },
+  "holdermaps:/terms": {
+   "sections": [
+    {
+     "h": "These terms",
+     "level": 2,
+     "p": [
+      "Where these terms and the Gully Labs Terms differ, these win for HolderMaps. How we handle data on HolderMaps is in the",
+      ". You must be at least 18 years old to use HolderMaps."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Using HolderMaps",
+     "level": 2,
+     "p": [
+      "New maps are limited per IP address, and the API, embed and widget follow the limits in the Gully Labs Terms. Don’t get around them or scrape the site beyond what the API offers.",
+      "You may embed a map or the widget on your own pages as the docs describe. Keep the HolderMaps attribution and the link back, and don’t change what a map says.",
+      "A map is a snapshot read from the chain at a moment in time. It is cached for a few minutes and can be out of date by the time you read it."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "The Deep check",
+     "level": 2,
+     "p": [
+      "You pay through a Gully Pay invoice, in crypto, from your own wallet. Blockchain payments are final and cannot be charged back.",
+      "A check works within fixed limits. It says what it could not read and can finish partial. A paid check that fails gives you a credit for one free re-run instead of an on-chain refund. If you think something went wrong, write to.",
+      "Paying buys the work, never a better result: nobody can pay to change what a map or a check finds.",
+      "Anyone with a report’s link can read it. You decide who you share it with."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Where the data comes from",
+     "level": 2,
+     "p": [
+      "Every map is built from public blockchain data that we read from third parties: public RPC nodes (including dRPC), Blockscout, Moralis, Solana RPC nodes, the public log APIs of the launchpads we cover, and Gully Chain’s own nodes and indexer. They can be late, incomplete or wrong, and a source can stop answering; when a source fails, the map says so instead of guessing. We don’t control these services."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Labels and clusters can be wrong",
+     "level": 2,
+     "p": [
+      "Wallet labels (exchanges, pools, routers, lockers, burn addresses and the like) come from public name tags and our own lists, and can be missing, out of date or wrong. Clusters are drawn from transfers and shared funders: two wallets in one cluster are linked on chain, which does not prove one person controls them. A label, a cluster or a flag is a signal, not a statement about anyone’s identity or intent. If a label about your address is wrong, tell us at and we will look at it."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Not financial advice",
+     "level": 2,
+     "p": [
+      "HolderMaps shows information only. It is not investment, financial, legal or tax advice, and not a recommendation to buy, sell or hold any token. Crypto assets are risky and can lose all their value. Do your own research and decide for yourself."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Gully Chain tokens",
+     "level": 2,
+     "p": [
+      "HolderMaps supports tokens on Gully Chain, Gully Labs’ own chain. Gully Chain is a testnet today: its tokens and balances have no monetary value, and the chain can be reset. A map of a Gully Chain token is as informational as any other."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Acceptable use",
+     "level": 2,
+     "p": [
+      "Don’t use HolderMaps to harass, threaten or dox anyone, to run scams or market manipulation, or to present a map as proof of wrongdoing by a named person. Don’t overload or attack the service. The acceptable use rules of the Gully Labs Terms apply too."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Liability, law and contact",
+     "level": 2,
+     "p": [
+      "HolderMaps is provided “as is”, with no warranty that a map, label or check is complete or correct. The disclaimers, the cap on liability and the indemnity in the Gully Labs Terms apply to HolderMaps. These terms are governed by the laws of the State of Oregon, USA, and any dispute goes to the state and federal courts located in Oregon, except where consumer law gives you the right to bring a claim where you live.",
+      "We may update these terms; the “Last updated” date above changes with them. Questions: Gully Labs LLC, Oregon, USA,."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    }
+   ]
+  },
+  "holdermaps:/privacy": {
+   "sections": [
+    {
+     "h": "Who we are",
+     "level": 2,
+     "p": [
+      "Gully Labs LLC, based in Oregon, USA (“we”), runs HolderMaps and is responsible for the data it collects. Questions or requests:."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "What we collect",
+     "level": 2,
+     "p": [
+      "Lookups. The tokens you map are public chain data. To show the maps opened most today we count one view per visitor per token per day, using a hash of your IP address made with a random key that is held in memory only and replaced every day; the counts are reset each UTC day. New maps are limited per IP address for a minute, in memory only. We don’t store your IP address.",
+      "Deep checks. For a check we keep the chain and token, its price, its status, the Gully Pay invoice that paid for it and the report, under an id that is hard to guess. To count free checks, re-run credits and duplicates, a check is tied to your Gully Labs workspace when you are signed in, and otherwise to a shortened SHA-256 hash of your IP address. That hash is not salted, so it is pseudonymous: anyone who knows the address can compute it.",
+      "Payments. A Deep check is paid on a public blockchain: the transaction, the paying address and the amount are public and permanent. We record them to confirm the payment.",
+      "Your browser remembers the ids of the last 20 checks you started, on your device only. HolderMaps sets no cookies."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Analytics",
+     "level": 2,
+     "p": [
+      "HolderMaps loads Gully Analytics, our own self-hosted fork of the open-source Umami analytics. It sets no cookies; a visit is grouped by a hash of the site, your IP address, your browser and a salt that changes every month, and your IP address is used to work out your country and city, then dropped. It records the page, referrer, browser, device and language. To opt out, set the local storage value umami.disabled to 1 for holdermaps.xyz. The embed and widget frames load no analytics."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Who else sees data",
+     "level": 2,
+     "p": [
+      "Cloudflare carries all traffic to holdermaps.xyz, so it sees your IP address and requests.",
+      "OVHcloud hosts the server HolderMaps and its data run on.",
+      "Blockchain data providers: to build a map we send the token’s address, never anything about you, to public RPC nodes (including dRPC), Blockscout, Moralis, Solana RPC nodes, launchpad log APIs and Gully Chain’s own nodes.",
+      "Gully Pay: a paid Deep check is a Gully Pay invoice on pay.gullylabs.xyz, which records the payment as above.",
+      "We don’t sell personal data or share it for advertising."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "How long we keep it",
+     "level": 2,
+     "p": [
+      "View counts: reset every day, Los Angeles time; the key that hashes visitors is never written down.",
+      "Per-IP limits: in memory only, for about a minute.",
+      "Deep checks and their reports: a cancelled check is deleted after 30 days; others are not deleted automatically today. Ask us and we delete yours.",
+      "Backups of the server’s data: 7 days, on the same server.",
+      "On-chain payments: permanent, on the public blockchain; nobody can delete them."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Your rights",
+     "level": 2,
+     "p": [
+      "Wherever you live, you can ask us to tell you what we hold about you, give you a copy, correct it or delete it: write to. We can’t delete anything that is on a public blockchain. Depending on where you live, you may also complain to your data protection authority. You must be at least 18 years old to use HolderMaps."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Changes and questions",
+     "level": 2,
+     "p": [
+      "We may update this policy; the “Last updated” date above changes with it, and for a material change we say so on the site. Questions, requests or complaints: Gully Labs LLC, Oregon, USA,."
+     ],
+     "list": [],
+     "links": [],
      "qa": []
     }
    ]

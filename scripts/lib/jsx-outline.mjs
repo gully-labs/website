@@ -154,16 +154,26 @@ export function outlineOf(root) {
   return out
 }
 
-/** Every top-level JSX tree of a source file (the page and its helper components), in source order. */
-export function fileOutline(file) {
+/** Every top-level JSX tree of a source file (the page and its helper components), in source order. With `within`,
+    only the trees inside the function (declaration or `const X = () =>`) of that name: a file that holds two pages
+    (src/holdermaps/HmLegal.tsx) is read one page at a time. */
+export function fileOutline(file, within = null) {
   const sf = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   const insideJsx = (n) => {
     for (let a = n.parent; a; a = a.parent) if (ts.isJsxElement(a) || ts.isJsxFragment(a) || ts.isJsxSelfClosingElement(a)) return true
     return false
   }
+  const inside = (n) => {
+    if (!within) return true
+    for (let a = n.parent; a; a = a.parent) {
+      if (ts.isFunctionDeclaration(a) && a.name?.getText() === within) return true
+      if (ts.isVariableDeclaration(a) && a.name.getText() === within) return true
+    }
+    return false
+  }
   const roots = []
   const walk = (n) => {
-    if ((ts.isJsxElement(n) || ts.isJsxFragment(n)) && !insideJsx(n)) roots.push(n)
+    if ((ts.isJsxElement(n) || ts.isJsxFragment(n)) && !insideJsx(n) && inside(n)) roots.push(n)
     ts.forEachChild(n, walk)
   }
   walk(sf)
