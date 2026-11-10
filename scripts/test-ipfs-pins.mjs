@@ -4,6 +4,7 @@
 // queue for media, takedown (unpin, purge, denylist, re-pin refused) and the replica's sync routes.
 //   node --test scripts/test-ipfs-pins.mjs
 import assert from 'node:assert/strict'
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import http from 'node:http'
 import os from 'node:os'
@@ -69,14 +70,15 @@ const kubo = http.createServer((req, res) => {
         for (const c of arg) if (!kuboState.pins.has(c)) kuboState.blocks.delete(c)
         return ok('')
       case 'add': {
-        kuboState.added++
-        const c = `bafkreiupload${"abcdefghijklmnopqrstuvwxyz"[kuboState.added]}aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`
-        kuboState.blocks.add(c)
+        const c = 'bafkrei' + crypto.createHash('sha256').update(body.toString('latin1').replace(/-{2,}[\w-]+/g, '')).digest('hex').replace(/[0-9]/g, (d) => 'qrstuvwxyz'[d]).slice(0, 52)
+        if (u.searchParams.get('only-hash') !== 'true') (kuboState.added++, kuboState.blocks.add(c))
         return ok(JSON.stringify({ Name: 'file', Hash: c, Size: String(body.length) }) + '\n')
       }
       case 'dag/import':
         kuboState.pins.add(CAR_ROOT)
         return ok(JSON.stringify({ Root: { Cid: { '/': CAR_ROOT }, PinErrorMsg: '' } }) + '\n')
+      case 'block/stat':
+        return kuboState.blocks.has(arg[0]) ? ok({ Key: arg[0], Size: 1 }) : (res.writeHead(500), res.end(JSON.stringify({ Message: 'block not found locally' })))
       case 'swarm/connect':
         return ok({ Strings: ['ok'] })
       default:
@@ -274,6 +276,16 @@ test('takedown: every record removed, unpinned, denylisted; re-pinning is refuse
   await until(async () => (await statusOf(s2.requestid, KEY_OTHER)) === 'pinned')
   assert.equal((await mod.ipfsTakedown(CID_GULLY, 't', 'admin')).unpinned, false)
   assert.ok(kuboState.pins.has(CID_GULLY))
+})
+
+test('a block the node held before (unpinned, put by another product) is never purged when a customer unpins it', async () => {
+  const RAW = 'bafkreirawblockputbysocialaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+  kuboState.blocks.add(RAW)
+  const s = await (await psa('/pins', { method: 'POST', body: { cid: RAW } })).json()
+  await until(async () => (await statusOf(s.requestid)) === 'pinned')
+  assert.equal((await psa(`/pins/${s.requestid}`, { method: 'DELETE' })).status, 202)
+  assert.ok(!kuboState.pins.has(RAW), 'unpinned')
+  assert.ok(kuboState.blocks.has(RAW), 'but the block stays')
 })
 
 test('replica sync: pinset and report need the sync token; the pinset leaves out taken-down CIDs', async () => {

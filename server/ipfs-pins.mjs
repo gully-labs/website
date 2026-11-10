@@ -209,8 +209,20 @@ async function releaseCid(cid) {
   } catch {
     /* not pinned (failed early): purge what was fetched anyway */
   }
-  await purge(cid)
+  // Blocks the node held before a customer asked for them (other products put raw blocks without pinning) are never
+  // purged: only what a customer's own pin brought in is removed.
+  if (!recs.some((r) => r.localBefore || r.noPurge)) await purge(cid)
   return true
+}
+
+/** Whether the node holds a block locally right now (no network). */
+async function hasLocal(cid) {
+  try {
+    await kubo(`block/stat?arg=${encodeURIComponent(cid)}&offline=true`, { timeout: 5_000 })
+    return true
+  } catch {
+    return false
+  }
 }
 
 /** Sniffs a media type from the first bytes: images and video go to the review queue. */
@@ -267,6 +279,7 @@ function fail(r, reason) {
 /** Pins one queued record: size checked while the DAG is walked (stopped past the account's room), then pinned. */
 async function pinOne(r) {
   if (denied(r.cid)) return fail(r, 'This CID was taken down and cannot be pinned here.')
+  r.localBefore = await hasLocal(r.cid)
   r.preexisting = (await isPinnedOnNode(r.cid)) && !load().pins.some((x) => x !== r && x.cid === r.cid && LIVE.has(x.status) && !x.preexisting)
   for (const o of (r.origins ?? []).slice(0, 5)) await kubo(`swarm/connect?arg=${encodeURIComponent(o)}`, { timeout: 10_000 }).catch(() => {})
   const plan = ipfsPlanOf(r.owner)
@@ -389,6 +402,7 @@ export async function upload(req, res, url, owner, keyId) {
     const car = /application\/vnd\.ipld\.car/i.test(String(req.headers['content-type'] ?? ''))
     const name = String(url.searchParams.get('name') ?? req.headers['x-file-name'] ?? '').slice(0, 255) || null
     let cid
+    let localBefore = false
     let pinnedBefore = null // a CAR import pins its root at once: what the node held before decides `preexisting`
     const fd = new FormData()
     fd.append('file', new Blob([body]), name ?? (car ? 'upload.car' : 'file'))
@@ -403,6 +417,11 @@ export async function upload(req, res, url, owner, keyId) {
         }
         cid = roots[0]
       } else {
+        // The CID first (only-hash stores nothing), so a block the node already held is never purged on unpin later.
+        const fd0 = new FormData()
+        fd0.append('file', new Blob([body]), name ?? 'file')
+        const pre0 = lines(await kubo('add?cid-version=1&only-hash=true&quieter=true', { body: fd0, timeout: 120_000 })).at(-1)?.Hash
+        localBefore = validCid(pre0) ? await hasLocal(pre0) : true
         const out = lines(await kubo('add?cid-version=1&pin=false&quieter=true&wrap-with-directory=false', { body: fd, timeout: 300_000 }))
         cid = out.at(-1)?.Hash
       }
@@ -416,7 +435,7 @@ export async function upload(req, res, url, owner, keyId) {
       return err(res, 451, 'TAKEN_DOWN', 'This content was taken down and cannot be pinned here.')
     }
     if (!car) await kubo(`pin/add?arg=${encodeURIComponent(cid)}&recursive=true`, { timeout: 120_000 })
-    const r = addRecord(owner, keyId, { cid, name, origins: [], meta: null }, { status: 'pinned', bytes: body.length, pinnedAt: nowIso(), source: car ? 'car' : 'upload', preexisting: pre && !load().pins.some((x) => x.cid === cid && LIVE.has(x.status) && !x.preexisting) })
+    const r = addRecord(owner, keyId, { cid, name, origins: [], meta: null }, { status: 'pinned', bytes: body.length, pinnedAt: nowIso(), source: car ? 'car' : 'upload', localBefore, noPurge: car, preexisting: pre && !load().pins.some((x) => x.cid === cid && LIVE.has(x.status) && !x.preexisting) })
     queueReview(r, car ? null : sniff(body))
     noteDay(owner)
     save()
