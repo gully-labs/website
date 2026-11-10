@@ -11,7 +11,7 @@ import { Glance, Intro, L, LEGAL, LegalPage, link, Mail, P, S } from './kit'
    the scan's own terms at /legal/scan-terms), the swap's blocked countries (geo.mjs SWAP_BLOCKED, named in Section 4 and
    checked by scripts/test-legal.mjs), the testnet-only chain launch (chains-launch.mjs), the Telegram relay
    (telegram-relay.mjs) and the service hosts (hosts.mjs). Prices are never typed here: they live in plans.mjs and are
-   shown on /pricing and at checkout. Section ids are s1…s20: Gully AI's index (scripts/build-ask-index.mjs) cites them. */
+   shown on /pricing and at checkout. Section ids are s1…s21: Gully AI's index (scripts/build-ask-index.mjs) cites them. */
 
 export const TERMS_VERSION = LEGAL.updatedIso
 export const GOVERNING_LAW = LEGAL.law
@@ -338,6 +338,20 @@ export function TermsPage() {
               <b>Contact.</b> Questions, notices and requests: Gully Labs LLC, Oregon, USA, <Mail />, or /contact in @GullyLabsBot.
             </li>
           </L>
+        </S>
+        <S n={21} title="Gully IPFS pinning and content policy">
+          <P>
+            <b>21.1 What you pin.</b> Gully IPFS lets you pin content to IPFS with your API keys and upload it in the app. You keep the rights to what you pin and you give Gully Labs the permission it needs to store, copy (each pin is held on two of our servers) and serve it through ipfs.gullylabs.xyz and the IPFS network. Content on IPFS is public: anyone with its CID can fetch it, from us or from any other node that holds it.
+          </P>
+          <P>
+            <b>21.2 Content policy.</b> You will not pin or upload: anything illegal where you or we are; sexual content involving minors, which we report to the authorities; non-consensual intimate images; malware, phishing pages or content made to deceive people into giving up keys, funds or data; other people’s private or personal data without their consent; content that infringes copyright, trademarks or other rights, including licensed assets you may not redistribute; content that incites violence or harasses a person.
+          </P>
+          <P>
+            <b>21.3 Review and takedowns.</b> Uploaded and pinned images and video are queued for review. When content breaks this policy or the law, or a valid notice says it infringes, we take it down: it is unpinned from every Gully node, the gateway refuses its CID, and we may suspend the key or the account (Section 6). Removing a CID from Gully IPFS cannot remove copies other IPFS nodes hold. To report content or send a copyright notice, write to <Mail /> with the CID and the reason; we answer valid notices promptly and may tell the account holder.
+          </P>
+          <P>
+            <b>21.4 Limits.</b> Each plan has a storage size, a pin count and a file size (shown in the app and the docs). At a limit, new pins and uploads are refused; nothing you pinned is deleted to make room. We do not guarantee that a pin is kept forever: if your account ends (Section 6), its pins are removed. Keep your own copy of anything you cannot lose.
+          </P>
         </S>
       </LegalPage>
     </>
