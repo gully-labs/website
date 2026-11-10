@@ -99,6 +99,7 @@ import { status as scanEngineStatus } from './security-engine.mjs'
 import { askStatus } from './ask.mjs'
 import { embedStatus } from './ask-embed.mjs'
 import { teamView } from './workspaces.mjs'
+import { ipfsReviewOk, ipfsReviews, ipfsTakedown } from './ipfs-pins.mjs'
 
 const failures = new Map()
 
@@ -380,6 +381,18 @@ export async function handleAdmin(req, res, url) {
   if (p === '/api/admin/broadcasts' || p.startsWith('/api/admin/broadcasts/')) return handleBroadcastAdmin(req, res, url)
   if (p === '/api/admin/ecosystem/submissions') return handleEcosystemAdmin(req, res)
   if (p === '/api/admin/revenue') return handleRevenueAdmin(req, res, url)
+  // Gully IPFS review queue and takedowns (ipfs-pins.mjs): images and video wait here for a look.
+  if (p === '/api/admin/ipfs/reviews') return json(res, 200, { reviews: ipfsReviews() }), true
+  if (p === '/api/admin/ipfs/takedown' || /^\/api\/admin\/ipfs\/reviews\/[\w-]{1,40}\/ok$/.test(p)) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    if (p.endsWith('/ok')) {
+      const r = ipfsReviewOk(p.split('/')[5], 'admin')
+      return (r ? json(res, 200, { review: r }) : json(res, 404, { error: 'no such review' }), true)
+    }
+    const body = await readJson(req, 2_000)
+    const r = await ipfsTakedown(String(body?.cid ?? ''), String(body?.reason ?? ''), 'admin')
+    return (r.error ? json(res, 400, { error: r.error }) : json(res, 200, r), true)
+  }
   const db = developers()
 
   // Fee-proxy monitor (fee-proxy-monitor.mjs): read every proxy's balances now. Reads under CACHE_MS are reused, so

@@ -39,6 +39,7 @@ import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { handleIpfs } from './ipfs.mjs'
+import { handleIpfsPins, startIpfsPins } from './ipfs-pins.mjs'
 import { handleHub } from './hub.mjs'
 import { handleHubProducts } from './hub-products.mjs'
 import { handleHubLive } from './hub-live.mjs'
@@ -410,7 +411,9 @@ async function handleRequest(req, res) {
   // The landing's cross-origin sources (hub-live.mjs): Gully ID stats, Gully Pay status, Gully RPC status.json, the indexer.
   if (url.pathname === '/api/hub/live') return void (await handleHubLive(req, res, url, send))
   // Gully IPFS (ipfs.mjs): repo size, pinned CIDs and gateway health, read from the node over the docker network. Public.
+  // Self-serve pinning (ipfs-pins.mjs): the Pinning Service API at /api/ipfs/psa, uploads, and the replica's sync routes.
   if (url.pathname.startsWith('/api/ipfs/')) {
+    if (await handleIpfsPins(req, res, url)) return
     if (await handleIpfs(req, res, url, send)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
@@ -714,6 +717,8 @@ function startLoops() {
   startScoreRefresh()
   // Public status: every part of the stack checked once a minute, 24 h kept (status.mjs; GET /api/status).
   startStatusLoop()
+  // Gully IPFS pinning: the denylist file, and pins a restart left half-done go back to the queue (ipfs-pins.mjs).
+  startIpfsPins()
 }
 // The treasury deployment gate (treasury-chains.mjs) runs in standby too: a standby answers /api/plans and quotes,
 // so it must know on which chains the Safe treasury exists. Read-only (eth_getCode), hourly, timers unref'd.

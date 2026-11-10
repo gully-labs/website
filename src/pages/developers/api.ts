@@ -44,6 +44,8 @@ export interface ApiKey {
   rotatedAt: string | null
   revokedAt: string | null
   lastUsed: string | null
+  /** Extra permissions: `ipfs:pin` lets the key pin and upload to Gully IPFS. */
+  scopes?: string[]
 }
 
 export type PlanId = 'free' | 'pro' | 'business'

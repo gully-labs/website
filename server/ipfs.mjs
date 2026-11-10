@@ -10,6 +10,8 @@
 // probed (IPFS_GATEWAY, default http://gully-ipfs:8080, then the public https://ipfs.gullylabs.xyz) with the
 // inline empty-directory CID, and `source` says which one answered. Nothing is invented: an unread figure is null.
 
+import { replicaState } from './ipfs-pins.mjs'
+
 export const IPFS_PUBLIC_GATEWAY = 'https://ipfs.gullylabs.xyz'
 // The identity CID of an empty UnixFS directory: inline, so a NoFetch gateway can answer it without the network.
 const PROBE_CID = 'bafyaabakaieac'
@@ -74,6 +76,9 @@ async function read() {
     gatewayUp: gw.via ? gw.up : null,
     gatewayMs: gw.ms,
     pinned,
+    // Node 2 (gully-l3, gully-ops gully/ipfs-replica): its last sync report. The status page rows read these.
+    replicaUp: replicaState().up,
+    replicaInSync: replicaState().inSync,
     history: [...history],
   }
 }

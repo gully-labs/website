@@ -60,9 +60,9 @@ export const MAX_KEYS_PER_ACCOUNT = 5
 const newSecret = () => `gl_live_${randomToken(24)}`
 
 /** A new API key: returns the plaintext once; only its hash is stored. */
-export function issueKey({ requestId = null, project = null, email = null, owner = null, name = null }) {
+export function issueKey({ requestId = null, project = null, email = null, owner = null, name = null, scopes = [] }) {
   const secret = newSecret()
-  const key = { id: randomToken(9), hash: sha256(secret), prefix: secret.slice(0, 14), name: name ?? project, owner, requestId, project, email, limit: KEY_LIMIT_PER_MIN, createdAt: new Date().toISOString(), rotatedAt: null, revokedAt: null }
+  const key = { id: randomToken(9), hash: sha256(secret), prefix: secret.slice(0, 14), name: name ?? project, owner, scopes, requestId, project, email, limit: KEY_LIMIT_PER_MIN, createdAt: new Date().toISOString(), rotatedAt: null, revokedAt: null }
   db.keys.push(key)
   saveDevelopers()
   return { key, secret }

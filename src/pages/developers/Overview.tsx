@@ -136,7 +136,7 @@ function Periods({ value, onChange }: { value: Range; onChange: (r: Range) => vo
 /** The four Gully Labs services this account can use, one card each, opening its page. */
 const SERVICES: { id: OverviewGo; label: string; icon: LucideIcon; line: string }[] = [
   { id: 'chains', label: 'Chains', icon: Network, line: 'Order your own L2/L3 chain; follow each order.' },
-  { id: 'ipfs', label: 'Gully IPFS', icon: HardDrive, line: 'Your pins and usage. Pinning with your own keys is coming soon.' },
+  { id: 'ipfs', label: 'Gully IPFS', icon: HardDrive, line: 'Pin and upload with your own keys; your pins and usage.' },
   { id: 'analytics', label: 'Gully Analytics', icon: ChartNoAxesCombined, line: 'Cookie-free analytics for your sites.' },
   { id: 'services', label: 'Development', icon: Wrench, line: 'Request a build or a quote; your projects.' },
 ]

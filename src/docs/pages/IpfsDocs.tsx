@@ -7,15 +7,69 @@ import { useApi } from '../useApi'
 
 const sections = [
   { id: 'what', title: 'What Gully IPFS is' },
-  { id: 'live', title: 'Live figures' },
+  { id: 'start', title: 'Pin in two minutes' },
+  { id: 'psa', title: 'Pinning Service API' },
+  { id: 'upload', title: 'Uploads' },
+  { id: 'limits', title: 'Plans and limits' },
+  { id: 'policy', title: 'Content policy' },
   { id: 'gateway', title: 'The gateway' },
+  { id: 'live', title: 'Live figures' },
   { id: 'uses', title: 'What we pin' },
-  { id: 'pinning', title: 'Pinning (coming soon)' },
   { id: 'api', title: 'GET /api/ipfs/stats' },
 ]
 
 const URLS = `https://ipfs.gullylabs.xyz/ipfs/<CID>
 https://ipfs.gullylabs.xyz/ipfs/<CID>/path/inside/a/folder.json`
+
+const BASE = 'https://api.gullylabs.xyz/api/ipfs/psa'
+const KUBO = `# once: add Gully IPFS as a remote pinning service (a hub key with the ipfs:pin scope)
+ipfs pin remote service add gully ${BASE} gl_live_YOUR_KEY
+
+# pin a CID you already have (your node keeps serving it until Gully holds it)
+ipfs pin remote add --service=gully --name=site-v1 bafybei...
+
+# list and remove
+ipfs pin remote ls --service=gully --status=queued,pinning,pinned,failed
+ipfs pin remote rm --service=gully --cid=bafybei...`
+const PSA_CURL = `KEY=gl_live_YOUR_KEY
+# pin a CID (202: queued; the status moves to pinning, then pinned or failed)
+curl -s -X POST ${BASE}/pins -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \\
+  -d '{"cid":"bafybei...","name":"site-v1","meta":{"app":"my-app"}}'
+
+# list (default status pinned; also cid, name + match, status, before, after, limit, meta)
+curl -s "${BASE}/pins?status=queued,pinning,pinned,failed&limit=50" -H "Authorization: Bearer $KEY"
+
+# one pin, replace it, remove it
+curl -s ${BASE}/pins/REQUEST_ID -H "Authorization: Bearer $KEY"
+curl -s -X POST ${BASE}/pins/REQUEST_ID -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' -d '{"cid":"bafybei...new"}'
+curl -s -X DELETE ${BASE}/pins/REQUEST_ID -H "Authorization: Bearer $KEY" -o /dev/null -w '%{http_code}\\n'   # 202`
+const UPLOAD_CURL = `# a file: added and pinned at once; the answer is a PinStatus with the CID
+curl -s -X POST "https://api.gullylabs.xyz/api/ipfs/upload?name=logo.png" \\
+  -H "Authorization: Bearer $KEY" --data-binary @logo.png
+
+# a CAR with one root (a whole folder or site, built with ipfs dag export or ipfs-car)
+curl -s -X POST https://api.gullylabs.xyz/api/ipfs/upload -H "Authorization: Bearer $KEY" \\
+  -H 'Content-Type: application/vnd.ipld.car' --data-binary @site.car`
+
+interface PlansIpfs {
+  ipfs?: { plans: { id: string; name: string; storageBytes: number; maxFileBytes: number; maxPins: number; copies: number }[]; paid: { priceUsdPerGbMonth: number | null; checkout: boolean; reason: string } }
+}
+const mb = (b: number) => (b >= 1024 ** 3 ? `${(b / 1024 ** 3).toFixed(b % 1024 ** 3 ? 1 : 0)} GB` : `${Math.round(b / 1024 ** 2)} MB`)
+
+/** The plans as the server enforces them (GET /api/plans, field ipfs): nothing typed here. */
+function IpfsPlans() {
+  const p = useApi<PlansIpfs>('/api/plans', 300_000)
+  const free = p && p !== 'error' ? p.ipfs?.plans.find((x) => x.id === 'free') : null
+  if (!free) return <P>{p === 'error' ? 'The plans could not be read right now.' : 'Reading the plans…'}</P>
+  return (
+    <Fields
+      rows={[
+        [<C>Free</C>, mb(free.storageBytes), `stored, up to ${free.maxPins} pins, files up to ${mb(free.maxFileBytes)}, every pin on ${free.copies} nodes`],
+        [<C>Paid storage</C>, 'not on sale yet', 'The price per GB is not set yet. When it is, paid storage is bought with Gully Pay in the hub.'],
+      ]}
+    />
+  )
+}
 
 const CURL = `curl -s https://api.gullylabs.xyz/api/ipfs/stats | jq '{source, pinned, gatewayUp}'`
 
@@ -62,8 +116,56 @@ export function IpfsDocs() {
           open source (MIT and Apache-2.0).
         </P>
         <Callout label="Gully content only">
-          The gateway runs with <C>Gateway.NoFetch</C>: it answers only for blocks this node already holds and never fetches other content from the network. It is not a general public gateway. Pinning your own content is coming soon (below).
+          The gateway runs with <C>Gateway.NoFetch</C>: it answers only for blocks this node already holds and never fetches other content from the network. It is not a general public gateway: it serves what Gully and its customers pin.
         </Callout>
+      </Section>
+
+      <Section id="start" title="Pin in two minutes">
+        <List>
+          <li>
+            Sign in at <Ext href="https://app.gullylabs.xyz/#ipfs">app.gullylabs.xyz</Ext>, open Gully IPFS and press <b>Create a pinning key</b> (or tick <C>ipfs:pin</C> when you create a key on the Keys page). The secret is shown once.
+          </li>
+          <li>Drop a file in the upload area, or point any Pinning Service API client at the base URL below.</li>
+          <li>Your pins, their status and your usage are on the same page. Nobody else sees them.</li>
+        </List>
+        <CodeBlock code={KUBO} lang="bash" />
+      </Section>
+
+      <Section id="psa" title="Pinning Service API">
+        <P>
+          Gully IPFS implements the <Ext href="https://ipfs.github.io/pinning-services-api-spec/">IPFS Pinning Service API</Ext> v1. Base URL <C>{BASE}</C>, auth <C>Authorization: Bearer gl_live_…</C> with a key that has the <C>ipfs:pin</C> scope.
+        </P>
+        <Fields
+          rows={[
+            [<C>GET /pins</C>, '200', 'your pins, newest first: count and results. Filters cid (up to 10), name with match exact, iexact, partial or ipartial, status (default pinned), before, after, limit (1 to 1000, default 10), meta'],
+            [<C>POST /pins</C>, '202', 'a Pin object { cid, name?, origins?, meta? }: queued, then pinning, then pinned or failed (status_details says why)'],
+            [<C>GET /pins/:requestid</C>, '200', 'one PinStatus'],
+            [<C>POST /pins/:requestid</C>, '202', 'replace: a new pin and requestid, the old one removed'],
+            [<C>DELETE /pins/:requestid</C>, '202', 'remove the pin'],
+            [<C>errors</C>, '400 401 403 404 429 451', '{ error: { reason, details } }: 403 QUOTA_EXCEEDED or FORBIDDEN (no ipfs:pin scope), 451 TAKEN_DOWN, 429 RATE_LIMITED (300 requests a minute per key)'],
+          ]}
+        />
+        <CodeBlock code={PSA_CURL} lang="bash" />
+        <Callout label="Size is checked while we fetch">A CID pinned by reference is fetched from the IPFS network. Its size is counted as it arrives: past the room left on your plan the pin fails with a reason, and nothing you already pinned is touched.</Callout>
+      </Section>
+
+      <Section id="upload" title="Uploads">
+        <P>
+          <C>POST https://api.gullylabs.xyz/api/ipfs/upload</C> takes the file as the request body (with a Content-Length), or a CAR with <C>Content-Type: application/vnd.ipld.car</C>. It adds, pins and records it in one step and answers a PinStatus. At most 60 uploads an hour per account.
+        </P>
+        <CodeBlock code={UPLOAD_CURL} lang="bash" />
+      </Section>
+
+      <Section id="limits" title="Plans and limits">
+        <IpfsPlans />
+        <P>At a limit, new pins and uploads are refused with a reason. Nothing is ever deleted to make room.</P>
+      </Section>
+
+      <Section id="policy" title="Content policy">
+        <P>
+          Pin only content you have the right to publish. No illegal content, no content that sexualises minors, no malware or phishing, no other people&apos;s private data, nothing that infringes copyright. Uploaded and pinned images and video are reviewed. Content that
+          breaks the policy is taken down: unpinned from every Gully node and refused by the gateway, and the account may be closed. Report content to <Ext href="mailto:team@gullylabs.xyz">team@gullylabs.xyz</Ext>.
+        </P>
       </Section>
 
       <Section id="live" title="Live figures">
@@ -75,7 +177,8 @@ export function IpfsDocs() {
         <P>Address a pinned file, or a file inside a pinned folder, by its CID:</P>
         <CodeBlock code={URLS} lang="text" />
         <List>
-          <li>Read-only: GET and HEAD only. Uploads and pins go through the pinning API (coming soon), never the gateway.</li>
+          <li>Read-only: GET and HEAD only. Uploads and pins go through the pinning API, never the gateway.</li>
+          <li>Two nodes on two servers hold every pin; when one is down, the gateway reads from the other.</li>
           <li>The same CID works on any IPFS gateway or node, because the content is announced to the network.</li>
           <li>CIDs are content hashes: a file at a CID never changes.</li>
         </List>
@@ -89,13 +192,6 @@ export function IpfsDocs() {
           <li>Snapshots of public Gully docs.</li>
         </List>
         <P>We never pin licensed third-party assets (Unity Asset Store content included) or anything that is not ours.</P>
-      </Section>
-
-      <Section id="pinning" title="Pinning (coming soon)">
-        <P>
-          Self-serve pinning is being built: the standard <Ext href="https://ipfs.github.io/pinning-services-api-spec/">IPFS Pinning Service API</Ext> with keys from the hub&apos;s Keys page, an upload area in the hub, and a view of your own pins and usage.
-          Every pin will be held on two nodes on two servers. Until it opens, the hub&apos;s Gully IPFS page shows your account at zero and says so.
-        </P>
       </Section>
 
       <Section id="api" title="GET /api/ipfs/stats">
