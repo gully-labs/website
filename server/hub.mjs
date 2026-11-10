@@ -223,7 +223,9 @@ export function readGateway(j) {
 export function readStatusPage(html) {
   if (typeof html !== 'string' || !html.includes('class="banner')) return null
   const overall = (html.match(/class="banner\s+(ok|warn|bad)"/) ?? [])[1] ?? null
-  const services = [...html.matchAll(/<span class="nm">([^<]{1,60})<\/span>(?:(?!class="nm")[\s\S]){0,4000}?<span class="pill\s+(up|down|degraded|pending)">/g)].filter((m) => m[2] !== 'pending').map((m) => ({ name: m[1].trim(), state: m[2] }))
+  // Admin consoles never reach this public answer (owner, 2026-11-10: no admin data on public sites), even when the
+  // status page lists one.
+  const services = [...html.matchAll(/<span class="nm">([^<]{1,60})<\/span>(?:(?!class="nm")[\s\S]){0,4000}?<span class="pill\s+(up|down|degraded|pending)">/g)].filter((m) => m[2] !== 'pending' && !/admin/i.test(m[1])).map((m) => ({ name: m[1].trim(), state: m[2] }))
   return { overall, services, up: services.filter((s) => s.state === 'up').length, total: services.length }
 }
 
