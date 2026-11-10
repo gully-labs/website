@@ -48,14 +48,14 @@ const shortCid = (c: string) => `${c.slice(0, 10)}…${c.slice(-6)}`
 const TONE: Record<IpfsPin['status'], string> = { pinned: 'text-up', queued: 'text-muted', pinning: 'text-gold', failed: 'text-down' }
 
 function Usage({ a }: { a: IpfsAccount }) {
-  const pts = useMemo(() => a.days.map((d) => [Date.parse(`${d.day}T12:00:00Z`), Number((d.bytes / MB).toFixed(3))] as LivePoint), [a.days])
+  const pts = useMemo(() => a.days.map((d) => [Date.parse(`${d.day}T12:00:00Z`), Number((d.bytes / 1024 ** 3).toFixed(4))] as LivePoint), [a.days])
   if (pts.length < 2)
     return (
       <GhostCurves height={170} title="Your storage will draw here">
         <span className="max-w-[460px] text-[13px] text-muted">{a.usage.pins ? 'One point a day: the chart starts with your second day of pins.' : 'This account has no pins yet. Upload a file or pin a CID and your stored size draws here, one point a day.'}</span>
       </GhostCurves>
     )
-  return <LiveChart kind="area" title="Stored" unit="MB" height={170} series={pts} empty="No usage recorded yet." label={`Your stored size in MB over the last ${pts.length} days.`} />
+  return <LiveChart kind="area" title="Stored" unit="GB" height={170} series={pts} empty="No usage recorded yet." label={`Your stored size in GB over the last ${pts.length} days.`} />
 }
 
 function UploadArea({ a, onDone }: { a: IpfsAccount; onDone: () => void }) {
