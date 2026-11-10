@@ -102,6 +102,7 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 ## Docs
 
 - [Overview](https://docs.gullylabs.xyz/): Start
+- [Integrate in 5 minutes](https://docs.gullylabs.xyz/integrate): Start
 - [Tracker methodology](https://docs.gullylabs.xyz/methodology): Start
 - [API reference](https://docs.gullylabs.xyz/api): Build
 - [Widget guide](https://docs.gullylabs.xyz/widget): Build
