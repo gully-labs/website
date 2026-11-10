@@ -33,7 +33,7 @@ export interface Live {
   arcade: { season: number; players: number; history: number[] } | null
   /** Gully Pay's and Gully RPC's own public status, read by our server (GET /api/products/status). */
   products: ProductsStatus | null
-  /** Gully IPFS: pinned CIDs, repo size and gateway health (GET /api/ipfs/stats). */
+  /** Gully IPFS: pinned CIDs and gateway health (GET /api/ipfs/stats). */
   ipfs: IpfsStats | null
   /** Everything live across Gully (GET /api/hub): surface probes, Gully Quests, x402 networks, the RPC gateway, the status page. */
   hub: HubBody | null
@@ -94,8 +94,7 @@ export interface IpfsStats {
   gatewayUp: boolean | null
   gatewayMs: number | null
   pinned: number | null
-  repoBytes: number | null
-  history: { t: string; pinned: number | null; repoBytes: number | null; up: boolean; ms: number | null }[]
+  history: { t: string; pinned: number | null; up: boolean; ms: number | null }[]
 }
 
 const empty: Live = { stats: null, statsState: 'loading', status: null, payChains: null, chain: null, chainState: 'loading', rpcMs: [], arcade: null, products: null, ipfs: null, hub: null }

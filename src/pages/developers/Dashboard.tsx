@@ -187,7 +187,7 @@ export function Dashboard({ account, reload, onSignOut }: { account: Account; re
           />
         )}
         {tab === 'chains' && <ChainsTab />}
-        {tab === 'ipfs' && <IpfsTab go={go} />}
+        {tab === 'ipfs' && <IpfsTab />}
         {tab === 'services' && <ServicesTab account={account} />}
         {tab === 'keys' && <KeysTab account={account} reload={reload} creating={newKey} onCreateDone={clearNewKey} section={section} />}
         {tab === 'analytics' && <AnalyticsPanel />}
