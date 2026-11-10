@@ -24,7 +24,8 @@ test('signed out, the app renders the public Overview beside the sign-in card (G
 test('the public Overview reads public endpoints only and shows no account data', () => {
   const urls = [...pub.matchAll(/usePoll<[^>]*>\('([^']+)'/g)].map((m) => m[1])
   assert.deepEqual(urls.sort(), ['/api/hub', '/api/hub/live', '/api/hub/products'])
-  assert.ok(!/\/api\/developer\//.test(pub), 'no /api/developer read')
+  const code = pub.replace(/\/\*[\s\S]*?\*\//g, '')
+  assert.ok(!/\/api\/developer\//.test(code), 'no /api/developer read')
   assert.ok(!/account|billing|apiKey|secret/i.test(pub.replace(/\/\*[\s\S]*?\*\//g, '').replace(/Sign in to see your own keys, usage, billing and team\./, '')), 'no account words in the code')
 })
 
