@@ -158,7 +158,11 @@ export function curve(a: [number, number], b: [number, number], c: [number, numb
 
 export type NewsState = 'live' | 'new' | 'testnet' | 'beta' | 'rolling out' | 'coming soon'
 export const NEWS: { d: string; p: ProductKey; t: string; s: NewsState; href: string }[] = [
-  { d: '2026-11-05', p: 'chain', t: 'Gully Multisig on Anubis Network: the unmodified Safe 1.4.1 contracts at the canonical addresses', s: 'live', href: 'https://multisig.gullychain.xyz' },
+  { d: '2026-11-09', p: 'chain', t: 'Gully Core live on five mainnets: Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium, beside the Gully Chain testnet', s: 'live', href: 'https://gullycore.xyz' },
+  { d: '2026-11-09', p: 'chain', t: 'Gully Multisig on Kinetiq Elysium, at its own address gullymultisig.xyz, with Gully ID passkeys as signers', s: 'live', href: 'https://gullymultisig.xyz' },
+  { d: '2026-11-08', p: 'chain', t: 'Gully Explorer moves to gullyscan.xyz; the testnet explorer is testnet.gullyscan.xyz', s: 'live', href: 'https://testnet.gullyscan.xyz' },
+  { d: '2026-11-07', p: 'chain', t: 'Gully Core release 3 on Anubis Network mainnet: 48 contracts, source-verified', s: 'live', href: 'https://gullycore.xyz' },
+  { d: '2026-11-05', p: 'chain', t: 'Gully Multisig on Anubis Network: the unmodified Safe 1.4.1 contracts at the canonical addresses', s: 'live', href: 'https://gullymultisig.xyz' },
   { d: '2026-11-05', p: 'rpc', t: 'Gully RPC plans: Free, Developer and Business', s: 'live', href: 'https://gullyrpc.xyz/pricing' },
   { d: '2026-11-05', p: 'pay', t: 'Direct payouts on Gully Pay: paid to your own wallet', s: 'testnet', href: 'https://gullypay.xyz/docs/payouts' },
   { d: '2026-10-28', p: 'pay', t: 'USDC.e is the dollar on Gully Chain: checkout and x402 on Gully Chain testnet settle in USDC.e', s: 'testnet', href: 'https://gullypay.xyz' },

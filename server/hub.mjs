@@ -51,7 +51,7 @@ export const SURFACES = [
   { key: 'copy', group: 'chain', name: 'Copy trading engine', url: 'https://kre8.fun/copy', probe: 'https://copy.kre8.fun/health' },
   // Gully Social (posts, follows, profiles; services/social in gully-street) answers /healthz.
   { key: 'social-api', group: 'chain', name: 'Gully Social service', url: 'https://kre8.fun', probe: 'https://social.kre8.fun/healthz' },
-  { key: 'safe', group: 'chain', name: 'Gully Multisig', url: 'https://multisig.gullychain.xyz', soon: true },
+  { key: 'safe', group: 'chain', name: 'Gully Multisig', url: 'https://gullymultisig.xyz' },
   // Gully Sentry: free testnet Sentry Keys and the watchers that check Gully Chain's assertions (2026-10-28).
   { key: 'sentry', group: 'chain', name: 'Gully Sentry', url: 'https://sentry.gullychain.xyz', probe: 'https://sentry.gullychain.xyz/api/healthz' },
   // Gully Offerwall (OfferwallManager on chain 485590, built on Gully Quests): its public stats answer JSON.

@@ -67,6 +67,12 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Wallet address privacy modes](https://gullylabs.xyz) (live): The site owner chooses how wallet addresses are stored: hashed, in full, or not at all.
 - [Web3 dashboard](https://gullylabs.xyz) (live): A per-website Web3 page shows unique wallets, connect rate, transactions and a funnel.
 - [Self-hosting and fork licence](https://analytics.gullylabs.xyz) (live): A Docker Compose file runs the app with PostgreSQL. The fork is MIT licensed, like Umami.
+- [Launchpad](https://gullycore.xyz/) (live): A token, its pool and locked liquidity created in one transaction, with a decaying anti-snipe fee at the open.
+- [Hosted Launchpads and DEXes](https://gullycore.xyz/) (live): Builders open their own launchpad or DEX on Gully Core.
+- [Best-price router](https://gullycore.xyz/) (live): Swaps routed across Gully Core pools and other venues.
+- [Locks, vesting, airdrops, splits and multisend](https://gullycore.xyz/) (live): Utility contracts for locking liquidity or tokens, distributing tokens and splitting revenue.
+- [Limit orders and DCA](https://gullycore.xyz/) (live): On-chain range (limit) orders and dollar-cost averaging contracts.
+- [Gully Core on five mainnets](https://gullycore.xyz/) (live): Gully Core on five mainnets (Anubis Network, Robinhood Chain, Base, BNB Chain, Kinetiq Elysium) and the Gully Chain testnet, as a service for builders: the same contracts and the same flat fee on each.
 - [Swap](https://peddleswap.xyz) (live): V2 and V3 liquidity behind one router, with an Auto mode that picks the better venue.
 - [Volatility-aware dynamic fee](https://peddleswap.xyz) (live): A V3 pool can attach a fee module that raises the swap fee as spot drifts from the pool's TWAP.
 - [Token and LP locker](https://peddleswap.xyz) (live): Locks tokens, V2 LP and V3 positions with no admin unlock. Locked V3 positions keep earning fees.
@@ -84,7 +90,7 @@ Site: https://gullylabs.xyz. X: https://x.com/Gully_Labs. GitHub: https://github
 - [Promotion slots](https://peddlequest.xyz) (live): Trending and banner placement is sold on chain, so what was bought is publicly recorded.
 - [Task verification and eligibility rules](https://peddlequest.xyz) (live): Off-chain checks for X, Discord and wallet tasks, with eligibility and sybil rules set in the quest wizard.
 - [Live board and product launcher](https://gullylabs.xyz/products) (live): Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve.
-- [Gully Multisig](https://multisig.gullychain.xyz) (live): Multisig wallets for teams and treasuries at multisig.gullychain.xyz: several owners, a confirmation threshold and batched transactions, on Anubis Network (chain 6714) and, for developers, on Gully Chain Testnet (chain 485590).
+- [Gully Multisig](https://gullymultisig.xyz) (live): Multisig wallets for teams and treasuries at gullymultisig.xyz: several owners, a confirmation threshold and batched transactions, on Anubis Network (chain 6714) and Kinetiq Elysium (chain 99901) mainnets and, for developers, on Gully Chain Testnet (chain 485590).
 
 ## Projects
 

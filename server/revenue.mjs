@@ -467,7 +467,7 @@ async function snapshot() {
     cells[id].testnet = test?.out[id] ?? errorCell('Gully Chain testnet indexer')
     cells[id].mainnet = main?.out[id] ?? (mainRaw === 'refused' ? errorCell('REVENUE_MAINNET_INDEXER (refused: it did not answer as a mainnet)') : notLive())
   }
-  cells.core_builder.mainnet = main?.out.core_builder ?? notLive('Gully Core is not deployed on Anubis, Robinhood, Base, BNB or HyperEVM yet. Each chain needs the deployment, controller V5 and an indexer.')
+  cells.core_builder.mainnet = main?.out.core_builder ?? notLive('No mainnet indexer is configured for Gully Core here (REVENUE_MAINNET_INDEXER): its fees on Anubis, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium are read on gullycore.xyz, not on this page yet.')
 
   for (const id of Object.keys(NOT_TRACKED)) {
     const n = NOT_TRACKED[id]

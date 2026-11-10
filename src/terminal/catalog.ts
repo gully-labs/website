@@ -2,6 +2,8 @@
    sell to other teams. Copy only: no figure is typed in here, every number on the pages is read live.
    server/seo.mjs restates each product's title and description (PRODUCT_PAGES) for crawlers; keep the two in step. */
 
+import { GULLY_CORE } from '../content/gullyCore.generated.ts'
+
 export type Group = 'chain' | 'labs'
 export type Slug = 'gully-id' | 'chain' | 'street' | 'bridge' | 'safe' | 'pay' | 'rpc' | 'holders' | 'security' | 'ai' | 'studio' | 'ipfs' | 'quests' | 'offerwall' | 'gully-social' | 'copy-trading' | 'gully-core' | 'gully-sentry'
 
@@ -39,7 +41,9 @@ export interface ProductDef {
   how: [string, string][]
   faq: [string, string][]
   /** Where its prices live: read live from /api/plans ('security' | 'holders'), quoted per project, or free. */
-  pricing: 'security' | 'holders' | 'free-testnet' | 'on-site' | 'quoted'
+  pricing: 'security' | 'holders' | 'free-testnet' | 'free' | 'core' | 'on-site' | 'quoted'
+  /** Where it runs, when it is not simply "Runs on Gully Chain" (a product on several chains). */
+  runs?: string
 }
 
 const LOGO = {
@@ -54,6 +58,11 @@ const LOGO = {
 } satisfies Record<string, LogoDef>
 
 const STREET = 'https://kre8.fun'
+/** "A, B and C" */
+const andList = (xs: readonly string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`)
+const MSIG_CHAINS = andList(GULLY_CORE.multisigChains)
+const MSIG_HOST = GULLY_CORE.multisigUrl.replace(/^https:\/\//, '')
+const CORE_MAINNETS = GULLY_CORE.liveMainnets.length
 
 export const PRODUCTS: ProductDef[] = [
   {
@@ -186,11 +195,12 @@ export const PRODUCTS: ProductDef[] = [
     slug: 'safe',
     name: 'Gully Multisig',
     group: 'chain',
-    line: 'Multisig wallets for teams and treasuries on Anubis Network, built on the unmodified Safe 1.4.1 contracts.',
-    short: 'Team and treasury multisigs on Anubis Network.',
+    line: `Multisig wallets for teams and treasuries on ${MSIG_CHAINS}, built on the Safe 1.4.1 contracts and run by Gully Labs.`,
+    short: `Team and treasury multisigs on ${MSIG_CHAINS}.`,
+    runs: `Runs on ${MSIG_CHAINS}`,
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Multisig' },
-    url: 'https://multisig.gullychain.xyz',
-    urlLabel: 'multisig.gullychain.xyz',
+    url: GULLY_CORE.multisigUrl,
+    urlLabel: MSIG_HOST,
     docs: 'https://docs.gullychain.xyz/multisig/',
     hub: ['safe'],
     og: '/brand/web/og/gully-chain.png',
@@ -198,15 +208,19 @@ export const PRODUCTS: ProductDef[] = [
     features: [
       { t: 'M-of-N signing', d: 'Any number of owners and a threshold you choose.' },
       { t: 'Team treasuries', d: 'Hold launch proceeds and protocol fees under shared control.' },
-      { t: 'On Gully Chain', d: 'Deployed on chain 485590 alongside the rest of the stack.' },
+      { t: 'Where it runs', d: `${MSIG_CHAINS}: Gully runs its own Safe transaction service for each, with a chain switcher in the app.` },
+      { t: 'Gully ID as a signer', d: 'A Gully ID passkey wallet can sign as one of the owners.' },
     ],
     how: [
-      ['Create a Safe', 'Add owners and set the threshold.'],
+      ['Create a multisig', 'Pick the chain, add owners and set the threshold.'],
       ['Fund it', 'Send ETH or tokens to the Safe address.'],
       ['Propose and sign', 'Owners sign until the threshold is met, then it executes.'],
     ],
-    faq: [['Is Gully Multisig live?', 'This page shows its real state, checked every minute at multisig.gullychain.xyz, its only address.']],
-    pricing: 'free-testnet',
+    faq: [
+      ['Is Gully Multisig live?', `Yes, on ${MSIG_CHAINS}. This page shows its real state, checked every minute at ${MSIG_HOST}, its only address.`],
+      ['Which contracts does it use?', 'Safe 1.4.1, verified on verify.gullychain.xyz for every chain it serves. Gully Labs runs the app and the services; Safe does not.'],
+    ],
+    pricing: 'free',
   },
   {
     slug: 'gully-sentry',
@@ -562,7 +576,8 @@ export const PRODUCTS: ProductDef[] = [
     name: 'Gully Core',
     group: 'chain',
     line: 'Launch a token, run a launchpad or own a DEX on one shared core, on the chains your users already use.',
-    short: 'Launchpads and DEXes on one core.',
+    short: `Launchpads and DEXes on one core, live on ${CORE_MAINNETS} mainnets.`,
+    runs: GULLY_CORE.whereLive.replace(/^On /, 'Runs on ').replace(/\.$/, ''),
     logo: { kind: 'mark', mark: 'chain', label: 'Gully Core' },
     url: 'https://gullycore.xyz',
     urlLabel: 'gullycore.xyz',
@@ -585,9 +600,9 @@ export const PRODUCTS: ProductDef[] = [
     ],
     faq: [
       ['Who builds Gully Core?', 'Gully Labs. It is our own launchpad and DEX core, built on PancakeSwap Infinity’s audited core.'],
-      ['Where is it live?', 'On Anubis, Robinhood Chain, BNB Chain and Base mainnets and on Gully Chain testnet. The home is gullycore.xyz; the app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet).'],
+      ['Where is it live?', `${GULLY_CORE.whereLive} The home is gullycore.xyz; the app is app.gullycore.xyz (mainnets) and testnet.gullycore.xyz (testnet). The list comes from the Gully Core manifest, gullycore.xyz/manifest.json.`],
     ],
-    pricing: 'free-testnet',
+    pricing: 'core',
   },
 ]
 
@@ -598,9 +613,17 @@ export const productBySlug = (s: string | undefined) => PRODUCTS.find((p) => p.s
 export const PRODUCT_SECTIONS = { features: 'What it does', how: 'Three steps', pricing: 'Prices in USD', faq: 'Questions', links: 'Go further' }
 /** What the page says about price for a product with no published price table. */
 export const pricingNote = (p: Pick<ProductDef, 'pricing' | 'urlLabel'>) =>
-  p.pricing === 'free-testnet' ? 'Free on testnet. Mainnet pricing is published when mainnet opens.' : p.pricing === 'quoted' ? 'Quoted per project. Tell us what you need below.' : `Plans and fees are published on ${p.urlLabel}, in USD.`
+  p.pricing === 'free-testnet'
+    ? 'Free on testnet. Mainnet pricing is published when mainnet opens.'
+    : p.pricing === 'free'
+      ? 'Free to use. You pay only the chain’s gas.'
+      : p.pricing === 'core'
+        ? `Builders pay ${GULLY_CORE.builderFeePct ?? 0.3}% of every trade on the pools they create, and nothing else; the Safe can lower it per pool and never raises it above ${GULLY_CORE.builderFeeCapPct ?? 0.4}%. Gully’s own surfaces (kre8) keep their own fee schedule.`
+        : p.pricing === 'quoted' ? 'Quoted per project. Tell us what you need below.' : `Plans and fees are published on ${p.urlLabel}, in USD.`
 /** Every question on a product's page: its own, then the one every product answers. */
 export const productFaq = (p: Pick<ProductDef, 'name' | 'faq'>): [string, string][] => [...p.faq, [`Does ${p.name} support Gully Chain?`, 'Yes. Every Gully product supports Gully Chain (chain 485590 on testnet today).']]
+/** The line under a product's name: where it runs. */
+export const runsLine = (p: Pick<ProductDef, 'group' | 'runs'>) => p.runs ?? (p.group === 'chain' ? 'Runs on Gully Chain' : 'Supports Gully Chain')
 
 /* ---------------------------------------------------------------- services ---- */
 export type ServiceKey = 'chain' | 'contracts' | 'security' | 'apps' | 'payments' | 'infra' | 'launch' | 'ai' | 'games'

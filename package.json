@@ -51,6 +51,8 @@
     "test:brand-kit": "node --test scripts/test-brand-kit.mjs",
     "test:blog-theme": "node --test scripts/test-blog-theme.mjs",
     "test:landing": "node --test scripts/test-landing.mjs",
+    "test:core-sync": "node --test scripts/test-core-sync.mjs",
+    "core:sync": "node scripts/sync-gully-core.mjs",
     "test:time": "node --test scripts/test-time.mjs",
     "seo:content": "node scripts/build-page-content.mjs",
     "test:security": "node scripts/test-security-engine.mjs",

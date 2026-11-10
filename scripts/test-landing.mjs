@@ -8,9 +8,11 @@ import test from 'node:test'
 import zlib from 'node:zlib'
 
 process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'landing-'))
+process.env.GULLY_CORE_STATIC = '1'
 const { headTags, pageMeta, sitemapFor, robotsFor } = await import('../server/seo.mjs')
 const L = await import('../server/landing.mjs')
 const G = await import('../server/landing-graphs.mjs')
+const C = await import('../server/gully-core.mjs')
 
 const svc = (key, state, ms) => ({ key, name: key, state, ms, history: [{ ms: 100 }, { ms: ms ?? null }] })
 const data = {
@@ -120,14 +122,21 @@ test('the footer and the orbit grid come from one catalog (server/data/footer.js
   assert.ok(!/Offerwall|Copy Trading|Gully Social/.test(html.slice(html.indexOf('<footer'))), 'features are not footer items')
 })
 
-test('chain states come from the config and only an open chain links to the builder', () => {
-  const chains = JSON.parse(fs.readFileSync(new URL('../server/data/core-chains.json', import.meta.url), 'utf8'))
+test('the chain picker is the Gully Core manifest reading: every chain, its state, live mainnets first, a real mark each', () => {
+  const { chains, liveMainnets } = C.gullyCore()
+  assert.ok(chains.length >= 6 && liveMainnets.length >= 1)
   for (const c of chains) {
     assert.ok(html.includes(`data-chain="${c.key}"`), c.key)
-    if (!c.open) assert.ok(!c.cta || !c.cta.href.includes('/core/app'), c.key)
+    assert.ok(html.includes(`data-detail="${c.key}"`), `${c.key} detail`)
+    assert.ok(html.includes(`<span>${c.state}</span>`), `${c.key}: ${c.state}`)
+    if (!c.open) assert.equal(c.cta, null, `${c.key} is not open: no button`)
+    else assert.ok(c.cta && html.includes(c.cta.href), `${c.key}: a button to ${c.cta?.href}`)
+    assert.ok(c.logo && fs.existsSync(new URL(`../public${c.logo}`, import.meta.url)), `${c.key}: a real mark served by this site (${c.logo})`)
   }
-  assert.equal(chains.filter((c) => c.open).map((c) => c.key).join(), 'gully,anubis', 'Gully Core is on the Gully Chain testnet and on Anubis today')
-  for (const c of chains) assert.ok(c.logo, `${c.key}: a real logo, no letters`)
+  const first = html.indexOf('data-chain=')
+  assert.ok(html.slice(first, first + 60).includes(`data-chain="${chains[0].key}"`) && chains[0].status === 'live', 'a live mainnet comes first')
+  for (const c of chains) assert.ok(!c.live.includes('Gully Multisig') || c.multisig, c.key)
+  assert.ok(!html.includes('core-chains'), 'no hard-coded chain list is left')
 })
 
 test('Build links go to the real Gully Core routes; no simulated motion in the scripts', () => {

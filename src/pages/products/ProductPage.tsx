@@ -11,7 +11,7 @@ import { Seo } from '../../components/Seo'
 import { fmtInt, fmtPct, fmtUsd } from '../../console/charts'
 import { chainHead, useLive, type Live } from '../../console/live'
 import '../../terminal/terminal.css'
-import { pricingNote, PRODUCT_SECTIONS, productFaq, PRODUCTS, productBySlug, SERVICE_FOR, SERVICES, type ProductDef } from '../../terminal/catalog'
+import { pricingNote, PRODUCT_SECTIONS, productFaq, PRODUCTS, productBySlug, runsLine, SERVICE_FOR, SERVICES, type ProductDef } from '../../terminal/catalog'
 import { productSeo } from '../../content/seoPages'
 import { A, ACCENT, BlockStrip, Dot, Empty, fmtCompact, fmtEth, fmtMs, HBars, hourLabel, Kpi, latencySeries, Logo, minLabel, Panel, S, SecHead, stateOf, sum, TChart, UptimeGrid, useHubProducts, usePlans, useReveal, type ChartTab, type HubProducts, type Plans } from '../../terminal/kit'
 import { chainTabs } from '../../terminal/liveTabs'
@@ -749,7 +749,7 @@ export function ProductView({ p }: { p: ProductDef }) {
               <li>
                 <Dot s={st} /> {p.urlLabel}
               </li>
-              <li>{p.group === 'chain' ? 'Runs on Gully Chain' : 'Supports Gully Chain'}</li>
+              <li>{runsLine(p)}</li>
             </ul>
           </div>
           <div className="gt-kpis k2 rise">

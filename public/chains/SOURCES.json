@@ -124,5 +124,11 @@
     "from": "https://multisig.gullychain.xyz/cfg/media/chains/6714/chain_logo.png (the file Gully Multisig serves for chain 6714); the same mark as the favicon of Anubis’s own explorer, https://browser.anubispace.org/assets/favicon/android-chrome-192x192.png",
     "terms": "Anubis Network’s own mark; nominative use only.",
     "fetchedAt": "2026-11-07T16:20:00Z"
+  },
+  "elysium": {
+    "file": "/chains/elysium.png",
+    "from": "https://gullycore.xyz/chains/elysium.png (byte-identical to gully-labs/gully-ops l3/safe/assets/chains/99901/chain_logo.png, Kinetiq's official Elysium mark; sha256 2e79a1c428baa7e0337ebd34a3266cd0978ba2ad21d02626c2626308f8779f36)",
+    "terms": "Kinetiq’s own mark; nominative use only.",
+    "fetchedAt": "2026-11-10T04:10:00Z"
   }
 }

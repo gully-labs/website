@@ -10,10 +10,10 @@ import { hubLive } from './hub-live.mjs'
 import { readStats } from './stats.mjs'
 import { board, cards, constellation, coreBars, METRIC, metricNote } from './landing-graphs.mjs'
 import { ICONS } from './landing-icons.mjs'
+import { gullyCore } from './gully-core.mjs'
 
 const CONTENT = JSON.parse(fs.readFileSync(new URL('./data/page-content.json', import.meta.url), 'utf8'))
 const L = CONTENT.landing
-const CHAINS = JSON.parse(fs.readFileSync(new URL('./data/core-chains.json', import.meta.url), 'utf8'))
 export const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 export const icon = (name) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] ?? ICONS.box}</svg>`
 const ext = (href) => /^https?:/.test(href)
@@ -128,6 +128,8 @@ export const pageFoot = () => `<footer><div class="w"><div class="f"><div class=
 /** The home page counts page views like the one it replaces (Gully Analytics, cookie-free, production hosts only); the preview does not. */
 const ANALYTICS = '<script defer src="https://analytics.gullylabs.xyz/script.js" data-website-id="78f29233-9f70-4c45-a440-35d1457d2207" data-domains="gullylabs.xyz,docs.gullylabs.xyz,app.gullylabs.xyz,admin.gullylabs.xyz,blog.gullylabs.xyz,holdermaps.xyz,gullysecurity.xyz" data-web3="true"></script>'
 export async function renderLanding(head, given = null, { preview = false } = {}) {
+  // The chain picker: every chain the Gully Core manifest lists, in its state today (server/gully-core.mjs).
+  const CHAINS = gullyCore().chains
   const [hubB, products, live, stats] = given ? [given.hub, given.products, given.live, given.stats] : await Promise.all([within(hub(), 250), within(hubProducts(), 250), within(hubLive(), 250), within(readStats(), 250)])
   const data = { hub: hubB, products, live, stats, stages: STAGES }
   const c = cards(data)
