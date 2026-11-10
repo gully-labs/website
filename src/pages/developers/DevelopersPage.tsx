@@ -11,9 +11,11 @@ import { APP_DESCRIPTION, APP_TITLE, inviteTokenFromHash, PortalContext, restore
 import { mono, pillGold, pillLine } from './styles'
 import { BadgeFooterRow } from '../../components/PoweredByBadge'
 import { GullyIdButton, gullyIdAccessToken, gullyIdRedirectToken, isGullyIdReturn } from './gullyId'
+import { PublicOverview } from './PublicOverview'
 
-/* The Gully Labs App, the app dashboard (app.gullylabs.xyz; /app and /developers on localhost). Signed out: what the
-   free tier is, a "Connect wallet" button and "Sign in with Gully ID". Wallet sign-in is Sign-In with Ethereum: the
+/* The Gully Labs App, the app dashboard (app.gullylabs.xyz; /app and /developers on localhost). Signed out: the public
+   Overview (PublicOverview.tsx: live status and charts of the services Gully Labs runs, no account data; owner
+   2026-11-09, public by default) beside one sign-in card with "Sign in with Gully ID" and "Connect wallet". Wallet sign-in is Sign-In with Ethereum: the
    wallet signs a message (no transaction, no gas) and the server sets an HttpOnly session cookie. Gully ID signs in
    on gullyid.xyz in a popup and the account is the Gully ID's wallet (gullyId.ts, server/gully-id.mjs). The wallet libraries
    load only when that button is pressed; the signed-in dashboard itself never needs them. */
@@ -37,11 +39,11 @@ async function readSession(): Promise<Session> {
   })
 }
 
-/** The signed-out page: one card and nothing else. Products and live data are on the landing and in the signed-in app. */
+/** The sign-in card: Gully ID first, a wallet under it. It sits beside the public Overview (SignedOutHome). */
 function SignedOut({ connect, busy, gully, gullyBusy, gullyOn = true }: { connect: () => void; busy: boolean; gully: () => void; gullyBusy: boolean; gullyOn?: boolean }) {
   const link = 'inline-flex min-h-11 items-center text-muted underline underline-offset-2 hover:text-gold'
   return (
-    <section className="flex min-h-0 flex-1 items-center justify-center px-4 py-4" data-testid="signed-out">
+    <section className="flex justify-center" data-testid="signed-out" aria-label="Sign in">
       <div className="flex w-full max-w-[360px] flex-col items-center gap-3 rounded-card border border-line bg-surface p-6">
         <Wordmark height={28} />
         <img src="/brand/kit/owl/owl-thumbs-up-400.webp" alt="" width={46} height={120} decoding="async" className="block h-[120px] w-auto" />
@@ -240,7 +242,12 @@ export function DevelopersPage() {
             <InviteLanding token={invite} signedIn={false} connect={connect} connecting={busy} onDone={() => setInvite(null)} />
           </section>
         ) : (
-          <SignedOut connect={connect} busy={busy} gully={gully} gullyBusy={gullyBusy} gullyOn={session.gullyId !== false} />
+          <section className="mx-auto grid w-full max-w-[1200px] flex-1 gap-6 px-4 py-6 max-[480px]:px-3 lg:grid-cols-[minmax(0,1fr)_360px]" data-testid="signed-out-home" aria-label="Gully Labs App, signed out">
+            <div className="order-first lg:order-last lg:sticky lg:top-6 lg:self-start">
+              <SignedOut connect={connect} busy={busy} gully={gully} gullyBusy={gullyBusy} gullyOn={session.gullyId !== false} />
+            </div>
+            <PublicOverview />
+          </section>
         ))}
       {(session.state === 'error' || session.state === 'blocked') && (
         <section className="mx-auto flex min-h-[50vh] w-full max-w-[640px] flex-col items-start justify-center gap-4 px-4 py-16">
