@@ -32,6 +32,8 @@ export interface ProductBrand {
   ownKit: boolean
   icon: BrandFile & { ground: boolean }
   logo?: BrandFile & { src2x?: BrandFile }
+  /** The 1200x630 share image: the kit's own, or one composed from kit files only (`from`, by `generator`). */
+  og?: BrandFile & { from?: { source: string; sha256: string }[]; generator?: string }
   /** Other kit files the site draws (Gully Pay's shield mark, Gully Security's light-ground logo). */
   extra?: Record<string, BrandFile>
   note?: string
@@ -53,6 +55,12 @@ export const PRODUCT_BRANDS: Record<BrandKey, ProductBrand> = {
     ownKit: true,
     icon: { src: '/brand/products/gully-core-icon-ink.svg', source: `${GCK}/02-icon/gully-core-icon-ink.svg`, sha256: '0b432a662bf3edc24b9ffc6c08c4b11ec96abf59ea7f9bcfa9bf8115ab7001dd', w: 1024, h: 1024, ground: true },
     logo: { src: '/brand/products/gully-core-logo-transparent-light.svg', source: `${GCK}/01-logo/gully-core-logo-transparent-light.svg`, sha256: 'b484ec8123382837c1ce826098bfc957fefc24df915a954d0fc81f230d06582f', w: 856, h: 210 },
+    og: {
+      src: '/brand/products/gully-core-og-1200x630.png', source: null, sha256: '5c13937e22c6eecc29f81a51ff70cb5a8725236aca23c764b38e6afa1524d2f7', w: 1200, h: 630,
+      from: [{ source: `${GCK}/04-x/x-banner-1500x500.png`, sha256: 'fd681cbe6cd608c1f046c3d3f15ddc1f3da95f584f109cf102b31a248d0785c4' }],
+      generator: 'scripts/gully-core-og.py',
+    },
+    note: 'The Gully Core kit ships no 1200x630 share image: og is its X banner scaled onto its own cream ground (scripts/gully-core-og.py), nothing redrawn.',
   },
   chain: {
     name: 'Gully Chain',

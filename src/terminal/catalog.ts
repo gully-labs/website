@@ -593,7 +593,7 @@ export const PRODUCTS: ProductDef[] = [
     cta2: ['Launch on kre8.fun', `${STREET}/launch`],
     docs: 'https://docs.gullycore.xyz',
     hub: ['street', 'indexer'],
-    og: '/brand/web/og/gully-chain.png',
+    og: PRODUCT_BRANDS.core.og!.src,
     category: 'FinanceApplication',
     features: [
       { t: 'One-step launch', d: 'A token and its pool in a single transaction, with a fee that opens high and falls to 1%.' },

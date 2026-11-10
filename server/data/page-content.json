@@ -32,7 +32,22 @@
     "sha256": "b484ec8123382837c1ce826098bfc957fefc24df915a954d0fc81f230d06582f",
     "w": 856,
     "h": 210
-   }
+   },
+   "og": {
+    "src": "/brand/products/gully-core-og-1200x630.png",
+    "source": null,
+    "sha256": "5c13937e22c6eecc29f81a51ff70cb5a8725236aca23c764b38e6afa1524d2f7",
+    "w": 1200,
+    "h": 630,
+    "from": [
+     {
+      "source": "Downloads/Gully Core brand kit/Gully Core Graphics/04-x/x-banner-1500x500.png",
+      "sha256": "fd681cbe6cd608c1f046c3d3f15ddc1f3da95f584f109cf102b31a248d0785c4"
+     }
+    ],
+    "generator": "scripts/gully-core-og.py"
+   },
+   "note": "The Gully Core kit ships no 1200x630 share image: og is its X banner scaled onto its own cream ground (scripts/gully-core-og.py), nothing redrawn."
   },
   "chain": {
    "name": "Gully Chain",
@@ -2771,7 +2786,7 @@
     "street",
     "indexer"
    ],
-   "og": "/brand/web/og/gully-chain.png",
+   "og": "/brand/products/gully-core-og-1200x630.png",
    "category": "FinanceApplication",
    "features": [
     {

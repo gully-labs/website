@@ -27,6 +27,7 @@ for (const [k, b] of Object.entries(PRODUCT_BRANDS)) {
   FILES.push([k, 'icon', b.icon])
   if (b.logo) FILES.push([k, 'logo', b.logo])
   if (b.logo?.src2x) FILES.push([k, 'logo 2x', b.logo.src2x])
+  if (b.og) FILES.push([k, 'og', b.og])
   for (const [n, f] of Object.entries(b.extra ?? {})) FILES.push([k, n, f])
 }
 const PATHS = new Set(FILES.map(([, , f]) => f.src))
@@ -50,6 +51,11 @@ test('on a machine that holds the kits, each kit file still has the recorded has
     if (!fs.existsSync(src)) continue
     seen++
     assert.equal(sha(src), f.sha256, `${k} ${role}: the kit file ${f.source} changed: copy it again, byte for byte`)
+  }
+  // A composed file (og) names the kit files it was made from: those are checked too.
+  for (const [k, b] of Object.entries(PRODUCT_BRANDS)) for (const f of b.og?.from ?? []) {
+    const src = path.join(home, f.source)
+    if (fs.existsSync(src)) { seen++; assert.equal(sha(src), f.sha256, `${k} og: the kit file ${f.source} changed: run ${b.og.generator} again`) }
   }
   if (!seen) t.diagnostic('no kit folder on this machine: checked against the recorded hashes only')
 })
@@ -162,6 +168,10 @@ test('the React catalog shows each product with its own kit logo (Gully Core: it
     if (l.kind === 'kit') assert.ok(PATHS.has(l.src), `${p.slug}: ${l.src} is not a registry file`)
     else assert.ok(PRODUCT_BRANDS[l.mark], `${p.slug}: mark ${l.mark} is not a registry key`)
   }
+  // Gully Core shares its own kit art, never the Gully Chain card.
+  assert.equal(C.PRODUCTS.find((p) => p.slug === 'gully-core').og, PRODUCT_BRANDS.core.og.src)
+  assert.equal(CONTENT.product['gully-core'].og, PRODUCT_BRANDS.core.og.src)
+  assert.ok(fs.existsSync(path.join(ROOT, PRODUCT_BRANDS.core.og.generator)))
   const H = await import('../src/pages/hub/hubData.ts')
   for (const p of H.HUB_PRODUCTS) assert.equal(p.icon, icon(p.key), `hub ${p.key}`)
 })
