@@ -12,12 +12,12 @@
      ink        #FFFFFF   "Gully"
    Font: Poppins for both (the stack's font, and the HolderMaps kit's). */
 
-import { PRODUCT_BRANDS } from '../data/productBrands.ts'
+import { PRODUCT_BRANDS as REGISTRY } from '../data/productBrands.ts'
 
 export type ProductBrandKey = 'holdermaps' | 'gullyai'
 
 /** The HolderMaps lockup from the brand registry (src/data/productBrands.ts). */
-const HM = PRODUCT_BRANDS.holdermaps.logo!
+const HM = REGISTRY.holdermaps.logo!
 
 export interface ProductBrand {
   name: string
