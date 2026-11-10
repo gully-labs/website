@@ -51,6 +51,7 @@ import { archiveKnown, readOwnHistory } from './holders-logs.mjs'
 import { probeToken, reserveAnySlot, resetAnyForTest, takeAnyBuild } from './holders-any.mjs'
 import { knownLaunch } from './holders-launchpads.mjs'
 import { gullyCoreLaunchVault, KIND_TAG, registryLabels as gullyRegistryLabels } from './gully-chain-registry.mjs'
+import { gullyMainnetConfig } from './gully-mainnet.mjs'
 import { GULLY_CHAIN, gullyNames, indexerGet as gullyIndexerGet, LAUNCHPADS as GULLY_LAUNCHPADS, setGullyFetchForTest } from './gully-chain.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -94,6 +95,10 @@ export const HOLDER_CHAINS = {
   // GULLY_RPC_485590 still overrides it. The explorer is our own (address and token pages; no verification API).
   gully: { id: 485590, name: 'Gully Chain Testnet', explorer: 'https://testnet.gullyscan.xyz', holders: 'own-rpc', testnet: true, ownArchive: true, rpcs: ['https://testnet-rpc.gullychain.xyz'], span: 10_000 },
 }
+// Gully Chain mainnet (48559): a Holder Map chain only once GULLY_RPC_48559 is set (gully-mainnet.mjs). Maps come from
+// our own Transfer-log index on that RPC, like the testnet; testnet labels, indexer and Core reads stay keyed on 485590.
+const GULLY_MAINNET = gullyMainnetConfig()
+if (GULLY_MAINNET) HOLDER_CHAINS[GULLY_MAINNET.key] = { id: GULLY_MAINNET.id, name: GULLY_MAINNET.name, explorer: GULLY_MAINNET.explorer, holders: 'own-rpc', ownArchive: true, rpcs: [...GULLY_MAINNET.rpcs], span: 10_000 }
 const CHAIN_BY_ID = Object.fromEntries(Object.entries(HOLDER_CHAINS).map(([k, c]) => [c.id, k]))
 export const chainKeyOf = (x) => {
   const s = String(x ?? '').toLowerCase()

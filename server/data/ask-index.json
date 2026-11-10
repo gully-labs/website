@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-10T04:14:14.061Z",
+ "updatedAt": "2026-11-10T10:16:59.823Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -55,6 +55,87 @@
    "section": "Where the numbers come from",
    "text": "Fair prices are Chainlink feeds read on chain with latestRoundData(); on Solana, where a share has no Chainlink feed, the issuer’s own xStocks quote, and every row names its source. Onchain prices are read from each token’s deepest pool on chain; DexScreener and GeckoTerminal only find the pool. Nothing is estimated or typed in: a price that cannot be read is reported as unreadable, never as zero. The methodology gives the exact rules. The tracker reports what two public sources say. It is not investment advice, and a gap is not a promise that anyone can trade it away.",
    "updatedAt": "2026-10-18T19:46:28.270Z"
+  },
+  {
+   "id": "1842c55621ca",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate",
+   "section": null,
+   "text": "Every Gully product can be used from your own site or app today: three small packages on npm, hosted scripts that need no build step, and public HTTP APIs. This page lists what integrates how, with a quickstart each. Only what is published is given as an install line; what is still coming to npm says so. Put a Gully product in your own site or app in five minutes: the published @gullylabs packages, the hosted scripts and the public APIs for HolderMaps, the tracker, Gully ID, Gully Pay, Gully Chain and Gully Security.",
+   "updatedAt": "2026-11-10T10:16:59.823Z"
+  },
+  {
+   "id": "262668087c20",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#map",
+   "section": "What integrates how",
+   "text": "HolderMaps (@gullylabs/holders on npm, or the embed.gullylabs.xyz script): Integrate the Holder Map Stock token tracker (@gullylabs/tracker and @gullylabs/widget on npm, the script, or the REST API): SDK Gully Score badge (An SVG badge and a widget, no package): Badges Gully ID (Hosted sign-in script or plain OIDC + PKCE): Gully ID sign-in Gully Pay (Public HTTP API: checkout, pay links, x402, webhooks): gullypay.xyz/docs Gully Chain and Gully Core (Chain id 485590 in any EVM library; Gully Core contracts and SDK from the chain docs): docs.gullychain.xyz/sdks Gully Security (Public reports and scans on gullysecurity.xyz; the website API for scores): Gully Security On npm under the @gullylabs scope: tracker, widget and holders (0.1.x, MIT, ESM and CommonJS with types, source github.com/gully-labs/sdk). Every other integration below is a hosted script or an HTTP API, so nothing on this page needs a package that does not exist yet.",
+   "updatedAt": "2026-11-10T10:16:59.823Z"
+  },
+  {
+   "id": "f532c4eda6c7",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#widgets",
+   "section": "Holders, prices and badges: the published packages",
+   "text": "The map of any token, who holds it and how the biggest wallets connect, from HolderMaps; the tracker client returns the same rows the API reference describes. No key is needed; a key from the app raises the rate limit. Every option of the widget guide is a data- attribute. The Gully Score badge is a plain SVG image: one img tag in a README or a page.",
+   "updatedAt": "2026-11-10T10:16:59.823Z"
+  },
+  {
+   "id": "9c8074e12eae",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#id",
+   "section": "Sign in with Gully ID",
+   "text": "Create the client in the Gully ID console. The hosted script at https://gullyid.xyz/sdk/v1.js draws the official button and runs the flow; the id_token carries the user's wallet and.gully name. Guide: Gully ID sign-in.",
+   "updatedAt": "2026-11-10T10:16:59.823Z"
+  },
+  {
+   "id": "8e057c680a7e",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#pay",
+   "section": "Payments: Gully Pay",
+   "text": "Gully Pay is the payment gateway for every Gully product: checkout, pay links, merchant stores, x402 micropayments and signed webhooks, paid to your own wallets, Gully Chain included. The REST docs, keys and webhook signing are at gullypay.xyz/docs.",
+   "updatedAt": "2026-11-10T10:16:59.823Z"
+  },
+  {
+   "id": "30dd34b2c8d9",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#chain",
+   "section": "Gully Chain and Gully Core",
+   "text": "Gully Chain Testnet is chain 485590: add it to viem, ethers or wagmi with the chain object above. Contract addresses, ABIs, the bridge,.gully names, account abstraction and the Gully Core launchpad and DEX core are documented for builders at docs.gullychain.xyz; Gully Core itself, on its five mainnets and the testnet, at docs.gullycore.xyz.",
+   "updatedAt": "2026-11-10T10:16:59.823Z"
+  },
+  {
+   "id": "d90b86f5bd54",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#security",
+   "section": "Security reports",
+   "text": "Published scan reports and monitors live on gullysecurity.xyz; the Gully Security page explains scans, monitors and the public report pages, and the Gully Score API and badge give a token's health in one number nobody can pay to change.",
+   "updatedAt": "2026-11-10T10:16:59.823Z"
+  },
+  {
+   "id": "2e53bf8cc737",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#coming",
+   "section": "Coming to npm",
+   "text": "These SDKs exist in the products' own repositories and are published to npm with the Gully Chain mainnet release; until then this page gives no install line for them, and their products integrate through the hosted scripts and APIs above. @gullylabs/chain: Gully Chain for viem (chain objects, every address and ABI, launchpad, swap,.gully names, passkey accounts, bridge, indexer, cross-chain buys). Today: docs.gullychain.xyz/sdks. @gullylabs/id: the OIDC + PKCE client, passkey and email sign-in, the account directory. Today: the hosted script above. @gullylabs/pay: x402 client, Agent Wallets, on-chain payment verification. Today: the HTTP API above. @gullylabs/security, @gullylabs/kre8-embed and @gullylabs/ads: the security badge element, kre8.fun coin cards and the Gully Ads publisher slots. Not published; Gully Ads serving is off in production.",
+   "updatedAt": "2026-11-10T10:16:59.823Z"
+  },
+  {
+   "id": "7e22799ac225",
+   "source": "Docs",
+   "title": "Integrate in 5 minutes",
+   "url": "https://docs.gullylabs.xyz/integrate#versions",
+   "section": "Versions and support",
+   "text": "The published packages are 0.x: minor versions may change APIs, patch versions never do. The repository has a CHANGELOG. Hosted scripts (embed.gullylabs.xyz/widget.js, gullyid.xyz/sdk/v1.js) are versioned in their URL or stable by contract; the API changelog is in the changelog. Questions: Discord, @Gully_Labs, or GitHub.",
+   "updatedAt": "2026-11-10T10:16:59.823Z"
   },
   {
    "id": "e20f8be116a1",

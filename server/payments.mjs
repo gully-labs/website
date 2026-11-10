@@ -35,6 +35,7 @@
 
 import { isFeeProxy, recipientViolations, SPLIT_PROXIES } from './fee-proxy-guard.mjs'
 import { treasuryDeployedOn } from './treasury-chains.mjs'
+import { gullyMainnetConfig } from './gully-mainnet.mjs'
 import { keccak_256 } from './vendor/noble.mjs'
 import { isSolanaAsset, readSolanaPayment, SOLANA_ASSETS, SOLANA_CHAIN, SOLANA_CHAIN_ID, solanaPayOn } from './solana-pay.mjs'
 
@@ -153,6 +154,23 @@ const TESTNETS = {
 const TESTNET_IDS = process.env.NODE_ENV === 'production' ? [] : [...new Set(String(process.env.GULLY_TESTNET_CHAINS ?? '').split(',').map((s) => Number(s.trim())))].filter((id) => TESTNETS[id])
 for (const id of TESTNET_IDS) CHAINS[id] = TESTNETS[id].chain
 
+// Gully Chain mainnet (48559): off until GULLY_RPC_48559 is set (gully-mainnet.mjs). With the RPC alone it is a
+// read-only chain (READ_CHAINS); with GULLY_MAINNET_USDC and GULLY_MAINNET_ETH_USD_FEED as well it becomes a payment
+// chain (USDC + ETH), still offered only where the treasury Safe is deployed (treasury-chains.mjs). Testnet 485590 is
+// unchanged either way.
+const GULLY_MAINNET = gullyMainnetConfig()
+const GULLY_MAINNET_PAY = GULLY_MAINNET?.payments ? GULLY_MAINNET : null
+if (GULLY_MAINNET_PAY) {
+  const g = GULLY_MAINNET_PAY
+  CHAINS[g.id] = { id: g.id, key: g.key, name: g.name, explorer: g.explorer, explorerName: g.explorerName, confirmations: g.confirmations, rpcs: g.rpcs, feed: { address: g.ethUsdFeed, decimals: 8, description: 'ETH / USD', maxAgeSec: FEED_MAX_AGE_SEC } }
+}
+const GULLY_MAINNET_ASSETS = GULLY_MAINNET_PAY
+  ? [
+      { id: 'gully-mainnet-usdc', chainId: GULLY_MAINNET_PAY.id, symbol: 'USDC', name: 'USD Coin', kind: 'token', address: GULLY_MAINNET_PAY.usdc, decimals: 6 },
+      { id: 'gully-mainnet-eth', chainId: GULLY_MAINNET_PAY.id, symbol: 'ETH', name: 'Ether', kind: 'native', address: null, decimals: 18 },
+    ]
+  : []
+
 /**
  * READ ONLY: chains our servers read from (Gully Score, Gully Security scans, monitoring reads) but where NO payment
  * is ever offered or priced. They are deliberately not in CHAINS, CHAIN_LIST or ASSETS, so nothing in checkout,
@@ -161,11 +179,15 @@ for (const id of TESTNET_IDS) CHAINS[id] = TESTNETS[id].chain
 export const READ_CHAINS = {
   485590: { id: 485590, key: 'gully', name: 'Gully Chain Testnet', testnet: true, readOnly: true, explorer: 'https://testnet.gullyscan.xyz', explorerName: 'Gully Chain Explorer', confirmations: 1, rpcs: ['https://testnet-rpc.gullychain.xyz'] },
 }
+if (GULLY_MAINNET && !GULLY_MAINNET_PAY) {
+  const g = GULLY_MAINNET
+  READ_CHAINS[g.id] = { id: g.id, key: g.key, name: g.name, testnet: false, readOnly: true, explorer: g.explorer, explorerName: g.explorerName, confirmations: g.confirmations, rpcs: g.rpcs }
+}
 /** A chain's definition for reads: a payment chain (CHAINS) or a read-only one (READ_CHAINS); null when unknown. */
 export const chainInfo = (chainId) => CHAINS[chainId] ?? READ_CHAINS[chainId] ?? null
 
 /** The EVM chains in display order (object keys that are numbers would sort by id). Testnets only when enabled. */
-export const CHAIN_LIST = [8453, 1, 56, 42161, 10, 137, 43114, ...TESTNET_IDS].map((id) => CHAINS[id])
+export const CHAIN_LIST = [8453, 1, 56, 42161, 10, 137, 43114, ...(GULLY_MAINNET_PAY ? [GULLY_MAINNET_PAY.id] : []), ...TESTNET_IDS].map((id) => CHAINS[id])
 /** Whether Gully Labs' own treasury may be paid on a chain (treasury-chains.mjs). Solana has its own treasury. */
 export const chainOffered = (chainId) => chainId === SOLANA_CHAIN_ID || treasuryDeployedOn(chainId)
 /**
@@ -195,6 +217,7 @@ export const ASSETS = [
   { id: 'avax-usdt', chainId: 43114, symbol: 'USDT', name: 'Tether USD', kind: 'token', address: '0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7', decimals: 6 },
   { id: 'avax-avax', chainId: 43114, symbol: 'AVAX', name: 'Avalanche', kind: 'native', address: null, decimals: 18 },
   ...SOLANA_ASSETS,
+  ...GULLY_MAINNET_ASSETS,
   ...TESTNET_IDS.flatMap((id) => TESTNETS[id].assets),
 ]
 export const ASSET_IDS = ASSETS.map((a) => a.id)

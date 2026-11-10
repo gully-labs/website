@@ -16,6 +16,10 @@
 //
 // Addresses are gully-ops/l3/generated/*.json (launchpad.json, names.json, oracle.json, uniswap-v3.json), copied here
 // by hand: this module never reads another repo at run time.
+//
+// Everything in this module is Gully Chain TESTNET (485590) and stays the default. Gully Chain mainnet (48559) is
+// config only (server/gully-mainnet.mjs: off until GULLY_RPC_48559 is set); its launchpad, names, oracle and DEX
+// addresses are not deployed yet, so none is written here and isGullyChain() stays testnet-only.
 
 import { keccak_256 } from './vendor/noble.mjs'
 import { registryInfra } from './gully-chain-registry.mjs'

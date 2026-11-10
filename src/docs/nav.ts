@@ -4,6 +4,7 @@ import { DOCS_URL, isDocsHost } from '../site-host'
 /** Every docs page, in sidebar order. `slug` is the relative route path ('' is the index). */
 export const DOC_PAGES = [
   { slug: '', title: 'Overview', group: 'Start' },
+  { slug: 'integrate', title: 'Integrate in 5 minutes', group: 'Start' },
   { slug: 'methodology', title: 'Tracker methodology', group: 'Start' },
   { slug: 'api', title: 'API reference', group: 'Build' },
   { slug: 'widget', title: 'Widget guide', group: 'Build' },
@@ -37,6 +38,7 @@ export type DocSlug = (typeof DOC_PAGES)[number]['slug']
 /** Extra words the sidebar search matches besides each page's title (lower case). */
 export const DOC_KEYWORDS: Partial<Record<DocSlug, string[]>> = {
   '': ['home', 'start', 'tracker', 'quick start', 'chains'],
+  integrate: ['sdk', 'npm', 'install', 'quickstart', 'embed', 'script', 'gully id', 'gully pay', 'gully chain', 'holders', 'widget', 'typescript', '@gullylabs'],
   methodology: ['fair price', 'chainlink', 'gap', 'premium', 'discount', 'pool', 'status'],
   api: ['endpoint', 'json', 'rest', 'tracker', 'history', 'holders', 'curl', 'errors'],
   widget: ['embed', 'ticker', 'badge', 'table', 'html', 'script'],
