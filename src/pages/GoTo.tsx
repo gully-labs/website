@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { SITE_URL } from '../site-host'
 
-/** Leaves for another host (the admin dashboard lives on admin.gullylabs.xyz). */
+/** Leaves for another host, or reloads a path the server answers itself. */
 export function GoTo({ url }: { url: string }) {
   useEffect(() => {
     window.location.replace(url)

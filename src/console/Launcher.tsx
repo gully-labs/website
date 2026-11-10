@@ -183,10 +183,10 @@ export function whatsNew(hub: HubBody | null): NewItem[] {
     { product: 'Gully Bridge', text: 'Bridge SDK: integrators earn a fee on every bridge', url: 'https://docs.gullychain.xyz', tag: 'in progress' },
     { product: 'Gully Multisig', text: 'Multisig wallets on Anubis, Kinetiq Elysium and Gully Chain', url: 'https://gullymultisig.xyz', hub: ['safe'] },
     { product: 'Gully Pay', text: 'Open sign-up and hosted checkout; x402 on Base, Ethereum, BNB Chain, Solana and Gully Chain', url: 'https://gullypay.xyz', hub: ['pay', 'x402'] },
-    { product: 'Gully Pay', text: 'Admin at admin.gullypay.xyz; mobile apps', url: 'https://gullypay.xyz', tag: 'in progress' },
+    { product: 'Gully Pay', text: 'Mobile apps', url: 'https://gullypay.xyz', tag: 'in progress' },
     { product: 'HolderMaps', text: 'Standalone app with the new design', url: 'https://holdermaps.xyz', hub: ['holders'] },
     { product: 'Gully AI', text: 'gullyai.xyz with docs; the API at ai.gullylabs.xyz/v1 opens with the GPU box', url: 'https://gullyai.xyz', hub: ['gullyai'] },
-    { product: 'Gully Studio', text: 'gullystudio.xyz, plus dev, docs and admin portals', url: 'https://gullystudio.xyz', hub: ['studio'] },
+    { product: 'Gully Studio', text: 'gullystudio.xyz, plus dev and docs portals', url: 'https://gullystudio.xyz', hub: ['studio'] },
   ]
 }
 

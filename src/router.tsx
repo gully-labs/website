@@ -6,7 +6,7 @@ import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, DevelopersRoute, Embe
 import { GoTo, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
-import { ADMIN_URL, APP_URL, isAdminHost, isAppHost, isDocsHost, isEmbedHost, isHolderMapsHost, isLocalHost, isPayHost, isSecurityHost } from './site-host'
+import { APP_URL, isAdminHost, isAppHost, isDocsHost, isEmbedHost, isHolderMapsHost, isLocalHost, isPayHost, isSecurityHost } from './site-host'
 import { installHolderMapsLinks } from './lib/holderMapsLinks'
 import { installSecurityLinks } from './lib/securityLinks'
 import { HolderMapsTokenPage, MainHolderPage, ToShortHolderPath } from './pages/HolderMapsRoutes'
@@ -119,9 +119,9 @@ const mainRoutes = [
       { path: '*', element: <NotFoundRoute /> },
     ],
   },
-  // The admin dashboard lives on its own host. Locally it is also at /admin; anywhere else /admin
-  // sends you there (the server answers that path with a 301 before the app even loads).
-  { path: '/admin', element: isLocalHost() ? <AdminRoute /> : <GoTo url={ADMIN_URL} /> },
+  // The admin dashboard lives on its own host. Locally it is also at /admin; anywhere else the server answers /admin
+  // before the app loads, so a client-side visit reloads the path from the server (no admin address in this bundle).
+  { path: '/admin', element: isLocalHost() ? <AdminRoute /> : <GoTo url="/admin" /> },
   // The Gully Labs App lives on app.gullylabs.xyz, full screen with its own sidebar. Locally it is at /app
   // and, under its old name, /developers; anywhere else both leave for the app (the server 301s first).
   { path: '/app', element: isLocalHost() ? <DevelopersRoute /> : <GoTo url={APP_URL} /> },
