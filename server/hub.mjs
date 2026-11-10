@@ -64,7 +64,6 @@ export const SURFACES = [
   { key: 'rpc-gateway', group: 'labs', name: 'Gully RPC gateway', url: 'https://rpc.gullyrpc.xyz' },
   { key: 'holders', group: 'labs', name: 'HolderMaps', url: 'https://holdermaps.xyz' },
   { key: 'security', group: 'labs', name: 'Gully Security', url: 'https://gullysecurity.xyz' },
-  { key: 'pay-admin', group: 'labs', name: 'Gully Pay admin', url: 'https://admin.gullypay.xyz', soon: true },
   { key: 'gullyai', group: 'labs', name: 'Gully AI', url: 'https://gullyai.xyz' },
   // The model goes live when the GPU box arrives: until the gateway answers 200 it is "coming", not down.
   { key: 'ai-api', group: 'labs', name: 'Gully AI API', url: 'https://gullyai.xyz/docs/', probe: 'https://ai.gullylabs.xyz/healthz', soon: true },

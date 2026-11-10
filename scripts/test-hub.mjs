@@ -102,10 +102,22 @@ test('every surface links to https and Gully Chain pieces are all listed', () =>
   for (const k of ['street', 'explorer', 'faucet', 'bridge', 'docs', 'devportal', 'rpc-public']) assert.ok(SURFACES.some((s) => s.key === k && s.group === 'chain'), k)
 })
 
+// Owner, 2026-11-10: no admin or internal data on live public sites. /api/hub is public (gullylabs.xyz, holdermaps.xyz,
+// app.gullylabs.xyz): it never lists an admin console, by key, name or address.
+const ADMIN_RE = /admin/i
+test('the public hub lists no admin console', async () => {
+  for (const s of SURFACES) assert.ok(!ADMIN_RE.test(`${s.key} ${s.name} ${s.url} ${s.probe ?? ''}`), `${s.key} names an admin console`)
+  _resetHub(async (_url, init = {}) => (init.method === 'POST' ? new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result: '0x1' }), { status: 200 }) : new Response('ok', { status: 200 })))
+  let out = null
+  await handleHub({ method: 'GET' }, {}, new URL('http://x/api/hub'), (_r, code, body) => (out = { code, body }))
+  assert.equal(out.code, 200)
+  assert.ok(!/admin/i.test(out.body), 'the /api/hub answer mentions admin')
+  _resetHub()
+})
+
 test('surfaces still being set up read "coming" until they answer 200, never "down"', async () => {
   _resetHub(async (url, init = {}) => {
     const u = String(url)
-    if (u.includes('admin.gullypay')) throw new TypeError('fetch failed')
     if (u.includes('ai.gullylabs.xyz')) return new Response('', { status: 404 })
     if (u.includes('dev.gullystudio')) return new Response('ok', { status: 200 })
     if (u.includes('copy.kre8.fun')) return new Response('', { status: 502 })
@@ -116,8 +128,6 @@ test('surfaces still being set up read "coming" until they answer 200, never "do
   await handleHub({ method: 'GET' }, {}, new URL('http://x/api/hub'), (_r, code, body) => (out = { code, body }))
   const b = JSON.parse(out.body)
   const by = (k) => b.services.find((s) => s.key === k)
-  assert.equal(by('pay-admin').state, 'coming')
-  assert.equal(by('pay-admin').up, false)
   assert.equal(by('ai-api').state, 'coming')
   assert.equal(by('ai-api').ms, null)
   assert.equal(by('studio-dev').state, 'up')

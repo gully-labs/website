@@ -268,7 +268,6 @@ export function NetworkChips({ kind }: { kind: 'x402' | 'gateway' }) {
 const LABS: { k: string; name: string; url: string }[] = [
   { k: 'pay', name: 'Gully Pay', url: 'https://gullypay.xyz' },
   { k: 'x402', name: 'x402 facilitator', url: 'https://gullypay.xyz/api/x402/status' },
-  { k: 'pay-admin', name: 'Gully Pay admin', url: 'https://admin.gullypay.xyz' },
   { k: 'rpc-site', name: 'Gully RPC', url: 'https://gullyrpc.xyz' },
   { k: 'rpc-app', name: 'Gully RPC app', url: 'https://app.gullyrpc.xyz' },
   { k: 'rpc-gateway', name: 'RPC gateway', url: 'https://rpc.gullyrpc.xyz' },

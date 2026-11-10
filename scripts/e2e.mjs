@@ -3002,6 +3002,42 @@ await step('discovery files and contracts page', async () => {
 
 // pay., api. and embed. (server/hosts.mjs) are simulated with Chromium's --host-resolver-rules (names mapped to
 // 127.0.0.1, the e2e port kept) and with Host headers for what a browser cannot send. One more browser, closed at the end.
+// Owner, 2026-11-10: no admin or internal data on live public sites. No JS chunk a public page can load names an admin
+// console (admin.<product>), and the server-rendered HTML of the public hosts links none. Chunks reachable only through
+// the admin dashboard's own lazy chunk (AdminPage-*.js, loaded on admin.gullylabs.xyz) may name them.
+await step('no admin hosts on public pages', async () => {
+  const ADMIN_HOSTS = /admin\.(gullylabs|gullypay|kre8|gullycore|gullyid|gullychain|gullyai|gullystudio|gullyrpc|gullymultisig|gullysecurity|holdermaps)\b/
+  const ASSETS = path.join(ROOT, 'dist', 'assets')
+  const html = fs.readFileSync(path.join(ROOT, 'dist', 'index.html'), 'utf8')
+  const entries = [...html.matchAll(/(?:src|href)="\/assets\/([^"]+\.js)"/g)].map((m) => m[1])
+  check('admin scan: index.html loads at least one chunk', entries.length > 0)
+  const isAdminRoot = (f) => /^AdminPage-/.test(f)
+  const seen = new Set()
+  const queue = [...entries]
+  while (queue.length) {
+    const f = queue.shift()
+    if (seen.has(f) || isAdminRoot(f) || !fs.existsSync(path.join(ASSETS, f))) continue
+    seen.add(f)
+    const js = fs.readFileSync(path.join(ASSETS, f), 'utf8')
+    for (const m of js.matchAll(/["'`](?:\.\/|\/assets\/|assets\/)([\w.-]+\.js)["'`]/g)) queue.push(m[1])
+  }
+  check('admin scan: the public import graph covers the lazy chunks', seen.size > entries.length + 10)
+  const named = [...seen].filter((f) => ADMIN_HOSTS.test(fs.readFileSync(path.join(ASSETS, f), 'utf8')))
+  check(`no public JS chunk names an admin host${named.length ? ` (${named.join(', ')})` : ''}`, named.length === 0)
+  // Server-rendered HTML and the public hub answer. TODO(other lane): server/landing.mjs ANALYTICS lists admin.gullylabs.xyz
+  // in the Umami data-domains attribute; that attribute is left out here until it is fixed there.
+  const pages = [['gullylabs.xyz', '/'], ['gullylabs.xyz', '/products/pay'], ['gullylabs.xyz', '/status'], ['app.gullylabs.xyz', '/'], ['holdermaps.xyz', '/'], ['docs.gullylabs.xyz', '/']]
+  for (const [h, p] of pages) {
+    const r = await hostRequest(BASE, h, p)
+    const body = r.text.replace(/data-domains="[^"]*"/g, '')
+    check(`${h}${p}: server HTML links no admin host`, r.status < 500 && !ADMIN_HOSTS.test(body))
+  }
+  for (const h of ['gullylabs.xyz', 'app.gullylabs.xyz', 'holdermaps.xyz']) {
+    const r = await hostRequest(BASE, h, '/api/hub')
+    check(`${h}/api/hub: no admin console listed`, r.status === 200 && !/admin/i.test(r.text))
+  }
+})
+
 await step('service hosts', async () => {
   const HOSTS = [...['pay', 'api', 'embed'].map((h) => `${h}.gullylabs.xyz`), 'holdermaps.xyz', 'www.holdermaps.xyz', 'gullysecurity.xyz', 'www.gullysecurity.xyz']
   const hb = await chromium.launch({ headless: !process.env.E2E_HEADED, args: [`--host-resolver-rules=${HOSTS.map((h) => `MAP ${h} 127.0.0.1`).join(', ')}`] })

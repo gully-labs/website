@@ -119,7 +119,7 @@ const sum = (xs) => (xs.length ? xs.reduce((a, b) => a + (num(b) ?? 0), 0) : nul
 /** The surfaces that make up each product's state (as src/pages/hub/hubData.ts SERVICE_KEYS). */
 export const KEYS = {
   id: ['gully-id'],
-  pay: ['pay', 'x402', 'pay-admin'],
+  pay: ['pay', 'x402'],
   chain: ['chain-site', 'street', 'explorer', 'faucet', 'bridge', 'indexer', 'rpc-public', 'copy', 'social-api', 'docs', 'devportal', 'sentry', 'offerwall'],
   rpc: ['rpc-site', 'rpc-app', 'rpc-gateway'],
   holdermaps: ['holders'],
