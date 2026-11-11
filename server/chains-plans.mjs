@@ -30,8 +30,9 @@ export const STACK = [
 ]
 
 export const CHAINS = {
-  // Free for `freeDays`, then `monthlyUsd` a month. null: not set yet, shown as "TBA".
-  testnet: { id: 'testnet', name: 'Testnet', freeDays: 30, monthlyUsd: 212.5 },
+  // Free for `freeDays`, then `monthlyUsd` a month, all-in (the standard bundle). null: not set yet, shown as "TBA".
+  // Owner confirmed 2026-11-11: 30 days free, then $199 a month all-in.
+  testnet: { id: 'testnet', name: 'Testnet', freeDays: 30, monthlyUsd: 199 },
   // From `fromUsdPerMonth` a month, plus `sequencerProfitPct` per cent of the sequencer's profit; data availability at cost.
   mainnet: { id: 'mainnet', name: 'Managed mainnet', fromUsdPerMonth: 4250, sequencerProfitPct: 4.25, daAtCost: true },
   // `usd`: null is "TBA"; `model` says how it is billed.
@@ -52,7 +53,7 @@ export const CHAINS = {
 //
 // HOW THE NUMBERS WERE SET (owner, Nov 2026: "competitive pricing 15% cheaper"). Read 2026-11-07. Internal: never sent to
 // a page, and no page compares us with anyone, because a comparison needs a source and the base fee below has none.
-//   - conduit.xyz/pricing, Trial Testnet "$250 per month"                     -> ours $212.50 a month after the free days
+//   - conduit.xyz/pricing, Trial Testnet "$250 per month"                     -> ours $212.50 a month after the free days (superseded: the owner set $199 on 2026-11-11)
 //   - conduit.xyz/pricing, Growth "Contact for pricing + 5% sequencer profit" -> ours 4.25% of sequencer profit
 //   - Also read 2026-11-08, no price shown: caldera.xyz/pricing and alchemy.com/rollups/pricing answer 404; gelato.cloud/rollups
 //     names no amount. Third-party only (AWS Marketplace listing for Caldera: $500 a month per rollup pod, not a plan price).
@@ -65,7 +66,7 @@ export const PRICE_BENCHMARKS = {
   discountPct: 15,
   ownerToConfirm: 'mainnet base $4,250 per month: Conduit no longer publishes the Growth base',
   sources: [
-    { name: 'Conduit Trial Testnet', url: 'https://www.conduit.xyz/pricing', published: '$250 per month', ours: '$212.50 per month' },
+    { name: 'Conduit Trial Testnet', url: 'https://www.conduit.xyz/pricing', published: '$250 per month', ours: '$199 per month (owner, 2026-11-11)' },
     { name: 'Conduit Growth share', url: 'https://www.conduit.xyz/pricing', published: '5% sequencer profit', ours: '4.25% sequencer profit' },
     { name: 'Conduit Growth base', url: 'https://www.conduit.xyz/pricing', published: null, ours: '$4,250 per month (owner target, unsourced)' },
     { name: 'Caldera', url: 'https://caldera.xyz', published: null, ours: null },
@@ -111,8 +112,11 @@ export const BUNDLE = {
 /** Business days our team takes to set up a testnet chain once the request is in. Shown on the page and the order. */
 export const SETUP_BUSINESS_DAYS = 3
 
-/** OWNER FLAG: the after-trial testnet price (CHAINS.testnet.monthlyUsd) is confirmed. Off (default): no page shows it. */
-export const priceConfirmed = (env = process.env) => ['on', 'true', '1', 'yes'].includes(String(env.PRICE_CONFIRMED ?? '').trim().toLowerCase())
+/** The after-trial testnet price (CHAINS.testnet.monthlyUsd) is confirmed: owner, 2026-11-11 ($199 a month all-in). On by
+ *  default; PRICE_CONFIRMED=off hides it again (every page then shows UNCONFIRMED_PRICE_NOTE). */
+export const priceConfirmed = (env = process.env) => !['off', 'false', '0', 'no'].includes(String(env.PRICE_CONFIRMED ?? '').trim().toLowerCase())
+export const NO_SURPRISE_CHARGE = 'You are never charged without a checkout you start.'
+const afterTrial = () => `Then ${money(CHAINS.testnet.monthlyUsd)} a month, all-in. ${NO_SURPRISE_CHARGE}`
 export const UNCONFIRMED_PRICE_NOTE = 'Price set before your trial ends; you are never charged without a checkout you start.'
 
 const includedFor = (tier) => BUNDLE.included.filter((x) => tier === 'testnet' || !x.testnetOnly)
@@ -160,7 +164,7 @@ export function quoteOrder(tier, addonIds = [], env = process.env) {
   if (tier === 'testnet') {
     const dueCents = Math.round(testChargeUsd(env) * 100)
     const confirmed = priceConfirmed(env) && Number.isFinite(CHAINS.testnet.monthlyUsd)
-    return { tier, included, addons, dueCents, testCharge: dueCents > 0, freeDays: CHAINS.testnet.freeDays, setupDays, priceConfirmed: confirmed, monthlyUsd: confirmed ? CHAINS.testnet.monthlyUsd : null, sequencerProfitPct: null, daAtCost: false, priceWithUs: false, headline: `Free for ${CHAINS.testnet.freeDays} days`, after: confirmed ? `Then ${money(CHAINS.testnet.monthlyUsd)} a month` : UNCONFIRMED_PRICE_NOTE }
+    return { tier, included, addons, dueCents, testCharge: dueCents > 0, freeDays: CHAINS.testnet.freeDays, setupDays, priceConfirmed: confirmed, monthlyUsd: confirmed ? CHAINS.testnet.monthlyUsd : null, sequencerProfitPct: null, daAtCost: false, priceWithUs: false, headline: `Free for ${CHAINS.testnet.freeDays} days`, after: confirmed ? afterTrial() : UNCONFIRMED_PRICE_NOTE }
   }
   const monthlyUsd = CHAINS.mainnet.fromUsdPerMonth
   return { tier, included, addons, dueCents: Math.round(monthlyUsd * 100), testCharge: false, freeDays: 0, setupDays, priceConfirmed: true, monthlyUsd, sequencerProfitPct: CHAINS.mainnet.sequencerProfitPct, daAtCost: CHAINS.mainnet.daAtCost, priceWithUs: addons.some((a) => a.usd === null), headline: `${money(monthlyUsd)} a month`, after: `+ ${CHAINS.mainnet.sequencerProfitPct}% of sequencer profit, data availability at cost` }
@@ -179,7 +183,7 @@ export function presentQuote(q, env = process.env) {
   const out = { ...q, included: inc, addons, setupDays: q.setupDays ?? SETUP_BUSINESS_DAYS }
   if (tier === 'testnet') {
     const confirmed = priceConfirmed(env) && Number.isFinite(CHAINS.testnet.monthlyUsd)
-    Object.assign(out, { priceConfirmed: confirmed, monthlyUsd: confirmed ? CHAINS.testnet.monthlyUsd : null, after: confirmed ? `Then ${money(CHAINS.testnet.monthlyUsd)} a month` : UNCONFIRMED_PRICE_NOTE })
+    Object.assign(out, { priceConfirmed: confirmed, monthlyUsd: confirmed ? CHAINS.testnet.monthlyUsd : null, after: confirmed ? afterTrial() : UNCONFIRMED_PRICE_NOTE })
   }
   return out
 }

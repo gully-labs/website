@@ -80,11 +80,10 @@ const S = (o) => pay.sessions.find((s) => s.clientReferenceId === `chain:${o.id}
 try {
   /* ---- pricing: the one config ---- */
   const t = plans.quoteOrder('testnet', ['explorer', 'gully-core'])
-  check('testnet: free 30 days, and NO after-trial price while the owner has not confirmed it', t.freeDays === 30 && t.headline === 'Free for 30 days' && t.monthlyUsd === null && t.priceConfirmed === false && t.after === plans.UNCONFIRMED_PRICE_NOTE)
-  check('testnet unconfirmed: no dollar figure anywhere in the quote but the test charge', !/\$|212/.test(JSON.stringify({ ...t, dueCents: 0 })))
-  check('testnet unconfirmed: the note says you are never charged without a checkout you start', /never charged without a checkout you start/.test(t.after))
-  const tc = plans.quoteOrder('testnet', [], { PRICE_CONFIRMED: 'on', CHAIN_TESTNET_TEST_CHARGE_USD: '1' })
-  check('testnet confirmed (owner flag on): then $212.50 a month, 15% under the $250 published trial testnet, never "invoiced"', tc.monthlyUsd === 212.5 && tc.after === 'Then $212.50 a month' && tc.priceConfirmed === true)
+  check('testnet: free 30 days, then the owner-confirmed $199 a month all-in (2026-11-11), never "invoiced"', t.freeDays === 30 && t.headline === 'Free for 30 days' && t.monthlyUsd === 199 && t.priceConfirmed === true && t.after === 'Then $199 a month, all-in. You are never charged without a checkout you start.')
+  check('testnet: the note says you are never charged without a checkout you start', /never charged without a checkout you start/.test(t.after))
+  const tu = plans.quoteOrder('testnet', ['explorer', 'gully-core'], { PRICE_CONFIRMED: 'off', CHAIN_TESTNET_TEST_CHARGE_USD: '1' })
+  check('testnet with the price switched off (PRICE_CONFIRMED=off): no dollar figure but the test charge', tu.monthlyUsd === null && tu.priceConfirmed === false && tu.after === plans.UNCONFIRMED_PRICE_NOTE && !/\$|199/.test(JSON.stringify({ ...tu, dueCents: 0 })))
   check('testnet: the checkout charge is a test amount in cents', t.dueCents === 100 && t.testCharge === true)
   check('testnet: setup days come from the one config value (default 3)', plans.SETUP_BUSINESS_DAYS === 3 && t.setupDays === 3)
   const m = plans.quoteOrder('mainnet', ['paymaster'])
@@ -107,7 +106,7 @@ try {
   check('bundle: a bundle id sent as an add-on (an old draft) is accepted and not doubled', plans.quoteOrder('testnet', ['explorer', 'multisig']).addons.length === 0)
   const old = { tier: 'testnet', addons: [{ id: 'explorer', name: 'Block explorer', usd: 0, fee: null }, { id: 'gully-core', name: 'Gully Core', usd: 0, fee: '0.30% of every trade' }], dueCents: 0, testCharge: false, freeDays: 30, monthlyUsd: 212.5, headline: 'Free for 30 days', after: 'Then $212.50 a month, invoiced' }
   const shown = plans.presentQuote(old)
-  check('an order placed before this change shows no unconfirmed price and gets the bundle with deliveries', shown.monthlyUsd === null && !/\$|invoiced/.test(shown.after) && shown.included.length === 8 && shown.addons.map((a) => a.id).join() === 'gully-core' && shown.addons[0].delivery === 'team')
+  check('an order placed before this change shows the confirmed price of today (never the old $212.50 or "invoiced") and gets the bundle with deliveries', shown.monthlyUsd === 199 && /^Then \$199 a month, all-in\./.test(shown.after) && !/212|invoiced/.test(JSON.stringify([shown.after, shown.monthlyUsd])) && shown.included.length === 8 && shown.addons.map((a) => a.id).join() === 'gully-core' && shown.addons[0].delivery === 'team')
   check('every benchmark names a source; an unpublished price stays null', plans.PRICE_BENCHMARKS.sources.every((s) => /^https:/.test(s.url)) && plans.PRICE_BENCHMARKS.sources.filter((s) => s.published === null).length === 3)
   check('the unsourced mainnet base is flagged for the owner', /\$4,250/.test(plans.PRICE_BENCHMARKS.ownerToConfirm))
 
@@ -154,7 +153,7 @@ try {
   const q = await A.call('/api/chain-orders/quote?tier=testnet&addons=explorer,rpc,gully-core')
   check('step 3: the quote endpoint answers the config', q.data.quote.dueCents === 100)
   check('step 3: the quote endpoint equals the one calculation the page shows', JSON.stringify(q.data.quote) === JSON.stringify(plans.quoteOrder('testnet', ['explorer', 'rpc', 'gully-core'])))
-  check('step 3: the quote has no after-trial price', q.data.quote.monthlyUsd === null && !/212|invoiced/.test(JSON.stringify(q.data.quote)))
+  check('step 3: the quote has the confirmed after-trial price and no old one', q.data.quote.monthlyUsd === 199 && !/212|invoiced/.test(JSON.stringify(q.data.quote)))
   check('step 3: a planned add-on is 400', (await A.call('/api/chain-orders/quote?tier=testnet&addons=usdc-gas')).status === 400)
   const mq = await A.call('/api/chain-orders/quote?tier=mainnet&addons=')
   check('step 3: no mainnet quote while mainnet is shut (no unconfirmed price on the wire)', mq.status === 403 && mq.data.code === 'mainnet-off' && !/4,?250/.test(JSON.stringify(mq.data)))
@@ -178,7 +177,7 @@ try {
   const o1 = placed.data.order
   check('step 5: order placed, awaiting payment, email lower-cased, logo kept', placed.status === 201 && o1.status === 'awaiting_payment' && o1.email === 'team@example.com' && o1.logo === PNG)
   check('step 5: the buyer view has no internal fields', !('address' in o1) && !('sessions' in o1) && !('review' in o1) && o1.history.every((h) => !('by' in h)))
-  check('step 5: the stored order carries the bundle with deliveries and no after-trial price', o1.quote.included.length === 8 && o1.quote.included.every((x) => x.delivery === 'team') && o1.quote.monthlyUsd === null)
+  check('step 5: the stored order carries the bundle with deliveries and the confirmed after-trial price', o1.quote.included.length === 8 && o1.quote.included.every((x) => x.delivery === 'team') && o1.quote.monthlyUsd === 199)
   check('step 5: another buyer gets 404', (await B.call(`/api/chain-orders/${o1.id}`)).status === 404)
   check('step 5: and cannot open its checkout', (await B.post(`/api/chain-orders/${o1.id}/checkout`)).status === 404)
   const c1 = await A.post(`/api/chain-orders/${o1.id}/checkout`)
