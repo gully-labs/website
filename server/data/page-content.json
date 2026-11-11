@@ -596,7 +596,7 @@
   ],
   "/products/safe": [
    "Gully Multisig · Gully Labs",
-   "Multisig wallets for teams and treasuries on Anubis Network, Kinetiq Elysium and Gully Chain testnet, built on the Safe 1.4.1 contracts and run by Gully Labs."
+   "Gully Multisig: Multisig wallets for teams and treasuries on Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet, built on the Safe 1.4.1 contracts and run by Gully Labs. Live charts, features, how it works, pricing and questions answered on this page."
   ],
   "/products/gully-sentry": [
    "Gully Sentry · Gully Labs",
@@ -1948,7 +1948,7 @@
   },
   "safe": {
    "name": "Gully Multisig",
-   "line": "Multisig wallets for teams and treasuries on Anubis Network, Kinetiq Elysium and Gully Chain testnet, built on the Safe 1.4.1 contracts and run by Gully Labs.",
+   "line": "Multisig wallets for teams and treasuries on Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet, built on the Safe 1.4.1 contracts and run by Gully Labs.",
    "url": "https://gullymultisig.xyz",
    "urlLabel": "gullymultisig.xyz",
    "cta": null,
@@ -1971,7 +1971,7 @@
     },
     {
      "t": "Where it runs",
-     "d": "Anubis Network, Kinetiq Elysium and Gully Chain testnet: Gully runs its own Safe transaction service for each, with a chain switcher in the app."
+     "d": "Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet: Gully runs its own Safe transaction service for each, with a chain switcher in the app."
     },
     {
      "t": "Gully ID as a signer",
@@ -1996,7 +1996,7 @@
    "faq": [
     [
      "Is Gully Multisig live?",
-     "Yes, on Anubis Network, Kinetiq Elysium and Gully Chain testnet. This page shows its real state, checked every minute at gullymultisig.xyz, its only address."
+     "Yes, on Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet. This page shows its real state, checked every minute at gullymultisig.xyz, its only address."
     ],
     [
      "Which contracts does it use?",
@@ -3026,10 +3026,10 @@
    {
     "key": "multisig",
     "name": "Gully Multisig",
-    "line": "Team and treasury multisigs on Anubis Network, Kinetiq Elysium and Gully Chain testnet.",
+    "line": "Team and treasury multisigs on Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet.",
     "icon": "/brand/web/logos/gc-icon.svg",
     "label": "Live",
-    "fact": "Anubis · Kinetiq Elysium · Gully Chain",
+    "fact": "Anubis · Robinhood · Kinetiq Elysium · Gully Chain",
     "href": "/products/safe"
    },
    {
@@ -4274,7 +4274,7 @@
       ],
       [
        "/products/safe",
-       "Gully Multisig: Multisig wallets for teams and treasuries on Anubis Network, Kinetiq Elysium and Gully Chain testnet, built on the Safe 1.4.1 contracts and run by Gully Labs."
+       "Gully Multisig: Multisig wallets for teams and treasuries on Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet, built on the Safe 1.4.1 contracts and run by Gully Labs."
       ],
       [
        "/products/gully-sentry",
@@ -6135,7 +6135,7 @@
      "h": null,
      "level": 2,
      "p": [
-      "Runs on Anubis Network, Kinetiq Elysium and Gully Chain testnet."
+      "Runs on Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet."
      ],
      "list": [],
      "links": [
@@ -6157,7 +6157,7 @@
      "list": [
       "M-of-N signing: Any number of owners and a threshold you choose.",
       "Team treasuries: Hold launch proceeds and protocol fees under shared control.",
-      "Where it runs: Anubis Network, Kinetiq Elysium and Gully Chain testnet: Gully runs its own Safe transaction service for each, with a chain switcher in the app.",
+      "Where it runs: Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet: Gully runs its own Safe transaction service for each, with a chain switcher in the app.",
       "Gully ID as a signer: A Gully ID passkey wallet can sign as one of the owners."
      ],
      "links": [],
@@ -6194,7 +6194,7 @@
      "qa": [
       [
        "Is Gully Multisig live?",
-       "Yes, on Anubis Network, Kinetiq Elysium and Gully Chain testnet. This page shows its real state, checked every minute at gullymultisig.xyz, its only address."
+       "Yes, on Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet. This page shows its real state, checked every minute at gullymultisig.xyz, its only address."
       ],
       [
        "Which contracts does it use?",

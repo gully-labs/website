@@ -57,7 +57,7 @@ export const GULLY_CORE: GullyCoreView = {
       "kind": "mainnet",
       "status": "live",
       "state": "Live",
-      "multisig": false,
+      "multisig": true,
       "app": "https://app.gullycore.xyz/",
       "explorer": "https://robinhoodchain.blockscout.com",
       "logo": "/chains/robinhood.png"
@@ -139,6 +139,7 @@ export const GULLY_CORE: GullyCoreView = {
   "whereLive": "On Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium mainnets and on Gully Chain testnet.",
   "multisigChains": [
     "Anubis Network",
+    "Robinhood Chain",
     "Kinetiq Elysium",
     "Gully Chain testnet"
   ],
