@@ -214,6 +214,14 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
     half: false,
     flip: false,
     carry: 0,
+    /** Wall-clock pacing (2026-11-11, holdermaps.xyz saturating slow CPUs): the real frame gap (not capped), when the
+     *  loop started, when the load was last judged, when the map last drew, and the least time between two draws. */
+    raw: 16,
+    startAt: 0,
+    checkAt: 0,
+    drawAt: 0,
+    step: 0,
+    slowAt: 0,
     layer: null as HTMLCanvasElement | null,
     layerKey: '',
     bigAt: -1000,
@@ -430,31 +438,50 @@ export const BubbleCanvas = forwardRef<BubbleHandle, BubbleCanvasProps>(function
 
     function frame(now: number) {
       s.raf = 0
-      const dt = Math.min(50, Math.max(0, now - s.last))
+      const gapNow = Math.max(0, now - s.last)
+      const dt = Math.min(50, gapNow)
       s.last = now
-      // Still slow after going lite: draw every other frame (30 fps for the map, the page keeps its 60).
+      if (!s.startAt) s.startAt = s.checkAt = now
+      // The real gap between frames, uncapped: a saturated main thread shows here first.
+      s.raw = s.raw * 0.85 + Math.min(1000, gapNow) * 0.15
+      // Still slow after going lite: draw every other frame (30 fps for the map, the page keeps its 60); slower still,
+      // at most every `step` ms, so the page's own work and input always get the main thread back.
       s.flip = !s.flip
-      if (s.half && s.flip) {
+      if ((s.half && s.flip && !s.step) || (s.step && now - s.drawAt < s.step)) {
         s.carry += dt
         if (s.visible && !s.hidden) s.raf = requestAnimationFrame(frame)
         return
       }
+      s.drawAt = now
       const t0 = performance.now()
       draw(dt + s.carry)
       s.carry = 0
       // Draw cost (an average), shown on the box for checks and used to drop extras on slow devices.
       s.cost = s.cost * 0.92 + (performance.now() - t0) * 0.08
       s.gap = s.gap * 0.95 + dt * 0.05
-      if (++s.frames % 60 === 0) {
+      ++s.frames
+      // Judged every second of wall time (not every N frames: at 6 fps, 180 frames took 30 s and the page stayed
+      // saturated all that time). Sticky once on, past the 1.5 s entrance: no flapping between looks.
+      if (now - s.checkAt >= 1000) {
+        s.checkAt = now
         box.dataset.frameMs = s.cost.toFixed(1)
-        // Sticky once on (after the first three seconds, past the entrance): no flapping between looks.
+        const slow = s.raw > 24 || s.gap > 24
         const was = s.lite
-        s.lite = s.lite || (s.frames >= 180 && s.gap > 24)
+        s.lite = s.lite || (now - s.startAt >= 1500 && slow)
         if (was !== s.lite) {
           size()
-          s.liteAt = s.frames
-        } else if (s.lite && !s.half && s.frames - s.liteAt >= 180 && s.gap > 24) s.half = true
-        box.dataset.lite = s.half ? 'half' : s.lite ? '1' : ''
+          s.liteAt = now
+        } else if (s.lite && !s.half && now - s.liteAt >= 1500 && slow) {
+          s.half = true
+          s.slowAt = now
+        } else if (s.half && now - s.slowAt >= 1500 && s.raw > 45) {
+          // Half rate did not free the thread: the map draws at about 15 fps, then about 8, and stays there.
+          s.step = s.step >= 125 ? 250 : s.step ? 125 : 66
+          s.slowAt = now
+        }
+        // A draw that costs more than 20 ms (a slow CPU) never takes more than about a third of the thread.
+        if (s.lite && s.cost > 20) s.step = Math.max(s.step, Math.min(500, Math.round(s.cost * 3)))
+        box.dataset.lite = s.step ? `step${s.step}` : s.half ? 'half' : s.lite ? '1' : ''
       }
       if (s.visible && !s.hidden) s.raf = requestAnimationFrame(frame)
     }
