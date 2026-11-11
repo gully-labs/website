@@ -163,8 +163,8 @@ export function IpfsDocs() {
 
       <Section id="policy" title="Content policy">
         <P>
-          Pin only content you have the right to publish. No illegal content, no content that sexualises minors, no malware or phishing, no other people&apos;s private data, nothing that infringes copyright. Uploaded and pinned images and video are reviewed. Content that
-          breaks the policy is taken down: unpinned from every Gully node and refused by the gateway, and the account may be closed. Report content to <Ext href="mailto:team@gullylabs.xyz">team@gullylabs.xyz</Ext>.
+          Pin only content you have the right to publish. No illegal content, no content that sexualises minors, no malware or phishing, no other people&apos;s private data, nothing that infringes copyright. Uploaded and pinned images are scanned automatically, and video, SVG and anything the scanner flags is looked at by a person. Content that
+          breaks the policy is taken down: unpinned from every Gully node and refused by the gateway, the same file is refused if it is uploaded again, and the account may be closed. Report content to <Ext href="mailto:team@gullylabs.xyz">team@gullylabs.xyz</Ext>.
         </P>
       </Section>
 

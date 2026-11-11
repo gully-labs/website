@@ -2,6 +2,7 @@
 // implement (list filters, add 202, get, replace, delete 202, error shape), auth and scopes, quotas, ownership (an
 // account sees and removes only its own pins; Gully's own pins are never unpinned), uploads (file and CAR), review
 // queue for media, takedown (unpin, purge, denylist, re-pin refused) and the replica's sync routes.
+// Scanning against a fake scanner (low score passes, flagged / busy / video wait, highest first) and the hash denylist.
 //   node --test scripts/test-ipfs-pins.mjs
 import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
@@ -24,6 +25,26 @@ const CID_BIG = 'bafybeihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku'
 const CID_IMG = 'bafkreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku'
 const CAR_ROOT = 'bafybeibml5uieyxa5tufngvg7fgwbkwvlsuntwbxgtskoqynbt7wlchmfm'
 
+const png = (tag) => Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from(tag), Buffer.alloc(24)])
+const IMG_BYTES = png('pinned-by-cid')
+const IMG_BYTES_OVERRIDE = new Map()
+
+// ---- a fake scanner (gully-ops gully/ipfs-scanner): the score is read from the image's tag ----
+const scanState = { calls: 0, auth: [] }
+const scanner = http.createServer((req, res) => {
+  const parts = []
+  req.on('data', (c) => parts.push(c))
+  req.on('end', () => {
+    scanState.calls++
+    scanState.auth.push(req.headers.authorization ?? null)
+    const b = Buffer.concat(parts).toString('latin1')
+    if (b.includes('busy')) return res.writeHead(503), res.end('{"error":"busy"}')
+    const m = b.match(/score=([0-9.]+)/)
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ score: m ? Number(m[1]) : 0.01, model: 'fake', ms: 1 }))
+  })
+})
+
 // ---- a fake Kubo RPC + gateway ----
 const kuboState = { pins: new Set([CID_GULLY]), blocks: new Set([CID_GULLY]), calls: [], added: 0 }
 const SIZES = { [CID_A]: 1000, [CID_BIG]: 5 * 1024 * 1024, [CID_IMG]: 2000, [CID_GULLY]: 531 }
@@ -35,8 +56,9 @@ const kubo = http.createServer((req, res) => {
   const ok = (o) => (res.writeHead(200, { 'Content-Type': 'application/json' }), res.end(typeof o === 'string' ? o : JSON.stringify(o)))
   if (u.pathname.startsWith('/ipfs/')) {
     const c = u.pathname.split('/')[2]
+    if (IMG_BYTES_OVERRIDE.has(c)) return res.writeHead(200, { 'Content-Type': 'image/png' }), res.end(req.method === 'GET' ? IMG_BYTES_OVERRIDE.get(c) : undefined)
     res.writeHead(200, { 'Content-Type': c === CID_IMG ? 'image/png' : 'text/plain' })
-    return res.end()
+    return res.end(req.method === 'GET' && c === CID_IMG ? IMG_BYTES : undefined)
   }
   let body = []
   req.on('data', (c) => body.push(c))
@@ -114,6 +136,7 @@ before(async () => {
 after(() => {
   srv.close()
   kubo.close()
+  scanner.close()
   fs.rmSync(DIR, { recursive: true, force: true })
 })
 
@@ -297,6 +320,51 @@ test('replica sync: pinset and report need the sync token; the pinset leaves out
   const r = await fetch(`${base}/api/ipfs/internal/replica`, { method: 'POST', headers: { Authorization: `Bearer ${process.env.IPFS_SYNC_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ node: 'gully-l3', pinned: p.cids.length, missing: 0, failed: 0 }) })
   assert.equal(r.status, 200)
   assert.deepEqual([mod.replicaState().up, mod.replicaState().inSync], [true, true])
+})
+
+test('scanner: a low score passes without review; a flagged score, a busy scanner or video wait, highest first', async () => {
+  await new Promise((r) => scanner.listen(0, '127.0.0.1', r))
+  process.env.IPFS_SCANNER_URL = `http://127.0.0.1:${scanner.address().port}`
+  process.env.IPFS_SCANNER_TOKEN = 'scan-token'
+  const up = async (body, name) => (await fetch(`${base}/api/ipfs/upload?name=${name}`, { method: 'POST', headers: { Authorization: `Bearer ${KEY}` }, body })).json()
+  const low = await up(png('score=0.05'), 'low.png')
+  assert.equal(low.info.review, 'scanned')
+  assert.ok(!mod.ipfsReviews().some((x) => x.cid === low.pin.cid), 'a low score never reaches the queue')
+  assert.equal(scanState.auth.at(-1), 'Bearer scan-token')
+  const del = (x) => fetch(`${base}/api/developer/ipfs/pins/${x.requestid}/delete`, { method: 'POST', headers: { 'x-ws': owner } })
+  await del(low)
+  const mid = await up(png('score=0.55'), 'mid.png')
+  const high = await up(png('score=0.97'), 'high.png')
+  const busy = await up(png('busy'), 'busy.png')
+  for (const x of [mid, high, busy]) assert.equal(x.info?.review, 'queued', JSON.stringify(x))
+  const q = mod.ipfsReviews()
+  assert.equal(q[0].cid, high.pin.cid, 'highest score first')
+  assert.equal(q[0].score, 0.97)
+  assert.ok(q.find((x) => x.cid === busy.pin.cid).score == null, 'scanner busy: in review, unscored (fail closed)')
+  await del(mid)
+  const calls = scanState.calls
+  const vid = await up(Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(40)]), 'v.webm')
+  assert.equal(vid.info?.review, 'queued', JSON.stringify(vid))
+  assert.equal(scanState.calls, calls, 'video is not sent to the image scanner')
+  const v = await (await fetch(`${base}/api/developer/ipfs`, { headers: { 'x-ws': owner } })).json()
+  assert.ok(!JSON.stringify(v).match(/score|scanner/i), 'the account view carries no scanner internals')
+  for (const x of [high, busy, vid]) await del(x)
+})
+
+test('hash denylist: a taken-down file is refused again as an upload and by CID under another CID', async () => {
+  const file = png('score=0.02 takedown-me')
+  const a = await (await fetch(`${base}/api/ipfs/upload?name=t.png`, { method: 'POST', headers: { Authorization: `Bearer ${KEY}` }, body: file })).json()
+  assert.equal((await mod.ipfsTakedown(a.pin.cid, 'test', 'admin')).ok, true)
+  const again = await fetch(`${base}/api/ipfs/upload?name=t2.png`, { method: 'POST', headers: { Authorization: `Bearer ${KEY_OTHER}` }, body: file })
+  assert.equal(again.status, 451)
+  assert.equal((await again.json()).error.reason, 'TAKEN_DOWN')
+  // the same bytes behind another CID (pinned by CID, read from node 1's gateway) fail with the takedown reason
+  const imgTd = 'bafkreiotherchunkingsamebytesaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+  IMG_BYTES_OVERRIDE.set(imgTd, file)
+  const s = await (await psa('/pins', { method: 'POST', body: { cid: imgTd } })).json()
+  assert.equal(await until(async () => (await statusOf(s.requestid)) === 'failed' && 'failed'), 'failed')
+  assert.match((await (await psa(`/pins/${s.requestid}`)).json()).info.status_details, /taken down/i)
+  assert.ok(!kuboState.pins.has(imgTd))
 })
 
 test('the db survives a restart: pins left pinning go back to the queue', async () => {
