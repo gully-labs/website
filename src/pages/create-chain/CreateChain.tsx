@@ -388,6 +388,65 @@ function PlanStep({ offer, d, set, tab, setTab }: { offer: Offer; d: Draft; set:
   )
 }
 
+/* How setup works today: what runs by itself now, what is built and switches on when Gully connects it (live state from
+   the offer's `automation` booleans), and what our team does by hand. Plain words, no internal names. */
+function SetupToday({ offer }: { offer: Offer }) {
+  const a = offer.automation ?? { servers: false, billingNotices: false, renewals: false }
+  const both = a.servers && a.billingNotices
+  const chip = (on: boolean, testid: string) => (
+    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[12px] ${on ? 'border-green text-green' : 'border-line text-faint'}`} data-testid={testid}>
+      {on ? 'On' : 'Being connected'}
+    </span>
+  )
+  const row = (text: string, right: ReactNode = null) => (
+    <li className="flex items-start justify-between gap-2 text-[13px] text-ink-2">
+      <span className="min-w-0">{text}</span>
+      {right}
+    </li>
+  )
+  const col = 'flex min-w-0 flex-col gap-2 rounded-card border border-line bg-surface p-3'
+  const h = 'm-0 text-[13px] font-semibold text-ink'
+  const ul = 'm-0 flex list-none flex-col gap-1.5 p-0'
+  return (
+    <section aria-labelledby="setup-today" className="flex flex-col gap-2" data-testid="setup-today">
+      <h2 id="setup-today" className="m-0 text-[15px] font-semibold text-ink">
+        How setup works today
+      </h2>
+      <div className="grid grid-cols-1 gap-3 min-[900px]:grid-cols-3">
+        <div className={col}>
+          <h3 className={h}>Automatic now</h3>
+          <ul className={ul}>
+            {row('Your request, the chain id check and its reservation')}
+            {row(`Your ${offer.freeDays} free days`)}
+            {row('Monthly renewal with Gully Pay', chip(a.renewals, 'setup-renewals'))}
+            {row('A step-by-step setup log on your order page')}
+          </ul>
+        </div>
+        <div className={col}>
+          <h3 className={h}>Automatic once Gully connects it</h3>
+          <ul className={ul}>
+            {row("Creating your chain's own server", chip(a.servers, 'setup-servers'))}
+            {row('Gully Pay passing your free trial to the setup queue', chip(a.billingNotices, 'setup-notices'))}
+          </ul>
+          <p className="m-0 text-[12px] text-faint">
+            Built and rehearsed end to end: the rollup on Arbitrum Sepolia, node stack, public RPC, bridge contracts, faucet, explorer, bundler, your Safes and the handover of the chain to them.
+          </p>
+        </div>
+        <div className={col}>
+          <h3 className={h}>Set up by our team</h3>
+          <ul className={ul}>
+            {row("Funding your chain's accounts on Arbitrum Sepolia")}
+            {row('Hyperlane, the gas paymaster, monitoring and Gully Pay on your chain')}
+          </ul>
+          <p className="m-0 text-[12px] text-faint" data-testid="setup-today-fallback">
+            {both ? 'The rest runs by itself; the order page shows each step.' : `Until both automatic parts are on, our team sets each chain up within ${offer.setupDays} business days.`}
+          </p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function ReviewStep({ offer, d, free }: { offer: Offer; d: Draft; free: boolean }) {
   const rows: [string, string][] = [
     ['Name', d.name.trim()],
@@ -537,6 +596,7 @@ export function CreateChainPage() {
           Our team sets it up within {offer.setupDays} business days. Each line in Your chain says whether it is automatic or set up by our team.
         </p>
       </div>
+      <SetupToday offer={offer} />
       <div className="grid grid-cols-1 items-start gap-5 min-[900px]:grid-cols-[minmax(0,1fr)_330px] min-[1100px]:grid-cols-[190px_minmax(0,1fr)_340px]">
         <div className="min-[900px]:col-span-2 min-[1100px]:col-span-1">
           <Stepper step={d.step} go={(step) => set({ step })} />

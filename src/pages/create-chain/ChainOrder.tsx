@@ -214,6 +214,45 @@ function RenewalCard({ order }: { order: Order }) {
   )
 }
 
+/* Provisioning queue (testnet): what the Chain Kit queue says about this order, in its own plain words, and who acts
+   next. The queue only sees an order once Gully Pay tells it about the order's free-trial subscription. */
+const WAITING_ON: Record<string, string> = { automatic: 'Runs by itself', gully: 'Waiting on the Gully team', 'trial-slot': 'Waiting for a free trial slot' }
+
+function QueueCard({ order }: { order: Order }) {
+  const q = order.queue
+  if (!q || order.tier !== 'testnet' || order.status === 'awaiting_payment') return null
+  if (order.status === 'cancelled' && !(q.reachable && q.found)) return null
+  const line = !q.reachable
+    ? 'The setup queue cannot be reached right now. Refresh this page in a minute.'
+    : !q.found
+      ? order.renewal?.state === 'ready'
+        ? 'Your request is recorded and your free trial is set up with Gully Pay. Setup starts as soon as Gully Pay passes the trial on to the setup queue.'
+        : 'Your request is recorded. It joins the setup queue once its free trial is set up with Gully Pay.'
+      : q.label
+  return (
+    <section className="flex min-w-0 flex-col gap-2 rounded-card border border-line bg-surface p-4" aria-labelledby="order-queue" data-testid="order-queue">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="order-queue" className="m-0 text-[15px] font-semibold text-ink">
+          Setup queue
+        </h2>
+        {q.reachable && q.found && q.waitingOn && (
+          <span className="rounded-full border border-line px-2 py-0.5 text-[12px] text-muted" data-testid="order-queue-who">
+            {WAITING_ON[q.waitingOn]}
+          </span>
+        )}
+      </div>
+      <p className={`m-0 text-[14px] ${q.reachable && q.found && q.state === 'failed' ? 'text-error' : 'text-ink-2'}`} data-testid="order-queue-state">
+        {line}
+      </p>
+      {q.reachable && q.found && q.nextCheckAt && (
+        <p className="m-0 text-[13px] text-faint">
+          Next automatic check <time dateTime={q.nextCheckAt}>{dateTimePT(q.nextCheckAt)}</time>.
+        </p>
+      )}
+    </section>
+  )
+}
+
 function ExportCard({ order }: { order: Order }) {
   if (!order.export?.ready) return null
   return (
@@ -374,6 +413,7 @@ export function ChainOrderPage() {
             )}
           </section>
           {(order.status === 'setting_up' || order.status === 'live') && order.provisioning && <ProvisioningLog log={order.provisioning} />}
+          <QueueCard order={order} />
           <ExportCard order={order} />
           <RenewalCard order={order} />
           <section className="flex min-w-0 flex-col gap-2 rounded-card border border-line bg-surface p-4" aria-labelledby="order-history">

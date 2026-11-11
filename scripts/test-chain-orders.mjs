@@ -538,6 +538,51 @@ try {
   check('default: a free order still gets its status mails', freeMails.length === 1 && /is live/.test(freeMails[0].subject))
   Object.assign(process.env, { CHAIN_GULLYPAY_MERCHANT_ID: GP.merchantId, CHAIN_GULLYPAY_STORE_ID: GP.storeId, CHAIN_GULLYPAY_API_KEY: GP.apiKey, CHAIN_GULLYPAY_WEBHOOK_SECRET: GP.secret, CHAIN_TESTNET_TEST_CHARGE_USD: '1' })
 
+  /* ---- setup queue (chain-queue.mjs): the order page reads the Chain Kit queue; the offer says what is switched on ---- */
+  {
+    const cq = await import('../server/chain-queue.mjs')
+    const integ = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-ck-integ-'))
+    process.env.CHAINKIT_INTEGRATIONS_DIR = integ
+    const auto0 = (await fetch(`${BASE}/api/chain-orders/offer`).then((r) => r.json())).automation
+    check('setup: nothing connected reads as off, renewals on with the store set', auto0?.servers === false && auto0?.billingNotices === false && auto0?.renewals === true, auto0)
+    for (const n of ['OVH_APPLICATION_KEY', 'OVH_APPLICATION_SECRET', 'OVH_CONSUMER_KEY']) fs.writeFileSync(path.join(integ, n), 'x'.repeat(20))
+    check('setup: three of the four server keys is still off', cq.automationStatus({}).servers === false)
+    fs.writeFileSync(path.join(integ, 'OVH_PROJECT_ID'), 'a'.repeat(32))
+    fs.writeFileSync(path.join(integ, 'GULLYPAY_CHAINKIT_WEBHOOK_SECRET'), 'b'.repeat(64))
+    const auto1 = cq.automationStatus({})
+    check('setup: all four keys and the webhook key read as on, renewals off without a store', auto1.servers === true && auto1.billingNotices === true && auto1.renewals === false)
+    const offerText = JSON.stringify(await fetch(`${BASE}/api/chain-orders/offer`).then((r) => r.json()))
+    check('setup: the public offer carries booleans only, no key names', !/OVH|GULLYPAY_|xxxx|aaaa/.test(offerText))
+    delete process.env.CHAINKIT_INTEGRATIONS_DIR
+
+    const F = client()
+    await F.signIn('tok-f')
+    const fo = (await F.post('/api/chain-orders', good())).data.order
+    const seen = []
+    let answer = { found: false }
+    cq.setChainQueueFetchForTest(async (u) => (seen.push(u), { ok: true, status: 200, json: async () => answer }))
+    const q0 = (await F.call(`/api/chain-orders/${fo.id}`)).data.order.queue
+    check('queue: an order the queue has not seen reads found: false', q0?.reachable === true && q0.found === false, q0)
+    check('queue: the order page asks the queue for that order id only', seen.length === 1 && seen[0].endsWith(`/internal/chainkit/orders/${fo.id}`), seen)
+    await F.call(`/api/chain-orders/${fo.id}`)
+    check('queue: answers are cached (one call in 20 s)', seen.length === 1)
+    answer = { found: true, state: 'held', label: 'Free trial slots are full (5 chains at once). Your chain starts as soon as one opens; you are number 2 in line.', waitingOn: 'trial-slot', trial: true, position: 2, nextCheckAt: null, teardownAt: null, updatedAt: '2026-11-11T09:00:00Z', extra: 'dropped' }
+    cq.setChainQueueFetchForTest(async () => ({ ok: true, status: 200, json: async () => answer }))
+    const q1 = (await F.call(`/api/chain-orders/${fo.id}`)).data.order.queue
+    check('queue: a held trial shows its place in line', q1.state === 'held' && q1.position === 2 && q1.waitingOn === 'trial-slot' && /number 2/.test(q1.label) && !('extra' in q1), q1)
+    answer = { ...answer, state: 'waiting', label: 'see /srv/chainkit OVH_APPLICATION_KEY', waitingOn: 'root' }
+    cq.setChainQueueFetchForTest(async () => ({ ok: true, status: 200, json: async () => answer }))
+    const q2 = (await F.call(`/api/chain-orders/${fo.id}`)).data.order.queue
+    check('queue: a label with a path or an env name is replaced, an unknown waitingOn dropped', q2.label === 'In the provisioning queue.' && q2.waitingOn === null, q2)
+    cq.setChainQueueFetchForTest(async () => { throw new Error('ECONNREFUSED') })
+    const q3 = (await F.call(`/api/chain-orders/${fo.id}`)).data.order.queue
+    check('queue: unreachable is reachable: false, the page still loads', q3?.reachable === false)
+    cq.setChainQueueFetchForTest(async () => ({ ok: true, status: 200, json: async () => ({ found: true, state: 'nonsense' }) }))
+    check('queue: an answer that is not a status reads as unreachable', (await F.call(`/api/chain-orders/${fo.id}`)).data.order.queue.reachable === false)
+    check('queue: another buyer still gets 404', (await B.call(`/api/chain-orders/${fo.id}`)).status === 404)
+    cq.setChainQueueFetchForTest(null)
+  }
+
   const { pageMeta } = await import('../server/seo.mjs')
   check('pages: the wizard is indexable on the app host, an order is not', pageMeta('app.gullylabs.xyz', '/create-chain').found === true && !pageMeta('app.gullylabs.xyz', '/create-chain').noindex && pageMeta('app.gullylabs.xyz', '/create-chain/orders/co_x').noindex === true)
   check('pages: both answer 200 on localhost too, not a 404 document', pageMeta('localhost', '/create-chain').found === true && pageMeta('localhost', '/create-chain/orders/co_x').found === true)

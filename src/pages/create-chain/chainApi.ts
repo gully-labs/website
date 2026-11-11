@@ -31,6 +31,8 @@ export interface Offer {
   gasTokens: { id: string; name: string }[]
   billing: { model: string; note: string }
   licenceNote: string
+  /** Which parts of automatic setup are switched on today (booleans only). */
+  automation?: { servers: boolean; billingNotices: boolean; renewals: boolean }
 }
 
 export type Tier = 'testnet' | 'mainnet'
@@ -86,7 +88,15 @@ export interface Order {
   renewal?: Renewal | null
   /** The chain's export from the Chain Kit pipeline, once it has uploaded one. */
   export?: { ready: true; bytes: number; updatedAt: string } | null
+  /** The provisioning queue's word on this order (testnet only). */
+  queue?: QueueStatus | null
 }
+
+export type QueueState = 'queued' | 'held' | 'running' | 'waiting' | 'failed' | 'done' | 'refused' | 'teardown-scheduled' | 'tearing-down' | 'torn-down'
+export type QueueStatus =
+  | { reachable: false }
+  | { reachable: true; found: false }
+  | { reachable: true; found: true; state: QueueState; label: string; waitingOn: 'automatic' | 'gully' | 'trial-slot' | null; trial: boolean; position: number | null; nextCheckAt: string | null; teardownAt: string | null; updatedAt: string | null }
 
 export type Renewal =
   | { state: 'not-set-up' }
