@@ -20,7 +20,8 @@
 //     201 { order } · 200 { order, duplicate: true } the same buyer already has this chain id open
 //     400 bad input · 403 { code: 'mainnet-off' } · 409 { code: 'chain-taken' | 'price-changed' } · 429 too many open
 //     503 { code: 'checkout-off' } Gully Pay is not connected yet
-//   GET  /api/chain-orders/:id                       { order } the buyer's own; anyone else gets 404
+//   GET  /api/chain-orders/:id                       { order } the buyer's own, with order.queue (the Chain Kit queue's
+//                                                    status, chain-queue.mjs; testnet only); anyone else gets 404
 //   POST /api/chain-orders/:id/checkout              { payUrl } opens a hosted checkout, or returns the one still open
 //   POST /api/chain-orders/:id/cancel                { order } before payment, or on an order with nothing to pay; frees the chain id
 //   GET  /api/chain-orders/:id/export                the chain's export as a JSON attachment (EXPORT below); 404 none yet
@@ -92,6 +93,7 @@ import { BILLING, BUNDLE, CHAINS, GAS_TOKENS, NITRO_LICENCE_NOTE, ORDER_PARENTS,
 import { checkChainId } from './chains-launch.mjs'
 import { sameSite, sessionGullyId } from './developer.mjs'
 import { cancelPlanSubscription, createPlanSubscription, readSubscription, subscriptionsReady } from './chain-subscriptions.mjs'
+import { automationStatus, queueStatusOf } from './chain-queue.mjs'
 import { createHostedCheckout, gullyPayConfig, gullyPayEnabled, verifyTimestampedSignature } from './gullypay.mjs'
 import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { APP_URL } from './hosts.mjs'
@@ -214,6 +216,8 @@ export function publicOffer() {
     gasTokens: GAS_TOKENS,
     billing: BILLING,
     licenceNote: NITRO_LICENCE_NOTE,
+    // Which parts of automatic setup are switched on (chain-queue.mjs): booleans only, the page says the rest in words.
+    automation: automationStatus(chainPayConfig()),
   }
 }
 
@@ -818,7 +822,9 @@ export async function handleChainOrders(req, res, url) {
     if (!get) return json(res, 405, { error: 'GET only' }), true
     // Renewal billing that did not get set up is retried here, at most every 5 minutes, without holding the page.
     if (needsSubscription(o)) void ensureSubscription(o)
-    return json(res, 200, { order: buyerView(o) }, noStore), true
+    // The Chain Kit queue's word on this order (testnet only: mainnet chains are set up by hand).
+    const queue = o.tier === 'testnet' ? await queueStatusOf(o.id) : null
+    return json(res, 200, { order: { ...buyerView(o), queue } }, noStore), true
   }
   if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
   const freeCancel = m[2] === 'cancel' && o.status === 'paid' && nothingDue(o)
