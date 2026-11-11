@@ -25,18 +25,19 @@ export const PLANS = {
 /* ---------------------------------------------------------- Gully IPFS --- */
 
 // OWNER-EDITABLE: Gully IPFS pinning plans (ipfs-pins.mjs enforces them; the hub and docs read them through GET /api/plans,
-// field `ipfs`). Only the free tier is on offer: priceUsdPerGbMonth stays null and checkout stays shut until the owner
-// sets the price (then billing goes through Gully Pay checkout). The free tier's size can be set without a code change:
+// field `ipfs`). Only early-access limits apply: the free tier and the price per GB are the owner's call (2026-11-10), so
+// neither is shown; priceUsdPerGbMonth stays null and checkout stays shut until the owner sets them (then billing goes
+// through Gully Pay checkout). The early-access limits can be set without a code change:
 // IPFS_FREE_STORAGE_GB, IPFS_FREE_MAX_FILE_MB, IPFS_FREE_MAX_PINS (server env).
 const envNum = (k, d) => (Number.isFinite(Number(process.env[k])) && Number(process.env[k]) > 0 ? Number(process.env[k]) : d)
 export function ipfsPlans() {
   return {
-    free: { id: 'free', name: 'Free', priceUsdPerGbMonth: 0, storageBytes: Math.round(envNum('IPFS_FREE_STORAGE_GB', 1) * 1024 ** 3), maxFileBytes: Math.round(envNum('IPFS_FREE_MAX_FILE_MB', 100) * 1024 ** 2), maxPins: envNum('IPFS_FREE_MAX_PINS', 500), copies: 2 },
+    free: { id: 'free', name: 'Early access', priceUsdPerGbMonth: null, storageBytes: Math.round(envNum('IPFS_FREE_STORAGE_GB', 1) * 1024 ** 3), maxFileBytes: Math.round(envNum('IPFS_FREE_MAX_FILE_MB', 100) * 1024 ** 2), maxPins: envNum('IPFS_FREE_MAX_PINS', 500), copies: 2 },
   }
 }
-/** The IPFS plan in force for an account (only the free tier exists until the owner prices paid storage). */
+/** The IPFS limits in force for an account (early access until the owner sets the free tier and the price). */
 export const ipfsPlanOf = () => ipfsPlans().free
-export const IPFS_PAID = { priceUsdPerGbMonth: null, checkout: false, reason: 'Paid storage is not on sale yet.' }
+export const IPFS_PAID = { priceUsdPerGbMonth: null, checkout: false, reason: 'Plans and prices are not set yet.' }
 
 /* ------------------------------------------------------ Gully Analytics --- */
 

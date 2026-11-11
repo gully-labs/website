@@ -64,8 +64,8 @@ function IpfsPlans() {
   return (
     <Fields
       rows={[
-        [<C>Free</C>, mb(free.storageBytes), `stored, up to ${free.maxPins} pins, files up to ${mb(free.maxFileBytes)}, every pin on ${free.copies} nodes`],
-        [<C>Paid storage</C>, 'not on sale yet', 'The price per GB is not set yet. When it is, paid storage is bought with Gully Pay in the hub.'],
+        [<C>Early access</C>, mb(free.storageBytes), `stored, up to ${free.maxPins} pins, files up to ${mb(free.maxFileBytes)}, every pin on ${free.copies} nodes. Limits during early access, not a plan.`],
+        [<C>Plans and prices</C>, 'not set yet', 'The free tier and the price per GB are not set yet. When they are, storage is bought with Gully Pay in the hub.'],
       ]}
     />
   )
