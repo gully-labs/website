@@ -308,8 +308,10 @@ async function handleRequest(req, res) {
   // The public API stays served on every host (POSTs and existing integrations cannot follow a redirect);
   // its canonical home is api.gullylabs.xyz, with the same paths.
   if (!isLocal && !isApiHost(host) && url.pathname.startsWith('/api/')) res.setHeader('Link', `<${API_URL}${url.pathname}>; rel="canonical"`)
+  // No public host names the admin console (owner 2026-11-10: no admin or internal data on live public sites):
+  // /admin there is a plain 404, not a redirect to the console's host.
   if (!isAdmin && !isLocal && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
-    return send(res, 301, '', { Location: 'https://admin.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
+    return send(res, 404, 'Not found', { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' })
   }
   // Products on their own domains (hosts.mjs movedPageUrl / movedDocsUrl): their old pages here, and their docs pages
   // on docs.gullylabs.xyz, answer 301 to the product's own domain (GET/HEAD; the APIs, embeds and badges never move).
