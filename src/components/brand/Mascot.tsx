@@ -1,7 +1,8 @@
 /* The Gully Labs mark from the 2026-11 kit (brand/gully-labs-kit-2026-11, served byte-exact from public/brand/kit), the
    reversed version: every place this draws is on a navy ground. Drawn at its own ratio, never cropped or recoloured.
    `variant` is kept for old call sites. */
-const ICON = { src: '/brand/kit/mark-reversed.svg', width: 1.042, height: 1 }
+import { PRODUCT_BRANDS } from '../../data/productBrands.ts'
+const ICON = { src: PRODUCT_BRANDS.labs.icon.src, width: PRODUCT_BRANDS.labs.icon.w ?? 1, height: PRODUCT_BRANDS.labs.icon.h ?? 1 }
 
 export function Mascot({ size = 32, className = '', label = 'Gully Labs', decorative = false }: { size?: number; variant?: 'mark' | 'bust'; className?: string; label?: string; decorative?: boolean }) {
   const height = size

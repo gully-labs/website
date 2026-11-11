@@ -33,6 +33,7 @@ import { handleDiscovery } from './discovery.mjs'
 import { headTags, pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
 import { landingAsset, renderLanding } from './landing.mjs'
 import { productMeta, renderProduct } from './product-pages.mjs'
+import { brandsJson } from './brand-registry.mjs'
 import { handleBlog } from './blog.mjs'
 import { handleOg } from './og.mjs'
 import { handleAnalytics } from './analytics.mjs'
@@ -416,6 +417,8 @@ async function handleRequest(req, res) {
     if (await handleIpfs(req, res, url, send)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
+  // The product brand registry (brand-registry.mjs): each product's official kit icon and logo, with its SHA-256. Public.
+  if (url.pathname === '/api/brands') return send(res, 200, JSON.stringify(brandsJson()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300', 'Access-Control-Allow-Origin': '*' })
   if (url.pathname === '/api/alerts/channels') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return send(res, 200, JSON.stringify(await alertChannels()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'Access-Control-Allow-Origin': '*' })

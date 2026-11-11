@@ -7,6 +7,10 @@ import { Link, useLocation } from 'react-router'
 import { Activity, ArrowUpRight, BookOpen, Boxes, Code2, CreditCard, FileText, Flame, Gamepad2, LayoutGrid, Link2, Map as MapIcon, Menu, Plug, Radar, ScanSearch, Server, ShieldCheck, Sparkles, X, type LucideProps } from 'lucide-react'
 import type { ComponentType } from 'react'
 import './hm.css'
+import { PRODUCT_BRANDS } from '../data/productBrands.ts'
+
+/** The HolderMaps lockup from the brand registry (src/data/productBrands.ts). */
+const HM_LOGO = PRODUCT_BRANDS.holdermaps.logo!
 
 type Icon = ComponentType<LucideProps>
 interface Item {
@@ -107,7 +111,7 @@ export function HmHeader() {
         <div className="hm-wrap">
           <Link className="hm-brand" to="/" aria-label="HolderMaps home">
             {/* The kit PNG lockup: the kit SVG's globe <image> has no source, so the SVG renders without the emblem. */}
-            <img src="/brand/holdermaps/holdermaps-logo-on-dark-sm.png" srcSet="/brand/holdermaps/holdermaps-logo-on-dark-sm.png 1x, /brand/holdermaps/holdermaps-logo-on-dark.png 2x" width={155} height={32} alt="HolderMaps" decoding="async" fetchPriority="high" />
+            <img src={HM_LOGO.src} srcSet={`${HM_LOGO.src} 1x, ${HM_LOGO.src2x!.src} 2x`} width={155} height={32} alt="HolderMaps" decoding="async" fetchPriority="high" />
           </Link>
           <Switcher />
           <nav aria-label="Main">

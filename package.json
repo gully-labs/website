@@ -51,6 +51,7 @@
     "test:brand-kit": "node --test scripts/test-brand-kit.mjs",
     "test:blog-theme": "node --test scripts/test-blog-theme.mjs",
     "test:landing": "node --test scripts/test-landing.mjs",
+    "test:product-brands": "node --test scripts/test-product-brands.mjs",
     "test:core-sync": "node --test scripts/test-core-sync.mjs",
     "test:public-overview": "node --test scripts/test-public-overview.mjs",
     "core:sync": "node scripts/sync-gully-core.mjs",
