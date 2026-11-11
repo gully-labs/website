@@ -44,7 +44,10 @@ test('the reading is sane: live mainnets first, every chain has a mark this site
   assert.ok(reading.multisigChains.length >= 2)
   assert.match(reading.multisigUrl, /^https:\/\/gullymultisig\.xyz$/)
   assert.equal(reading.builderFeePct, 0.3)
-  assert.ok(copy.chains.some((c) => c.chainId === 99901 && c.rpc === 'https://rpc.elysium.kinetiq.xyz'), 'Elysium reads from Kinetiq’s RPC only (owner, 2026-11-09)')
+  // Owner 2026-11-10 ("Elysium RPC use drpc"): browsers read Elysium through Gully RPC's keyless endpoint first, Kinetiq
+  // second; elysp.com and boxa.club never appear.
+  assert.ok(copy.chains.some((c) => c.chainId === 99901 && ['https://rpc.gullyrpc.xyz/gullychain/evm/99901', 'https://rpc.elysium.kinetiq.xyz'].includes(c.rpc)), 'Elysium reads through Gully RPC or Kinetiq (owner, 2026-11-10)')
+  assert.ok(!/elysp\.com|boxa\.club/.test(JSON.stringify(copy.chains.map((c) => c.rpc))), 'no elysp/boxa RPC')
 })
 
 test('the product catalog says where Gully Core and Gully Multisig run, from the reading', async () => {

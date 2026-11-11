@@ -179,11 +179,6 @@
       "href": "https://testnet.gullycore.xyz/"
      },
      {
-      "label": "Console",
-      "icon": "gauge",
-      "href": "https://admin.gullycore.xyz/"
-     },
-     {
       "label": "Chains",
       "icon": "network",
       "href": "https://gullycore.xyz/#chains"
@@ -4068,7 +4063,7 @@
    "native": "HYPE",
    "quote": "HYPE",
    "note": "HYPE is the gas coin and settles to HyperEVM. Gully Core is live on Kinetiq Elysium since 2026-11-09 (45 contracts, verified on our Sourcify, owned by the chain Safe 2-of-3).",
-   "rpc": "https://rpc.elysium.kinetiq.xyz",
+   "rpc": "https://rpc.gullyrpc.xyz/gullychain/evm/99901",
    "explorer": "https://scan.elysp.com",
    "app": "https://app.gullycore.xyz/",
    "governance": null,
@@ -4087,7 +4082,7 @@
     "kre8": false
    },
    "health": {
-    "rpc": "https://rpc.elysium.kinetiq.xyz"
+    "rpc": "https://rpc.gullyrpc.xyz/gullychain/evm/99901"
    },
    "deployment": {
     "version": "3.0.0",
@@ -4720,7 +4715,6 @@
   "docs": "https://docs.gullycore.xyz",
   "app": "https://app.gullycore.xyz",
   "testnetApp": "https://testnet.gullycore.xyz/",
-  "admin": "https://admin.gullycore.xyz",
   "multisig": "https://gullymultisig.xyz",
   "explorer": "https://gullyscan.xyz",
   "testnetExplorer": "https://testnet.gullyscan.xyz",
@@ -4943,6 +4937,6 @@
  ],
  "generated": {
   "by": "sites/_gullycore/tools/build-manifest.mjs",
-  "commit": "b738f606b193c424cb0c779f0893850995f5e891"
+  "commit": "654ac10e5295d4e6d2a12538469949b034fbc148"
  }
 }

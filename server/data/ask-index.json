@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-11T03:56:10.123Z",
+ "updatedAt": "2026-11-11T04:59:26.648Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -4958,8 +4958,8 @@
    "title": "Gully Multisig (Gully Chain)",
    "url": "https://gullymultisig.xyz",
    "section": "Gully Multisig",
-   "text": "Gully Multisig is part of Gully Chain. Status: live now. Multisig wallets for teams and treasuries at gullymultisig.xyz: several owners, a confirmation threshold and batched transactions, on Anubis Network (chain 6714) and Kinetiq Elysium (chain 99901) mainnets and, for developers, on Gully Chain Testnet (chain 485590). Runs the open-source Safe stack on Gully infrastructure: Gully Labs' build of the Safe{Wallet} web app, a config service, a client gateway and one Safe transaction service per chain. It is run by Gully Labs, not by Safe. On Anubis Network (chain 6714, a mainnet) the contracts are the unmodified Safe 1.4.1 contracts at the canonical addresses, deployed through Safe's singleton factory. The 16 Safe contracts on Anubis are an exact match on verify.gullychain.xyz, Gully's source verification service; on Kinetiq Elysium the Safe 1.4.1 set and the passkey signer contracts are deployed through Gully's own route at Gully Chain's addresses and verified there too. A Gully ID passkey wallet can be a Safe owner and sign (approveHash); a chain switcher in the header moves between the served chains. On Anubis gasDAI pays gas only and cannot be sent as a value: a Safe there holds and sends ERC-20 tokens. On Gully Chain Testnet (chain 485590, test funds only) the same Safe 1.4.1 code is deployed at Gully's own addresses, because Safe's singleton factory is not on that chain. The hub shows Gully Multisig as live while gullymultisig.xyz answers (server/hub.mjs); multisig.gullychain.xyz redirects there; the docs are at docs.gullychain.xyz/multisig/.",
-   "updatedAt": "2026-11-10T04:14:14.061Z",
+   "text": "Gully Multisig is part of Gully Chain. Status: live now. Multisig wallets for teams and treasuries at gullymultisig.xyz: several owners, a confirmation threshold and batched transactions, on Anubis Network (chain 6714), Robinhood Chain (chain 4663) and Kinetiq Elysium (chain 99901) mainnets and, for developers, on Gully Chain Testnet (chain 485590). Runs the open-source Safe stack on Gully infrastructure: Gully Labs' build of the Safe{Wallet} web app, a config service, a client gateway and one Safe transaction service per chain. It is run by Gully Labs, not by Safe. On Anubis Network (chain 6714, a mainnet) the contracts are the unmodified Safe 1.4.1 contracts at the canonical addresses, deployed through Safe's singleton factory. The 16 Safe contracts on Anubis are an exact match on verify.gullychain.xyz, Gully's source verification service; on Kinetiq Elysium the Safe 1.4.1 set and the passkey signer contracts are deployed through Gully's own route at Gully Chain's addresses and verified there too. A Gully ID passkey wallet can be a Safe owner and sign (approveHash); a chain switcher in the header moves between the served chains. On Anubis gasDAI pays gas only and cannot be sent as a value: a Safe there holds and sends ERC-20 tokens. On Gully Chain Testnet (chain 485590, test funds only) the same Safe 1.4.1 code is deployed at Gully's own addresses, because Safe's singleton factory is not on that chain. The hub shows Gully Multisig as live while gullymultisig.xyz answers (server/hub.mjs); multisig.gullychain.xyz redirects there; the docs are at docs.gullychain.xyz/multisig/.",
+   "updatedAt": "2026-11-11T04:59:26.648Z",
    "feature": "gully-safe-multisig",
    "status": "live"
   },
