@@ -8,7 +8,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from 'playwright'
+import crypto from 'node:crypto'
 import { deliver, fakeGullyId, fakeGullyPay, GP, sessionEvent } from './chain-flow-mocks.mjs'
+import { signForTest } from '../server/gullypay.mjs'
 import { bootServer } from './e2e-harness.mjs'
 import { guardTestRun, makeChecker } from './test-helpers.mjs'
 
@@ -24,7 +26,7 @@ const gid = await fakeGullyId({ 'tok-e2e': USER })
 const pay = await fakeGullyPay()
 for (const k of ['MAINNET_ORDERS', 'MAINNET_PRICE_CONFIRMED', 'CHAIN_GULLYPAY_MODE']) delete process.env[k]
 // The journey below needs a charge. The default of $0, with no Gully Pay settings, has its own journey at the end.
-Object.assign(process.env, { CHAIN_TESTNET_TEST_CHARGE_USD: '1', GULLY_ID_ISSUER: gid.url, GULLYPAY_API_URL: pay.url, GULLYPAY_CHECKOUT_URL: pay.url, CHAIN_GULLYPAY_MERCHANT_ID: GP.merchantId, CHAIN_GULLYPAY_STORE_ID: GP.storeId, CHAIN_GULLYPAY_API_KEY: GP.apiKey, CHAIN_GULLYPAY_WEBHOOK_SECRET: GP.secret })
+Object.assign(process.env, { CHAIN_TESTNET_TEST_CHARGE_USD: '1', GULLY_ID_ISSUER: gid.url, GULLYPAY_API_URL: pay.url, GULLYPAY_CHECKOUT_URL: pay.url, CHAIN_GULLYPAY_MERCHANT_ID: GP.merchantId, CHAIN_GULLYPAY_STORE_ID: GP.storeId, CHAIN_GULLYPAY_API_KEY: GP.apiKey, CHAIN_GULLYPAY_WEBHOOK_SECRET: GP.secret, CHAINKIT_REPORT_SECRET: crypto.randomBytes(32).toString('hex') })
 const { admin, base: BASE } = await bootServer({ port: PORT })
 
 const browser = await chromium.launch({ headless: true })
@@ -51,6 +53,11 @@ const noScroll = async (page, label) => check(`${label}: no horizontal scroll`, 
 const orderId = (s) => s.clientReferenceId.replace(/^chain:/, '')
 const adminCall = (p, body) => fetch(BASE + p, { method: body ? 'POST' : 'GET', headers: { authorization: `Bearer ${admin}`, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).then((r) => r.json())
 const status = (page) => page.getByTestId('order-status')
+/** A signed Chain Kit pipeline report (server/chain-orders.mjs PROVISIONING). */
+const ckReport = (id, body) => {
+  const raw = JSON.stringify(body)
+  return fetch(`${BASE}/api/chain-orders/${id}/provisioning`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-chainkit-signature': signForTest(raw, process.env.CHAINKIT_REPORT_SECRET) }, body: raw }).then((r) => r.status)
+}
 const next = (page) => page.getByTestId('next').click()
 
 /** Steps 1 to 4: from the empty form to the Pay step. Returns once Pay shows. */
@@ -201,6 +208,22 @@ for (const width of [390, 1440]) {
   await status(page).waitFor()
   await adminCall(`/api/admin/chain-orders/${id}/status`, { status: 'setting_up', note: 'Box ordered' })
   await page.getByText('Your order is setting up').waitFor({ timeout: 25_000 })
+  check(`${width} provisioning: no log, no section`, (await page.getByTestId('order-provisioning').count()) === 0)
+  const at = new Date().toISOString()
+  const ck = await ckReport(id, {
+    runId: `ck_e2e${width}`,
+    seq: 1,
+    steps: [
+      { id: 'box', title: 'Order the server', state: 'done', startedAt: at, endedAt: at, note: 'Server ready.', links: [{ label: 'Status', url: 'https://status.gullylabs.xyz/' }] },
+      { id: 'node', title: 'Start the node', state: 'running', startedAt: at, endedAt: null, note: null, links: [] },
+      { id: 'explorer', title: 'Explorer', state: 'pending', startedAt: null, endedAt: null, note: null, links: [] },
+    ],
+    endpoints: { rpc: 'https://rpc.acme.example', explorer: null },
+  })
+  check(`${width} provisioning: the signed report is accepted`, ck === 200, ck === 200 ? '' : String(ck))
+  await page.getByTestId('order-provisioning').waitFor({ timeout: 25_000 })
+  check(`${width} provisioning: steps with their states and the endpoint`, (await page.getByTestId('order-provisioning-count').innerText()) === '1 of 3 done' && (await page.getByTestId('step-node-state').innerText()).includes('Running') && (await page.getByTestId('endpoint-rpc').innerText()) === 'https://rpc.acme.example/' && (await page.getByTestId('endpoint-explorer').count()) === 0)
+  await noScroll(page, `${width} order page provisioning`)
   await shot(page, `9-order-setting-up-${width}`)
   await adminCall(`/api/admin/chain-orders/${id}/status`, { status: 'live' })
   await page.getByText('Your order is live').waitFor({ timeout: 25_000 })
