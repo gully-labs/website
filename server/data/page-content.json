@@ -596,7 +596,7 @@
   ],
   "/products/safe": [
    "Gully Multisig · Gully Labs",
-   "Gully Multisig: Multisig wallets for teams and treasuries on Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet, built on the Safe 1.4.1 contracts and run by Gully Labs. Live charts, features, how it works, pricing and questions answered on this page."
+   "Team and treasury multisigs on Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet, on the Safe 1.4.1 contracts, run by Gully Labs."
   ],
   "/products/gully-sentry": [
    "Gully Sentry · Gully Labs",
@@ -1948,7 +1948,7 @@
   },
   "safe": {
    "name": "Gully Multisig",
-   "line": "Multisig wallets for teams and treasuries on Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet, built on the Safe 1.4.1 contracts and run by Gully Labs.",
+   "line": "Team and treasury multisigs on Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet, on the Safe 1.4.1 contracts, run by Gully Labs.",
    "url": "https://gullymultisig.xyz",
    "urlLabel": "gullymultisig.xyz",
    "cta": null,
@@ -4274,7 +4274,7 @@
       ],
       [
        "/products/safe",
-       "Gully Multisig: Multisig wallets for teams and treasuries on Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet, built on the Safe 1.4.1 contracts and run by Gully Labs."
+       "Gully Multisig: Team and treasury multisigs on Anubis Network, Robinhood Chain, Kinetiq Elysium and Gully Chain testnet, on the Safe 1.4.1 contracts, run by Gully Labs."
       ],
       [
        "/products/gully-sentry",

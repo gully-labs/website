@@ -204,7 +204,7 @@ export const PRODUCTS: ProductDef[] = [
     slug: 'safe',
     name: 'Gully Multisig',
     group: 'chain',
-    line: `Multisig wallets for teams and treasuries on ${MSIG_CHAINS}, built on the Safe 1.4.1 contracts and run by Gully Labs.`,
+    line: `Team and treasury multisigs on ${MSIG_CHAINS}, on the Safe 1.4.1 contracts, run by Gully Labs.`,
     short: `Team and treasury multisigs on ${MSIG_CHAINS}.`,
     runs: `Runs on ${MSIG_CHAINS}`,
     logo: { kind: 'mark', mark: 'multisig', label: 'Gully Multisig' },
