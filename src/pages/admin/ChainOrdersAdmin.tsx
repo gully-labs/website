@@ -21,6 +21,10 @@ interface Row {
   createdAt: string
   next: string[]
   review: { at: string; code: string; detail: string; resolved: boolean }[]
+  /** Testnet renewal billing (Gully Pay plan subscription), or null. */
+  subscription: { id: string; status: string; currentPeriodEnd: string | null } | null
+  subscriptionTry: { at: string; error: string | null; message: string | null } | null
+  export: { bytes: number; updatedAt: string } | null
 }
 interface Data {
   orders: Row[]
@@ -62,6 +66,14 @@ export function ChainOrdersAdmin({ token }: { token: string }) {
     else toastError('Could not move the order', { detail: r.error })
     load()
   }
+  const renew = async (o: Row) => {
+    setBusy(o.id)
+    const r = await adminCall(token, `/api/admin/chain-orders/${o.id}/subscription`, {})
+    setBusy('')
+    if (r.ok) toastSuccess(`${o.name}: renewal billing set up`)
+    else toastError('Could not set up renewal billing', { detail: r.error })
+    load()
+  }
   const resolve = async (o: Row) => {
     setBusy(o.id)
     const r = await adminCall(token, `/api/admin/chain-orders/${o.id}/resolve`, {})
@@ -95,6 +107,14 @@ export function ChainOrdersAdmin({ token }: { token: string }) {
               <span className="font-mono text-[12px] break-all text-faint">
                 {o.chainId} · {o.tier} · {dateTimePT(o.createdAt)} · {o.email ?? 'no email'} · {o.address}
               </span>
+              {o.tier === 'testnet' && (
+                <span className="font-mono text-[12px] break-all text-faint" data-testid={`admin-order-${o.chainId}-renewal`}>
+                  {o.subscription
+                    ? `Renewal: ${o.subscription.status}${o.subscription.currentPeriodEnd ? ` until ${dateTimePT(o.subscription.currentPeriodEnd)}` : ''} · ${o.subscription.id}`
+                    : `Renewal: not set up${o.subscriptionTry?.error ? ` (${o.subscriptionTry.error}, ${dateTimePT(o.subscriptionTry.at)})` : ''}`}
+                  {o.export && ` · export ${Math.ceil(o.export.bytes / 1024)} KB, ${dateTimePT(o.export.updatedAt)}`}
+                </span>
+              )}
               {o.review
                 .filter((r) => !r.resolved)
                 .map((r) => (
@@ -108,6 +128,11 @@ export function ChainOrdersAdmin({ token }: { token: string }) {
                     {LABEL[s] ?? s}
                   </button>
                 ))}
+                {o.tier === 'testnet' && !o.subscription && o.statusLabel !== 'Cancelled' && (
+                  <button type="button" className={btn} disabled={busy === o.id} onClick={() => void renew(o)}>
+                    Set up renewal
+                  </button>
+                )}
                 {o.review.some((r) => !r.resolved) && (
                   <button type="button" className={btn} disabled={busy === o.id} onClick={() => void resolve(o)}>
                     Clear hold

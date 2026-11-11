@@ -11,14 +11,57 @@
 //      release). The owner sets ADMIN_PASSWORD_LOGIN=off once a Gully ID sign-in works; scripts that call /api/admin
 //      with ADMIN_TOKEN stop working then.
 //
+//   3. Passkey step-up (Integrations writes, admin-integrations.mjs): GET /auth/gully/stepup on the admin host, for a
+//      Gully ID session only, runs the same code flow again with prompt=login and max_age=300 and comes back to the same
+//      callback. The id_token must name the same sub, carry amr "passkey" (or webauthn / hwk) and an auth_time at most
+//      5 minutes old (integrations-guard.mjs, shared with the other Gully admin consoles). The session then holds `su`
+//      (that auth_time) and writes are open for 5 minutes. The break-glass token can never step up.
+//
 // The dashboard is off (503) unless one way in exists. Logs: one JSON line per sign-in, the sub as a 12-hex tag only.
 import { AdminSessions, GullyIdAdminLogin, TX_COOKIE, adminAuthConfig, clearTxCookie, logAuth, parseCookies, publicAuthConfig, same, txCookie } from './admin-gully-id.mjs'
+import { STEP_UP_MAX_AGE_S, stepUpClaimsOk, stepUpFresh } from './integrations-guard.mjs'
 import { bearer, json } from './http.mjs'
 
 export const ADMIN_COOKIE = '__Host-gl_admin'
 const TX_PATH = '/auth/gully'
 
 let st = null
+
+const claimsOf = (jwt) => {
+  try {
+    return JSON.parse(Buffer.from(String(jwt).split('.')[1], 'base64url').toString('utf8'))
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The step-up sign-in: the shared login (admin-gully-id.mjs, kept byte-identical) with prompt=login + max_age, and the
+ * id_token's claims (amr, auth_time) handed back. The token answer is read through a per-call fetch, so two step-ups at
+ * once cannot see each other's token.
+ */
+class StepUpLogin extends GullyIdAdminLogin {
+  start(redirectUri) {
+    const r = super.start(redirectUri)
+    const u = new URL(r.location)
+    u.searchParams.set('prompt', 'login')
+    u.searchParams.set('max_age', String(STEP_UP_MAX_AGE_S))
+    return { location: u.href, state: r.state }
+  }
+
+  async finish(query, txState) {
+    let idToken = null
+    const inner = this.fetch
+    const call = Object.create(this)
+    call.fetch = async (u, o) => {
+      const r = await inner(u, o)
+      if (/\/oauth2\/token$/.test(String(u)) && r.ok) idToken = (await r.clone().json().catch(() => null))?.id_token ?? null
+      return r
+    }
+    const out = await GullyIdAdminLogin.prototype.finish.call(call, query, txState)
+    return out.ok ? { ...out, claims: claimsOf(idToken) } : out
+  }
+}
 let lastTokenLog = 0
 /** Settings are read on first use (tests set the environment before importing the server). */
 function state() {
@@ -33,6 +76,8 @@ export function configureAdminAuth({ fetchImpl, now = Date.now } = {}) {
     c,
     origin: String(process.env.ADMIN_ORIGIN || 'https://admin.gullylabs.xyz').replace(/\/+$/, ''),
     login: new GullyIdAdminLogin(c, { ...(fetchImpl ? { fetchImpl } : {}), now }),
+    stepUp: new StepUpLogin(c, { ...(fetchImpl ? { fetchImpl } : {}), now }),
+    now,
     sessions: new AdminSessions({ ttlMs: c.sessionMs, idleMs: c.idleMs, now }),
   }
   return st
@@ -72,6 +117,19 @@ export function checkAdmin(req) {
   return { ok: false, status: 401, error: b ? 'Wrong admin token.' : 'Sign in first.', counts: !!b }
 }
 
+/** The Gully ID admin session behind this request (cookie + its CSRF bearer), or null (no session, or the token). */
+export function adminSessionOf(req) {
+  const { sessions } = state()
+  const s = sessions.get(cookieOf(req))
+  return s && same(bearer(req) ?? '', s.csrf) ? s : null
+}
+
+/** Until when (ms) this session's passkey step-up allows writes, or null. */
+export function stepUpUntil(s) {
+  const { now } = state()
+  return s && stepUpFresh(s, now()) ? (Number(s.su) + STEP_UP_MAX_AGE_S) * 1000 : null
+}
+
 /** /api/admin/auth/*: the sign-in card's options, the cookie session's CSRF token, sign-out. Before checkAdmin. */
 export function handleAdminAuth(req, res, url) {
   const p = url.pathname
@@ -107,13 +165,30 @@ function page(res, status, title, body, headers = {}) {
 /** GET /auth/gully/start and /auth/gully/callback on the admin host. Returns true when handled. */
 export async function handleGullyAdminRoute(req, res, url) {
   const p = url.pathname
-  if (p !== '/auth/gully/start' && p !== '/auth/gully/callback') return false
-  const { c, login, sessions, origin } = state()
+  if (p !== '/auth/gully/start' && p !== '/auth/gully/callback' && p !== '/auth/gully/stepup') return false
+  const { c, login, stepUp, sessions, origin, now } = state()
   if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'GET only' }), true
   if (!login.enabled) return json(res, 404, { error: 'Sign in with Gully ID is turned off on this dashboard.' }), true
   if (p === '/auth/gully/start') {
     const { location, state: s } = login.start(`${origin}/auth/gully/callback`)
     res.writeHead(302, { Location: location, 'Set-Cookie': txCookie(s, TX_PATH), 'Cache-Control': 'no-store' })
+    return res.end(), true
+  }
+  if (p === '/auth/gully/stepup') {
+    const s = sessions.get(cookieOf(req))
+    if (!s || s.via !== 'gully_id' || !s.sub) return page(res, 401, 'Sign in with Gully ID first', '<p>Confirming with a passkey needs a Gully ID admin session. The admin token cannot do it.</p>'), true
+    const { location, state: tx } = stepUp.start(`${origin}/auth/gully/callback`)
+    res.writeHead(302, { Location: location, 'Set-Cookie': txCookie(tx, TX_PATH), 'Cache-Control': 'no-store' })
+    return res.end(), true
+  }
+  if (stepUp.tx.has(url.searchParams.get('state') ?? '')) {
+    // Back from a passkey step-up: the same admin, a passkey, a fresh auth_time.
+    const r = await stepUp.finish(url.searchParams, parseCookies(req.headers.cookie)[TX_COOKIE])
+    const s = sessions.get(cookieOf(req))
+    const chk = !r.ok ? { ok: false, why: r.code } : s && s.via === 'gully_id' && s.sub === r.sub ? stepUpClaimsOk(r.claims, s.sub, now()) : { ok: false, why: 'other_account' }
+    logAuth(console, 'step_up', { result: chk.ok ? 'ok' : 'fail', via: 'gully_id', code: chk.ok ? undefined : chk.why, sub: s?.sub ?? r.sub })
+    if (chk.ok) s.su = chk.at
+    res.writeHead(302, { Location: `/?stepup=${encodeURIComponent(chk.ok ? 'ok' : (chk.why ?? 'denied'))}#integrations`, 'Cache-Control': 'no-store', 'Set-Cookie': clearTxCookie(TX_PATH) })
     return res.end(), true
   }
   const r = await login.finish(url.searchParams, parseCookies(req.headers.cookie)[TX_COOKIE])

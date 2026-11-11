@@ -51,6 +51,8 @@
 //   GET  /api/admin/workspaces                workspaces with members or open invites
 //   GET/POST /api/admin/ecosystem/submissions  launchpad submissions: list; { id, action: approve|reject } (ecosystem.mjs)
 //   GET  /api/admin/chain-kit                 Chain Kit waitlist entries and the Gully Chains Devnet waitlist (?format=csv&list=requests|waitlist: download)
+//   GET  /api/admin/integrations, PUT|DELETE /api/admin/integrations/:NAME   write-only Chain Kit settings, passkey
+//                                             step-up for writes (admin-integrations.mjs); no value is ever sent back
 //   POST /api/admin/telegram/:address/unlink  unlink an account's Telegram chat (telegram.mjs adminUnlinkTelegram)
 
 import fs from 'node:fs'
@@ -82,6 +84,7 @@ const adminOffer = () => guardOr(() => publicPlans(), (e) => ({ ...publicPlans({
 const PROXY_ACCOUNT = "That address is Request Network's fee proxy contract, not a wallet."
 import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { checkAdmin, handleAdminAuth } from './admin-auth.mjs'
+import { handleIntegrationsAdmin } from './admin-integrations.mjs'
 import { readStats } from './stats.mjs'
 import { handleRevenueAdmin } from './revenue.mjs'
 import { statsWatchdogHealth } from './stats-watchdog.mjs'
@@ -381,6 +384,7 @@ export async function handleAdmin(req, res, url) {
   if (p === '/api/admin/broadcasts' || p.startsWith('/api/admin/broadcasts/')) return handleBroadcastAdmin(req, res, url)
   if (p === '/api/admin/ecosystem/submissions') return handleEcosystemAdmin(req, res)
   if (p === '/api/admin/revenue') return handleRevenueAdmin(req, res, url)
+  if (p === '/api/admin/integrations' || p.startsWith('/api/admin/integrations/')) return handleIntegrationsAdmin(req, res, url)
   // Gully IPFS review queue and takedowns (ipfs-pins.mjs): images and video wait here for a look.
   if (p === '/api/admin/ipfs/reviews') return json(res, 200, { reviews: ipfsReviews() }), true
   if (p === '/api/admin/ipfs/takedown' || /^\/api\/admin\/ipfs\/reviews\/[\w-]{1,40}\/ok$/.test(p)) {

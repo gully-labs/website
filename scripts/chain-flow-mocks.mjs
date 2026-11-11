@@ -20,14 +20,49 @@ export async function fakeGullyId(tokens) {
   return { url: `http://localhost:${port}`, close: () => server.close() }
 }
 
-/** Gully Pay: POST /checkout/hosted/:store opens a session; GET /<session> is a bare checkout page for the browser test. */
+/**
+ * Gully Pay: POST /checkout/hosted/:store opens a session; GET /<session> is a bare checkout page for the browser test.
+ * Plan subscriptions as gull-pay PR #89 ships them: POST /v1/subscriptions/:store (one per store and reference: 201
+ * created, 200 the same again) and POST /v1/subscriptions/:store/:id/cancel. `state.subFail` = an HTTP status to answer
+ * the next subscription call with.
+ */
 export async function fakeGullyPay() {
   const sessions = []
-  const state = { failNext: false, delayMs: 0 }
+  const subscriptions = []
+  const subCalls = []
+  const state = { failNext: false, delayMs: 0, subFail: 0 }
+  let base = ''
   const server = http.createServer((req, res) => {
     let raw = ''
     req.on('data', (c) => (raw += c))
     req.on('end', async () => {
+      const sm = /^\/v1\/subscriptions\/([^/]+)(?:\/([^/]+)\/cancel)?$/.exec(req.url ?? '')
+      if (req.method === 'POST' && sm) {
+        const send = (status, o) => (res.writeHead(status, { 'content-type': 'application/json' }), res.end(JSON.stringify(o)))
+        const body = raw ? JSON.parse(raw) : {}
+        subCalls.push({ path: req.url, auth: req.headers.authorization, body })
+        if (req.headers.authorization !== `Bearer ${GP.apiKey}` || sm[1] !== GP.storeId) return send(401, { message: 'Unauthorized' })
+        if (state.subFail) {
+          const st = state.subFail
+          state.subFail = 0
+          return send(st, { message: 'Fake failure' })
+        }
+        if (sm[2]) {
+          const sub = subscriptions.find((x) => x.id === sm[2])
+          if (!sub) return send(404, { message: 'Subscription not found' })
+          if (sub.status !== 'cancelled') Object.assign(sub, { status: 'cancelled', cancelledAt: new Date().toISOString(), cancelReason: body.reason ?? null })
+          return send(200, { subscription: sub })
+        }
+        if (body.plan !== 'gully-chain-testnet') return send(400, { message: 'Unknown plan' })
+        const had = subscriptions.find((x) => x.reference === body.reference)
+        if (had) return send(200, { subscription: had, created: false })
+        const now = Date.now()
+        const id = crypto.randomUUID()
+        const end = new Date(now + 30 * 86_400_000).toISOString()
+        const sub = { object: 'subscription', id, plan: body.plan, status: 'trialing', reference: body.reference, customerEmail: body.customerEmail ?? null, metadata: body.metadata ?? null, trialEndsAt: end, currentPeriodStart: new Date(now).toISOString(), currentPeriodEnd: end, dueSince: null, graceEndsAt: null, cancelledAt: null, cancelReason: null, amount: 19900, currency: 'USD', interval: 'month', payUrl: `${base}/v1/subscriptions/pay/${id}` }
+        subscriptions.push(sub)
+        return send(201, { subscription: sub, created: true })
+      }
       const m = /^\/checkout\/hosted\/(.+)$/.exec(req.url ?? '')
       if (req.method === 'POST' && m) {
         if (state.delayMs) await new Promise((r) => setTimeout(r, state.delayMs))
@@ -48,7 +83,8 @@ export async function fakeGullyPay() {
     })
   })
   const port = await listen(server)
-  return { url: `http://localhost:${port}`, sessions, state, close: () => server.close() }
+  base = `http://localhost:${port}`
+  return { url: base, sessions, subscriptions, subCalls, state, close: () => server.close() }
 }
 
 /** A checkout.session.* event body as Gully Pay's docs show it. */

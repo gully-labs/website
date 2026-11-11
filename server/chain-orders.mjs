@@ -13,6 +13,7 @@
 //   GET  /api/chain-orders/session                   { gullyId } this browser holds a Sign in with Gully ID session
 //   POST /api/chain-orders/webhook                   Gully Pay, signed (below)
 //   POST /api/chain-orders/:id/provisioning          the Chain Kit pipeline, signed (PROVISIONING below); no Gully ID
+//   POST /api/chain-orders/:id/export                the Chain Kit pipeline's export upload, signed (EXPORT below)
 // SIGNED IN WITH GULLY ID (a wallet session is refused: 401 gully-id-required). A POST needs X-Requested-With: gully.
 //   GET  /api/chain-orders                           { orders } mine, newest first
 //   POST /api/chain-orders                           { tier, name, chainId, gasToken, gasSymbol?, parentChainId, addons[], logo?, email?, expect: { dueCents } }
@@ -22,9 +23,11 @@
 //   GET  /api/chain-orders/:id                       { order } the buyer's own; anyone else gets 404
 //   POST /api/chain-orders/:id/checkout              { payUrl } opens a hosted checkout, or returns the one still open
 //   POST /api/chain-orders/:id/cancel                { order } before payment, or on an order with nothing to pay; frees the chain id
+//   GET  /api/chain-orders/:id/export                the chain's export as a JSON attachment (EXPORT below); 404 none yet
 // ADMIN (admin.mjs, after its own auth)
 //   GET  /api/admin/chain-orders                     { orders, notify } every order, with internal fields, and the mainnet list
 //   POST /api/admin/chain-orders/:id/status          { status, note? } paid -> setting_up -> live; any -> cancelled
+//   POST /api/admin/chain-orders/:id/subscription    create the renewal subscription now (RENEWAL below)
 //
 // STATUS  awaiting_payment -> paid -> setting_up -> live, and cancelled. ONLY a verified webhook sets paid (or a quote
 // that charges nothing). An admin cannot mark an order paid. A quote that charges nothing shows as Received, never Paid.
@@ -59,6 +62,23 @@
 // bad-transition with the steps still stored. It never sets paid and never cancels. Stored as o.provisioning
 // { runId, seq, steps, endpoints, updatedAt }: public text by construction, so the buyer sees it.
 //
+// RENEWAL (testnet). 30 days free, then $199 a month, billed by Gully Pay as a plan subscription (chain-subscriptions.mjs,
+// gull-pay PR #89) on the chain orders' own store (CHAIN_GULLYPAY_STORE_ID + CHAIN_GULLYPAY_API_KEY, server side only).
+// A testnet order creates one when it is placed: plan gully-chain-testnet, reference = the order id (Gully Pay keeps one
+// per store and reference, so a retry never makes a second), metadata.order = { id, tier, name, chainId, gasToken,
+// parent: { id }, quote: { included: [ids], addons: [ids] }, address }. Stored as o.subscription { id, status, payUrl,
+// trialEndsAt, currentPeriodEnd, ... }. The buyer sees the payUrl ("Renew with Gully Pay"), never the key. Gully Pay
+// unset or failing: the order is still recorded, o.subscriptionTry keeps why, the page says renewal billing is not set
+// up yet, and the order page (5 minutes apart) or POST /api/admin/chain-orders/:id/subscription retries. Cancelling the
+// order (buyer, admin or the 7-day sweep) cancels the subscription; if that call fails the order is held for a person.
+// subscription.* webhooks on the same endpoint keep o.subscription up to date (object 'subscription', reference = id).
+//
+// EXPORT. POST /api/chain-orders/:id/export: the Chain Kit pipeline uploads the chain's export (a JSON document), signed
+// like PROVISIONING (X-Chainkit-Signature, CHAINKIT_REPORT_SECRET). 503 chainkit-off · 413 over 1 MB · 401 bad or stale
+// · 400 not JSON · 404 no such order · 200 { ok, bytes }. Kept at DATA_DIR/chain-exports/<id>.json (mode 600), the
+// order keeps o.export { bytes, sha256, updatedAt }. GET /api/chain-orders/:id/export: the buyer (Gully ID session,
+// their own order) downloads it as an attachment; anyone else 404. The admin sees that it exists, not its content.
+//
 // MAIL. No provider is wired in this site yet. With CHAIN_MAIL_API_KEY and CHAIN_MAIL_FROM set, status mails go through
 // Resend's HTTP API (CHAIN_MAIL_URL overrides it). Unset: no mail, and the order page and the operators' Telegram still work.
 //
@@ -71,6 +91,7 @@ import path from 'node:path'
 import { BILLING, BUNDLE, CHAINS, GAS_TOKENS, NITRO_LICENCE_NOTE, ORDER_PARENTS, presentQuote, quoteOrder, SETUP_BUSINESS_DAYS } from './chains-plans.mjs'
 import { checkChainId } from './chains-launch.mjs'
 import { sameSite, sessionGullyId } from './developer.mjs'
+import { cancelPlanSubscription, createPlanSubscription, readSubscription, subscriptionsReady } from './chain-subscriptions.mjs'
 import { createHostedCheckout, gullyPayConfig, gullyPayEnabled, verifyTimestampedSignature } from './gullypay.mjs'
 import { clientIp, DATA_DIR, json, readJson } from './http.mjs'
 import { APP_URL } from './hosts.mjs'
@@ -152,6 +173,8 @@ export function sweepOrders(now = Date.now()) {
 function setStatus(o, status, { by, note = null, at = nowIso() }) {
   o.status = status
   o.history.push({ at, status, by, note })
+  // A cancelled chain stops renewing. Runs after this step; it saves on its own.
+  if (status === 'cancelled') queueMicrotask(() => void cancelSubscriptionOf(o, by))
 }
 
 /* ------------------------------------------------------------------- views --- */
@@ -162,9 +185,18 @@ const paymentView = (o) => {
 }
 // The buyer sees the quote as it reads today (presentQuote: no unconfirmed price, each line's delivery) and the history
 // without who moved it.
-const buyerView = (o) => ({ id: o.id, status: o.status, statusLabel: labelOf(o), tier: o.tier, name: o.name, chainId: o.chainId, gasToken: o.gasToken, gasSymbol: o.gasSymbol, parent: o.parent, quote: presentQuote(o.quote), logo: o.logo, email: o.email, createdAt: o.createdAt, paidAt: o.paidAt, history: o.history.map(({ at, status, note }) => ({ at, status, note: note ?? null })), payment: paymentView(o), provisioning: o.provisioning ?? null })
+// Renewal billing as the buyer sees it: the Gully Pay pay link and the dates, or "not set up yet". Never the key or why
+// a call failed (the admin view has that).
+const renewalView = (o) => {
+  if (o.tier !== 'testnet') return null
+  const s = o.subscription
+  if (!s?.id) return { state: 'not-set-up' }
+  return { state: 'ready', status: s.status, payUrl: s.status === 'cancelled' ? null : s.payUrl, trialEndsAt: s.trialEndsAt, currentPeriodEnd: s.currentPeriodEnd, dueSince: s.dueSince, graceEndsAt: s.graceEndsAt, cancelledAt: s.cancelledAt }
+}
+const exportView = (o) => (o.export ? { ready: true, bytes: o.export.bytes, updatedAt: o.export.updatedAt } : null)
+const buyerView = (o) => ({ id: o.id, status: o.status, statusLabel: labelOf(o), tier: o.tier, name: o.name, chainId: o.chainId, gasToken: o.gasToken, gasSymbol: o.gasSymbol, parent: o.parent, quote: presentQuote(o.quote), logo: o.logo, email: o.email, createdAt: o.createdAt, paidAt: o.paidAt, history: o.history.map(({ at, status, note }) => ({ at, status, note: note ?? null })), payment: paymentView(o), provisioning: o.provisioning ?? null, renewal: renewalView(o), export: exportView(o) })
 const listView = (o) => ({ ...buyerView(o), logo: null })
-const adminView = (o) => ({ ...buyerView(o), history: o.history, address: o.address, gullySub: o.gullySub, review: o.review, sessions: o.sessions.map((s) => ({ id: s.id, status: s.status, createdAt: s.createdAt, expiresAt: s.expiresAt })), next: NEXT[o.status] })
+const adminView = (o) => ({ ...buyerView(o), history: o.history, address: o.address, gullySub: o.gullySub, review: o.review, sessions: o.sessions.map((s) => ({ id: s.id, status: s.status, createdAt: s.createdAt, expiresAt: s.expiresAt })), next: NEXT[o.status], subscription: o.subscription ?? null, subscriptionTry: o.subscriptionTry ?? null, export: o.export ? { bytes: o.export.bytes, sha256: o.export.sha256, updatedAt: o.export.updatedAt } : null })
 
 /* --------------------------------------------------------------- the offer --- */
 
@@ -279,13 +311,13 @@ function hold(o, code, detail) {
 
 /* ----------------------------------------------------------------- webhook --- */
 
-function readRaw(req) {
+function readRaw(req, max = MAX_WEBHOOK) {
   return new Promise((resolve) => {
     const chunks = []
     let n = 0
     req.on('data', (c) => {
       n += c.length
-      if (n > MAX_WEBHOOK) {
+      if (n > max) {
         resolve(null)
         req.destroy()
       } else chunks.push(c)
@@ -297,6 +329,7 @@ function readRaw(req) {
 
 /** Applies one event. Returns 'handled' or 'ignored'. Synchronous: it cannot interleave with another request. */
 function applyEvent(type, s, cfg) {
+  if (s?.object === 'subscription' && /^subscription\./.test(type)) return applySubscriptionEvent(type, s)
   if (!s || s.object !== 'checkout.session') return 'ignored'
   if ((cfg.merchantId && s.merchantId && s.merchantId !== cfg.merchantId) || (cfg.storeId && s.storeId && s.storeId !== cfg.storeId)) return 'ignored'
   const ref = /^chain:(co_[A-Za-z0-9_-]+)$/.exec(String(s.clientReferenceId ?? ''))
@@ -342,6 +375,21 @@ function applyEvent(type, s, cfg) {
   setStatus(o, 'paid', { by: 'gully-pay' })
   tell(o, 'Chain order paid')
   void sendMail(o, 'paid')
+  return 'handled'
+}
+
+/** subscription.created | payment_due | paid | cancelled for one of our orders: keep its state. Cancelled is final. */
+function applySubscriptionEvent(type, raw) {
+  const sub = readSubscription(raw)
+  const o = sub && /^co_[A-Za-z0-9_-]{8,40}$/.test(sub.reference ?? '') ? find(sub.reference) : null
+  if (!o || o.tier !== 'testnet') return 'ignored'
+  if (o.subscription?.id && o.subscription.id !== sub.id) {
+    hold(o, 'unknown-subscription', `Gully Pay sent ${type} for subscription ${sub.id}, which is not this order's.`)
+    return 'handled'
+  }
+  if (o.subscription?.status === 'cancelled' && sub.status !== 'cancelled') return 'ignored'
+  o.subscription = { ...sub, updatedAt: nowIso() }
+  if (type === 'subscription.cancelled') tell(o, 'Chain renewal cancelled', [['Why', sub.cancelReason ?? 'not given']])
   return 'handled'
 }
 
@@ -505,6 +553,121 @@ async function handleProvisioning(req, res, id) {
   return json(res, 200, { ok: true, status: o.status })
 }
 
+/* ------------------------------------------------------------------ export --- */
+
+export const MAX_EXPORT = 1_048_576
+const exportDir = () => path.join(process.env.DATA_DIR ?? DATA_DIR, 'chain-exports')
+const exportFile = (id) => path.join(exportDir(), `${id}.json`)
+
+async function handleExportUpload(req, res, id) {
+  const key = String(process.env.CHAINKIT_REPORT_SECRET ?? '').trim()
+  if (!key) return json(res, 503, { error: 'Chain Kit reports are not configured here.', code: 'chainkit-off' })
+  const declared = Number(req.headers['content-length'])
+  if (Number.isFinite(declared) && declared > MAX_EXPORT) return json(res, 413, { error: 'The export is over 1 MB.' }, { Connection: 'close' })
+  const raw = await readRaw(req, MAX_EXPORT)
+  if (raw == null) return json(res, 413, { error: 'The export is over 1 MB.' }, { Connection: 'close' })
+  if (!verifyTimestampedSignature(req.headers['x-chainkit-signature'], raw, key)) return json(res, 401, { error: 'Bad or stale signature.' })
+  try {
+    JSON.parse(raw)
+  } catch {
+    return json(res, 400, { error: 'Not JSON.' })
+  }
+  const o = find(id)
+  if (!o) return json(res, 404, { error: 'No such order.' })
+  const bytes = Buffer.byteLength(raw)
+  const before = o.export ?? null
+  try {
+    fs.mkdirSync(exportDir(), { recursive: true, mode: 0o700 })
+    const tmp = `${exportFile(o.id)}.${crypto.randomBytes(6).toString('hex')}.tmp`
+    fs.writeFileSync(tmp, raw, { mode: 0o600 })
+    fs.renameSync(tmp, exportFile(o.id))
+    o.export = { bytes, sha256: crypto.createHash('sha256').update(raw).digest('hex'), updatedAt: nowIso() }
+    save()
+  } catch (e) {
+    o.export = before
+    console.error('chain-orders export:', e?.message ?? e)
+    return json(res, 500, { error: 'Could not save; retry.' })
+  }
+  if (!before) tell(o, 'Chain export ready', [['Size', `${bytes} bytes`]])
+  return json(res, 200, { ok: true, bytes })
+}
+
+/** The buyer's download. The caller has checked the order is theirs. */
+function sendExport(res, o) {
+  let body
+  try {
+    body = o.export ? fs.readFileSync(exportFile(o.id)) : null
+  } catch {
+    body = null
+  }
+  if (!body) return json(res, 404, { error: 'There is no export for this order yet.' })
+  const slug = o.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'chain'
+  res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': `attachment; filename="${slug}-${o.chainId}-export.json"`, 'Content-Length': body.length, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' })
+  res.end(body)
+}
+
+/* ----------------------------------------------------------------- renewal --- */
+
+const SUB_RETRY_MS = 5 * 60_000
+const subInFlight = new Map()
+const needsSubscription = (o) => o.tier === 'testnet' && o.status !== 'cancelled' && !o.subscription?.id
+
+/** What Gully Pay is told about the chain: its own echo in every subscription.* webhook (at most 4 KB there). */
+const subscriptionMetadata = (o) => ({ order: { id: o.id, tier: 'testnet', name: o.name, chainId: o.chainId, gasToken: o.gasToken, parent: { id: o.parent.id }, quote: { included: (o.quote.included ?? []).map((x) => x.id), addons: (o.quote.addons ?? []).map((x) => x.id) }, address: o.address } })
+
+/** One subscription per order. Never throws; the outcome is on the order. `force` skips the 5-minute retry spacing. */
+export async function ensureSubscription(o, { force = false } = {}) {
+  if (!needsSubscription(o)) return o.subscription ?? null
+  if (subInFlight.has(o.id)) return subInFlight.get(o.id)
+  if (!force && o.subscriptionTry && Date.now() - Date.parse(o.subscriptionTry.at) < SUB_RETRY_MS) return null
+  const cfg = chainPayConfig()
+  const run = (async () => {
+    if (!subscriptionsReady(cfg)) {
+      o.subscriptionTry = { at: nowIso(), error: 'not-configured', message: 'Gully Pay subscriptions are not configured.' }
+      return null
+    }
+    try {
+      const { subscription } = await createPlanSubscription(cfg, { reference: o.id, customerEmail: o.email ?? undefined, metadata: subscriptionMetadata(o) })
+      o.subscription = { ...subscription, updatedAt: nowIso() }
+      o.subscriptionTry = { at: nowIso(), error: null, message: null }
+      // Cancelled while the call was out: stop it at once.
+      if (o.status === 'cancelled') queueMicrotask(() => void cancelSubscriptionOf(o, 'system'))
+      return o.subscription
+    } catch (e) {
+      console.error(`chain-orders: subscription for ${o.id}: ${e?.code ?? 'error'}`)
+      o.subscriptionTry = { at: nowIso(), error: String(e?.code ?? 'error').slice(0, 40), message: String(e?.message ?? '').slice(0, 200) }
+      return null
+    }
+  })().finally(() => {
+    subInFlight.delete(o.id)
+    try {
+      save()
+    } catch (e) {
+      console.error('chain-orders: could not save the subscription state:', e?.message ?? e)
+    }
+  })
+  subInFlight.set(o.id, run)
+  return run
+}
+
+/** The order is cancelled: cancel its subscription. A failure holds the order for a person. Never throws. */
+async function cancelSubscriptionOf(o, by) {
+  const s = o.subscription
+  if (!s?.id || s.status === 'cancelled') return
+  const cfg = chainPayConfig()
+  try {
+    const { subscription } = await cancelPlanSubscription(cfg, s.id, `Chain order cancelled (${by ?? 'system'}).`)
+    o.subscription = { ...subscription, updatedAt: nowIso() }
+  } catch (e) {
+    hold(o, 'subscription-cancel-failed', `The order is cancelled but Gully Pay subscription ${s.id} could not be cancelled (${e?.code ?? 'error'}). Cancel it in Gully Pay.`)
+  }
+  try {
+    save()
+  } catch (e) {
+    console.error('chain-orders: could not save the cancelled subscription:', e?.message ?? e)
+  }
+}
+
 /* ---------------------------------------------------------------- checkout --- */
 
 const inFlight = new Map()
@@ -565,7 +728,10 @@ async function createOrder(req, res, who) {
   sweepOrders()
   const d = load()
   const same = d.orders.find((o) => o.chainId === row.chainId && heldBy(o, who.address))
-  if (same) return json(res, 200, { order: buyerView(same), duplicate: true })
+  if (same) {
+    await ensureSubscription(same)
+    return json(res, 200, { order: buyerView(same), duplicate: true })
+  }
   if (d.orders.filter((o) => heldBy(o, who.address) && stillOpen(o)).length >= MAX_OPEN_PER_BUYER) return json(res, 429, { error: 'You have five open orders. Finish or cancel one first.' })
   const at = nowIso()
   const paidNow = row.quote.dueCents === 0
@@ -578,6 +744,8 @@ async function createOrder(req, res, who) {
   save()
   tell(o, 'New chain order', [['Contact', o.email ?? 'none given']])
   if (paidNow) void sendMail(o, 'paid')
+  // Renewal billing (testnet): one Gully Pay subscription per order. A failure is recorded, never a failed order.
+  await ensureSubscription(o)
   return json(res, 201, { order: buyerView(o) })
 }
 
@@ -605,6 +773,10 @@ export async function handleChainOrders(req, res, url) {
   if (p === '/api/chain-orders/webhook') return await handleWebhook(req, res), true
   const prov = /^\/api\/chain-orders\/(co_[A-Za-z0-9_-]{8,40})\/provisioning$/.exec(p)
   if (prov) return await handleProvisioning(req, res, prov[1]), true
+  // The pipeline uploads an export (signed, no Gully ID); the buyer downloads it with GET below.
+  const exp = /^\/api\/chain-orders\/(co_[A-Za-z0-9_-]{8,40})\/export$/.exec(p)
+  if (exp && req.method === 'POST') return await handleExportUpload(req, res, exp[1]), true
+  if (exp && req.method !== 'GET') return json(res, 405, { error: 'GET or POST' }, { Allow: 'GET, POST' }), true
   if (p === '/api/chain-orders/offer') return get ? json(res, 200, publicOffer(), { 'Cache-Control': 'public, max-age=30' }) : json(res, 405, { error: 'GET only' }), true
   if (p === '/api/chain-orders/quote') {
     if (!get) return json(res, 405, { error: 'GET only' }), true
@@ -637,11 +809,17 @@ export async function handleChainOrders(req, res, url) {
     return await createOrder(req, res, who), true
   }
 
-  const m = /^\/api\/chain-orders\/(co_[A-Za-z0-9_-]{8,40})(?:\/(checkout|cancel))?$/.exec(p)
+  const m = /^\/api\/chain-orders\/(co_[A-Za-z0-9_-]{8,40})(?:\/(checkout|cancel|export))?$/.exec(p)
   if (!m) return false
   const o = find(m[1])
   if (!o || o.address !== who.address) return json(res, 404, { error: 'No such order.' }), true
-  if (!m[2]) return get ? json(res, 200, { order: buyerView(o) }, noStore) : json(res, 405, { error: 'GET only' }), true
+  if (m[2] === 'export') return sendExport(res, o), true
+  if (!m[2]) {
+    if (!get) return json(res, 405, { error: 'GET only' }), true
+    // Renewal billing that did not get set up is retried here, at most every 5 minutes, without holding the page.
+    if (needsSubscription(o)) void ensureSubscription(o)
+    return json(res, 200, { order: buyerView(o) }, noStore), true
+  }
   if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
   const freeCancel = m[2] === 'cancel' && o.status === 'paid' && nothingDue(o)
   if (o.status !== 'awaiting_payment' && !freeCancel) return json(res, 409, { error: 'This order is already past payment.', code: 'not-awaiting-payment', order: buyerView(o) }), true
@@ -668,11 +846,16 @@ export async function handleChainOrdersAdmin(req, res, url) {
     sweepOrders()
     return json(res, 200, { orders: [...load().orders].reverse().map(adminView), notify: [...load().notify].reverse(), flags: publicOffer().flags, checkout: publicOffer().checkout }, noStore), true
   }
-  const m = /^\/api\/admin\/chain-orders\/(co_[A-Za-z0-9_-]{8,40})\/(status|resolve)$/.exec(p)
+  const m = /^\/api\/admin\/chain-orders\/(co_[A-Za-z0-9_-]{8,40})\/(status|resolve|subscription)$/.exec(p)
   if (!m) return false
   if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
   const o = find(m[1])
   if (!o) return json(res, 404, { error: 'No such order.' }), true
+  if (m[2] === 'subscription') {
+    if (!needsSubscription(o)) return json(res, 409, { error: o.tier !== 'testnet' ? 'Only testnet orders renew through a plan.' : o.status === 'cancelled' ? 'This order is cancelled.' : 'This order already has its subscription.', order: adminView(o) }), true
+    await ensureSubscription(o, { force: true })
+    return json(res, o.subscription?.id ? 200 : 502, { order: adminView(o), ...(o.subscription?.id ? {} : { error: o.subscriptionTry?.message || 'Gully Pay did not create the subscription.' }) }), true
+  }
   const body = await readJson(req, 2_000)
   if (m[2] === 'resolve') {
     for (const r of o.review) r.resolved = true

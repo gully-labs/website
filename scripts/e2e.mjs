@@ -1507,7 +1507,7 @@ await step('admin', async () => {
   const logos = await page.locator('main img').evaluateAll((els) => els.map((i) => i.complete && i.naturalWidth > 0))
   check('admin: chain and asset logos load', logos.length > 0 && logos.every(Boolean), `${logos.filter(Boolean).length}/${logos.length}`)
   // Tap targets (N36): every visible control is 44 px high.
-  for (const sec of ['health', 'overview', 'traffic', 'developers', 'alerts', 'workspaces', 'security', 'telegram', 'billing', 'pay', 'analytics', 'chainorders', 'chainkit', 'inbox', 'ai']) {
+  for (const sec of ['health', 'overview', 'traffic', 'developers', 'alerts', 'workspaces', 'security', 'telegram', 'billing', 'pay', 'analytics', 'chainorders', 'chainkit', 'integrations', 'inbox', 'ai']) {
     await page.goto(BASE + '/admin#' + sec)
     await page.waitForTimeout(1500)
     const small = await page.locator('main').locator('button, select, input:not([type=checkbox]):not([type=radio]), textarea, a[href], summary').evaluateAll((els) => els.filter((e) => { const r = e.getBoundingClientRect(); const st = getComputedStyle(e); return r.width > 0 && r.height > 0 && st.visibility !== 'hidden' && !e.closest('.sr-only') && r.height < 43.5 }).map((e) => `${e.tagName} ${(e.textContent ?? '').trim().slice(0, 24)} ${Math.round(e.getBoundingClientRect().height)}`))

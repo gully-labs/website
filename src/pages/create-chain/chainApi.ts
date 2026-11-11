@@ -82,7 +82,15 @@ export interface Order {
   payment: { mode: 'test' | 'live'; testCharge: boolean; dueCents: number; lastError: string | null; sessionOpen: boolean; onHold: boolean }
   /** The Chain Kit pipeline's log of its current run; null until it first reports. */
   provisioning?: Provisioning | null
+  /** Testnet: renewal billing through Gully Pay (30 days free, then monthly). null on mainnet. */
+  renewal?: Renewal | null
+  /** The chain's export from the Chain Kit pipeline, once it has uploaded one. */
+  export?: { ready: true; bytes: number; updatedAt: string } | null
 }
+
+export type Renewal =
+  | { state: 'not-set-up' }
+  | { state: 'ready'; status: 'trialing' | 'active' | 'past_due' | 'cancelled' | 'unknown'; payUrl: string | null; trialEndsAt: string | null; currentPeriodEnd: string | null; dueSince: string | null; graceEndsAt: string | null; cancelledAt: string | null }
 
 export type StepState = 'pending' | 'running' | 'done' | 'failed' | 'waiting' | 'skipped'
 
@@ -117,6 +125,8 @@ export const notifyMainnet = (email: string) => api<{ ok: boolean; already?: boo
 export const checkChainId = (id: string) => api<{ free: boolean; reason?: string }>(`/api/chain-orders/check?chainId=${encodeURIComponent(id)}`)
 export const getOrder = (id: string) => api<{ order: Order }>(`/api/chain-orders/${encodeURIComponent(id)}`)
 export const startCheckout = (id: string) => api<{ payUrl: string }>(`/api/chain-orders/${encodeURIComponent(id)}/checkout`, { method: 'POST' })
+/** The export download (a plain link: the session cookie is the auth). */
+export const exportUrl = (id: string) => `/api/chain-orders/${encodeURIComponent(id)}/export`
 export const cancelOrder = (id: string) => api<{ order: Order }>(`/api/chain-orders/${encodeURIComponent(id)}/cancel`, { method: 'POST' })
 /** True when this browser holds a Sign in with Gully ID session (a wallet session is not enough here). */
 export const hasGullySession = async () => {
