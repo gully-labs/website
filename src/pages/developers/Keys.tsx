@@ -107,6 +107,7 @@ function useWeek() {
 function KeysPanel({ account, reload, creating, onCreateDone }: { account: Account; reload: () => Promise<void>; creating: boolean; onCreateDone: () => void }) {
   const [dialogState, setDialog] = useState<KeyDialog>(null)
   const [name, setName] = useState('')
+  const [ipfsScope, setIpfsScope] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [showRevoked, setShowRevoked] = useState(false)
@@ -149,7 +150,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
     e.preventDefault()
     if (!dialog) return
     if (dialog.kind === 'create')
-      act('/api/developer/keys', { name }, (d) => {
+      act('/api/developer/keys', { name, scopes: ipfsScope ? ['ipfs:pin'] : [] }, (d) => {
         track('key-created')
         toastSuccess('Key created', { detail: `${d.key.name}: copy its secret now, it is shown once.` })
         setDialog({ kind: 'secret', key: d.key, secret: d.secret ?? '', rotated: false })
@@ -232,6 +233,7 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
                     <span className="flex items-center gap-2 font-medium">
                       <i className="inline-block size-[10px] shrink-0 rounded-[3px]" style={{ background: colorOf(k) }} aria-hidden />
                       {k.name}
+                      {k.scopes?.includes('ipfs:pin') && <span className="rounded-full border border-line px-2 py-[1px] font-mono text-[11px] text-muted" data-testid="key-scope-ipfs">ipfs:pin</span>}
                     </span>
                   </td>
                   <td className="py-3 pr-3">
@@ -319,6 +321,15 @@ function KeysPanel({ account, reload, creating, onCreateDone }: { account: Accou
             <input className={input} value={name} onChange={(e) => setName(e.target.value)} maxLength={40} required placeholder="e.g. Production backend" />
             <span className="text-[12px] text-faint">Only for you, to tell keys apart. Up to 40 characters.</span>
           </label>
+          {dialog?.kind === 'create' && (
+            <label className="flex items-start gap-2 text-[14px] text-ink-2">
+              <input type="checkbox" className="mt-1 size-4" checked={ipfsScope} onChange={(e) => setIpfsScope(e.target.checked)} data-testid="key-scope-ipfs-box" />
+              <span>
+                Can pin to Gully IPFS <code className="font-mono text-[12px] text-faint">ipfs:pin</code>
+                <span className="block text-[12px] text-faint">Lets this key pin, upload and unpin through the IPFS Pinning Service API.</span>
+              </span>
+            </label>
+          )}
           {err && <ErrorLine>{err}</ErrorLine>}
           {dialog?.kind === 'create' && <ConsentLine />}
           <div className="flex justify-end gap-2">

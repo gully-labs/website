@@ -437,7 +437,7 @@ function liveFor(p: ProductDef, live: Live, hp: HubProducts | null, hpState: str
       return {
         kpis: [
           { label: 'CIDs pinned', value: ip?.pinned ?? null, spark: hh.map((x) => x.pinned), sub: 'recursive pins' },
-          { label: 'Repo size', text: ip?.repoBytes != null ? `${(ip.repoBytes / 1e9).toFixed(2)} GB` : '—', sub: 'never garbage-collected' },
+          { label: 'Pinning', text: 'self-serve', sub: 'Pinning Service API, hub keys' },
           { label: 'Gateway', value: ip?.gatewayMs ?? null, fmt: (v) => fmtMs(v), spark: hh.map((x) => x.ms), sub: ip?.gatewayUp ? 'answering' : ip ? 'not reachable' : 'reading' },
           { label: 'State', text: <Dot s={stateOf(hub, ['ipfs'])} />, sub: 'ipfs.gullylabs.xyz' },
         ],

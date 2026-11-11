@@ -66,6 +66,7 @@ import { handleMonitors } from './sec-monitor.mjs'
 import { handleProfileRoutes } from './profile.mjs'
 import { canWrite, forbidden, handleInvitePreview, handleWorkspaceRoutes, roleIn } from './workspaces.mjs'
 import { handleAnalyticsAccount } from './analytics-accounts.mjs'
+import { handleIpfsAccount, SCOPE as IPFS_SCOPE } from './ipfs-pins.mjs'
 import { handleTelegramAccount } from './telegram.mjs'
 import { billingOf, openIntent, verifyPayment } from './billing.mjs'
 import { APP_URL, SIGN_IN_HOSTS } from './hosts.mjs'
@@ -201,7 +202,7 @@ export function sameSite(req) {
 /* --------------------------------------------------------------- views --- */
 
 // A wallet's key is limited by the wallet's plan; a legacy key with no wallet by its own stored limit.
-const keyView = (k) => ({ id: k.id, name: k.name ?? k.project ?? 'Key', prefix: k.prefix, limit: k.owner ? planOf(k.owner).perMin : k.limit, createdAt: k.createdAt, rotatedAt: k.rotatedAt ?? null, revokedAt: k.revokedAt, lastUsed: lastUsed(k.id) })
+const keyView = (k) => ({ id: k.id, name: k.name ?? k.project ?? 'Key', prefix: k.prefix, scopes: k.scopes ?? [], limit: k.owner ? planOf(k.owner).perMin : k.limit, createdAt: k.createdAt, rotatedAt: k.rotatedAt ?? null, revokedAt: k.revokedAt, lastUsed: lastUsed(k.id) })
 
 function accountView(address) {
   const a = getAccount(address)
@@ -334,7 +335,10 @@ export async function handleDeveloper(req, res, url) {
     p === '/api/developer/chains-waitlist' ||
     // The chain launch wizard's launched chains (chains-launch.mjs).
     p === '/api/developer/chains-launch' ||
-    p.startsWith('/api/developer/chains-launch/')
+    p.startsWith('/api/developer/chains-launch/') ||
+    // Gully IPFS: this account's pins, uploads and unpins (ipfs-pins.mjs).
+    p === '/api/developer/ipfs' ||
+    p.startsWith('/api/developer/ipfs/')
 
   if (accountRoute || v2Route) {
     if (post && !sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' }), true
@@ -371,6 +375,7 @@ export async function handleDeveloper(req, res, url) {
       if (p === '/api/developer/monitors' || p.startsWith('/api/developer/monitors/')) return handleMonitors(req, res, url, ctx)
       if (p === '/api/developer/partners' || p.startsWith('/api/developer/partners/')) return handlePartnerRoutes(req, res, url, ctx)
       if (p === '/api/developer/chains-launch' || p.startsWith('/api/developer/chains-launch/')) return handleChainsLaunch(req, res, url, ctx)
+      if (p === '/api/developer/ipfs' || p.startsWith('/api/developer/ipfs/')) return handleIpfsAccount(req, res, url, ctx)
       if (p === '/api/developer/chain-kit' || p === '/api/developer/chain-kit/request' || p === '/api/developer/chains-waitlist') return chainKitRoutes(req, res, p, post, ctx)
       if (p === '/api/developer/me' || p === '/api/developer/profile' || p === '/api/developer/company' || p.startsWith('/api/developer/sessions')) return handleProfileRoutes(req, res, url, ctx)
       return handleWorkspaceRoutes(req, res, url, ctx)
@@ -459,7 +464,10 @@ async function ownerRoutes(req, res, url, address, p, post) {
       if (!NAME_RE.test(name)) return json(res, 400, { error: 'Name the key: 1 to 40 letters, digits, spaces, dots, dashes or underscores.' }), true
       if (mine.filter((k) => !k.revokedAt).length >= MAX_KEYS_PER_ACCOUNT) return json(res, 409, { error: `You have ${MAX_KEYS_PER_ACCOUNT} live keys, the most a wallet can hold. Revoke one first.` }), true
       if (!allow('newkey', address, 10, 3_600_000)) return json(res, 429, { error: 'Too many keys created in the last hour. Try again later.' }), true
-      const { key, secret } = issueKey({ owner: address, name })
+      // Scopes: none is the data API key it always was; `ipfs:pin` also lets the key pin and upload (ipfs-pins.mjs).
+      const scopes = Array.isArray(body?.scopes) ? [...new Set(body.scopes.map(String))] : []
+      if (scopes.some((s) => s !== IPFS_SCOPE)) return json(res, 400, { error: `Unknown scope. Scopes on offer: ${IPFS_SCOPE}.` }), true
+      const { key, secret } = issueKey({ owner: address, name, scopes })
       return json(res, 201, { key: keyView(key), secret }), true
     }
 

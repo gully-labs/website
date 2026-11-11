@@ -22,6 +22,22 @@ export const PLANS = {
   business: { id: 'business', name: 'Business', priceUsdc: 199, perMin: 10_000, alerts: 100, historyDays: 365, maxKeys: 5, monitors: 50 },
 }
 
+/* ---------------------------------------------------------- Gully IPFS --- */
+
+// OWNER-EDITABLE: Gully IPFS pinning plans (ipfs-pins.mjs enforces them; the hub and docs read them through GET /api/plans,
+// field `ipfs`). Only the free tier is on offer: priceUsdPerGbMonth stays null and checkout stays shut until the owner
+// sets the price (then billing goes through Gully Pay checkout). The free tier's size can be set without a code change:
+// IPFS_FREE_STORAGE_GB, IPFS_FREE_MAX_FILE_MB, IPFS_FREE_MAX_PINS (server env).
+const envNum = (k, d) => (Number.isFinite(Number(process.env[k])) && Number(process.env[k]) > 0 ? Number(process.env[k]) : d)
+export function ipfsPlans() {
+  return {
+    free: { id: 'free', name: 'Free', priceUsdPerGbMonth: 0, storageBytes: Math.round(envNum('IPFS_FREE_STORAGE_GB', 1) * 1024 ** 3), maxFileBytes: Math.round(envNum('IPFS_FREE_MAX_FILE_MB', 100) * 1024 ** 2), maxPins: envNum('IPFS_FREE_MAX_PINS', 500), copies: 2 },
+  }
+}
+/** The IPFS plan in force for an account (only the free tier exists until the owner prices paid storage). */
+export const ipfsPlanOf = () => ipfsPlans().free
+export const IPFS_PAID = { priceUsdPerGbMonth: null, checkout: false, reason: 'Paid storage is not on sale yet.' }
+
 /* ------------------------------------------------------ Gully Analytics --- */
 
 // OWNER-EDITABLE: Gully Analytics plans (self-serve sign-up in the app dashboard, enforced by the
@@ -165,6 +181,7 @@ export function publicPlans({ treasuryOverride } = {}) {
     holderMap: { gated: holderMapGated(), tiers: HOLDER_MAP.tiers },
     analytics: { plans: Object.values(ANALYTICS_PLANS), trialDays: ANALYTICS_TRIAL_DAYS, graceDays: ANALYTICS_GRACE_DAYS, periodDays: PERIOD_DAYS },
     security: SECURITY,
+    ipfs: { plans: Object.values(ipfsPlans()), paid: IPFS_PAID },
     holderDeep: HOLDER_DEEP,
     // A treasury that is a fee proxy is never shown (pay-guard.mjs: logged, PaymentGuardError, 500).
     checkout: t ? { enabled: true, treasury: guardRecipient(t, 'plans checkout'), solanaTreasury: solanaTreasury() } : { enabled: false, treasury: null, solanaTreasury: null, reason: 'Paid plans cannot be bought yet: no treasury wallet is configured.' },
