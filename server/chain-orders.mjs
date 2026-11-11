@@ -1,4 +1,5 @@
-// Create a chain, Stage 1: a real order with payment. A person provisions each chain by hand; nothing here deploys.
+// Create a chain, Stage 1: a real order with payment. Nothing here deploys: a person or the Chain Kit pipeline provisions
+// each chain, and the pipeline reports its steps here (PROVISIONING).
 //
 // Prices come from chains-plans.mjs (quoteOrder), the only place they live. The order stores the quote it was sold at.
 //
@@ -8,6 +9,7 @@
 //   GET  /api/chain-orders/quote?tier=&addons=a,b    { quote }
 //   GET  /api/chain-orders/session                   { gullyId } this browser holds a Sign in with Gully ID session
 //   POST /api/chain-orders/webhook                   Gully Pay, signed (below)
+//   POST /api/chain-orders/:id/provisioning          the Chain Kit pipeline, signed (PROVISIONING below); no Gully ID
 // SIGNED IN WITH GULLY ID (a wallet session is refused: 401 gully-id-required). A POST needs X-Requested-With: gully.
 //   GET  /api/chain-orders                           { orders } mine, newest first
 //   POST /api/chain-orders                           { tier, name, chainId, gasToken, gasSymbol?, parentChainId, addons[], logo?, email?, expect: { dueCents } }
@@ -42,6 +44,17 @@
 // id is handled once and kept 45 days. 401 bad or stale · 400 not JSON or no id · 200 handled, ignored or duplicate ·
 // 500 could not save (not recorded, so Gully Pay retries) · 503 not configured. checkout.session.completed is final even
 // after .expired (a late crypto payment), as Gully Pay's docs say.
+//
+// PROVISIONING. The Chain Kit pipeline (gully-ops l3/chainkit) reports each step of a run to the order. Header
+// X-Chainkit-Signature: t=<unix s>,v1=<hex HMAC-SHA256(CHAINKIT_REPORT_SECRET, "<t>.<raw body>")>, 5 minutes, the same
+// check as the webhook. CHAINKIT_REPORT_SECRET unset: 503 chainkit-off. 401 bad or stale · 413 over 64 KB · 400 bad body
+// · 404 no such order · 200 { ok, status } stored · 200 { ignored: true } a seq at or below the stored one for that run.
+// Body { runId: ck_..., seq: int >= 0, status?: setting_up | live | null, steps: [{ id, title, state, startedAt, endedAt,
+// note (<= 240), links: [{ label, url https }] (<= 4) }] (<= 40), endpoints?: { rpc, explorer, bridge, faucet, multisig,
+// bundler } https or null }. Anything else is dropped. A new runId replaces the log. status moves only paid -> setting_up
+// and setting_up -> live (by 'chainkit', and the status mail goes out); the same status is a no-op; any other is 409
+// bad-transition with the steps still stored. It never sets paid and never cancels. Stored as o.provisioning
+// { runId, seq, steps, endpoints, updatedAt }: public text by construction, so the buyer sees it.
 //
 // MAIL. No provider is wired in this site yet. With CHAIN_MAIL_API_KEY and CHAIN_MAIL_FROM set, status mails go through
 // Resend's HTTP API (CHAIN_MAIL_URL overrides it). Unset: no mail, and the order page and the operators' Telegram still work.
@@ -143,7 +156,7 @@ const paymentView = (o) => {
   const last = o.sessions.at(-1)
   return { mode: o.mode, testCharge: o.quote.testCharge, dueCents: o.quote.dueCents, lastError: o.lastError ?? null, sessionOpen: !!last && last.status === 'open' && Date.parse(last.expiresAt) > Date.now(), onHold: o.review.some((r) => !r.resolved) }
 }
-const buyerView = (o) => ({ id: o.id, status: o.status, statusLabel: labelOf(o), tier: o.tier, name: o.name, chainId: o.chainId, gasToken: o.gasToken, gasSymbol: o.gasSymbol, parent: o.parent, quote: o.quote, logo: o.logo, email: o.email, createdAt: o.createdAt, paidAt: o.paidAt, history: o.history, payment: paymentView(o) })
+const buyerView = (o) => ({ id: o.id, status: o.status, statusLabel: labelOf(o), tier: o.tier, name: o.name, chainId: o.chainId, gasToken: o.gasToken, gasSymbol: o.gasSymbol, parent: o.parent, quote: o.quote, logo: o.logo, email: o.email, createdAt: o.createdAt, paidAt: o.paidAt, history: o.history, payment: paymentView(o), provisioning: o.provisioning ?? null })
 const listView = (o) => ({ ...buyerView(o), logo: null })
 const adminView = (o) => ({ ...buyerView(o), address: o.address, gullySub: o.gullySub, review: o.review, sessions: o.sessions.map((s) => ({ id: s.id, status: s.status, createdAt: s.createdAt, expiresAt: s.expiresAt })), next: NEXT[o.status] })
 
@@ -354,6 +367,134 @@ async function handleWebhook(req, res) {
   return json(res, 200, { ok: true, outcome })
 }
 
+/* ------------------------------------------------------------ provisioning --- */
+
+export const STEP_STATES = ['pending', 'running', 'done', 'failed', 'waiting', 'skipped']
+export const ENDPOINT_KEYS = ['rpc', 'explorer', 'bridge', 'faucet', 'multisig', 'bundler']
+const RUN_RE = /^ck_[A-Za-z0-9_-]{4,64}$/
+const STEP_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/
+const MAX_STEPS = 40
+const MAX_LINKS = 4
+const MAX_NOTE = 240
+// Control characters never reach a page.
+const clean = (v) => v.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim()
+
+/** A public https address with no credentials, or null. */
+function httpsUrl(v) {
+  if (typeof v !== 'string' || v.length > 500) return null
+  try {
+    const u = new URL(v)
+    return u.protocol === 'https:' && !u.username && !u.password && u.hostname ? u.href : null
+  } catch {
+    return null
+  }
+}
+const isoOrNull = (v) => (v === null || v === undefined ? { ok: true, v: null } : typeof v === 'string' && v.length <= 40 && Number.isFinite(Date.parse(v)) ? { ok: true, v: new Date(v).toISOString() } : { ok: false })
+
+/** Validates a pipeline report. { ok: true, row } or { ok: false, error }. Keeps only the fields of the contract. */
+export function readProvisioning(b) {
+  const bad = (error) => ({ ok: false, error })
+  if (!b || typeof b !== 'object' || Array.isArray(b)) return bad('The body is not an object.')
+  if (typeof b.runId !== 'string' || !RUN_RE.test(b.runId)) return bad('runId must look like ck_...')
+  if (!Number.isSafeInteger(b.seq) || b.seq < 0) return bad('seq must be a whole number, 0 or more.')
+  const status = b.status ?? null
+  if (status !== null && status !== 'setting_up' && status !== 'live') return bad('status must be setting_up, live or null.')
+  if (!Array.isArray(b.steps) || b.steps.length > MAX_STEPS) return bad(`steps must be a list of at most ${MAX_STEPS}.`)
+  const steps = []
+  const ids = new Set()
+  for (const [i, x] of b.steps.entries()) {
+    const at = `steps[${i}]`
+    if (!x || typeof x !== 'object') return bad(`${at} is not an object.`)
+    if (typeof x.id !== 'string' || !STEP_ID_RE.test(x.id) || ids.has(x.id)) return bad(`${at}.id is missing, malformed or repeated.`)
+    ids.add(x.id)
+    const title = typeof x.title === 'string' ? clean(x.title) : ''
+    if (!title || title.length > 120) return bad(`${at}.title must be 1 to 120 characters.`)
+    if (!STEP_STATES.includes(x.state)) return bad(`${at}.state is not one of ${STEP_STATES.join(', ')}.`)
+    const startedAt = isoOrNull(x.startedAt)
+    const endedAt = isoOrNull(x.endedAt)
+    if (!startedAt.ok || !endedAt.ok) return bad(`${at} has a time that is not ISO 8601.`)
+    let note = null
+    if (x.note !== null && x.note !== undefined) {
+      if (typeof x.note !== 'string' || x.note.length > MAX_NOTE) return bad(`${at}.note must be text of at most ${MAX_NOTE} characters.`)
+      note = clean(x.note) || null
+    }
+    const rawLinks = x.links ?? []
+    if (!Array.isArray(rawLinks) || rawLinks.length > MAX_LINKS) return bad(`${at}.links must be a list of at most ${MAX_LINKS}.`)
+    const links = []
+    for (const l of rawLinks) {
+      const label = l && typeof l.label === 'string' ? clean(l.label) : ''
+      const url = httpsUrl(l?.url)
+      if (!label || label.length > 60 || !url) return bad(`${at}.links needs a label (up to 60 characters) and an https url.`)
+      links.push({ label, url })
+    }
+    steps.push({ id: x.id, title, state: x.state, startedAt: startedAt.v, endedAt: endedAt.v, note, links })
+  }
+  let endpoints = null
+  if (b.endpoints !== undefined && b.endpoints !== null) {
+    if (typeof b.endpoints !== 'object' || Array.isArray(b.endpoints)) return bad('endpoints must be an object.')
+    endpoints = {}
+    for (const k of ENDPOINT_KEYS) {
+      const v = b.endpoints[k]
+      if (v === undefined || v === null) continue
+      const url = httpsUrl(v)
+      if (!url) return bad(`endpoints.${k} must be an https url or null.`)
+      endpoints[k] = url
+    }
+  }
+  return { ok: true, row: { runId: b.runId, seq: b.seq, status, steps, endpoints } }
+}
+
+/** The pipeline may only start and finish: paid -> setting_up, setting_up -> live. */
+const PIPELINE_MOVES = { paid: 'setting_up', setting_up: 'live' }
+const PIPELINE_NOTE = { setting_up: 'Provisioning started', live: 'Provisioning finished' }
+
+async function handleProvisioning(req, res, id) {
+  if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }, { Allow: 'POST' })
+  const key = String(process.env.CHAINKIT_REPORT_SECRET ?? '').trim()
+  if (!key) return json(res, 503, { error: 'Chain Kit reports are not configured here.', code: 'chainkit-off' })
+  const raw = await readRaw(req)
+  if (raw == null) return json(res, 413, { error: 'Body too large.' })
+  if (!verifyTimestampedSignature(req.headers['x-chainkit-signature'], raw, key)) return json(res, 401, { error: 'Bad or stale signature.' })
+  let body
+  try {
+    body = JSON.parse(raw)
+  } catch {
+    return json(res, 400, { error: 'Not JSON.' })
+  }
+  const o = find(id)
+  if (!o) return json(res, 404, { error: 'No such order.' })
+  const r = readProvisioning(body)
+  if (!r.ok) return json(res, 400, { error: r.error })
+  const { status, ...log } = r.row
+  const prev = o.provisioning
+  if (prev && prev.runId === log.runId && log.seq <= prev.seq) return json(res, 200, { ok: true, ignored: true, status: o.status })
+  const before = { provisioning: prev, status: o.status, history: o.history.length }
+  o.provisioning = { ...log, updatedAt: nowIso() }
+  let moved = false
+  let refused = false
+  if (status && status !== o.status) {
+    if (PIPELINE_MOVES[o.status] === status) {
+      setStatus(o, status, { by: 'chainkit', note: PIPELINE_NOTE[status] })
+      moved = true
+    } else refused = true
+  }
+  try {
+    save()
+  } catch (e) {
+    o.provisioning = before.provisioning
+    o.status = before.status
+    o.history.length = before.history
+    console.error('chain-orders provisioning:', e?.message ?? e)
+    return json(res, 500, { error: 'Could not save; retry.' })
+  }
+  if (moved) {
+    tell(o, status === 'live' ? 'Chain is live' : 'Chain provisioning started')
+    void sendMail(o, status)
+  }
+  if (refused) return json(res, 409, { error: `An order that is ${LABEL[o.status].toLowerCase()} cannot move to ${LABEL[status].toLowerCase()} from the pipeline. The steps were stored.`, code: 'bad-transition', status: o.status, stored: true })
+  return json(res, 200, { ok: true, status: o.status })
+}
+
 /* ---------------------------------------------------------------- checkout --- */
 
 const inFlight = new Map()
@@ -435,6 +576,8 @@ export async function handleChainOrders(req, res, url) {
   const p = url.pathname
   const get = req.method === 'GET'
   if (p === '/api/chain-orders/webhook') return await handleWebhook(req, res), true
+  const prov = /^\/api\/chain-orders\/(co_[A-Za-z0-9_-]{8,40})\/provisioning$/.exec(p)
+  if (prov) return await handleProvisioning(req, res, prov[1]), true
   if (p === '/api/chain-orders/offer') return get ? json(res, 200, publicOffer(), { 'Cache-Control': 'public, max-age=30' }) : json(res, 405, { error: 'GET only' }), true
   if (p === '/api/chain-orders/quote') {
     if (!get) return json(res, 405, { error: 'GET only' }), true

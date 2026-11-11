@@ -21,7 +21,7 @@ const gid = await fakeGullyId(USERS)
 const pay = await fakeGullyPay()
 const ADMIN = crypto.randomBytes(24).toString('hex')
 
-for (const k of ['TELEGRAM_BOT_TOKEN', 'MAINNET_ORDERS', 'MAINNET_PRICE_CONFIRMED', 'CHAIN_GULLYPAY_MODE', 'CHAIN_MAIL_API_KEY', 'CHAIN_MAIL_FROM']) delete process.env[k]
+for (const k of ['CHAINKIT_REPORT_SECRET', 'TELEGRAM_BOT_TOKEN', 'MAINNET_ORDERS', 'MAINNET_PRICE_CONFIRMED', 'CHAIN_GULLYPAY_MODE', 'CHAIN_MAIL_API_KEY', 'CHAIN_MAIL_FROM']) delete process.env[k]
 // The payment path needs a charge, so this file runs with one. The default of $0 has its own section at the end.
 Object.assign(process.env, { CHAIN_TESTNET_TEST_CHARGE_USD: '1', PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: ADMIN, ADMIN_PASSWORD_LOGIN: 'on', TRACKER_LOOP: 'off', DEEPCORE_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off', CHAINLIST_URL: 'off', GULLY_ID_ISSUER: gid.url, GULLYPAY_API_URL: pay.url, GULLYPAY_CHECKOUT_URL: pay.url, CHAIN_GULLYPAY_MERCHANT_ID: GP.merchantId, CHAIN_GULLYPAY_STORE_ID: GP.storeId, CHAIN_GULLYPAY_API_KEY: GP.apiKey, CHAIN_GULLYPAY_WEBHOOK_SECRET: GP.secret })
 
@@ -74,6 +74,7 @@ const good = (over = {}) => ({ tier: 'testnet', name: 'Acme Chain', chainId: ++n
 
 const A = client()
 const B = client()
+const src0 = () => fs.readFileSync(new URL('../server/chain-orders.mjs', import.meta.url), 'utf8')
 const S = (o) => pay.sessions.find((s) => s.clientReferenceId === `chain:${o.id}`)
 
 try {
@@ -261,6 +262,81 @@ try {
   await new Promise((r) => setTimeout(r, 50))
   check('status: a mail per change, to the buyer', mails.length === 2 && mails.every((x) => x.body.to[0] === 'team@example.com') && /is live/.test(mails[1].body.subject) && mails[0].body.text.includes(`/create-chain/orders/${o1.id}`))
   check('status: cancelled is the end', (await toStatus(o1.id, 'cancelled')).status === 200 && (await toStatus(o1.id, 'live')).status === 409)
+
+  /* ---- provisioning: the Chain Kit pipeline reports its steps ---- */
+  const { signForTest } = await import('../server/gullypay.mjs')
+  const CK = crypto.randomBytes(32).toString('hex')
+  const report = async (id, body, { key = CK, t, sig, raw } = {}) => {
+    const text = raw ?? JSON.stringify(body)
+    const r = await fetch(`${BASE}/api/chain-orders/${id}/provisioning`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-chainkit-signature': sig ?? signForTest(text, key, t) }, body: text })
+    return { status: r.status, data: await r.json().catch(() => null) }
+  }
+  const step = (over = {}) => ({ id: 'box', title: 'Order the server', state: 'done', startedAt: '2026-11-10T10:00:00Z', endedAt: '2026-11-10T10:02:00.000Z', note: 'Ready.', links: [{ label: 'Status', url: 'https://status.gullylabs.xyz/' }], ...over })
+  const rep = (over = {}) => ({ runId: 'ck_run0001', seq: 1, status: null, steps: [step()], ...over })
+  const pm = []
+  orders.setChainMailFetchForTest(async (u, o) => (pm.push(JSON.parse(o.body)), { ok: true, status: 200 }))
+  check('provisioning: no secret set answers 503 chainkit-off', (await report(f.id, rep())).data?.code === 'chainkit-off' && (await report(f.id, rep())).status === 503)
+  process.env.CHAINKIT_REPORT_SECRET = CK
+  check('provisioning: no signature is 401', (await report(f.id, rep(), { sig: '' })).status === 401)
+  check('provisioning: the wrong key is 401', (await report(f.id, rep(), { key: 'y'.repeat(64) })).status === 401)
+  check('provisioning: a stale signature (10 minutes) is 401', (await report(f.id, rep(), { t: Math.floor(Date.now() / 1000) - 600 })).status === 401)
+  check('provisioning: a changed body is 401', (await report(f.id, rep(), { raw: JSON.stringify(rep({ seq: 9 })), sig: signForTest(JSON.stringify(rep()), CK) })).status === 401)
+  check('provisioning: the Gully Pay webhook key is not this key', (await report(f.id, rep(), { key: GP.secret })).status === 401)
+  check('provisioning: an unknown order is 404', (await report('co_nothinghere00', rep())).status === 404)
+  check('provisioning: not JSON is 400', (await report(f.id, null, { raw: '{nope' })).status === 400)
+  check('provisioning: GET is 405', (await fetch(`${BASE}/api/chain-orders/${f.id}/provisioning`)).status === 405)
+  check('provisioning: an oversized body is refused', await report(f.id, null, { raw: JSON.stringify({ pad: 'x'.repeat(70_000) }) }).then((r) => r.status === 413, () => true))
+  const v400 = async (body) => (await report(f.id, body)).status
+  check('validation: a runId that is not ck_ is 400', (await v400(rep({ runId: 'run1' }))) === 400)
+  check('validation: a seq that is not a whole number is 400', (await v400(rep({ seq: 1.5 }))) === 400 && (await v400(rep({ seq: '1' }))) === 400 && (await v400(rep({ seq: -1 }))) === 400)
+  check('validation: the pipeline cannot set paid or cancelled', (await v400(rep({ status: 'paid' }))) === 400 && (await v400(rep({ status: 'cancelled' }))) === 400)
+  check('validation: an unknown step state is 400', (await v400(rep({ steps: [step({ state: 'ok' })] }))) === 400)
+  check('validation: more than 40 steps is 400', (await v400(rep({ steps: Array.from({ length: 41 }, (_, i) => step({ id: `s${i}` })) }))) === 400)
+  check('validation: repeated step ids are 400', (await v400(rep({ steps: [step(), step()] }))) === 400)
+  check('validation: a note over 240 characters is 400', (await v400(rep({ steps: [step({ note: 'n'.repeat(241) })] }))) === 400)
+  check('validation: a link that is not https is 400', (await v400(rep({ steps: [step({ links: [{ label: 'x', url: 'http://a.example' }] })] }))) === 400 && (await v400(rep({ steps: [step({ links: [{ label: 'x', url: 'javascript:alert(1)' }] })] }))) === 400)
+  check('validation: a link with credentials is 400', (await v400(rep({ steps: [step({ links: [{ label: 'x', url: 'https://u:p@a.example' }] })] }))) === 400)
+  check('validation: more than 4 links is 400', (await v400(rep({ steps: [step({ links: Array.from({ length: 5 }, () => ({ label: 'x', url: 'https://a.example' })) })] }))) === 400)
+  check('validation: a time that is not ISO is 400', (await v400(rep({ steps: [step({ startedAt: 'yesterday' })] }))) === 400)
+  check('validation: an endpoint that is not https is 400', (await v400(rep({ endpoints: { rpc: 'http://rpc.example' } }))) === 400)
+  check('validation: steps must be a list', (await v400(rep({ steps: 'all' }))) === 400)
+  const histBefore = (await A.call(`/api/chain-orders/${f.id}`)).data.order.history.length
+  const first = await report(f.id, rep({ steps: [step({ secret: 'x', note: 'Ready.\u0007' })], endpoints: { rpc: 'https://rpc.acme.example', explorer: null, bogus: 'https://x.example' }, extra: 1 }))
+  const v1 = (await A.call(`/api/chain-orders/${f.id}`)).data.order
+  check('provisioning: a good report is stored, no status change', first.status === 200 && first.data.ok === true && v1.status === 'paid' && v1.history.length === histBefore && v1.provisioning?.runId === 'ck_run0001' && v1.provisioning.seq === 1)
+  check('provisioning: unknown fields are dropped, text cleaned, times normalised', !('secret' in v1.provisioning.steps[0]) && !('extra' in v1.provisioning) && v1.provisioning.steps[0].note === 'Ready.' && v1.provisioning.steps[0].startedAt === '2026-11-10T10:00:00.000Z' && JSON.stringify(v1.provisioning.endpoints) === JSON.stringify({ rpc: 'https://rpc.acme.example/' }) && !!v1.provisioning.updatedAt)
+  check('provisioning: the buyer view and the admin view both carry it', (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === f.id).provisioning?.runId === 'ck_run0001' && (await A.call('/api/chain-orders')).data.orders.find((o) => o.id === f.id).provisioning?.seq === 1)
+  check('provisioning: another buyer still gets 404 for the order', (await B.call(`/api/chain-orders/${f.id}`)).status === 404)
+  const same = await report(f.id, rep({ steps: [step({ title: 'Changed' })] }))
+  check('seq: the same seq is ignored, nothing changes', same.status === 200 && same.data.ignored === true && (await A.call(`/api/chain-orders/${f.id}`)).data.order.provisioning.steps[0].title === 'Order the server')
+  check('seq: an older seq is ignored', (await report(f.id, rep({ seq: 0 }))).data.ignored === true)
+  const start = await report(f.id, rep({ seq: 2, status: 'setting_up', steps: [step(), step({ id: 'node', title: 'Start the node', state: 'running', endedAt: null, note: null, links: [] })] }))
+  const v2 = (await A.call(`/api/chain-orders/${f.id}`)).data.order
+  check('transition: paid to setting up, by chainkit, Provisioning started', start.status === 200 && v2.status === 'setting_up' && v2.history.at(-1).by === 'chainkit' && v2.history.at(-1).note === 'Provisioning started' && v2.provisioning.steps.length === 2)
+  const again = await report(f.id, rep({ seq: 3, status: 'setting_up' }))
+  check('transition: the same status again is a no-op', again.status === 200 && (await A.call(`/api/chain-orders/${f.id}`)).data.order.history.length === v2.history.length)
+  const replaced = await report(f.id, rep({ runId: 'ck_run0002', seq: 0, steps: [step({ id: 'retry', title: 'Second run' })] }))
+  const v3 = (await A.call(`/api/chain-orders/${f.id}`)).data.order
+  check('runId: a new run replaces the log, even from seq 0', replaced.status === 200 && v3.provisioning.runId === 'ck_run0002' && v3.provisioning.steps.length === 1 && v3.provisioning.steps[0].id === 'retry')
+  check('runId: a different runId always replaces the log (the pipeline decides which run is current)', (await report(f.id, rep({ seq: 99 }))).status === 200 && (await A.call(`/api/chain-orders/${f.id}`)).data.order.provisioning.runId === 'ck_run0001')
+  const fin = await report(f.id, rep({ runId: 'ck_run0003', seq: 1, status: 'live', endpoints: { rpc: 'https://rpc.acme.example', explorer: 'https://scan.acme.example' } }))
+  const v4 = (await A.call(`/api/chain-orders/${f.id}`)).data.order
+  check('transition: setting up to live, Provisioning finished', fin.status === 200 && v4.status === 'live' && v4.history.at(-1).note === 'Provisioning finished' && v4.provisioning.endpoints.explorer === 'https://scan.acme.example/')
+  await new Promise((r) => setTimeout(r, 50))
+  check('transition: a status mail per change, like the admin', pm.length === 2 && /being set up/.test(pm[0].text) && /is live/.test(pm[1].subject))
+  const back = await report(f.id, rep({ runId: 'ck_run0003', seq: 2, status: 'setting_up', steps: [step({ id: 'late', title: 'Late step' })] }))
+  const v5 = (await A.call(`/api/chain-orders/${f.id}`)).data.order
+  check('transition: live back to setting up is 409 bad-transition, steps still stored', back.status === 409 && back.data.code === 'bad-transition' && v5.status === 'live' && v5.provisioning.steps[0].id === 'late' && v5.provisioning.seq === 2)
+  const unpaid = await report(down.id, rep({ status: 'setting_up' }))
+  check('transition: an unpaid order cannot be started', unpaid.status === 409 && (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === down.id).status === 'awaiting_payment')
+  const skip = await report(late.id, rep({ status: 'live' }))
+  check('transition: paid cannot jump to live', skip.status === 409 && (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === late.id).status === 'paid')
+  const closed = await report(o1.id, rep({ status: 'live' }))
+  check('transition: a cancelled order stays cancelled', closed.status === 409 && (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === o1.id).status === 'cancelled')
+  check('provisioning: the secret is read from the environment only', src0().includes('CHAINKIT_REPORT_SECRET') && !src0().includes(CK))
+  delete process.env.CHAINKIT_REPORT_SECRET
+  check('provisioning: unset again, 503', (await report(f.id, rep({ seq: 50 }))).status === 503)
+  orders.setChainMailFetchForTest(async (u, o) => (mails.push({ u, body: JSON.parse(o.body) }), { ok: true, status: 200 }))
 
   /* ---- nothing due, reservation, limits, admin views ---- */
   const adminList = (await admin('/api/admin/chain-orders')).data

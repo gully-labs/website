@@ -58,6 +58,30 @@ export interface Order {
   paidAt: string | null
   history: { at: string; status: OrderStatus; by: string; note: string | null }[]
   payment: { mode: 'test' | 'live'; testCharge: boolean; dueCents: number; lastError: string | null; sessionOpen: boolean; onHold: boolean }
+  /** The Chain Kit pipeline's log of its current run; null until it first reports. */
+  provisioning?: Provisioning | null
+}
+
+export type StepState = 'pending' | 'running' | 'done' | 'failed' | 'waiting' | 'skipped'
+
+export interface ProvisioningStep {
+  id: string
+  title: string
+  state: StepState
+  startedAt: string | null
+  endedAt: string | null
+  note: string | null
+  links: { label: string; url: string }[]
+}
+
+export type EndpointKey = 'rpc' | 'explorer' | 'bridge' | 'faucet' | 'multisig' | 'bundler'
+
+export interface Provisioning {
+  runId: string
+  seq: number
+  steps: ProvisioningStep[]
+  endpoints: Partial<Record<EndpointKey, string>> | null
+  updatedAt: string
 }
 
 export const TALK_TO_US = 'https://gullylabs.xyz/services#contact'
