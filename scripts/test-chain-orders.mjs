@@ -355,7 +355,9 @@ try {
   check('seq: an older seq is ignored', (await report(f.id, rep({ seq: 0 }))).data.ignored === true)
   const start = await report(f.id, rep({ seq: 2, status: 'setting_up', steps: [step(), step({ id: 'node', title: 'Start the node', state: 'running', endedAt: null, note: null, links: [] })] }))
   const v2 = (await A.call(`/api/chain-orders/${f.id}`)).data.order
-  check('transition: paid to setting up, by chainkit, Provisioning started', start.status === 200 && v2.status === 'setting_up' && v2.history.at(-1).by === 'chainkit' && v2.history.at(-1).note === 'Provisioning started' && v2.provisioning.steps.length === 2)
+  // Who moved it is in the admin view only (#91: the buyer history leaves `by` out).
+  const a2 = (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === f.id)
+  check('transition: paid to setting up, by chainkit, Provisioning started', start.status === 200 && v2.status === 'setting_up' && a2.history.at(-1).by === 'chainkit' && v2.history.at(-1).note === 'Provisioning started' && !('by' in v2.history.at(-1)) && v2.provisioning.steps.length === 2)
   const again = await report(f.id, rep({ seq: 3, status: 'setting_up' }))
   check('transition: the same status again is a no-op', again.status === 200 && (await A.call(`/api/chain-orders/${f.id}`)).data.order.history.length === v2.history.length)
   const replaced = await report(f.id, rep({ runId: 'ck_run0002', seq: 0, steps: [step({ id: 'retry', title: 'Second run' })] }))
