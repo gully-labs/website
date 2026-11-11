@@ -29,7 +29,7 @@ export interface IpfsPin {
   bytes: number | null
   reason: string | null
   source: 'api' | 'upload' | 'car'
-  review: 'queued' | 'ok' | 'removed' | null
+  review: 'queued' | 'scanned' | 'ok' | 'removed' | null
   copies: number
 }
 export interface IpfsAccount {
@@ -106,7 +106,7 @@ function UploadArea({ a, onDone }: { a: IpfsAccount; onDone: () => void }) {
         <Upload size={20} className="text-gold" aria-hidden />
         <span className="text-[14px] text-ink-2">{busy ? `Uploading ${busy}…` : 'Drop a file here, or choose one'}</span>
         <span className="text-[12px] text-faint">
-          Up to {size(a.plan.maxFileBytes)} a file · a .car file is imported as a DAG · images and video are reviewed under the content policy
+          Up to {size(a.plan.maxFileBytes)} a file · a .car file is imported as a DAG · images are scanned and video is reviewed under the content policy
         </span>
         <label className={`${pillGold} min-h-11 ${!can || busy ? 'pointer-events-none opacity-60' : 'cursor-pointer'}`}>
           <input ref={ref} type="file" className="sr-only" disabled={!can || !!busy} onChange={(e) => e.target.files?.[0] && void send(e.target.files[0])} data-testid="ipfs-file" />

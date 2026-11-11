@@ -3,7 +3,8 @@ import { dateTimePT } from '../../lib/time'
 import { adminCall } from './payAdmin'
 
 /* Admin: Gully IPFS review queue (GET /api/admin/ipfs/reviews, server/ipfs-pins.mjs). Images and video customers pin
-   or upload wait here: look at each one through the gateway, then Keep it, or Take it down (unpinned on every node,
+   or upload wait here, highest scanner score first (images the scanner scored low never get here; video, SVG and
+   images it could not score always do): look at each one through the gateway, then Keep it, or Take it down (unpinned on every node,
    blocks purged, the gateway refuses the CID, re-pinning it is refused). A takedown by CID works for any CID. */
 
 interface Review {
@@ -12,6 +13,7 @@ interface Review {
   owner: string
   mime: string
   at: string
+  score?: number
 }
 
 const card = 'flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6 max-[600px]:p-4'
@@ -63,7 +65,7 @@ export function IpfsReviewAdmin({ token }: { token: string }) {
                   {r.cid}
                 </a>
                 <span>
-                  {r.mime} · {r.owner} · {dateTimePT(r.at)}
+                  {r.mime} · {r.score != null ? `scanner ${Math.round(r.score * 100)} %` : 'not scanned'} · {r.owner} · {dateTimePT(r.at)}
                 </span>
               </span>
               <span className="flex gap-2">

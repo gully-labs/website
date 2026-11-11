@@ -17,8 +17,13 @@
 // Replica (gully-ops gully/ipfs-replica on gully-l3; Bearer IPFS_SYNC_TOKEN, never a hub key):
 //   GET  /api/ipfs/internal/pinset                every recursive pin on node 1, minus taken-down CIDs
 //   POST /api/ipfs/internal/replica               the replica's report { node, pinned, missing, failed, at }
-// Admin (admin.mjs calls ipfsAdmin*): the review queue (images and video wait for a look: the kre8 scanner is not
-// reachable from the gully box) and takedowns (unpin everywhere, purge the blocks, gateway denylist).
+// Scanning (gully-ops gully/ipfs-scanner: its own OpenNSFW2 scanner on the gully box, IPFS_SCANNER_URL): every raster
+// image up to 12 MB that is uploaded or pinned is scored. A low score passes without a person (review 'scanned'); a
+// score at or over IPFS_SCAN_FLAG_AT (0.40), video, SVG, larger images and anything the scanner could not score
+// (down, busy, no URL set: fail closed) wait in the review queue, highest score first. Every upload's SHA-256 is kept,
+// and a takedown adds the bytes' SHA-256 to a hash denylist, so the same file is refused again under any CID.
+// Admin (admin.mjs calls ipfsAdmin*): the review queue and takedowns (unpin everywhere, purge the blocks, gateway
+// denylist, hash denylist).
 //
 // Ownership: a record belongs to the workspace owner's address (key.owner). The node's own pins (Gully content, made
 // outside this module) are never in this DB and are never unpinned here: a record that found its CID already pinned
@@ -55,6 +60,7 @@ function load() {
   db.pins ??= []
   db.reviews ??= []
   db.deny ??= []
+  db.denyHashes ??= []
   db.days ??= {}
   db.replica ??= null
   return db
@@ -243,9 +249,78 @@ const isMedia = (t) => /^(image|video)\//.test(String(t ?? ''))
 function queueReview(r, mime) {
   if (!isMedia(mime)) return
   const d = load()
-  if (d.reviews.some((x) => x.cid === r.cid && x.state === 'open')) return
-  d.reviews.push({ id: newId(), cid: r.cid, owner: r.owner, pinId: r.id, mime, at: nowIso(), state: 'open' })
   r.review = 'queued'
+  const open = d.reviews.find((x) => x.cid === r.cid && x.state === 'open')
+  if (open) {
+    if (r.scan && !(open.score >= r.scan.score)) open.score = r.scan.score
+    return
+  }
+  d.reviews.push({ id: newId(), cid: r.cid, owner: r.owner, pinId: r.id, mime, at: nowIso(), state: 'open', ...(r.scan ? { score: r.scan.score } : {}) })
+}
+
+const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex')
+const hashDenied = (h) => Boolean(h) && load().denyHashes.some((x) => x.sha256 === h)
+const SCAN_MAX_BYTES = 12 * 1024 * 1024
+const RASTER = /^image\/(jpeg|png|gif|webp)\b/i
+const scannerUrl = () => String(process.env.IPFS_SCANNER_URL ?? '').replace(/\/+$/, '')
+const flagAt = () => {
+  const v = Number(process.env.IPFS_SCAN_FLAG_AT)
+  return Number.isFinite(v) && v > 0 && v <= 1 ? v : 0.4
+}
+
+/** One image scored by the Gully IPFS scanner: { score, model } or null (no URL set, down, busy, not an image). */
+async function scanImage(buf) {
+  const u = scannerUrl()
+  if (!u || !buf?.length) return null
+  try {
+    const t = process.env.IPFS_SCANNER_TOKEN
+    const r = await call(`${u}/v1/scan`, { method: 'POST', body: buf, headers: { 'Content-Type': 'application/octet-stream', ...(t ? { Authorization: `Bearer ${t}` } : {}) } }, 30_000)
+    if (!r.ok) return null
+    const j = await r.json()
+    const score = Number(j?.score)
+    return Number.isFinite(score) && score >= 0 && score <= 1 ? { score: Math.round(score * 1000) / 1000, model: String(j?.model ?? '').slice(0, 40) } : null
+  } catch {
+    return null
+  }
+}
+
+/** Media screening for one record: a raster image is scored; a low score passes, everything else waits for a person. */
+async function screen(r, mime, buf) {
+  if (!isMedia(mime)) return
+  if (RASTER.test(String(mime)) && buf && buf.length <= SCAN_MAX_BYTES) {
+    const s = await scanImage(buf)
+    if (s) {
+      r.scan = { score: s.score, model: s.model, at: nowIso() }
+      if (s.score < flagAt()) {
+        r.review = 'scanned'
+        return
+      }
+    }
+  }
+  queueReview(r, mime)
+}
+
+/** Up to `max` bytes of a CID from node 1's own gateway (never the network: NoFetch), or null when larger or absent. */
+async function fetchBytes(cid, max) {
+  const ctl = new AbortController()
+  const t = setTimeout(() => ctl.abort(), 30_000)
+  try {
+    const r = await fetch(`${gatewayInternal()}/ipfs/${cid}`, { signal: ctl.signal })
+    if (!r.ok || !r.body) return null
+    if (Number(r.headers.get('content-length')) > max) return (ctl.abort(), null)
+    const parts = []
+    let n = 0
+    for await (const c of r.body) {
+      n += c.length
+      if (n > max) return (ctl.abort(), null)
+      parts.push(Buffer.from(c))
+    }
+    return { buf: Buffer.concat(parts), type: r.headers.get('content-type') }
+  } catch {
+    return null
+  } finally {
+    clearTimeout(t)
+  }
 }
 
 /* ------------------------------------------------------------ the worker --- */
@@ -322,15 +397,28 @@ async function pinOne(r) {
   if (load().pins.find((x) => x.id === r.id)?.status !== 'pinning') return // deleted while pinning
   await kubo(`pin/add?arg=${encodeURIComponent(r.cid)}&recursive=true`, { timeout: PIN_TIMEOUT_MS() })
   r.bytes = size
-  r.status = 'pinned'
-  r.pinnedAt = nowIso()
-  r.reason = null
+  // Media is screened before the record reads `pinned`, so a caller that sees `pinned` also sees its review state.
+  let mime = null
   try {
     const h = await call(`${gatewayInternal()}/ipfs/${r.cid}`, { method: 'HEAD' }, 8_000)
-    queueReview(r, h.headers.get('content-type'))
+    mime = h.headers.get('content-type')
   } catch {
     /* no type: not queued */
   }
+  if (isMedia(mime)) {
+    const got = RASTER.test(String(mime)) ? await fetchBytes(r.cid, SCAN_MAX_BYTES) : null
+    if (got) {
+      r.sha256 = sha256(got.buf)
+      if (hashDenied(r.sha256)) {
+        save()
+        return fail(r, 'This file was taken down and cannot be pinned here.')
+      }
+    }
+    await screen(r, mime, got?.buf ?? null)
+  }
+  r.status = 'pinned'
+  r.pinnedAt = nowIso()
+  r.reason = null
   save()
 }
 
@@ -400,6 +488,8 @@ export async function upload(req, res, url, owner, keyId) {
       return err(res, e.code === 413 ? 413 : 400, e.code === 413 ? 'FILE_TOO_LARGE' : 'BAD_REQUEST', e.code === 413 ? 'The body is larger than your plan allows.' : 'The upload did not arrive whole.')
     }
     const car = /application\/vnd\.ipld\.car/i.test(String(req.headers['content-type'] ?? ''))
+    const hash = sha256(body)
+    if (hashDenied(hash)) return err(res, 451, 'TAKEN_DOWN', 'This file was taken down and cannot be pinned here.')
     const name = String(url.searchParams.get('name') ?? req.headers['x-file-name'] ?? '').slice(0, 255) || null
     let cid
     let localBefore = false
@@ -435,8 +525,8 @@ export async function upload(req, res, url, owner, keyId) {
       return err(res, 451, 'TAKEN_DOWN', 'This content was taken down and cannot be pinned here.')
     }
     if (!car) await kubo(`pin/add?arg=${encodeURIComponent(cid)}&recursive=true`, { timeout: 120_000 })
-    const r = addRecord(owner, keyId, { cid, name, origins: [], meta: null }, { status: 'pinned', bytes: body.length, pinnedAt: nowIso(), source: car ? 'car' : 'upload', localBefore, noPurge: car, preexisting: pre && !load().pins.some((x) => x.cid === cid && LIVE.has(x.status) && !x.preexisting) })
-    queueReview(r, car ? null : sniff(body))
+    const r = addRecord(owner, keyId, { cid, name, origins: [], meta: null }, { status: 'pinned', bytes: body.length, pinnedAt: nowIso(), source: car ? 'car' : 'upload', sha256: hash, localBefore, noPurge: car, preexisting: pre && !load().pins.some((x) => x.cid === cid && LIVE.has(x.status) && !x.preexisting) })
+    if (!car) await screen(r, sniff(body), body)
     noteDay(owner)
     save()
     await peerId()
@@ -623,7 +713,11 @@ export async function handleIpfsAccount(req, res, url, ctx) {
 
 /* -------------------------------------------------------------- admin --- */
 
-export const ipfsReviews = () => load().reviews.filter((x) => x.state === 'open')
+/** Open reviews, highest scanner score first (unscored after scored, oldest first among equals). */
+export const ipfsReviews = () =>
+  load()
+    .reviews.filter((x) => x.state === 'open')
+    .sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || (a.at < b.at ? -1 : 1))
 export function ipfsReviewOk(id, by) {
   const r = load().reviews.find((x) => x.id === id)
   if (!r) return null
@@ -640,6 +734,14 @@ export async function ipfsTakedown(cid, reason, by) {
   if (!validCid(cid)) return { error: 'not a CID' }
   const d = load()
   if (!d.deny.some((x) => x.cid === cid)) d.deny.push({ cid, reason: String(reason ?? '').slice(0, 300), by: by ?? null, at: nowIso() })
+  // The bytes' SHA-256 (known from an upload, or read from node 1 before the purge) joins the hash denylist, so the
+  // same file is refused again under another CID (other chunking, CIDv0, a wrapping CAR).
+  const hashes = new Set(d.pins.filter((x) => x.cid === cid && x.sha256).map((x) => x.sha256))
+  if (!hashes.size) {
+    const got = await fetchBytes(cid, 64 * 1024 * 1024)
+    if (got?.buf?.length && !/text\/html/i.test(String(got.type))) hashes.add(sha256(got.buf))
+  }
+  for (const h of hashes) if (!hashDenied(h)) d.denyHashes.push({ sha256: h, cid, at: nowIso() })
   for (const r of d.pins.filter((x) => x.cid === cid && LIVE.has(x.status))) {
     r.status = 'removed'
     r.deletedAt = nowIso()
