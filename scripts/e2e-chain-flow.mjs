@@ -244,6 +244,13 @@ for (const width of [390, 1440]) {
   await adminCall(`/api/admin/chain-orders/${id}/status`, { status: 'live' })
   await page.getByText('Your order is live').waitFor({ timeout: 25_000 })
   check(`${width} status: Live, times in PT`, (await status(page).innerText()) === 'Live' && / PT/.test(await page.locator('main').innerText()))
+  /* Renewal (Gully Pay plan subscription) and the chain's export. */
+  const renewal = (await page.getByTestId('order-renewal').innerText()).replace(/\s+/g, ' ')
+  check(`${width} renewal: 30 days free, then $199 a month, free until a date, renew opens 3 days before`, renewal.includes('30 days free, then $199 a month.') && /Free until /.test(renewal) && (await page.getByTestId('order-renew-later').count()) === 1 && (await page.getByTestId('order-renew').count()) === 0, renewal)
+  const exportDoc = JSON.stringify({ chain: { id: n, name: 'Acme Chain' } })
+  const exStatus = await fetch(`${BASE}/api/chain-orders/${id}/export`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-chainkit-signature': signForTest(exportDoc, process.env.CHAINKIT_REPORT_SECRET) }, body: exportDoc }).then((r) => r.status)
+  await page.getByTestId('order-export').waitFor({ timeout: 25_000 })
+  check(`${width} export: the signed upload shows a download for the buyer`, exStatus === 200 && (await page.getByTestId('order-export-download').getAttribute('href')) === `/api/chain-orders/${id}/export`)
   await shot(page, `10-order-live-${width}`)
   await noScroll(page, `${width} order page live`)
 

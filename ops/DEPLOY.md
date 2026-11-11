@@ -243,3 +243,19 @@ Owner decision 2026-10-30: **Sign in with Gully ID + an allowlist** (`server/adm
   from then on (scripts that call `/api/admin` with it stop too). Password off + empty list = the API answers 503.
 - Logs: one `{"evt":"admin_auth",...}` line per sign-in (token use at most every 10 min), the sub only as a 12-hex tag.
 - Test: `npm run test:admin-gully-id`.
+
+## Admin Integrations (Chain Kit settings)
+
+`server/admin-integrations.mjs`, section Integrations on admin.gullylabs.xyz. Write-only fields for the Chain Kit runner
+(the OVH API keys, project, endpoint and region, and the Gully Pay webhook signing key). A save or removal needs a Gully
+ID admin session and a passkey confirmation (`/auth/gully/stepup`) in the last 5 minutes; the admin token cannot write.
+
+- Each value is a file `/srv/chainkit/integrations/<NAME>` (`CHAINKIT_INTEGRATIONS_DIR` inside the container), the bare
+  value, no newline. The runner reads the files at the start of each run, so a change needs no restart.
+- On the box, once: `sudo install -d -o 1001 -g 1001 -m 2770 /srv/chainkit/integrations` (owner and group are the
+  runner's uid and gid). `ops/deploy.sh` mounts the folder read-write into gully-web only when it exists, adds the
+  folder's group to the container (`--group-add`) and sets `CHAINKIT_INTEGRATIONS_GID`, so the files are written by
+  `node` (uid 1000) with that group and mode 0440. A server running as root instead chowns them to 1001:1001, mode 0400.
+- Every change and refusal is logged (`{"evt":"admin_integrations",...}`, sub as a 12-hex tag) and kept in
+  `/data/admin-integrations-audit.json` (the last 500). No value is ever logged, stored elsewhere or sent back.
+- Test: `npm run test:admin-integrations`.

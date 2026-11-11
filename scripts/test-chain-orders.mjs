@@ -16,7 +16,7 @@ const PORT = Number(process.env.TEST_PORT) || 9183
 const BASE = `http://localhost:${PORT}`
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gully-chain-orders-'))
 const addr = (c) => '0x' + c.repeat(40)
-const USERS = { 'tok-a': { sub: 'sub-a', address: addr('a') }, 'tok-b': { sub: 'sub-b', address: addr('b') }, 'tok-c': { sub: 'sub-c', address: addr('d') } }
+const USERS = { 'tok-a': { sub: 'sub-a', address: addr('a') }, 'tok-b': { sub: 'sub-b', address: addr('b') }, 'tok-c': { sub: 'sub-c', address: addr('d') }, 'tok-e': { sub: 'sub-e', address: addr('e') }, 'tok-f': { sub: 'sub-f', address: addr('f') } }
 const gid = await fakeGullyId(USERS)
 const pay = await fakeGullyPay()
 const ADMIN = crypto.randomBytes(24).toString('hex')
@@ -62,7 +62,7 @@ function client() {
     cookie = (r.headers.get('set-cookie') ?? '').split(';')[0]
     return r
   }
-  return { call, post, signIn, setCookie: (c) => (cookie = c) }
+  return { call, post, signIn, setCookie: (c) => (cookie = c), cookie: () => cookie }
 }
 
 const admin = (p, opts = {}) => fetch(BASE + p, { ...opts, headers: { authorization: `Bearer ${ADMIN}`, 'content-type': 'application/json' } }).then(async (r) => ({ status: r.status, data: await r.json().catch(() => null) }))
@@ -401,10 +401,98 @@ try {
   process.env.CHAIN_GULLYPAY_WEBHOOK_SECRET = GP.secret
   const src = fs.readFileSync(new URL('../server/chain-orders.mjs', import.meta.url), 'utf8')
   check('the secrets come from the environment only', !/rk_[a-z0-9]{8,}/i.test(src) && src.includes('CHAIN_GULLYPAY_WEBHOOK_SECRET'))
+
+  /* ---- renewal: one Gully Pay plan subscription per testnet order (gull-pay PR #89) ---- */
+  const E = client()
+  await E.signIn('tok-e')
+  const creates = (ref) => pay.subCalls.filter((c) => c.path === `/v1/subscriptions/${GP.storeId}` && c.body.reference === ref)
+  const subOf = (ref) => pay.subscriptions.filter((x) => x.reference === ref)
+  const r1 = await E.post('/api/chain-orders', good({ addons: ['explorer', 'gully-core'], email: 'Ops@Example.com' }))
+  const so = r1.data.order
+  const call1 = creates(so.id)[0]
+  check('renewal: a testnet order creates one subscription on the chain store with the store key', r1.status === 201 && creates(so.id).length === 1 && call1.auth === `Bearer ${GP.apiKey}` && call1.body.plan === 'gully-chain-testnet' && call1.body.reference === so.id && call1.body.customerEmail === 'ops@example.com')
+  const md = call1.body.metadata?.order ?? {}
+  check('renewal: the metadata is the order as the Chain Kit lane reads it', JSON.stringify(Object.keys(md)) === JSON.stringify(['id', 'tier', 'name', 'chainId', 'gasToken', 'parent', 'quote', 'address']) && md.id === so.id && md.tier === 'testnet' && md.name === 'Acme Chain' && md.chainId === so.chainId && md.gasToken === 'eth' && JSON.stringify(md.parent) === JSON.stringify({ id: 421614 }) && md.quote.included.join() === plans.BUNDLE.included.map((x) => x.id).join() && md.quote.addons.join() === 'gully-core' && md.address === addr('e'))
+  check('renewal: the metadata fits in the 4 KB Gully Pay allows', Buffer.byteLength(JSON.stringify(call1.body.metadata)) < 4096)
+  check('renewal: the buyer sees the pay link and the trial end, never the key', so.renewal.state === 'ready' && so.renewal.status === 'trialing' && so.renewal.payUrl === subOf(so.id)[0].payUrl && so.renewal.payUrl.startsWith(`${pay.url}/v1/subscriptions/pay/`) && !!so.renewal.trialEndsAt && !JSON.stringify(r1.data).includes(GP.apiKey) && !('subscriptionTry' in so))
+  const dupSub = await E.post('/api/chain-orders', good({ chainId: so.chainId }))
+  check('renewal: the same order again (two presses) makes no second subscription', dupSub.data.duplicate === true && creates(so.id).length === 1 && subOf(so.id).length === 1)
+  check('renewal: the admin retry refuses an order that already has one', (await admin(`/api/admin/chain-orders/${so.id}/subscription`, { method: 'POST', body: '{}' })).status === 409 && creates(so.id).length === 1)
+  check('renewal: the admin sees the subscription id', (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === so.id).subscription?.id === subOf(so.id)[0].id)
+
+  pay.state.subFail = 500
+  const r2 = await E.post('/api/chain-orders', good())
+  const sf = r2.data.order
+  check('renewal: Gully Pay failing still records the order, and the page says billing is not set up yet', r2.status === 201 && sf.renewal.state === 'not-set-up' && !('payUrl' in sf.renewal))
+  const sfAdmin = (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === sf.id)
+  check('renewal: the admin sees why (http-500)', sfAdmin.subscriptionTry?.error === 'http-500' && sfAdmin.subscription === null)
+  check('renewal: the order page does not retry within 5 minutes', (await E.call(`/api/chain-orders/${sf.id}`)).status === 200 && creates(sf.id).length === 1)
+  const [ra, rb] = await Promise.all([admin(`/api/admin/chain-orders/${sf.id}/subscription`, { method: 'POST', body: '{}' }), admin(`/api/admin/chain-orders/${sf.id}/subscription`, { method: 'POST', body: '{}' })])
+  check('renewal: the admin retry creates it once, even pressed twice at once', [ra.status, rb.status].includes(200) && subOf(sf.id).length === 1 && creates(sf.id).length === 2, [ra.status, rb.status, creates(sf.id).length])
+  check('renewal: after the retry the buyer has the pay link', (await E.call(`/api/chain-orders/${sf.id}`)).data.order.renewal.payUrl === subOf(sf.id)[0].payUrl)
+
+  const subEvent = (type, sub, over = {}) => ({ id: crypto.randomUUID(), type, created: new Date().toISOString(), data: { object: { ...sub, ...over } } })
+  const due = new Date().toISOString()
+  const dueOk = await deliver(BASE, subEvent('subscription.payment_due', subOf(so.id)[0], { status: 'past_due', dueSince: due }))
+  const soDue = (await E.call(`/api/chain-orders/${so.id}`)).data.order
+  check('renewal webhook: payment_due marks it past due on the order page', dueOk.status === 200 && dueOk.data.outcome === 'handled' && soDue.renewal.status === 'past_due' && soDue.renewal.dueSince === due)
+  check('renewal webhook: another subscription for the order is held, not adopted', (await deliver(BASE, subEvent('subscription.paid', { ...subOf(so.id)[0], id: crypto.randomUUID() }, { status: 'active' }))).data.outcome === 'handled' && (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === so.id).review.some((r) => r.code === 'unknown-subscription') && (await E.call(`/api/chain-orders/${so.id}`)).data.order.renewal.status === 'past_due')
+  check('renewal webhook: an unknown reference is ignored', (await deliver(BASE, subEvent('subscription.paid', { ...subOf(so.id)[0], id: crypto.randomUUID(), reference: 'co_nothinghere00' }))).data.outcome === 'ignored')
+
+  await E.post(`/api/chain-orders/${so.id}/cancel`)
+  await new Promise((r) => setTimeout(r, 100))
+  const cancelCall = pay.subCalls.find((c) => c.path === `/v1/subscriptions/${GP.storeId}/${subOf(so.id)[0].id}/cancel`)
+  const soGone = (await E.call(`/api/chain-orders/${so.id}`)).data.order
+  check('renewal: cancelling the order cancels the subscription with the store key', !!cancelCall && cancelCall.auth === `Bearer ${GP.apiKey}` && subOf(so.id)[0].status === 'cancelled' && soGone.renewal.status === 'cancelled' && soGone.renewal.payUrl === null)
+  check('renewal webhook: a late event cannot revive a cancelled subscription', (await deliver(BASE, subEvent('subscription.paid', subOf(so.id)[0], { status: 'active' }))).data.outcome === 'ignored' && (await E.call(`/api/chain-orders/${so.id}`)).data.order.renewal.status === 'cancelled')
+  pay.state.subFail = 503
+  await E.post(`/api/chain-orders/${sf.id}/cancel`)
+  await new Promise((r) => setTimeout(r, 100))
+  const sfHeld = (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === sf.id)
+  check('renewal: a cancel Gully Pay refuses holds the order for a person', sfHeld.status === 'cancelled' && sfHeld.review.some((r) => r.code === 'subscription-cancel-failed') && subOf(sf.id)[0].status === 'trialing')
+  check('renewal: the order store never holds the key', !fs.readFileSync(path.join(tmp, 'chain-orders.json'), 'utf8').includes(GP.apiKey))
+  const subSrc = fs.readFileSync(new URL('../server/chain-subscriptions.mjs', import.meta.url), 'utf8')
+  check('renewal: the Gully Pay address comes from the shared config (GULLYPAY_API_URL), not a hard-coded host', !/gullypay\.xyz/.test(subSrc.replace(/^\/\/.*$/gm, '')) && src0().includes('chainPayConfig()'))
+
+  /* ---- export: the Chain Kit pipeline uploads, the buyer downloads ---- */
+  const exOrder = (await E.post('/api/chain-orders', good())).data.order
+  const upload = async (id, raw, { key = CK, t, sig } = {}) => {
+    const r = await fetch(`${BASE}/api/chain-orders/${id}/export`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-chainkit-signature': sig ?? signForTest(raw, key, t) }, body: raw })
+    return { status: r.status, data: await r.json().catch(() => null) }
+  }
+  const doc = JSON.stringify({ chain: { id: exOrder.chainId, name: 'Acme Chain' }, contracts: { rollup: '0x' + '1'.repeat(40) }, generatedAt: '2026-11-11T00:00:00Z' })
+  check('export: no secret set answers 503 chainkit-off', (await upload(exOrder.id, doc)).status === 503)
+  process.env.CHAINKIT_REPORT_SECRET = CK
+  check('export: no signature is 401', (await upload(exOrder.id, doc, { sig: '' })).status === 401)
+  check('export: the wrong key is 401', (await upload(exOrder.id, doc, { key: 'z'.repeat(64) })).status === 401)
+  check('export: a stale signature (10 minutes) is 401', (await upload(exOrder.id, doc, { t: Math.floor(Date.now() / 1000) - 600 })).status === 401)
+  check('export: not JSON is 400', (await upload(exOrder.id, '{nope')).status === 400)
+  check('export: an unknown order is 404', (await upload('co_nothinghere00', doc)).status === 404)
+  const big = JSON.stringify({ pad: 'x'.repeat(1_048_600) })
+  check('export: over 1 MB is 413', (await upload(exOrder.id, big)).status === 413)
+  const atLimit = JSON.stringify({ pad: 'y'.repeat(1_048_576 - 10) })
+  check('export: exactly 1 MB is accepted', Buffer.byteLength(atLimit) === 1_048_576 && (await upload(exOrder.id, atLimit)).status === 200)
+  check('export: PUT is 405', (await fetch(`${BASE}/api/chain-orders/${exOrder.id}/export`, { method: 'PUT' })).status === 405)
+  const none = (await E.post('/api/chain-orders', good())).data.order
+  check('export: the buyer gets 404 before there is one', (await E.call(`/api/chain-orders/${none.id}/export`)).status === 404 && (await E.call(`/api/chain-orders/${none.id}`)).data.order.export === null)
+  const up = await upload(exOrder.id, doc)
+  check('export: a signed upload is stored (a new one replaces the old)', up.status === 200 && up.data.ok === true && up.data.bytes === Buffer.byteLength(doc))
+  const dl = await fetch(`${BASE}/api/chain-orders/${exOrder.id}/export`, { headers: { cookie: E.cookie() } })
+  const dlText = await dl.text()
+  check('export: the buyer downloads it as a JSON attachment, byte for byte, not cached', dl.status === 200 && /^application\/json/.test(dl.headers.get('content-type')) && /^attachment; filename="acme-chain-\d+-export\.json"$/.test(dl.headers.get('content-disposition') ?? '') && dl.headers.get('cache-control') === 'no-store' && dlText === doc)
+  check('export: the order page says it is ready', (await E.call(`/api/chain-orders/${exOrder.id}`)).data.order.export?.ready === true)
+  check('export: another buyer gets 404, signed out gets 401', (await B.call(`/api/chain-orders/${exOrder.id}/export`)).status === 404 && (await client().call(`/api/chain-orders/${exOrder.id}/export`)).status === 401)
+  const exAdmin = (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === exOrder.id)
+  check('export: the admin sees it exists, not its content', exAdmin.export?.bytes === Buffer.byteLength(doc) && /^[0-9a-f]{64}$/.test(exAdmin.export.sha256) && !JSON.stringify(exAdmin).includes('rollup'))
+  check('export: kept beside the orders, not inside them', fs.readFileSync(path.join(tmp, 'chain-exports', `${exOrder.id}.json`), 'utf8') === doc && !fs.readFileSync(path.join(tmp, 'chain-orders.json'), 'utf8').includes('"rollup"'))
+  if (process.platform !== 'win32') check('export: the file is mode 600', (fs.statSync(path.join(tmp, 'chain-exports', `${exOrder.id}.json`)).mode & 0o777) === 0o600)
+  delete process.env.CHAINKIT_REPORT_SECRET
+  for (const o of [exOrder, none]) await E.post(`/api/chain-orders/${o.id}/cancel`)
   /* ---- when the owner opens mainnet: both switches, a real amount, and a real rail counts as paid ---- */
   Object.assign(process.env, { MAINNET_ORDERS: 'on', MAINNET_PRICE_CONFIRMED: 'on', CHAIN_GULLYPAY_MODE: 'live' })
   const mo = await A.post('/api/chain-orders', good({ tier: 'mainnet', parentChainId: 42170, addons: ['explorer'], expect: { dueCents: 425_000 } }))
   check('mainnet on: an order for the first month, settling to Nova', mo.status === 201 && mo.data.order.quote.dueCents === 425_000 && mo.data.order.parent.name === 'Arbitrum Nova')
+  check('mainnet on: a mainnet order has no plan subscription', mo.data.order.renewal === null && creates(mo.data.order.id).length === 0)
   await A.post(`/api/chain-orders/${mo.data.order.id}/checkout`)
   await deliver(BASE, sessionEvent('checkout.session.completed', S(mo.data.order), { paymentMethod: 'card', crypto: null }))
   check('mainnet on: a card payment marks a live order paid', (await A.call(`/api/chain-orders/${mo.data.order.id}`)).data.order.status === 'paid')
@@ -431,6 +519,8 @@ try {
   const fz = await C.post('/api/chain-orders', good({ expect: { dueCents: 0 } }))
   check('default: the order is recorded, nothing charged, Gully Pay not called', fz.status === 201 && fz.data.order.status === 'paid' && fz.data.order.payment.dueCents === 0 && pay.sessions.length === sessionsBefore)
   check('default: the buyer sees Received, never Paid', fz.data.order.statusLabel === 'Received')
+  check('default: Gully Pay not configured, the order says renewal billing is not set up yet, and no call went out', fz.data.order.renewal.state === 'not-set-up' && creates(fz.data.order.id).length === 0)
+  check('default: the admin sees why (not-configured)', (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === fz.data.order.id).subscriptionTry?.error === 'not-configured')
   check('default: a free order has no checkout', (await C.post(`/api/chain-orders/${fz.data.order.id}/checkout`)).status === 409 && pay.sessions.length === sessionsBefore)
   const fzRow = (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === fz.data.order.id)
   check('default: the admin sees it as Received, ready to set up', fzRow.statusLabel === 'Received' && fzRow.next.includes('setting_up'))

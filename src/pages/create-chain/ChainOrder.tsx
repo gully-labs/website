@@ -1,11 +1,11 @@
-import { AlertTriangle, Check, CircleDashed, Clock, CreditCard, ExternalLink, Loader2, Minus, Rocket, Wrench, X, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, Check, CircleDashed, Clock, CreditCard, Download, ExternalLink, Loader2, Minus, RefreshCw, Rocket, Wrench, X, type LucideIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router'
 import { toastError, toastInfo, toastSuccess } from '../../components/ui/toast'
-import { dateTimePT } from '../../lib/time'
+import { datePT, dateTimePT } from '../../lib/time'
 import { GullyIdButton, gullyIdAccessToken } from '../developers/gullyId'
 import { pillGold, pillLine } from '../developers/styles'
-import { cancelOrder, getOrder, gullyExchange, startCheckout, usd, type EndpointKey, type Order, type OrderStatus, type Provisioning, type StepState } from './chainApi'
+import { cancelOrder, exportUrl, getOrder, gullyExchange, startCheckout, usd, type EndpointKey, type Order, type OrderStatus, type Provisioning, type StepState } from './chainApi'
 import { ChainDiagram, ChainShell, GullyIdChip, PriceSummary, quoteServices } from './parts'
 
 /* One order: Received (or Paid), Setting up, Live. The status moves on a verified Gully Pay webhook, the signed Chain Kit
@@ -162,6 +162,78 @@ function ProvisioningLog({ log }: { log: Provisioning }) {
   )
 }
 
+/* Renewal (testnet): 30 days free, then a monthly fee, billed by Gully Pay. Nothing charges by itself: the buyer renews
+   with Gully Pay's pay link, which opens a checkout from 3 days before the period ends (or once a payment is due). When
+   Gully Pay has not set the renewal up yet, the page says so. */
+const PAY_WINDOW_MS = 3 * 86_400_000
+
+function RenewalCard({ order }: { order: Order }) {
+  const [now] = useState(() => Date.now())
+  const r = order.renewal
+  if (!r || (order.status === 'cancelled' && r.state !== 'ready')) return null
+  const days = order.quote.freeDays || 30
+  const terms = order.quote.monthlyUsd ? `${days} days free, then $${order.quote.monthlyUsd.toLocaleString('en-US')} a month.` : `${days} days free, then a monthly fee.`
+  const end = r.state === 'ready' ? (r.currentPeriodEnd ?? r.trialEndsAt) : null
+  const open = r.state === 'ready' && !!r.payUrl && (r.status === 'past_due' || (!!end && Date.parse(end) - now <= PAY_WINDOW_MS))
+  const line =
+    r.state !== 'ready'
+      ? 'Renewal billing is not set up yet. Your free days still count from your order, and the renewal link appears here once it is ready.'
+      : r.status === 'trialing'
+        ? `Free until ${end ? datePT(end) : 'the end of the trial'}.`
+        : r.status === 'active'
+          ? `Paid until ${end ? datePT(end) : 'the end of this month'}.`
+          : r.status === 'past_due'
+            ? `A payment is due${r.dueSince ? ` since ${datePT(r.dueSince)}` : ''}. Renew${r.graceEndsAt ? ` by ${datePT(r.graceEndsAt)}` : ' soon'} to keep the chain running.`
+            : r.status === 'cancelled'
+              ? 'Renewal is cancelled.'
+              : 'Renewal billing is set up.'
+  return (
+    <section className="flex min-w-0 flex-col gap-2 rounded-card border border-line bg-surface p-4" aria-labelledby="order-renewal" data-testid="order-renewal">
+      <h2 id="order-renewal" className="m-0 text-[15px] font-semibold text-ink">
+        Renewal
+      </h2>
+      <p className="m-0 text-[14px] text-ink-2">{terms} Nothing is charged by itself: you renew each month with Gully Pay.</p>
+      <p className={`m-0 text-[14px] ${r.state === 'ready' && r.status === 'past_due' ? 'text-error' : 'text-muted'}`} data-testid="order-renewal-state">
+        {line}
+      </p>
+      {r.state === 'ready' && r.payUrl && r.status !== 'cancelled' && (
+        <div className="flex flex-wrap items-center gap-2">
+          {open ? (
+            <a href={r.payUrl} target="_blank" rel="noopener noreferrer" className={pillGold} data-testid="order-renew">
+              <RefreshCw size={16} aria-hidden />
+              Renew with Gully Pay
+            </a>
+          ) : (
+            <span className="text-[13px] text-faint" data-testid="order-renew-later">
+              Renew with Gully Pay from {end ? datePT(Date.parse(end) - PAY_WINDOW_MS) : 'three days before the period ends'}.
+            </span>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function ExportCard({ order }: { order: Order }) {
+  if (!order.export?.ready) return null
+  return (
+    <section className="flex min-w-0 flex-col gap-2 rounded-card border border-line bg-surface p-4" aria-labelledby="order-export" data-testid="order-export">
+      <h2 id="order-export" className="m-0 text-[15px] font-semibold text-ink">
+        Your chain's export
+      </h2>
+      <p className="m-0 text-[14px] text-muted">
+        Your chain's export from its setup, as one JSON file. Only you can download it. Updated <time dateTime={order.export.updatedAt}>{dateTimePT(order.export.updatedAt)}</time>.
+      </p>
+      <div>
+        <a href={exportUrl(order.id)} download className={pillLine} data-testid="order-export-download">
+          <Download size={16} aria-hidden />
+          Download ({Math.max(1, Math.ceil(order.export.bytes / 1024))} KB)
+        </a>
+      </div>
+    </section>
+  )
+}
+
 export function ChainOrderPage() {
   const { id = '' } = useParams()
   const [search, setSearch] = useSearchParams()
@@ -302,6 +374,8 @@ export function ChainOrderPage() {
             )}
           </section>
           {(order.status === 'setting_up' || order.status === 'live') && order.provisioning && <ProvisioningLog log={order.provisioning} />}
+          <ExportCard order={order} />
+          <RenewalCard order={order} />
           <section className="flex min-w-0 flex-col gap-2 rounded-card border border-line bg-surface p-4" aria-labelledby="order-history">
             <h2 id="order-history" className="m-0 text-[15px] font-semibold text-ink">
               History

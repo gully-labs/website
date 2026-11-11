@@ -195,15 +195,28 @@ edge_create() {
 edge_reload() { guard "$EDGE"; dk kill -s HUP "$EDGE" >/dev/null; }
 
 # Starts the new container on `slot`. Keep these settings in step with the web service in compose.yaml.
+# Admin Integrations (server/admin-integrations.mjs) write the Chain Kit runner's settings into this host folder. It is
+# mounted only when it exists; the container then joins the folder's group so `node` can write, and the files it writes
+# get that group and mode 0440 (CHAINKIT_INTEGRATIONS_GID).
+CHAINKIT_INTEGRATIONS_HOST_DIR=${GULLY_CHAINKIT_INTEGRATIONS_DIR:-/srv/chainkit/integrations}
+integrations_args() {
+  [ -d "$CHAINKIT_INTEGRATIONS_HOST_DIR" ] || return 0
+  local gid
+  gid=$(stat -c %g "$CHAINKIT_INTEGRATIONS_HOST_DIR")
+  printf '%s\n' -v "$CHAINKIT_INTEGRATIONS_HOST_DIR:/srv/chainkit/integrations:rw" --group-add "$gid" -e "CHAINKIT_INTEGRATIONS_GID=$gid"
+}
+
 run_next() {
   local slot=$1 image=$2
   guard "$NEXT" "$image" "$NETWORK" gully-web-data
+  local extra=()
+  mapfile -t extra < <(integrations_args)
   dk run -d --name "$NEXT" --restart unless-stopped \
     --network "$NETWORK" --network-alias "gully-web-slot-$slot" \
     --env-file "$STATE_DIR/web.env" \
     -e TLS_PORT=8443 -e TRACKER_DATA=/data/tracker-history.json -e DATA_DIR=/data \
     -e GULLY_STANDBY=1 \
-    -v "$ROOT/certs:/certs:ro" -v gully-web-data:/data \
+    -v "$ROOT/certs:/certs:ro" -v gully-web-data:/data ${extra[@]+"${extra[@]}"} \
     --label gully.role=web --label "gully.slot=$slot" --label "gully.image=$image" \
     "$image" >/dev/null
 }

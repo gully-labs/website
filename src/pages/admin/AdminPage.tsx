@@ -39,6 +39,8 @@ import { IpfsReviewAdmin } from './IpfsReviewAdmin'
 // The live charts (and ECharts with them) load on demand, after the dashboard's own figures.
 const AdminCharts = lazy(() => import('./AdminCharts'))
 const RevenueAdmin = lazy(() => import('./RevenueAdmin'))
+// Write-only Chain Kit settings: its own chunk, fetched only when the section opens.
+const IntegrationsAdmin = lazy(() => import('./IntegrationsAdmin'))
 
 /* The private admin dashboard. Everything comes from /api/admin/* behind ADMIN_TOKEN; the token is
    kept in this tab's sessionStorage only. Refreshes every 30 seconds. Not linked from the site.
@@ -1195,6 +1197,11 @@ export function AdminPage() {
               <ChainKitAdmin token={token} />
               <EcosystemSubmissions token={token} />
               <ChainsWaitlist token={token} />
+            </Sec>
+            <Sec id="integrations" at={sec}>
+              <Suspense fallback={<span className="font-mono text-[12px] text-faint">Loading…</span>}>
+                <IntegrationsAdmin token={token} />
+              </Suspense>
             </Sec>
 
             <Sec id="inbox" at={sec}>
