@@ -5,8 +5,8 @@ import { dateTimePT, dayPT, lastDaysPT } from '../../lib/time'
 import { LiveDayBars } from './DailyChart'
 import { adminCall } from './payAdmin'
 
-/* Admin: Create a chain orders (server/chain-orders.mjs). People provision each chain by hand, then move the order on
-   here: Paid, Setting up, Live. Paid itself is never a button: only a verified Gully Pay webhook sets it. A held payment
+/* Admin: Create a chain orders (server/chain-orders.mjs). Our team sets each chain up, then moves the order on here:
+   Received or Paid, Setting up, Live; the buyer's order page shows each move.  The mainnet notify list is below. Paid itself is never a button: only a verified Gully Pay webhook sets it. A held payment
    (a real payment on a test order, a wrong amount, a second payment) shows its reason. Polled every 30 s. */
 
 interface Row {
@@ -24,6 +24,7 @@ interface Row {
 }
 interface Data {
   orders: Row[]
+  notify?: { email: string; topic: string; at: string }[]
   flags: { mainnetOrders: boolean }
   checkout: { enabled: boolean; mode: string }
 }
@@ -53,7 +54,7 @@ export function ChainOrdersAdmin({ token }: { token: string }) {
     return rows
   }, [data])
   const move = async (o: Row, status: string) => {
-    if (status === 'cancelled' && !window.confirm(`Cancel ${o.name}? The buyer is told by email.`)) return
+    if (status === 'cancelled' && !window.confirm(`Cancel ${o.name}? The buyer sees it on their order page.`)) return
     setBusy(o.id)
     const r = await adminCall(token, `/api/admin/chain-orders/${o.id}/status`, { status })
     setBusy('')
@@ -76,7 +77,7 @@ export function ChainOrdersAdmin({ token }: { token: string }) {
         </h2>
         {data && (
           <span className="font-mono text-[12px] text-faint">
-            {data.orders.length} orders · checkout {data.checkout.enabled ? data.checkout.mode : 'off'} · mainnet {data.flags.mainnetOrders ? 'on' : 'off'}
+            {data.orders.length} orders · {data.notify?.length ?? 0} mainnet notify · checkout {data.checkout.enabled ? data.checkout.mode : 'off'} · mainnet {data.flags.mainnetOrders ? 'on' : 'off'}
           </span>
         )}
       </div>
@@ -116,6 +117,18 @@ export function ChainOrdersAdmin({ token }: { token: string }) {
             </li>
           ))}
         </ul>
+      )}
+      {data && !!data.notify?.length && (
+        <details className="rounded-input border border-line px-3 py-2" data-testid="admin-chain-notify">
+          <summary className="cursor-pointer text-[13px] text-ink-2">Mainnet: notify me ({data.notify.length}). No mail is sent until a mail provider is wired.</summary>
+          <ul className="m-0 mt-2 flex list-none flex-col gap-1 p-0">
+            {data.notify.slice(0, 500).map((n) => (
+              <li key={n.email + n.at} className="font-mono text-[12px] break-all text-faint">
+                {dateTimePT(n.at)} · {n.email}
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </section>
   )

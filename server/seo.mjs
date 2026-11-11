@@ -12,6 +12,7 @@ import { published, publishedJobs } from './security-store.mjs'
 import { headBrand, PRODUCT_BRANDS } from './product-brand.mjs'
 import { scorePageMeta, scoreSitemapPaths } from './gully-score.mjs'
 import { publicChains } from './payments.mjs'
+import { CHAINS as CHAIN_PLANS, SETUP_BUSINESS_DAYS } from './chains-plans.mjs'
 // Guarded: holders.mjs exports holdersAvailable(chain, kind), read at call time (env keys), so stock pages come back
 // on their own once a chain's key is set. Without it every stock chain counts as unavailable.
 import * as holdersModule from './holders.mjs'
@@ -403,7 +404,7 @@ function pageMetaFor(host, pathname) {
   }
   // The Gully Labs App.
   if (isAppHost(host) && /^\/create-chain\/orders(\/|$)/.test(p)) return { title: 'Your chain order · Gully Labs', description: 'The status of your chain order.', canonical: null, noindex: true, found: true, image: `${SITE}/social/og-developers.png` }
-  if (isAppHost(host) && p === '/create-chain') return { title: 'Create a chain · Gully Labs', description: 'Order your own Arbitrum Orbit chain: testnet free for 30 days, with explorer, bridge, faucet, RPC, Gully Core and Gully Multisig. A person at Gully Labs sets up each chain.', canonical: `${APP}/create-chain`, found: true, image: `${SITE}/social/og-developers.png` }
+  if (isAppHost(host) && p === '/create-chain') return { title: 'Request a testnet chain · Gully Labs', description: `Request your own Arbitrum Orbit testnet chain, free for ${CHAIN_PLANS.testnet.freeDays} days: explorer, bridge, faucet, Gully RPC, contract verification, status monitoring, Gully Multisig and account abstraction included. Our team sets it up within ${SETUP_BUSINESS_DAYS} business days.`, canonical: `${APP}/create-chain`, found: true, image: `${SITE}/social/og-developers.png` }
   if (isAppHost(host))
     return { title: APP_TITLE, description: APP_DESCRIPTION, canonical: `${APP}/`, found: true, image: `${SITE}/social/og-developers.png` }
   // The admin app is one page at the root of its host; any other path is not a page.

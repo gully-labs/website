@@ -21,7 +21,7 @@ const gid = await fakeGullyId(USERS)
 const pay = await fakeGullyPay()
 const ADMIN = crypto.randomBytes(24).toString('hex')
 
-for (const k of ['CHAINKIT_REPORT_SECRET', 'TELEGRAM_BOT_TOKEN', 'MAINNET_ORDERS', 'MAINNET_PRICE_CONFIRMED', 'CHAIN_GULLYPAY_MODE', 'CHAIN_MAIL_API_KEY', 'CHAIN_MAIL_FROM']) delete process.env[k]
+for (const k of ['CHAINKIT_REPORT_SECRET', 'TELEGRAM_BOT_TOKEN', 'PRICE_CONFIRMED', 'MAINNET_ORDERS', 'MAINNET_PRICE_CONFIRMED', 'CHAIN_GULLYPAY_MODE', 'CHAIN_MAIL_API_KEY', 'CHAIN_MAIL_FROM']) delete process.env[k]
 // The payment path needs a charge, so this file runs with one. The default of $0 has its own section at the end.
 Object.assign(process.env, { CHAIN_TESTNET_TEST_CHARGE_USD: '1', PORT: String(PORT), DATA_DIR: tmp, TRACKER_DATA: path.join(tmp, 'tracker-history.json'), DIST_DIR: path.join(tmp, 'no-dist'), ADMIN_TOKEN: ADMIN, ADMIN_PASSWORD_LOGIN: 'on', TRACKER_LOOP: 'off', DEEPCORE_LOOP: 'off', TRACKER_SKIP_APIS: '1', ASK_REMOTE: 'off', CHAINLIST_URL: 'off', GULLY_ID_ISSUER: gid.url, GULLYPAY_API_URL: pay.url, GULLYPAY_CHECKOUT_URL: pay.url, CHAIN_GULLYPAY_MERCHANT_ID: GP.merchantId, CHAIN_GULLYPAY_STORE_ID: GP.storeId, CHAIN_GULLYPAY_API_KEY: GP.apiKey, CHAIN_GULLYPAY_WEBHOOK_SECRET: GP.secret })
 
@@ -80,19 +80,44 @@ const S = (o) => pay.sessions.find((s) => s.clientReferenceId === `chain:${o.id}
 try {
   /* ---- pricing: the one config ---- */
   const t = plans.quoteOrder('testnet', ['explorer', 'gully-core'])
-  check('testnet: free 30 days, then 15% under the $250 published trial testnet', t.freeDays === 30 && t.monthlyUsd === 212.5 && t.headline === 'Free for 30 days')
+  check('testnet: free 30 days, and NO after-trial price while the owner has not confirmed it', t.freeDays === 30 && t.headline === 'Free for 30 days' && t.monthlyUsd === null && t.priceConfirmed === false && t.after === plans.UNCONFIRMED_PRICE_NOTE)
+  check('testnet unconfirmed: no dollar figure anywhere in the quote but the test charge', !/\$|212/.test(JSON.stringify({ ...t, dueCents: 0 })))
+  check('testnet unconfirmed: the note says you are never charged without a checkout you start', /never charged without a checkout you start/.test(t.after))
+  const tc = plans.quoteOrder('testnet', [], { PRICE_CONFIRMED: 'on', CHAIN_TESTNET_TEST_CHARGE_USD: '1' })
+  check('testnet confirmed (owner flag on): then $212.50 a month, 15% under the $250 published trial testnet, never "invoiced"', tc.monthlyUsd === 212.5 && tc.after === 'Then $212.50 a month' && tc.priceConfirmed === true)
   check('testnet: the checkout charge is a test amount in cents', t.dueCents === 100 && t.testCharge === true)
-  const m = plans.quoteOrder('mainnet', ['explorer', 'multisig'])
+  check('testnet: setup days come from the one config value (default 3)', plans.SETUP_BUSINESS_DAYS === 3 && t.setupDays === 3)
+  const m = plans.quoteOrder('mainnet', ['paymaster'])
   check('mainnet: $4,250 a month + 4.25% of sequencer profit, DA at cost', m.monthlyUsd === 4250 && m.dueCents === 425_000 && m.sequencerProfitPct === 4.25 && m.daAtCost === true)
   check('mainnet: a price-on-request add-on says so and adds nothing', m.priceWithUs === true)
   check('mainnet has no faucet; an unknown add-on and an unknown tier are refused', plans.quoteOrder('mainnet', ['faucet']) === null && plans.quoteOrder('testnet', ['nope']) === null && plans.quoteOrder('x') === null)
+  check('a planned add-on (pay gas in USDC) cannot be ordered', plans.BUNDLE.addons.find((a) => a.id === 'usdc-gas')?.status === 'planned' && plans.quoteOrder('testnet', ['usdc-gas']) === null)
+
+  /* ---- the standard bundle: defined once ---- */
+  const B_INC = ['explorer', 'bridge', 'faucet', 'rpc', 'verify', 'monitoring', 'multisig', 'aa']
+  const B_ADD = ['gully-core', 'paymaster', 'pay', 'hyperlane', 'usdc-gas']
+  check('bundle: the eight included services, in order', plans.BUNDLE.included.map((x) => x.id).join() === B_INC.join())
+  check('bundle: the five add-ons, in order', plans.BUNDLE.addons.map((x) => x.id).join() === B_ADD.join())
+  check('bundle: every item has a delivery (team or automatic) and a status', [...plans.BUNDLE.included, ...plans.BUNDLE.addons].every((x) => ['team', 'automatic'].includes(x.delivery) && ['available', 'planned'].includes(x.status)))
+  check('bundle: Gully Core is 0.30% of every trade with no monthly fee; Hyperlane a one-time setup; the paymaster usage-billed', (() => {
+    const by = Object.fromEntries(plans.BUNDLE.addons.map((a) => [a.id, a]))
+    return by['gully-core'].fee === '0.30% of every trade' && by['gully-core'].billing === 'No monthly fee' && by.hyperlane.billing === 'One-time setup' && by.paymaster.billing === 'Billed by usage'
+  })())
+  check('bundle: the quote carries the whole bundle on testnet and all but the faucet on mainnet', t.included.map((x) => x.id).join() === B_INC.join() && m.included.map((x) => x.id).join() === B_INC.filter((x) => x !== 'faucet').join())
+  check('bundle: a bundle id sent as an add-on (an old draft) is accepted and not doubled', plans.quoteOrder('testnet', ['explorer', 'multisig']).addons.length === 0)
+  const old = { tier: 'testnet', addons: [{ id: 'explorer', name: 'Block explorer', usd: 0, fee: null }, { id: 'gully-core', name: 'Gully Core', usd: 0, fee: '0.30% of every trade' }], dueCents: 0, testCharge: false, freeDays: 30, monthlyUsd: 212.5, headline: 'Free for 30 days', after: 'Then $212.50 a month, invoiced' }
+  const shown = plans.presentQuote(old)
+  check('an order placed before this change shows no unconfirmed price and gets the bundle with deliveries', shown.monthlyUsd === null && !/\$|invoiced/.test(shown.after) && shown.included.length === 8 && shown.addons.map((a) => a.id).join() === 'gully-core' && shown.addons[0].delivery === 'team')
   check('every benchmark names a source; an unpublished price stays null', plans.PRICE_BENCHMARKS.sources.every((s) => /^https:/.test(s.url)) && plans.PRICE_BENCHMARKS.sources.filter((s) => s.published === null).length === 3)
   check('the unsourced mainnet base is flagged for the owner', /\$4,250/.test(plans.PRICE_BENCHMARKS.ownerToConfirm))
 
   /* ---- step 1: name, chain id check, gas token, logo ---- */
   const offer = (await A.call('/api/chain-orders/offer')).data
   check('offer: testnet on, mainnet off by default, test mode', offer.flags.testnetOrders === true && offer.flags.mainnetOrders === false && offer.checkout.mode === 'test' && offer.checkout.enabled === true)
-  check('offer: seven add-ons and the Nitro licence note', offer.addons.length === 7 && /Arbitrum One, Arbitrum Nova or Arbitrum Sepolia/.test(offer.licenceNote))
+  check('offer: the bundle (8 included, 5 add-ons) and the Nitro licence note', offer.included.length === 8 && offer.addons.length === 5 && /Arbitrum One, Arbitrum Nova or Arbitrum Sepolia/.test(offer.licenceNote))
+  check('offer: the page reads the same bundle as the quote', offer.included.map((x) => x.id + ':' + x.delivery).join() === plans.BUNDLE.included.map((x) => x.id + ':' + x.delivery).join() && offer.addons.map((x) => x.id + ':' + x.status).join() === plans.BUNDLE.addons.map((x) => x.id + ':' + x.status).join())
+  check('offer: setup days from the config', offer.setupDays === plans.SETUP_BUSINESS_DAYS)
+  check('offer: no flag, env or internal name in the public answer', !/[A-Z]{3,}_[A-Z0-9_]{3,}|chains-plans|\.mjs|internal|owner to confirm/i.test(JSON.stringify(offer).replace(/"[a-z][A-Za-z]*":/g, '')))
   check('offer: no competitor or benchmark reaches a page', !/conduit|caldera/i.test(JSON.stringify(offer)))
   check('chain id: a free one', (await A.call('/api/chain-orders/check?chainId=7099999')).data.free === true)
   check('chain id: Gully Chain Testnet is reserved', (await A.call('/api/chain-orders/check?chainId=485590')).data.free === false)
@@ -126,8 +151,13 @@ try {
   delete process.env.MAINNET_PRICE_CONFIRMED
 
   /* ---- step 3: price ---- */
-  const q = await A.call('/api/chain-orders/quote?tier=testnet&addons=explorer,rpc')
+  const q = await A.call('/api/chain-orders/quote?tier=testnet&addons=explorer,rpc,gully-core')
   check('step 3: the quote endpoint answers the config', q.data.quote.dueCents === 100)
+  check('step 3: the quote endpoint equals the one calculation the page shows', JSON.stringify(q.data.quote) === JSON.stringify(plans.quoteOrder('testnet', ['explorer', 'rpc', 'gully-core'])))
+  check('step 3: the quote has no after-trial price', q.data.quote.monthlyUsd === null && !/212|invoiced/.test(JSON.stringify(q.data.quote)))
+  check('step 3: a planned add-on is 400', (await A.call('/api/chain-orders/quote?tier=testnet&addons=usdc-gas')).status === 400)
+  const mq = await A.call('/api/chain-orders/quote?tier=mainnet&addons=')
+  check('step 3: no mainnet quote while mainnet is shut (no unconfirmed price on the wire)', mq.status === 403 && mq.data.code === 'mainnet-off' && !/4,?250/.test(JSON.stringify(mq.data)))
   check('step 3: a bad quote is 400', (await A.call('/api/chain-orders/quote?tier=testnet&addons=nope')).status === 400)
   const stale = await A.post('/api/chain-orders', good({ expect: { dueCents: 1 } }))
   check('step 3: a price the buyer did not see is 409 price-changed', stale.status === 409 && stale.data.code === 'price-changed' && stale.data.quote.dueCents === 100)
@@ -147,7 +177,8 @@ try {
   const placed = await A.post('/api/chain-orders', good({ logo: PNG }))
   const o1 = placed.data.order
   check('step 5: order placed, awaiting payment, email lower-cased, logo kept', placed.status === 201 && o1.status === 'awaiting_payment' && o1.email === 'team@example.com' && o1.logo === PNG)
-  check('step 5: the buyer view has no internal fields', !('address' in o1) && !('sessions' in o1) && !('review' in o1))
+  check('step 5: the buyer view has no internal fields', !('address' in o1) && !('sessions' in o1) && !('review' in o1) && o1.history.every((h) => !('by' in h)))
+  check('step 5: the stored order carries the bundle with deliveries and no after-trial price', o1.quote.included.length === 8 && o1.quote.included.every((x) => x.delivery === 'team') && o1.quote.monthlyUsd === null)
   check('step 5: another buyer gets 404', (await B.call(`/api/chain-orders/${o1.id}`)).status === 404)
   check('step 5: and cannot open its checkout', (await B.post(`/api/chain-orders/${o1.id}/checkout`)).status === 404)
   const c1 = await A.post(`/api/chain-orders/${o1.id}/checkout`)
@@ -245,6 +276,18 @@ try {
   await deliver(BASE, sessionEvent('checkout.session.completed', S(late)))
   const lateView = (await admin('/api/admin/chain-orders')).data.orders.find((o) => o.id === late.id)
   check('paid after cancel: completed is final, reopened and flagged', lateView.status === 'paid' && lateView.review.some((r) => r.code === 'paid-after-cancel'))
+
+  /* ---- mainnet: notify me ---- */
+  const N = client()
+  const nPost = (body, headers) => N.post('/api/chain-orders/notify', body, headers)
+  check('notify: signed out, an email is recorded (201)', (await nPost({ email: 'Soon@Example.com' })).status === 201)
+  check('notify: the same email again is not stored twice', (await nPost({ email: 'soon@example.com' })).data?.already === true)
+  check('notify: a bad email is 400', (await nPost({ email: 'nope' })).status === 400)
+  check('notify: without the CSRF header it is refused', (await N.call('/api/chain-orders/notify', { method: 'POST', body: { email: 'x@example.com' } })).status === 403)
+  check('notify: GET is 405', (await N.call('/api/chain-orders/notify')).status === 405)
+  const nList = (await admin('/api/admin/chain-orders')).data.notify
+  check('notify: the admin sees the list, once per email', nList.filter((x) => x.email === 'soon@example.com' && x.topic === 'mainnet').length === 1)
+  check('notify: on disk with the orders', JSON.parse(fs.readFileSync(path.join(tmp, 'chain-orders.json'), 'utf8')).notify.some((x) => x.email === 'soon@example.com'))
 
   /* ---- status changes ---- */
   const mails = []

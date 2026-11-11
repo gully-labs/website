@@ -15,7 +15,7 @@ export const SERVICES = [
   { id: 'usdc-gas', name: 'Pay gas in USDC', kind: 'addon', status: 'planned', body: 'Users pay fees in USDC instead of the chain token.' },
   { id: 'pay', name: 'Gully Pay on your chain', kind: 'addon', status: 'testnet', body: 'Non-custodial checkout and pay links on your chain.' },
   { id: 'hyperlane', name: 'Hyperlane setup', kind: 'addon', status: 'testnet', body: 'Cross-chain messaging between your chain and others. A one-time setup.' },
-  { id: 'gully-core', name: 'Gully Core launchpad on day one', kind: 'addon', status: 'planned', body: 'Gully Core, the launchpad and DEX core of Gully Chain, on your chain from the start, with a revenue share on launch fees.' },
+  { id: 'gully-core', name: 'Gully Core launchpad on day one', kind: 'addon', status: 'planned', body: 'Gully Core, the launchpad and DEX core of Gully Chain, on your chain from the start: 0.30% of every trade, no monthly fee.' },
 ]
 
 /** The stack, in order, as the page draws it. */
@@ -40,7 +40,7 @@ export const CHAINS = {
     { id: 'usdc-gas', name: 'Pay gas in USDC', model: 'monthly', usd: null, status: 'planned' },
     { id: 'pay', name: 'Gully Pay on your chain', model: 'transaction fee', usd: null, status: 'testnet' },
     { id: 'hyperlane', name: 'Hyperlane setup', model: 'one-time', usd: null, status: 'testnet' },
-    { id: 'gully-core', name: 'Gully Core launchpad', model: 'revenue share on launch fees', usd: null, status: 'planned' },
+    { id: 'gully-core', name: 'Gully Core launchpad', model: '0.30% of every trade', usd: null, status: 'planned' },
   ],
   note: 'Prices before launch may change.',
 }
@@ -81,16 +81,42 @@ export function testChargeUsd(env = process.env) {
   return Number.isFinite(n) && n > 0 ? n : 0
 }
 
-/** Add-ons in the order flow. A number is a monthly price (0: included), null: priced with the customer. `fee`: a usage term. */
-export const ORDER_ADDONS = [
-  { id: 'explorer', name: 'Block explorer', icon: 'search', body: 'Your own branded explorer.', testnetUsd: 0, mainnetUsd: 0, standard: true },
-  { id: 'bridge', name: 'Bridge', icon: 'bridge', body: 'Move assets to and from the parent chain.', testnetUsd: 0, mainnetUsd: 0, standard: true },
-  { id: 'faucet', name: 'Faucet', icon: 'droplets', body: 'Test funds for your builders.', testnetUsd: 0, mainnetUsd: null, testnetOnly: true, standard: true },
-  { id: 'rpc', name: 'Gully RPC', icon: 'server', body: 'Public and keyed RPC endpoints.', testnetUsd: 0, mainnetUsd: 0, standard: true },
-  { id: 'monitoring', name: 'Monitoring', icon: 'activity', body: 'Uptime, sequencer and batch alerts.', testnetUsd: 0, mainnetUsd: 0, standard: false },
-  { id: 'gully-core', name: 'Gully Core', icon: 'layers', body: 'Launchpad and DEX contracts on your chain.', testnetUsd: 0, mainnetUsd: 0, fee: '0.30% of every trade', standard: false },
-  { id: 'multisig', name: 'Gully Multisig', icon: 'shield', body: 'A multisig for your chain owner role.', testnetUsd: 0, mainnetUsd: null, standard: false },
-]
+/* ------------------------------------------------- Create a chain: the standard bundle (OWNER-EDITABLE) --- */
+
+// The ONE list of what a chain gets. The page, the quote and the order all read it; nothing is typed into a page.
+//   delivery  'team': our team sets it up by hand · 'automatic': the provisioning pipeline does it. All 'team' today; the
+//             provisioning lane flips an item to 'automatic' as its automation lands.
+//   status    'available': can be ordered · 'planned': shown, not orderable yet.
+//   testnetOnly: not offered on mainnet. fee / billing: how an add-on is paid for (no add-on has a monthly price today).
+export const BUNDLE = {
+  included: [
+    { id: 'explorer', name: 'Block explorer', icon: 'search', body: 'Your own branded explorer.', delivery: 'team', status: 'available' },
+    { id: 'bridge', name: 'Bridge to the parent chain', icon: 'bridge', body: 'Move assets to and from the chain you settle to.', delivery: 'team', status: 'available' },
+    { id: 'faucet', name: 'Faucet', icon: 'droplets', body: 'Test funds for your builders.', delivery: 'team', status: 'available', testnetOnly: true },
+    { id: 'rpc', name: 'Gully RPC endpoint', icon: 'server', body: 'Public and keyed RPC endpoints on Gully RPC.', delivery: 'team', status: 'available' },
+    { id: 'verify', name: 'Contract verification', icon: 'badge-check', body: 'Verify contract source on your explorer.', delivery: 'team', status: 'available' },
+    { id: 'monitoring', name: 'Status monitoring', icon: 'activity', body: 'Uptime, sequencer and batch checks on a status page.', delivery: 'team', status: 'available' },
+    { id: 'multisig', name: 'Gully Multisig for the chain owner role', icon: 'shield', body: 'The chain owner role held by a multisig you control.', delivery: 'team', status: 'available' },
+    { id: 'aa', name: 'Account abstraction (ERC-4337 bundler)', icon: 'wallet', body: 'A bundler and EntryPoint for smart accounts.', delivery: 'team', status: 'available' },
+  ],
+  addons: [
+    { id: 'gully-core', name: 'Gully Core', icon: 'layers', body: 'Launchpad and DEX contracts on your chain.', fee: '0.30% of every trade', billing: 'No monthly fee', delivery: 'team', status: 'available' },
+    { id: 'paymaster', name: 'Sponsored-gas paymaster', icon: 'fuel', body: 'Let your users transact without holding gas.', fee: null, billing: 'Billed by usage', delivery: 'team', status: 'available' },
+    { id: 'pay', name: 'Gully Pay on your chain', icon: 'credit-card', body: 'Non-custodial checkout and pay links on your chain.', fee: null, billing: 'Priced with you', delivery: 'team', status: 'available' },
+    { id: 'hyperlane', name: 'Hyperlane cross-chain messaging', icon: 'shuffle', body: 'Messages between your chain and others.', fee: null, billing: 'One-time setup', delivery: 'team', status: 'available' },
+    { id: 'usdc-gas', name: 'Pay gas in USDC', icon: 'coins', body: 'Users pay fees in USDC instead of the chain token.', fee: null, billing: 'Planned', delivery: 'team', status: 'planned' },
+  ],
+}
+
+/** Business days our team takes to set up a testnet chain once the request is in. Shown on the page and the order. */
+export const SETUP_BUSINESS_DAYS = 3
+
+/** OWNER FLAG: the after-trial testnet price (CHAINS.testnet.monthlyUsd) is confirmed. Off (default): no page shows it. */
+export const priceConfirmed = (env = process.env) => ['on', 'true', '1', 'yes'].includes(String(env.PRICE_CONFIRMED ?? '').trim().toLowerCase())
+export const UNCONFIRMED_PRICE_NOTE = 'Price set before your trial ends; you are never charged without a checkout you start.'
+
+const includedFor = (tier) => BUNDLE.included.filter((x) => tier === 'testnet' || !x.testnetOnly)
+const bundleItem = (id) => BUNDLE.included.find((x) => x.id === id) ?? BUNDLE.addons.find((x) => x.id === id) ?? null
 
 /** Where a chain may settle: the parents on which Nitro's licence is free. */
 export const ORDER_PARENTS = {
@@ -100,34 +126,62 @@ export const ORDER_PARENTS = {
 export const NITRO_LICENCE_NOTE = 'Arbitrum Nitro is free to run only when your chain settles to Arbitrum One, Arbitrum Nova or Arbitrum Sepolia, so those are the only parents we offer.'
 export const GAS_TOKENS = [{ id: 'eth', name: 'ETH' }, { id: 'custom', name: 'Your own token' }]
 
-// Gully Pay has no subscriptions API today (a subscriptions table and a buyer's read-only list; nothing creates or
-// renews one): the first month is one hosted checkout, and each later month is an invoice we send by hand.
-export const BILLING = { model: 'first-month-invoice', note: 'Billed monthly by invoice. Nothing renews by itself.' }
+// Gully Pay has no subscriptions API today and invoicing is not wired: a charge is only ever a hosted checkout the buyer
+// starts, and nothing renews by itself.
+export const BILLING = { model: 'checkout-only', note: 'Nothing renews by itself: you are never charged without a checkout you start.' }
 
 const money = (usd) => `$${usd.toLocaleString('en-US', { minimumFractionDigits: Number.isInteger(usd) ? 0 : 2, maximumFractionDigits: 2 })}`
 
+const view = (x, tier) => ({ id: x.id, name: x.name, delivery: x.delivery, fee: x.fee ?? null, billing: x.billing ?? null, usd: x.fee || x.billing === 'No monthly fee' || bundleKind(x.id) === 'included' ? 0 : tier === 'testnet' ? 0 : null })
+const bundleKind = (id) => (BUNDLE.included.some((x) => x.id === id) ? 'included' : 'addon')
+
 /**
  * The one price calculation: the page shows it, the order stores it, checkout charges it.
- * Returns null for an unknown tier or add-on. `dueCents`: what checkout charges today, in USD cents.
+ * `included`: the standard bundle for the tier (always on). `addons`: the ids picked. An id from the bundle is accepted
+ * and ignored (it is always included), so an old draft still quotes. Returns null for an unknown tier, an unknown or
+ * planned add-on, or a testnet-only item on mainnet. `dueCents`: what checkout charges today, in USD cents.
  */
-export function quoteOrder(tier, addonIds = []) {
+export function quoteOrder(tier, addonIds = [], env = process.env) {
   if (tier !== 'testnet' && tier !== 'mainnet') return null
   const picked = []
   for (const id of new Set(addonIds)) {
-    const a = ORDER_ADDONS.find((x) => x.id === id)
-    if (!a || (a.testnetOnly && tier !== 'testnet')) return null
+    const inc = BUNDLE.included.find((x) => x.id === id)
+    if (inc) {
+      if (inc.testnetOnly && tier !== 'testnet') return null
+      continue
+    }
+    const a = BUNDLE.addons.find((x) => x.id === id)
+    if (!a || a.status !== 'available') return null
     picked.push(a)
   }
-  const usdOf = (a) => (tier === 'testnet' ? a.testnetUsd : a.mainnetUsd)
-  const addons = picked.map((a) => ({ id: a.id, name: a.name, usd: usdOf(a), fee: a.fee ?? null }))
-  const addonMonthly = addons.reduce((n, a) => n + (a.usd ?? 0), 0)
+  const included = includedFor(tier).map((x) => view(x, tier))
+  const addons = picked.map((a) => view(a, tier))
+  const setupDays = SETUP_BUSINESS_DAYS
   if (tier === 'testnet') {
-    const dueCents = Math.round(testChargeUsd() * 100)
-    const monthlyUsd = CHAINS.testnet.monthlyUsd + addonMonthly
-    return { tier, addons, dueCents, testCharge: dueCents > 0, freeDays: CHAINS.testnet.freeDays, monthlyUsd, sequencerProfitPct: null, daAtCost: false, priceWithUs: false, headline: `Free for ${CHAINS.testnet.freeDays} days`, after: `Then ${money(monthlyUsd)} a month, invoiced` }
+    const dueCents = Math.round(testChargeUsd(env) * 100)
+    const confirmed = priceConfirmed(env) && Number.isFinite(CHAINS.testnet.monthlyUsd)
+    return { tier, included, addons, dueCents, testCharge: dueCents > 0, freeDays: CHAINS.testnet.freeDays, setupDays, priceConfirmed: confirmed, monthlyUsd: confirmed ? CHAINS.testnet.monthlyUsd : null, sequencerProfitPct: null, daAtCost: false, priceWithUs: false, headline: `Free for ${CHAINS.testnet.freeDays} days`, after: confirmed ? `Then ${money(CHAINS.testnet.monthlyUsd)} a month` : UNCONFIRMED_PRICE_NOTE }
   }
-  const monthlyUsd = CHAINS.mainnet.fromUsdPerMonth + addonMonthly
-  return { tier, addons, dueCents: Math.round(monthlyUsd * 100), testCharge: false, freeDays: 0, monthlyUsd, sequencerProfitPct: CHAINS.mainnet.sequencerProfitPct, daAtCost: CHAINS.mainnet.daAtCost, priceWithUs: addons.some((a) => a.usd === null), headline: `${money(monthlyUsd)} a month`, after: `+ ${CHAINS.mainnet.sequencerProfitPct}% of sequencer profit, data availability at cost` }
+  const monthlyUsd = CHAINS.mainnet.fromUsdPerMonth
+  return { tier, included, addons, dueCents: Math.round(monthlyUsd * 100), testCharge: false, freeDays: 0, setupDays, priceConfirmed: true, monthlyUsd, sequencerProfitPct: CHAINS.mainnet.sequencerProfitPct, daAtCost: CHAINS.mainnet.daAtCost, priceWithUs: addons.some((a) => a.usd === null), headline: `${money(monthlyUsd)} a month`, after: `+ ${CHAINS.mainnet.sequencerProfitPct}% of sequencer profit, data availability at cost` }
+}
+
+/**
+ * A stored quote as a page shows it today: an order placed before the bundle (or before the price was confirmed) never
+ * shows an after-trial price that is not confirmed now, and every line carries how it is delivered.
+ */
+export function presentQuote(q, env = process.env) {
+  if (!q) return q
+  const tier = q.tier
+  const inc = (q.included ?? includedFor(tier).map((x) => view(x, tier))).map((x) => ({ ...x, delivery: bundleItem(x.id)?.delivery ?? x.delivery ?? 'team' }))
+  const incIds = new Set(inc.map((x) => x.id))
+  const addons = (q.addons ?? []).filter((a) => !incIds.has(a.id)).map((a) => ({ ...a, billing: a.billing ?? bundleItem(a.id)?.billing ?? null, delivery: bundleItem(a.id)?.delivery ?? a.delivery ?? 'team' }))
+  const out = { ...q, included: inc, addons, setupDays: q.setupDays ?? SETUP_BUSINESS_DAYS }
+  if (tier === 'testnet') {
+    const confirmed = priceConfirmed(env) && Number.isFinite(CHAINS.testnet.monthlyUsd)
+    Object.assign(out, { priceConfirmed: confirmed, monthlyUsd: confirmed ? CHAINS.testnet.monthlyUsd : null, after: confirmed ? `Then ${money(CHAINS.testnet.monthlyUsd)} a month` : UNCONFIRMED_PRICE_NOTE })
+  }
+  return out
 }
 
 /** The waitlist form's choices: [value, label]. The server accepts only these values. */

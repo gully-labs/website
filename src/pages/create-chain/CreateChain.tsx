@@ -1,25 +1,25 @@
-import { ArrowLeft, ArrowRight, Check, CircleAlert, CircleCheck, CreditCard, ImagePlus, Layers, Loader2, Shuffle, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Bell, Check, CircleAlert, CircleCheck, CreditCard, ImagePlus, Layers, Loader2, Shuffle, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { toastError, toastSuccess } from '../../components/ui/toast'
 import { api } from '../developers/api'
-import { ExtLink } from '../developers/ExtLink'
 import { GullyIdButton, gullyIdAccessToken, gullyIdRedirectToken, isGullyIdReturn } from '../developers/gullyId'
-import { checkChainId, getOffer, getQuote, gullyExchange, hasGullySession, startCheckout, TALK_TO_US, type Offer, type Order, type Quote, type Tier } from './chainApi'
-import { ADDON_ICONS, ChainDiagram, ChainShell, GullyIdChip, PriceSummary, SESSION_EVENT } from './parts'
+import { checkChainId, deliveryLabel, getOffer, getQuote, gullyExchange, hasGullySession, notifyMainnet, startCheckout, type Offer, type Order, type Quote, type Tier } from './chainApi'
+import { ADDON_ICONS, ChainDiagram, ChainShell, GullyIdChip, PriceSummary, quoteServices, SESSION_EVENT } from './parts'
 
 /* Create a chain (app.gullylabs.xyz/create-chain): five steps ending in Gully Pay's hosted checkout, or in a recorded order
    when nothing is due. The server prices everything (GET /api/chain-orders/quote); this page only shows it. Our own code,
-   written clean: nothing here comes from the Orbit deployment UI fork, which has no upstream licence. People provision
-   each chain by hand for now. The site's header and footer come from the Layout the route sits in; the form is saved in
+   written clean: nothing here comes from the Orbit deployment UI fork, which has no upstream licence. Each line says
+   whether it is automatic or set up by our team (the bundle's `delivery`, server/chains-plans.mjs); no price shows
+   after the free days until the owner confirms it. The site's header and footer come from the Layout the route sits in; the form is saved in
    this browser (localStorage) so a reload keeps it. */
 
 const STEPS = [
   { label: 'Chain', note: 'Name and id' },
   { label: 'Plan', note: 'Testnet and add-ons' },
-  { label: 'Price', note: 'Check the order' },
+  { label: 'Review', note: 'Check the request' },
   { label: 'Sign in', note: 'With Gully ID' },
-  { label: 'Confirm', note: 'Place the order' },
+  { label: 'Confirm', note: 'Send the request' },
 ]
 const DRAFT = 'gl-chain-draft'
 const MAX_LOGO = 96 * 1024
@@ -259,66 +259,131 @@ function ChainStep({ offer, d, set, id }: { offer: Offer; d: Draft; set: (p: Par
   )
 }
 
-function PlanStep({ offer, d, set }: { offer: Offer; d: Draft; set: (p: Partial<Draft>) => void }) {
-  const toggle = (id: string) => set({ addons: d.addons.includes(id) ? d.addons.filter((a) => a !== id) : [...d.addons, id] })
-  const addons = offer.addons.filter((a) => d.tier === 'testnet' || !a.testnetOnly)
-  const par = parentOf(offer, d)
+function MainnetSoon() {
+  const [email, setEmail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+  const send = async () => {
+    setBusy(true)
+    const r = await notifyMainnet(email.trim())
+    setBusy(false)
+    if (!r.ok) return toastError('Could not save your email', { detail: r.error })
+    setDone(true)
+    toastSuccess('You are on the list', { detail: 'We will tell you when mainnet chains open.' })
+  }
   return (
-    <Card n={2} id="step-plan" title="Pick a plan" intro="Start on a free testnet to try your chain. Add-ons switch on the services it needs.">
-      <div className="grid grid-cols-2 gap-2 max-[600px]:grid-cols-1">
-        <button type="button" aria-pressed={d.tier === 'testnet'} onClick={() => set({ tier: 'testnet', parent: null })} data-testid="tier-testnet" className={unitCard(d.tier === 'testnet')}>
-          <span className="flex flex-col gap-0.5">
-            <span className="text-[14px] font-semibold text-ink">Testnet</span>
-            <span className="text-[13px] text-muted">Free for {offer.freeDays} days. Settles to Arbitrum Sepolia.</span>
-          </span>
-        </button>
-        {offer.flags.mainnetOrders ? (
-          <button type="button" aria-pressed={d.tier === 'mainnet'} onClick={() => set({ tier: 'mainnet', parent: null, addons: d.addons.filter((a) => a !== 'faucet') })} data-testid="tier-mainnet" className={unitCard(d.tier === 'mainnet')}>
-            <span className="flex flex-col gap-0.5">
-              <span className="text-[14px] font-semibold text-ink">Managed mainnet</span>
-              <span className="text-[13px] text-muted">We run it for you. Settles to Arbitrum One or Nova.</span>
-            </span>
+    <div className="flex flex-col gap-3 rounded-input border border-line p-4" data-testid="mainnet-soon">
+      <h3 className="m-0 text-[16px] font-semibold text-ink">Mainnet chains: coming soon</h3>
+      <p className="m-0 text-[14px] leading-[1.45] text-muted">Managed mainnet chains open once pricing and hosting terms are set. Leave your email and we will tell you when they do.</p>
+      {done ? (
+        <p className="m-0 flex items-center gap-2 text-[14px] text-ink" data-testid="mainnet-notified">
+          <CircleCheck size={18} className="text-green" aria-hidden />
+          Saved. We will tell you when mainnet chains open.
+        </p>
+      ) : (
+        <form
+          className="flex flex-wrap items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void send()
+          }}
+        >
+          <label htmlFor="mainnet-email" className="sr-only">
+            Email
+          </label>
+          <input id="mainnet-email" className={`${field} min-w-0 flex-[1_1_220px]`} type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" data-testid="mainnet-email" />
+          <button type="submit" className={btnPri} disabled={busy || !email.trim()} data-testid="mainnet-notify">
+            {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : <Bell size={18} aria-hidden />}
+            Notify me
           </button>
-        ) : (
-          <div className="flex flex-col gap-0.5 rounded-input border border-line p-3" data-testid="tier-mainnet-talk">
-            <span className="text-[14px] font-semibold text-ink">Managed mainnet</span>
-            <span className="text-[13px] text-muted">We run it for you. Settles to Arbitrum One or Nova.</span>
-            <ExtLink href={TALK_TO_US} className="inline-flex min-h-9 items-center gap-1 text-[13px] font-semibold text-gold">
-              Talk to us
-            </ExtLink>
-          </div>
-        )}
-      </div>
-      {offer.parents[d.tier].length > 1 && (
-        <div className="flex flex-col gap-1.5">
-          <span className={label}>Settles to</span>
-          <Seg name="Settles to" value={String(par.id)} options={offer.parents[d.tier].map((p) => ({ id: String(p.id), label: p.name }))} onChange={(v) => set({ parent: Number(v) })} />
-        </div>
+        </form>
       )}
-      <p className={help} data-testid="licence-note">
-        {offer.licenceNote}
-      </p>
-      <h3 className="m-0 text-[14px] font-semibold text-ink">Add-ons</h3>
-      <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0 max-[600px]:grid-cols-1">
-        {addons.map((a) => {
-          const Icon = ADDON_ICONS[a.id] ?? Layers
-          const on = d.addons.includes(a.id)
-          return (
-            <li key={a.id}>
-              <button type="button" aria-pressed={on} onClick={() => toggle(a.id)} data-testid={`addon-${a.id}`} className={unitCard(on)}>
-                <Icon size={16} className="mt-0.5 shrink-0 text-gold" aria-hidden />
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-[14px] text-ink">{a.name}</span>
-                  <span className="text-[12px] text-muted">{a.fee ? `${a.body} ${a.fee}.` : a.body}</span>
-                </span>
-                <span aria-hidden className={`mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-full border ${on ? 'border-gold bg-gold text-bg' : 'border-line-strong'}`}>
-                  {on && <Check size={11} />}
-                </span>
-              </button>
-            </li>
-          )
-        })}
-      </ul>
+    </div>
+  )
+}
+
+function PlanStep({ offer, d, set, tab, setTab }: { offer: Offer; d: Draft; set: (p: Partial<Draft>) => void; tab: Tier; setTab: (t: Tier) => void }) {
+  const toggle = (id: string) => set({ addons: d.addons.includes(id) ? d.addons.filter((a) => a !== id) : [...d.addons, id] })
+  const included = offer.included.filter((a) => d.tier === 'testnet' || !a.testnetOnly)
+  const par = parentOf(offer, d)
+  const pickTab = (t: Tier) => {
+    setTab(t)
+    if (t === 'testnet' && d.tier !== 'testnet') set({ tier: 'testnet', parent: null })
+    if (t === 'mainnet' && offer.flags.mainnetOrders && d.tier !== 'mainnet') set({ tier: 'mainnet', parent: null })
+  }
+  const tabBtn = (t: Tier, text: string) => (
+    <button type="button" role="tab" aria-selected={tab === t} onClick={() => pickTab(t)} data-testid={`tier-${t}`} className={`min-h-9 cursor-pointer rounded-full border-0 px-4 text-[13px] font-semibold transition-colors ${tab === t ? 'bg-gold text-bg' : 'bg-transparent text-ink-2 hover:text-ink'}`}>
+      {text}
+    </button>
+  )
+  return (
+    <Card n={2} id="step-plan" title="Pick a plan" intro={`Start on a free testnet. Our team sets it up within ${offer.setupDays} business days.`}>
+      <div role="tablist" aria-label="Network" className="inline-flex w-fit max-w-full rounded-full border border-line-strong bg-bg p-0.5">
+        {tabBtn('testnet', 'Testnet')}
+        {tabBtn('mainnet', 'Mainnet')}
+      </div>
+      {tab === 'mainnet' && !offer.flags.mainnetOrders ? (
+        <MainnetSoon />
+      ) : (
+        <>
+          <p className="m-0 text-[14px] text-muted" data-testid="tier-note">
+            {d.tier === 'testnet' ? `Free for ${offer.freeDays} days. Settles to Arbitrum Sepolia.` : 'We run it for you. Settles to Arbitrum One or Nova.'}
+          </p>
+          {offer.parents[d.tier].length > 1 && (
+            <div className="flex flex-col gap-1.5">
+              <span className={label}>Settles to</span>
+              <Seg name="Settles to" value={String(par.id)} options={offer.parents[d.tier].map((p) => ({ id: String(p.id), label: p.name }))} onChange={(v) => set({ parent: Number(v) })} />
+            </div>
+          )}
+          <p className={help} data-testid="licence-note">
+            {offer.licenceNote}
+          </p>
+          <h3 className="m-0 text-[14px] font-semibold text-ink">Included on every chain</h3>
+          <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0 max-[600px]:grid-cols-1" data-testid="bundle-included">
+            {included.map((a) => {
+              const Icon = ADDON_ICONS[a.id] ?? Layers
+              return (
+                <li key={a.id} className="flex min-w-0 items-start gap-3 rounded-input border border-line p-3" data-testid={`included-${a.id}`}>
+                  <Icon size={16} className="mt-0.5 shrink-0 text-gold" aria-hidden />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="text-[14px] text-ink">{a.name}</span>
+                    <span className="text-[12px] text-muted">{a.body}</span>
+                    <span className={`text-[12px] ${a.delivery === 'automatic' ? 'text-green' : 'text-faint'}`}>{deliveryLabel(a.delivery)}</span>
+                  </span>
+                  <Check size={14} className="mt-1 shrink-0 text-gold" aria-hidden />
+                </li>
+              )
+            })}
+          </ul>
+          <h3 className="m-0 text-[14px] font-semibold text-ink">Add-ons</h3>
+          <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0 max-[600px]:grid-cols-1">
+            {offer.addons.map((a) => {
+              const Icon = ADDON_ICONS[a.id] ?? Layers
+              const planned = a.status !== 'available'
+              const on = !planned && d.addons.includes(a.id)
+              const terms = [a.fee, a.billing].filter(Boolean).join(' · ')
+              return (
+                <li key={a.id}>
+                  <button type="button" aria-pressed={on} disabled={planned} onClick={() => toggle(a.id)} data-testid={`addon-${a.id}`} className={`${unitCard(on)} disabled:cursor-not-allowed disabled:opacity-60`}>
+                    <Icon size={16} className="mt-0.5 shrink-0 text-gold" aria-hidden />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="text-[14px] text-ink">{a.name}</span>
+                      <span className="text-[12px] text-muted">{a.body}</span>
+                      {!planned && terms && <span className="text-[12px] text-ink-2">{terms}</span>}
+                      <span className={`text-[12px] ${a.delivery === 'automatic' ? 'text-green' : 'text-faint'}`}>{planned ? 'Planned: not orderable yet' : deliveryLabel(a.delivery)}</span>
+                    </span>
+                    {!planned && (
+                      <span aria-hidden className={`mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-full border ${on ? 'border-gold bg-gold text-bg' : 'border-line-strong'}`}>
+                        {on && <Check size={11} />}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </>
+      )}
     </Card>
   )
 }
@@ -332,7 +397,7 @@ function ReviewStep({ offer, d, free }: { offer: Offer; d: Draft; free: boolean 
     ['Settles to', parentOf(offer, d).name],
   ]
   return (
-    <Card n={3} id="step-price" title="Check your order" intro="This is what you are ordering. Nothing is charged on this step.">
+    <Card n={3} id="step-price" title="Check your request" intro="This is what you are asking for. Nothing is charged on this step.">
       <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[14px]">
         {rows.map(([k, v]) => (
           <div key={k} className="contents">
@@ -342,7 +407,7 @@ function ReviewStep({ offer, d, free }: { offer: Offer; d: Draft; free: boolean 
         ))}
       </dl>
       <p className={help}>
-        {offer.billing.note} A person at Gully Labs sets up your chain {free ? 'once you place the order' : 'after payment'}.
+        {offer.billing.note} Our team sets up your chain within {offer.setupDays} business days {free ? 'of your request' : 'of payment'}. Updates appear on your order page.
       </p>
     </Card>
   )
@@ -357,14 +422,17 @@ export function CreateChainPage() {
   const [id, setId] = useState<IdState>({ state: '' })
   const [signedIn, setSignedIn] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [tab, setTab] = useState<Tier>(() => readDraft()?.tier ?? 'testnet')
   const set = useCallback((p: Partial<Draft>) => setD((x) => ({ ...x, ...p })), [])
 
   useEffect(() => {
-    document.title = 'Create a chain · Gully Labs'
+    document.title = 'Request a testnet chain · Gully Labs'
     void getOffer().then((r) => {
       if (!r.ok) return setLoadError(r.error)
       setOffer(r.data)
-      setD((x) => (readDraft() || x.addons.length ? x : { ...x, addons: r.data.addons.filter((a) => a.standard).map((a) => a.id) }))
+      // The bundle is always included; a draft keeps only add-ons that can be ordered now (and no mainnet while it is shut).
+      const orderable = new Set(r.data.addons.filter((a) => a.status === 'available').map((a) => a.id))
+      setD((x) => ({ ...x, tier: x.tier === 'mainnet' && !r.data.flags.mainnetOrders ? 'testnet' : x.tier, addons: x.addons.filter((a) => orderable.has(a)) }))
     })
     void hasGullySession().then(setSignedIn)
     const on = (e: Event) => setSignedIn((e as CustomEvent<boolean>).detail)
@@ -419,10 +487,11 @@ export function CreateChainPage() {
 
   const canNext = useMemo(() => {
     if (d.step === 0) return NAME_RE.test(d.name.trim()) && id.state === 'free' && (d.gasToken === 'eth' || SYMBOL_RE.test(d.gasSymbol))
+    if (d.step === 1) return !(tab === 'mainnet' && !offer?.flags.mainnetOrders)
     if (d.step === 2) return !!quote
     if (d.step === 3) return signedIn
     return true
-  }, [d, id.state, quote, signedIn])
+  }, [d, id.state, quote, signedIn, tab, offer])
 
   const free = quote?.dueCents === 0
   const pay = async () => {
@@ -456,15 +525,17 @@ export function CreateChainPage() {
   }
 
   const par = parentOf(offer, d)
-  const services = (quote?.addons ?? []).map((a) => ({ id: a.id, label: a.name, note: a.fee ?? (a.usd === null ? 'Priced with you' : a.usd === 0 ? 'Included' : `$${a.usd}/month`) }))
+  const services = quoteServices(quote)
   const named = d.name.trim().length > 0
 
   return (
     <ChainShell>
       <GullyIdChip />
       <div className="flex flex-col gap-1">
-        <h1 className="m-0 text-[26px] leading-tight font-semibold text-ink max-[639px]:text-[22px]">Create a chain</h1>
-        <p className="m-0 text-[14px] text-muted">Order your own chain in five short steps. A person at Gully Labs sets it up.</p>
+        <h1 className="m-0 text-[26px] leading-tight font-semibold text-ink max-[639px]:text-[22px]">{offer.flags.mainnetOrders ? 'Request a chain' : 'Request a testnet chain'}</h1>
+        <p className="m-0 text-[14px] text-muted" data-testid="setup-promise">
+          Our team sets it up within {offer.setupDays} business days. Each line in Your chain says whether it is automatic or set up by our team.
+        </p>
       </div>
       <div className="grid grid-cols-1 items-start gap-5 min-[900px]:grid-cols-[minmax(0,1fr)_330px] min-[1100px]:grid-cols-[190px_minmax(0,1fr)_340px]">
         <div className="min-[900px]:col-span-2 min-[1100px]:col-span-1">
@@ -472,10 +543,10 @@ export function CreateChainPage() {
         </div>
         <div className="flex min-w-0 flex-col gap-4">
           {d.step === 0 && <ChainStep offer={offer} d={d} set={set} id={id} />}
-          {d.step === 1 && <PlanStep offer={offer} d={d} set={set} />}
+          {d.step === 1 && <PlanStep offer={offer} d={d} set={set} tab={tab} setTab={setTab} />}
           {d.step === 2 && <ReviewStep offer={offer} d={d} free={free} />}
           {d.step === 3 && (
-            <Card n={4} id="step-signin" title="Sign in with Gully ID" intro="Your order and its status stay with your Gully ID. Sign in with a passkey, a wallet or email.">
+            <Card n={4} id="step-signin" title="Sign in with Gully ID" intro="Your request and its status stay with your Gully ID. Sign in with a passkey, a wallet or email.">
               {signedIn ? (
                 <p className="m-0 flex items-center gap-2 text-[14px] text-ink" data-testid="signed-in">
                   <CircleCheck size={18} className="text-green" aria-hidden />
@@ -488,33 +559,30 @@ export function CreateChainPage() {
               )}
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="chain-email" className={label}>
-                  Email for status updates (optional)
+                  Email to reach you (optional)
                 </label>
                 <input id="chain-email" className={field} type="email" autoComplete="email" value={d.email} onChange={(e) => set({ email: e.target.value })} placeholder="you@example.com" data-testid="chain-email" />
-                <p className={help}>We write when your order is paid, set up and live. Nothing else.</p>
+                <p className={help}>Updates appear on your order page. We use this address only to reach you about this chain.</p>
               </div>
             </Card>
           )}
           {d.step === 4 && (
-            <Card n={5} id="step-pay" title={free ? 'Place your order' : 'Pay with Gully Pay'} intro={free ? 'The review is done. One click records the order.' : 'You pay on the secure Gully Pay checkout.'}>
+            <Card n={5} id="step-pay" title={free ? 'Send your request' : 'Pay with Gully Pay'} intro={free ? 'The review is done. One click records your request; nothing is charged.' : 'You pay on the secure Gully Pay checkout.'}>
               {free ? (
                 <p className="m-0 text-[14px] text-muted" data-testid="nothing-due">
-                  Nothing to pay today. We record your order and a person at Gully Labs sets up your chain.
+                  Nothing to pay. We record your request and our team sets up your chain within {offer.setupDays} business days. Updates appear on your order page.
                 </p>
               ) : offer.checkout.enabled ? (
                 <p className="m-0 text-[14px] text-muted">You pay on Gully Pay's secure checkout, then come back here to follow your order.</p>
               ) : (
                 <p className="m-0 text-[14px] text-muted" data-testid="checkout-off">
-                  Payments are not connected yet.{' '}
-                  <ExtLink href={TALK_TO_US} className="inline-flex items-center gap-1 text-gold">
-                    Talk to us
-                  </ExtLink>
+                  Payments are not open yet, so this request cannot be sent. Nothing is charged.
                 </p>
               )}
               <div>
                 <button type="button" className={btnPri} disabled={busy || !quote || (!free && !offer.checkout.enabled)} onClick={() => void pay()} data-testid="pay">
                   {busy ? <Loader2 size={18} className="animate-spin" aria-hidden /> : free ? <Check size={18} aria-hidden /> : <CreditCard size={18} aria-hidden />}
-                  {free ? (busy ? 'Placing your order…' : 'Place order') : busy ? 'Opening checkout…' : 'Go to checkout'}
+                  {free ? (busy ? 'Sending your request…' : 'Send request') : busy ? 'Opening checkout…' : 'Go to checkout'}
                 </button>
               </div>
             </Card>
@@ -545,7 +613,7 @@ export function CreateChainPage() {
               ) : (
                 <div className="flex flex-col items-center gap-2 py-2 text-center" data-testid="chain-empty">
                   <img src="/brand/kit/owl/owl-presenting-400.webp" width={112} height={112} alt="" className="size-28 object-contain" />
-                  <p className="m-0 text-[13px] text-muted">Name your chain and it takes shape here, with the services it gets.</p>
+                  <p className="m-0 text-[13px] text-muted">Name your chain and it takes shape here, with the services it gets and who sets each one up.</p>
                 </div>
               )}
             </div>
