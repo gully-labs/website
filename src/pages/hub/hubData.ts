@@ -246,7 +246,7 @@ export interface Reading {
 /** Which /api/hub services make up each product (uptime). */
 export const SERVICE_KEYS: Record<ProductKey, string[]> = {
   id: ['gully-id'],
-  pay: ['pay', 'x402', 'pay-admin'],
+  pay: ['pay', 'x402'],
   chain: ['chain-site', 'street', 'explorer', 'faucet', 'bridge', 'indexer', 'rpc-public', 'safe', 'copy', 'social-api', 'docs', 'devportal', 'sentry', 'offerwall'],
   rpc: ['rpc-site', 'rpc-app', 'rpc-gateway'],
   holdermaps: ['holders'],

@@ -267,7 +267,7 @@ export const PRODUCTS: ProductDef[] = [
     url: 'https://gullypay.xyz',
     urlLabel: 'gullypay.xyz',
     docs: 'https://gullypay.xyz/docs',
-    hub: ['pay', 'x402', 'pay-admin'],
+    hub: ['pay', 'x402'],
     og: '/brand/web/og/gully-pay.jpg',
     category: 'FinanceApplication',
     features: [

@@ -126,7 +126,7 @@ export const pageFoot = () => `<footer><div class="w"><div class="f"><div class=
 
 /** The whole page. `meta`: title, description and head tags, already rendered for this path by seo.mjs. */
 /** The home page counts page views like the one it replaces (Gully Analytics, cookie-free, production hosts only); the preview does not. */
-const ANALYTICS = '<script defer src="https://analytics.gullylabs.xyz/script.js" data-website-id="78f29233-9f70-4c45-a440-35d1457d2207" data-domains="gullylabs.xyz,docs.gullylabs.xyz,app.gullylabs.xyz,admin.gullylabs.xyz,blog.gullylabs.xyz,holdermaps.xyz,gullysecurity.xyz" data-web3="true"></script>'
+const ANALYTICS = '<script defer src="https://analytics.gullylabs.xyz/script.js" data-website-id="78f29233-9f70-4c45-a440-35d1457d2207" data-domains="gullylabs.xyz,docs.gullylabs.xyz,app.gullylabs.xyz,blog.gullylabs.xyz,holdermaps.xyz,gullysecurity.xyz" data-web3="true"></script>'
 export async function renderLanding(head, given = null, { preview = false } = {}) {
   // The chain picker: every chain the Gully Core manifest lists, in its state today (server/gully-core.mjs).
   const CHAINS = gullyCore().chains

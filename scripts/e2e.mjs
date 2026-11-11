@@ -3024,13 +3024,11 @@ await step('no admin hosts on public pages', async () => {
   check('admin scan: the public import graph covers the lazy chunks', seen.size > entries.length + 10)
   const named = [...seen].filter((f) => ADMIN_HOSTS.test(fs.readFileSync(path.join(ASSETS, f), 'utf8')))
   check(`no public JS chunk names an admin host${named.length ? ` (${named.join(', ')})` : ''}`, named.length === 0)
-  // Server-rendered HTML and the public hub answer. TODO(other lane): server/landing.mjs ANALYTICS lists admin.gullylabs.xyz
-  // in the Umami data-domains attribute; that attribute is left out here until it is fixed there.
+  // Server-rendered HTML and the public hub answer (the Umami data-domains attribute included).
   const pages = [['gullylabs.xyz', '/'], ['gullylabs.xyz', '/products/pay'], ['gullylabs.xyz', '/status'], ['app.gullylabs.xyz', '/'], ['holdermaps.xyz', '/'], ['docs.gullylabs.xyz', '/']]
   for (const [h, p] of pages) {
     const r = await hostRequest(BASE, h, p)
-    const body = r.text.replace(/data-domains="[^"]*"/g, '')
-    check(`${h}${p}: server HTML links no admin host`, r.status < 500 && !ADMIN_HOSTS.test(body))
+    check(`${h}${p}: server HTML links no admin host`, r.status < 500 && !ADMIN_HOSTS.test(r.text))
   }
   for (const h of ['gullylabs.xyz', 'app.gullylabs.xyz', 'holdermaps.xyz']) {
     const r = await hostRequest(BASE, h, '/api/hub')
