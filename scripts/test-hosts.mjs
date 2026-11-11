@@ -145,6 +145,12 @@ try {
     check('main /preview/landing: 301 to /', prev.status === 301 && prev.headers.location === '/', String(prev.status))
     check('localhost still serves the preview path, noindex (suite and development)', (await get(`localhost:${PORT}`, '/preview/landing')).status === 200)
     check('main /: the new landing, with the analytics beacon and its own CSP', main.status === 200 && main.text.includes('analytics.gullylabs.xyz') && /static\.cloudflareinsights\.com/.test(main.headers['content-security-policy'] ?? ''))
+    // Owner 2026-11-10, no admin or internal data on live public sites: no public host names the admin console.
+    check('main /: the analytics beacon lists no admin host', !/admin\.gullylabs\.xyz/.test(main.text))
+    for (const [h, p] of [[MAIN, '/admin'], [MAIN, '/admin/enquiries'], ['app.gullylabs.xyz', '/admin']]) {
+      const r = await get(h, p)
+      check(`${h}${p}: 404, no redirect to the admin host`, r.status === 404 && !r.headers.location, `${r.status} ${r.headers.location ?? ''}`)
+    }
   }
 
   /* ----------------------------------------------------------------- api. --- */

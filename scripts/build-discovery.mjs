@@ -7,7 +7,7 @@
 // committed files are stale, so run `node scripts/build-discovery.mjs` after changing any of them.
 import fs from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import ts from 'typescript'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -24,7 +24,8 @@ async function load(rel) {
 export async function build() {
   const { contracts, CONTRACT_CHAINS, VERIFIED_ON } = await load('src/content/contracts.ts')
   const { features } = await load('src/content/features.ts')
-  const { projects } = await load('src/content/projects.ts')
+  // projects.ts imports the brand registry (src/data/productBrands.ts): Node reads it itself (type stripping).
+  const { projects } = await import(pathToFileURL(path.join(ROOT, 'src/content/projects.ts')).href)
   const navSrc = fs.readFileSync(path.join(ROOT, 'src/docs/nav.ts'), 'utf8')
   const docs = [...navSrc.matchAll(/\{ slug: '([a-z0-9-]*)', title: '([^']+)', group: '([^']+)' \}/g)].map((m) => ({ slug: m[1], title: m[2], group: m[3] }))
 

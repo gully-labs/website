@@ -1,10 +1,13 @@
-// Create a chain, Stage 1: a real order with payment. Nothing here deploys: a person or the Chain Kit pipeline provisions
-// each chain, and the pipeline reports its steps here (PROVISIONING).
+// Create a chain, Stage 1: a request (and, once payments open, an order with payment). Our team sets each chain up; what
+// is automatic and what the team does is each bundle item's `delivery` in chains-plans.mjs. Nothing here deploys: the
+// Chain Kit pipeline, when it runs a chain, reports its steps here (PROVISIONING).
 //
 // Prices come from chains-plans.mjs (quoteOrder), the only place they live. The order stores the quote it was sold at.
 //
 // PUBLIC
-//   GET  /api/chain-orders/offer                     tiers, add-ons, parents, flags (no order data)
+//   GET  /api/chain-orders/offer                     the bundle, add-ons, parents, setup days, flags (no order data)
+//   POST /api/chain-orders/notify                    { email } mainnet: tell me when it opens. Recorded only; no mail is
+//                                                    sent until a mail provider is wired. X-Requested-With: gully.
 //   GET  /api/chain-orders/check?chainId=N           { chainId, free, reason? }
 //   GET  /api/chain-orders/quote?tier=&addons=a,b    { quote }
 //   GET  /api/chain-orders/session                   { gullyId } this browser holds a Sign in with Gully ID session
@@ -20,7 +23,7 @@
 //   POST /api/chain-orders/:id/checkout              { payUrl } opens a hosted checkout, or returns the one still open
 //   POST /api/chain-orders/:id/cancel                { order } before payment, or on an order with nothing to pay; frees the chain id
 // ADMIN (admin.mjs, after its own auth)
-//   GET  /api/admin/chain-orders                     { orders } every order, with internal fields
+//   GET  /api/admin/chain-orders                     { orders, notify } every order, with internal fields, and the mainnet list
 //   POST /api/admin/chain-orders/:id/status          { status, note? } paid -> setting_up -> live; any -> cancelled
 //
 // STATUS  awaiting_payment -> paid -> setting_up -> live, and cancelled. ONLY a verified webhook sets paid (or a quote
@@ -65,7 +68,7 @@
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
-import { GAS_TOKENS, BILLING, CHAINS, NITRO_LICENCE_NOTE, ORDER_ADDONS, ORDER_PARENTS, quoteOrder } from './chains-plans.mjs'
+import { BILLING, BUNDLE, CHAINS, GAS_TOKENS, NITRO_LICENCE_NOTE, ORDER_PARENTS, presentQuote, quoteOrder, SETUP_BUSINESS_DAYS } from './chains-plans.mjs'
 import { checkChainId } from './chains-launch.mjs'
 import { sameSite, sessionGullyId } from './developer.mjs'
 import { createHostedCheckout, gullyPayConfig, gullyPayEnabled, verifyTimestampedSignature } from './gullypay.mjs'
@@ -121,6 +124,7 @@ function load() {
   }
   db.orders ??= []
   db.events ??= {}
+  db.notify ??= []
   return db
 }
 function save() {
@@ -156,18 +160,24 @@ const paymentView = (o) => {
   const last = o.sessions.at(-1)
   return { mode: o.mode, testCharge: o.quote.testCharge, dueCents: o.quote.dueCents, lastError: o.lastError ?? null, sessionOpen: !!last && last.status === 'open' && Date.parse(last.expiresAt) > Date.now(), onHold: o.review.some((r) => !r.resolved) }
 }
-const buyerView = (o) => ({ id: o.id, status: o.status, statusLabel: labelOf(o), tier: o.tier, name: o.name, chainId: o.chainId, gasToken: o.gasToken, gasSymbol: o.gasSymbol, parent: o.parent, quote: o.quote, logo: o.logo, email: o.email, createdAt: o.createdAt, paidAt: o.paidAt, history: o.history, payment: paymentView(o), provisioning: o.provisioning ?? null })
+// The buyer sees the quote as it reads today (presentQuote: no unconfirmed price, each line's delivery) and the history
+// without who moved it.
+const buyerView = (o) => ({ id: o.id, status: o.status, statusLabel: labelOf(o), tier: o.tier, name: o.name, chainId: o.chainId, gasToken: o.gasToken, gasSymbol: o.gasSymbol, parent: o.parent, quote: presentQuote(o.quote), logo: o.logo, email: o.email, createdAt: o.createdAt, paidAt: o.paidAt, history: o.history.map(({ at, status, note }) => ({ at, status, note: note ?? null })), payment: paymentView(o), provisioning: o.provisioning ?? null })
 const listView = (o) => ({ ...buyerView(o), logo: null })
-const adminView = (o) => ({ ...buyerView(o), address: o.address, gullySub: o.gullySub, review: o.review, sessions: o.sessions.map((s) => ({ id: s.id, status: s.status, createdAt: s.createdAt, expiresAt: s.expiresAt })), next: NEXT[o.status] })
+const adminView = (o) => ({ ...buyerView(o), history: o.history, address: o.address, gullySub: o.gullySub, review: o.review, sessions: o.sessions.map((s) => ({ id: s.id, status: s.status, createdAt: s.createdAt, expiresAt: s.expiresAt })), next: NEXT[o.status] })
 
 /* --------------------------------------------------------------- the offer --- */
+
+const itemView = ({ id, name, icon, body, delivery, status, testnetOnly = false, fee = null, billing = null }) => ({ id, name, icon, body, delivery, status, testnetOnly, fee, billing })
 
 export function publicOffer() {
   return {
     flags: { testnetOrders: true, mainnetOrders: mainnetOrdersOn() },
     checkout: { enabled: gullyPayEnabled(chainPayConfig()), mode: payMode() },
     freeDays: CHAINS.testnet.freeDays,
-    addons: ORDER_ADDONS.map(({ id, name, icon, body, standard, testnetOnly = false, fee = null }) => ({ id, name, icon, body, standard, testnetOnly, fee })),
+    setupDays: SETUP_BUSINESS_DAYS,
+    included: BUNDLE.included.map(itemView),
+    addons: BUNDLE.addons.map(itemView),
     parents: ORDER_PARENTS,
     gasTokens: GAS_TOKENS,
     billing: BILLING,
@@ -212,7 +222,7 @@ export function readOrder(b) {
   if (b.gasToken === 'custom' && !SYMBOL_RE.test(gasSymbol)) return { ok: false, status: 400, error: 'A token symbol is 2 to 8 capital letters or numbers.' }
   const parent = ORDER_PARENTS[tier].find((p) => p.id === b.parentChainId)
   if (!parent) return { ok: false, status: 400, error: 'That parent chain is not offered. Nitro is free only on Arbitrum One, Nova or Sepolia.' }
-  if (!Array.isArray(b.addons) || b.addons.length > ORDER_ADDONS.length || b.addons.some((a) => typeof a !== 'string')) return { ok: false, status: 400, error: 'One of the add-ons is not offered.' }
+  if (!Array.isArray(b.addons) || b.addons.length > BUNDLE.included.length + BUNDLE.addons.length || b.addons.some((a) => typeof a !== 'string')) return { ok: false, status: 400, error: 'One of the add-ons is not offered.' }
   const quote = quoteOrder(tier, b.addons)
   if (!quote) return { ok: false, status: 400, error: 'One of the add-ons is not offered.' }
   const email = typeof b.email === 'string' ? b.email.trim().toLowerCase() : ''
@@ -230,7 +240,7 @@ export const setChainMailFetchForTest = (f) => (mailImpl = f ?? ((...a) => fetch
 
 const orderUrl = (o) => `${APP_URL}/create-chain/orders/${o.id}`
 const MAIL = {
-  paid: (o) => [nothingDue(o) ? `Order received for ${o.name}` : `Payment received for ${o.name}`, `We have your order for ${o.name} (chain ${o.chainId}). A person at Gully Labs sets it up next.`],
+  paid: (o) => [nothingDue(o) ? `Order received for ${o.name}` : `Payment received for ${o.name}`, `We have your order for ${o.name} (chain ${o.chainId}). Our team sets it up within ${o.quote.setupDays ?? SETUP_BUSINESS_DAYS} business days.`],
   setting_up: (o) => [`We are setting up ${o.name}`, `${o.name} (chain ${o.chainId}) is being set up now.`],
   live: (o) => [`${o.name} is live`, `${o.name} (chain ${o.chainId}) is live. Your order page has the details.`],
   cancelled: (o) => [`Your order for ${o.name} is cancelled`, `The order for ${o.name} (chain ${o.chainId}) is cancelled. Write to team@gullylabs.xyz with any questions.`],
@@ -571,6 +581,23 @@ async function createOrder(req, res, who) {
   return json(res, 201, { order: buyerView(o) })
 }
 
+/** Mainnet: "tell me when it opens". Signed out is fine: it records an email, nothing else. No mail goes out from here. */
+async function handleNotify(req, res) {
+  if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }, { Allow: 'POST' })
+  if (!sameSite(req)) return json(res, 403, { error: 'Cross-site request refused.' })
+  if (!allow(`notify:${clientIp(req)}`, 10, 3_600_000)) return json(res, 429, { error: 'Too many tries. Wait an hour.' })
+  const body = await readJson(req, 2_000)
+  const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
+  if (!EMAIL_RE.test(email) || email.length > 254) return json(res, 400, { error: 'That email address does not look right.' })
+  const d = load()
+  if (d.notify.some((n) => n.email === email && n.topic === 'mainnet')) return json(res, 200, { ok: true, already: true })
+  if (d.notify.length >= 20_000) return json(res, 503, { error: 'The list is full for now. Try again later.' })
+  d.notify.push({ email, topic: 'mainnet', at: nowIso() })
+  save()
+  void notifyIntake({ kind: 'chain-order', title: 'Mainnet chain: notify me', fields: [['Contact', email]] })
+  return json(res, 201, { ok: true })
+}
+
 /** /api/chain-orders*. Resolves true when it answered. */
 export async function handleChainOrders(req, res, url) {
   const p = url.pathname
@@ -582,6 +609,7 @@ export async function handleChainOrders(req, res, url) {
   if (p === '/api/chain-orders/quote') {
     if (!get) return json(res, 405, { error: 'GET only' }), true
     const raw = url.searchParams.get('addons') ?? ''
+    if (url.searchParams.get('tier') === 'mainnet' && !mainnetOrdersOn()) return json(res, 403, { error: 'Mainnet chains are coming soon.', code: 'mainnet-off' }), true
     const quote = quoteOrder(url.searchParams.get('tier'), raw ? raw.split(',').slice(0, 20) : [])
     return quote ? json(res, 200, { quote }) : json(res, 400, { error: 'Pick a listed plan and add-ons.' }), true
   }
@@ -595,6 +623,7 @@ export async function handleChainOrders(req, res, url) {
     return json(res, 200, { chainId: Number.isSafeInteger(chainId) ? chainId : null, ...(await chainIdStatus(chainId, who?.address ?? null)) }, noStore), true
   }
 
+  if (p === '/api/chain-orders/notify') return await handleNotify(req, res), true
   if (p === '/api/chain-orders/session') return json(res, 200, { gullyId: !!sessionGullyId(req) }, noStore), true
 
   const who = sessionGullyId(req)
@@ -637,7 +666,7 @@ export async function handleChainOrdersAdmin(req, res, url) {
   if (p === '/api/admin/chain-orders') {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
     sweepOrders()
-    return json(res, 200, { orders: [...load().orders].reverse().map(adminView), flags: publicOffer().flags, checkout: publicOffer().checkout }, noStore), true
+    return json(res, 200, { orders: [...load().orders].reverse().map(adminView), notify: [...load().notify].reverse(), flags: publicOffer().flags, checkout: publicOffer().checkout }, noStore), true
   }
   const m = /^\/api\/admin\/chain-orders\/(co_[A-Za-z0-9_-]{8,40})\/(status|resolve)$/.exec(p)
   if (!m) return false

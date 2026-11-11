@@ -656,15 +656,13 @@ await step('app pages', async () => {
   check('chains: the offer line comes from the server (free testnet days)', /testnet free for \d+ days/.test((await page.getByTestId('chains-offer').textContent()) ?? ''), await page.getByTestId('chains-offer').textContent())
   await shot(page, 'app-1440-chains')
   await open('ipfs')
-  check('ipfs: the page header and four live tiles', (await page.locator('main[data-page="ipfs"] h1').textContent())?.trim() === 'Gully IPFS' && (await page.locator('main[data-page="ipfs"] [data-tile]').count()) === 4)
-  await page.locator('main[data-page="ipfs"] [data-testid="ghost-chart"], main[data-page="ipfs"] [data-testid="ipfs-chart"]').first().waitFor({ timeout: 20_000 })
-  check('ipfs: the node chart draws, or the honest ghost while the hour fills', (await page.locator('main[data-page="ipfs"] [data-testid="ghost-chart"], main[data-page="ipfs"] [data-testid="ipfs-chart"]').count()) === 1)
-  check('ipfs: an unread figure says so, never 0', !(await page.locator('main[data-page="ipfs"] [data-tile]').evaluateAll((ts) => ts.some((t) => /^\s*0\s*$/.test(t.querySelector('.font-display')?.textContent ?? '')))))
-  check('ipfs: "your pins" is honest and points at Services', (await page.getByTestId('ipfs-your-pins').count()) === 1 && /not open yet/.test((await page.getByTestId('ipfs-your-pins').textContent()) ?? ''))
+  check('ipfs: the page header and four account tiles', (await page.locator('main[data-page="ipfs"] h1').textContent())?.trim() === 'Gully IPFS' && (await page.locator('main[data-page="ipfs"] [data-tile]').count()) === 4)
+  check('ipfs: no node internals in the customer view', !/repo size|storage limit|of the node|node, last hour/i.test((await page.locator('main[data-page="ipfs"]').textContent()) ?? ''))
+  await page.getByTestId('ipfs-upload').waitFor({ timeout: 15_000 })
+  check('ipfs: the upload area, the account own (empty) pins and the Pinning Service API panel', (await page.getByTestId('ipfs-upload').count()) === 1 && (await page.getByTestId('ipfs-pins-empty').count()) === 1 && (await page.getByTestId('ipfs-api').locator('code, pre').count()) >= 1)
+  check('ipfs: the API panel shows the remote pinning service command', /ipfs pin remote service add gully https:\/\/api\.gullylabs\.xyz\/api\/ipfs\/psa/.test((await page.getByTestId('ipfs-api').textContent()) ?? ''))
   await shot(page, 'app-1440-ipfs')
-  await page.getByTestId('ipfs-ask').click()
-  await page.locator('main[data-page="services"]').waitFor({ timeout: 15_000 })
-  check('ipfs: "Ask for pinning" opens Services', new URL(page.url()).hash === '#services')
+  await open('services')
   check('services: the page header, the honest projects state and the request form', (await page.locator('main[data-page="services"] h1').textContent())?.trim() === 'Development services' && (await page.getByTestId('projects-empty').count()) === 1 && (await page.getByTestId('request-form').count()) === 1 && !/waitlist/i.test((await page.locator('main[data-page="services"]').textContent()) ?? ''))
   check('services: the catalogue lists every practice with a Request button', (await page.locator('[data-testid="services-catalog"] [data-service]').count()) >= 8)
   await page.locator('[data-testid="services-catalog"] [data-service="chain"]').getByRole('button', { name: 'Request this' }).click()
@@ -3024,13 +3022,11 @@ await step('no admin hosts on public pages', async () => {
   check('admin scan: the public import graph covers the lazy chunks', seen.size > entries.length + 10)
   const named = [...seen].filter((f) => ADMIN_HOSTS.test(fs.readFileSync(path.join(ASSETS, f), 'utf8')))
   check(`no public JS chunk names an admin host${named.length ? ` (${named.join(', ')})` : ''}`, named.length === 0)
-  // Server-rendered HTML and the public hub answer. TODO(other lane): server/landing.mjs ANALYTICS lists admin.gullylabs.xyz
-  // in the Umami data-domains attribute; that attribute is left out here until it is fixed there.
+  // Server-rendered HTML and the public hub answer (the Umami data-domains attribute included).
   const pages = [['gullylabs.xyz', '/'], ['gullylabs.xyz', '/products/pay'], ['gullylabs.xyz', '/status'], ['app.gullylabs.xyz', '/'], ['holdermaps.xyz', '/'], ['docs.gullylabs.xyz', '/']]
   for (const [h, p] of pages) {
     const r = await hostRequest(BASE, h, p)
-    const body = r.text.replace(/data-domains="[^"]*"/g, '')
-    check(`${h}${p}: server HTML links no admin host`, r.status < 500 && !ADMIN_HOSTS.test(body))
+    check(`${h}${p}: server HTML links no admin host`, r.status < 500 && !ADMIN_HOSTS.test(r.text))
   }
   for (const h of ['gullylabs.xyz', 'app.gullylabs.xyz', 'holdermaps.xyz']) {
     const r = await hostRequest(BASE, h, '/api/hub')

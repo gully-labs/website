@@ -2,6 +2,7 @@
 // external requests except the kit's logo from the site's own /brand/ path; every value is escaped. Part 2
 // styles it through the CSS custom properties on .gs-report and the gs-* classes (the branding hooks).
 
+import { BRANDS } from '../brand-registry.mjs'
 import { DISCLAIMER, MODE_LABELS, REPORT_KIND, REPORT_TITLE, SCHEMA_VERSION, SEVERITIES } from './schema.mjs'
 
 export const ENGINE_VERSION = '1.0.0'
@@ -78,7 +79,7 @@ background:var(--gs-paper);color:var(--gs-ink);font:14px/1.55 var(--gs-font-body
  * Static HTML for a report. Options: logoUrl (default the Gully Security kit's logo for light paper, logo/logo-on-light.svg),
  * standalone (wrap in a full document; default true), inlineCss (default true).
  */
-export function renderReportHtml(r, { logoUrl = '/brand/products/gullysecurity-logo-on-light.svg', standalone = true, inlineCss = true } = {}) {
+export function renderReportHtml(r, { logoUrl = BRANDS.security.extra.logoOnLight.src, standalone = true, inlineCss = true } = {}) {
   const t = r.target
   const targetRows = [
     ['Target', targetText(t)],

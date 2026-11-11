@@ -1,4 +1,5 @@
 import { Check, ExternalLink, ShieldCheck } from 'lucide-react'
+import { PRODUCT_BRANDS } from '../../data/productBrands.ts'
 
 /* The "Secured by Gully Pay" seal of every checkout page (invoices, pay links, stores, receipts).
    - full: under the Pay button and on the receipt: the shield, the Gully Pay mark and the three facts, the
@@ -10,7 +11,7 @@ import { Check, ExternalLink, ShieldCheck } from 'lucide-react'
    A store's checkout says the funds go to the store's own wallet and shows no Gully treasury link.
    The mark is public/brand/products/gullypay-mark.svg, byte-exact from the Gully Pay brand kit (logo/gullypay-mark.svg). */
 
-export const GULLY_MARK_SRC = '/brand/products/gullypay-mark.svg'
+export const GULLY_MARK_SRC = PRODUCT_BRANDS.pay.extra!.mark.src
 
 export interface SecuredByProps {
   variant?: 'full' | 'small'

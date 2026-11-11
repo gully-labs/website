@@ -1865,7 +1865,7 @@ export const features: Feature[] = [
     product: "Gully Chain",
     name: "Gully Multisig",
     status: "live",
-    summary: "Multisig wallets for teams and treasuries at gullymultisig.xyz: several owners, a confirmation threshold and batched transactions, on Anubis Network (chain 6714) and Kinetiq Elysium (chain 99901) mainnets and, for developers, on Gully Chain Testnet (chain 485590).",
+    summary: "Multisig wallets for teams and treasuries at gullymultisig.xyz: several owners, a confirmation threshold and batched transactions, on Anubis Network (chain 6714), Robinhood Chain (chain 4663) and Kinetiq Elysium (chain 99901) mainnets and, for developers, on Gully Chain Testnet (chain 485590).",
     facts: [
       "Runs the open-source Safe stack on Gully infrastructure: Gully Labs' build of the Safe{Wallet} web app, a config service, a client gateway and one Safe transaction service per chain. It is run by Gully Labs, not by Safe.",
       "On Anubis Network (chain 6714, a mainnet) the contracts are the unmodified Safe 1.4.1 contracts at the canonical addresses, deployed through Safe's singleton factory.",

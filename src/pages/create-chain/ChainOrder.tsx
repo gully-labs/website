@@ -6,10 +6,11 @@ import { dateTimePT } from '../../lib/time'
 import { GullyIdButton, gullyIdAccessToken } from '../developers/gullyId'
 import { pillGold, pillLine } from '../developers/styles'
 import { cancelOrder, getOrder, gullyExchange, startCheckout, usd, type EndpointKey, type Order, type OrderStatus, type Provisioning, type StepState } from './chainApi'
-import { ChainShell, GullyIdChip, PriceSummary } from './parts'
+import { ChainDiagram, ChainShell, GullyIdChip, PriceSummary, quoteServices } from './parts'
 
-/* One order: Paid, Setting up, Live. The status moves on a verified Gully Pay webhook, the signed Chain Kit pipeline or a
-   Gully admin, never from here; the page polls it and raises a toast the moment it changes. Times are Los Angeles time, labelled PT. */
+/* One order: Received (or Paid), Setting up, Live. The status moves on a verified Gully Pay webhook, the signed Chain Kit
+   pipeline or our team in the admin, never from here; the page polls it and raises a toast the moment it changes. Times are
+   Los Angeles time, labelled PT. */
 
 const STAGES: { status: OrderStatus; label: string; icon: LucideIcon }[] = [
   { status: 'paid', label: 'Paid', icon: CreditCard },
@@ -21,8 +22,9 @@ const RANK: Record<OrderStatus, number> = { awaiting_payment: -1, cancelled: -1,
 /** With nothing to pay, the first stage says Received: this order was never paid. */
 const stagesOf = (order: Order) => (order.quote.dueCents === 0 ? STAGES.map((s) => (s.status === 'paid' ? { ...s, label: 'Received' } : s)) : STAGES)
 
-function Progress({ status, stages }: { status: OrderStatus; stages: typeof STAGES }) {
+function Progress({ status, stages, history }: { status: OrderStatus; stages: typeof STAGES; history: Order['history'] }) {
   const at = RANK[status]
+  const when = (s: OrderStatus) => [...history].reverse().find((h) => h.status === s)?.at
   return (
     <ol className="m-0 flex list-none flex-col gap-3 p-0" aria-label="Order status" data-testid="order-progress">
       <li aria-hidden className="h-1 overflow-hidden rounded-bar bg-line">
@@ -31,10 +33,16 @@ function Progress({ status, stages }: { status: OrderStatus; stages: typeof STAG
       <li className="grid grid-cols-3 gap-2">
         {stages.map((s, i) => {
           const Icon = i <= at ? Check : s.icon
+          const t = i <= at ? when(s.status) : undefined
           return (
-            <span key={s.status} aria-current={i === at ? 'step' : undefined} className={`flex flex-col items-center gap-1 text-[13px] ${i <= at ? 'text-ink' : 'text-faint'}`}>
+            <span key={s.status} aria-current={i === at ? 'step' : undefined} className={`flex flex-col items-center gap-1 text-center text-[13px] ${i <= at ? 'text-ink' : 'text-faint'}`} data-testid={`stage-${s.status}`}>
               <Icon size={18} className={i <= at ? 'text-gold' : ''} aria-hidden />
               {s.label}
+              {t && (
+                <time dateTime={t} className="text-[11px] text-faint">
+                  {dateTimePT(t)}
+                </time>
+              )}
             </span>
           )
         })}
@@ -265,11 +273,16 @@ export function ChainOrderPage() {
             {order.status === 'cancelled' ? (
               <p className="m-0 text-[14px] text-muted">This order is closed and its chain id is free again.</p>
             ) : (
-              <Progress status={order.status} stages={stagesOf(order)} />
+              <Progress status={order.status} stages={stagesOf(order)} history={order.history} />
+            )}
+            {order.status !== 'cancelled' && (
+              <p className="m-0 text-[14px] text-muted" data-testid="order-updates">
+                {order.status === 'live' ? 'Your chain is live.' : `Our team sets up your chain within ${order.quote.setupDays ?? 3} business days${order.quote.dueCents === 0 ? ' of your request' : ' of payment'}.`} Updates appear on this page.
+              </p>
             )}
             {order.payment.onHold && (
               <p className="m-0 text-[14px] text-muted" data-testid="order-hold">
-                A person is checking this payment. We will write to you.
+                Our team is checking this payment. Updates appear on this page.
               </p>
             )}
             {order.payment.lastError && <p className="m-0 text-[13px] text-error" data-testid="order-error">{order.payment.lastError}</p>}
@@ -306,7 +319,12 @@ export function ChainOrderPage() {
             </ol>
           </section>
         </div>
-        <PriceSummary quote={order.quote} />
+        <PriceSummary quote={order.quote}>
+          <div className="flex flex-col gap-2">
+            <h2 className="m-0 text-[13px] font-semibold text-muted">Your chain</h2>
+            <ChainDiagram name={order.name} chainId={String(order.chainId)} logo={order.logo} parent={order.parent.name} services={quoteServices(order.quote)} />
+          </div>
+        </PriceSummary>
       </div>
     </ChainShell>
   )

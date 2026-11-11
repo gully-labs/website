@@ -33,12 +33,14 @@ import { handleDiscovery } from './discovery.mjs'
 import { headTags, pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
 import { landingAsset, renderLanding } from './landing.mjs'
 import { productMeta, renderProduct } from './product-pages.mjs'
+import { brandsJson } from './brand-registry.mjs'
 import { handleBlog } from './blog.mjs'
 import { handleOg } from './og.mjs'
 import { handleAnalytics } from './analytics.mjs'
 import { flushAnalyticsUsage } from './analytics-accounts.mjs'
 import { handleDeveloper } from './developer.mjs'
 import { handleIpfs } from './ipfs.mjs'
+import { handleIpfsPins, startIpfsPins } from './ipfs-pins.mjs'
 import { handleHub } from './hub.mjs'
 import { handleHubProducts } from './hub-products.mjs'
 import { handleHubLive } from './hub-live.mjs'
@@ -308,8 +310,10 @@ async function handleRequest(req, res) {
   // The public API stays served on every host (POSTs and existing integrations cannot follow a redirect);
   // its canonical home is api.gullylabs.xyz, with the same paths.
   if (!isLocal && !isApiHost(host) && url.pathname.startsWith('/api/')) res.setHeader('Link', `<${API_URL}${url.pathname}>; rel="canonical"`)
+  // No public host names the admin console (owner 2026-11-10: no admin or internal data on live public sites):
+  // /admin there is a plain 404, not a redirect to the console's host.
   if (!isAdmin && !isLocal && (url.pathname === '/admin' || url.pathname.startsWith('/admin/'))) {
-    return send(res, 301, '', { Location: 'https://admin.gullylabs.xyz/', 'Cache-Control': 'public, max-age=3600' })
+    return send(res, 404, 'Not found', { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' })
   }
   // Products on their own domains (hosts.mjs movedPageUrl / movedDocsUrl): their old pages here, and their docs pages
   // on docs.gullylabs.xyz, answer 301 to the product's own domain (GET/HEAD; the APIs, embeds and badges never move).
@@ -410,10 +414,14 @@ async function handleRequest(req, res) {
   // The landing's cross-origin sources (hub-live.mjs): Gully ID stats, Gully Pay status, Gully RPC status.json, the indexer.
   if (url.pathname === '/api/hub/live') return void (await handleHubLive(req, res, url, send))
   // Gully IPFS (ipfs.mjs): repo size, pinned CIDs and gateway health, read from the node over the docker network. Public.
+  // Self-serve pinning (ipfs-pins.mjs): the Pinning Service API at /api/ipfs/psa, uploads, and the replica's sync routes.
   if (url.pathname.startsWith('/api/ipfs/')) {
+    if (await handleIpfsPins(req, res, url)) return
     if (await handleIpfs(req, res, url, send)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
+  // The product brand registry (brand-registry.mjs): each product's official kit icon and logo, with its SHA-256. Public.
+  if (url.pathname === '/api/brands') return send(res, 200, JSON.stringify(brandsJson()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300', 'Access-Control-Allow-Origin': '*' })
   if (url.pathname === '/api/alerts/channels') {
     if (req.method !== 'GET') return send(res, 405, '', { Allow: 'GET' })
     return send(res, 200, JSON.stringify(await alertChannels()), { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'Access-Control-Allow-Origin': '*' })
@@ -714,6 +722,8 @@ function startLoops() {
   startScoreRefresh()
   // Public status: every part of the stack checked once a minute, 24 h kept (status.mjs; GET /api/status).
   startStatusLoop()
+  // Gully IPFS pinning: the denylist file, and pins a restart left half-done go back to the queue (ipfs-pins.mjs).
+  startIpfsPins()
 }
 // The treasury deployment gate (treasury-chains.mjs) runs in standby too: a standby answers /api/plans and quotes,
 // so it must know on which chains the Safe treasury exists. Read-only (eth_getCode), hourly, timers unref'd.

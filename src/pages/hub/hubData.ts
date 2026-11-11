@@ -10,6 +10,7 @@
 import type { HubBody } from '../../console/live'
 import type { HubProducts } from '../../terminal/kit'
 import { SEO_PAGES } from '../../content/seoPages.ts'
+import { PRODUCT_BRANDS } from '../../data/productBrands.ts'
 
 export type LayerKey = 'identity' | 'payments' | 'chain' | 'data' | 'play'
 export type ProductKey = 'id' | 'pay' | 'chain' | 'rpc' | 'holdermaps' | 'security' | 'studio' | 'ai'
@@ -45,11 +46,12 @@ export const LAYERS: { key: LayerKey; n: string; name: string }[] = [
 ]
 export const STATUS_LABEL: Record<Status, string> = { live: 'Live', testnet: 'Testnet', beta: 'Open beta', soon: 'Coming online' }
 
-const I = '/brand/hub/icons/'
+/** Each product's mark comes from the brand registry (src/data/productBrands.ts), never a path written here. */
+const I = (k: keyof typeof PRODUCT_BRANDS) => PRODUCT_BRANDS[k].icon.src
 export const HUB_PRODUCTS: HubProduct[] = [
   {
     key: 'id', name: 'Gully ID', domain: 'gullyid.xyz', url: 'https://gullyid.xyz', page: 'gully-id', layer: 'identity', status: 'live', color: '#00D2FF',
-    icon: I + 'gully-id.svg',
+    icon: I('id'),
     line: 'Passwordless sign-in for any app.',
     about: 'Passkeys, wallets (SIWE) and email codes over standard OpenID Connect, with per-app consent and slow, visible recovery. Free up to 1,000 monthly active users.',
     live: ['Passkey, wallet and email sign-in', 'Sign in with Gully SDK for any site', 'Developer console (gullyid.xyz/developers/console)', 'Optional sign-in on the Gully Chain faucet'],
@@ -58,7 +60,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
   },
   {
     key: 'pay', name: 'Gully Pay', domain: 'gullypay.xyz', url: 'https://gullypay.xyz', page: 'pay', layer: 'payments', status: 'live', color: '#3479FD',
-    icon: I + 'pay.png',
+    icon: I('pay'),
     line: 'Checkout, payment links and x402 for merchants and AI agents.',
     about: 'Accept cards, Apple Pay and USDC on Base, Ethereum, BNB Chain, Solana and Gully Chain, and let AI agents pay your API over x402. On Gully Chain it settles in USDC.e.',
     live: ['Hosted checkout and payment links', 'Store plugins: WooCommerce, Magento 2, OpenCart 4, PrestaShop; Shopify connector (beta)', 'x402 facilitator, Gully Chain among its networks', 'USDC.e on Gully Chain testnet', 'Direct payouts to your own wallet (testnet)', 'Merchant review: KYB checks and Stripe Connect verification', 'Creator tip pages at pay.gullypay.xyz (rolling out)'],
@@ -67,7 +69,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
   },
   {
     key: 'chain', name: 'Gully Chain', domain: 'gullychain.xyz', url: 'https://gullychain.xyz', page: 'chain', layer: 'chain', status: 'testnet', color: '#00B2FA',
-    icon: '/brand/web/logos/gc-icon.svg',
+    icon: I('chain'),
     line: 'The Arbitrum Orbit L3 for creators and culture.',
     about: 'An Arbitrum Orbit L3 (testnet, chain 485590): one passkey, one .gully name, sponsored gas. Launch, swap, copy trades, run quests and bridge in a minute.',
     live: ['kre8.fun app and social feed', 'Gully Social: posts, follows and profiles', 'Copy trading with your own limits', 'Quests with on-chain rewards', 'Gully launchpad and Gully Swap', 'Bridge, faucet (any wallet), explorer', 'Gully Multisig and token lists', 'Contract verification (verify.gullychain.xyz)', 'Gully Sentry: free testnet Sentry Keys and watchers', 'Gully Offerwall: funded quests any site can embed (offers.kre8.fun)'],
@@ -77,7 +79,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
   },
   {
     key: 'rpc', name: 'Gully RPC', domain: 'gullyrpc.xyz', url: 'https://gullyrpc.xyz', page: 'rpc', layer: 'chain', status: 'beta', color: '#FF7300',
-    icon: I + 'rpc.png',
+    icon: I('rpc'),
     line: 'One API key for Gully Chain, Ethereum, Base and more.',
     about: 'Multi-chain RPC with failover, live usage per key and a free tier. Gully Chain is served from Gully nodes; other chains through a partner network while Gully nodes are built.',
     live: ['API keys (open sign-up, free tier)', 'Plans per 30 days: Free 5M, Developer $49 50M, Business $199 300M weighted requests', 'Usage metering (beta)', 'Gully Chain on the gateway, keyless endpoint too'],
@@ -86,7 +88,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
   },
   {
     key: 'holdermaps', name: 'HolderMaps', domain: 'holdermaps.xyz', url: 'https://holdermaps.xyz', page: 'holders', layer: 'data', status: 'live', color: '#FFD52E',
-    icon: I + 'holdermaps.png',
+    icon: I('holdermaps'),
     line: 'Who really holds a token? Bubble maps, read live.',
     about: 'Map any token’s holders on Gully Chain, Robinhood Chain, BNB Chain, Base, HyperEVM or Solana: top wallets, linked clusters and launch health.',
     live: ['Any-token holder maps on six chains', 'Gully Chain maps', 'Replay, live updates, CSV export', 'Deep check: $9 per token'],
@@ -95,7 +97,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
   },
   {
     key: 'security', name: 'Gully Security', domain: 'gullysecurity.xyz', url: 'https://gullysecurity.xyz', page: 'security', layer: 'data', status: 'live', color: '#F2B232',
-    icon: I + 'security.png',
+    icon: I('security'),
     line: 'Review. Validate. Defend.',
     about: 'AI security scans of any smart contract on seven mainnets and Gully Chain, reports you can publish at a public link, the Gully Score and contract monitors, and human Security Reviews quoted on request. A scan is not an audit.',
     live: ['AI Security Scan', 'Publish a report at a public link', 'Gully Score and contract monitors'],
@@ -104,7 +106,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
   },
   {
     key: 'studio', name: 'Gully Studio', domain: 'gullystudio.xyz', url: 'https://gullystudio.xyz', page: 'studio', layer: 'play', status: 'live', color: '#1E8BFF',
-    icon: I + 'studio.png',
+    icon: I('studio'),
     line: '3D games to play with friends on web and phone.',
     about: 'The Gully Labs game studio: Unity 6 games with Gully ID sign-in, Gully Pay purchases, and scores, quests and prizes on Gully Chain.',
     live: ['Frog Hop (testnet)', 'Open-source Gully Game SDK', 'Developer portal and docs', 'Offerwall contracts on testnet'],
@@ -113,7 +115,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
   },
   {
     key: 'ai', name: 'Gully AI', domain: 'gullyai.xyz', url: 'https://gullyai.xyz', page: 'ai', layer: 'play', status: 'soon', color: '#00F0F2',
-    icon: I + 'ai.png',
+    icon: I('ai'),
     line: 'Open-weight LLM API, coming online.',
     about: 'Qwen3.6-27B open weights served by vLLM behind an OpenAI-compatible API, with per-product keys, rate limits and token metering. The site is up; the API comes online when its GPU box does.',
     live: ['Site and docs'],
@@ -246,7 +248,7 @@ export interface Reading {
 /** Which /api/hub services make up each product (uptime). */
 export const SERVICE_KEYS: Record<ProductKey, string[]> = {
   id: ['gully-id'],
-  pay: ['pay', 'x402', 'pay-admin'],
+  pay: ['pay', 'x402'],
   chain: ['chain-site', 'street', 'explorer', 'faucet', 'bridge', 'indexer', 'rpc-public', 'safe', 'copy', 'social-api', 'docs', 'devportal', 'sentry', 'offerwall'],
   rpc: ['rpc-site', 'rpc-app', 'rpc-gateway'],
   holdermaps: ['holders'],

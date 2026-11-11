@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-10T10:16:59.823Z",
+ "updatedAt": "2026-11-11T04:59:26.648Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -1934,8 +1934,53 @@
    "title": "Gully IPFS",
    "url": "https://docs.gullylabs.xyz/ipfs#what",
    "section": "What Gully IPFS is",
-   "text": "A Kubo node on Gully infrastructure. It pins Gully content so it stays available, announces those pins to the IPFS network, and serves them through its own gateway. Kubo is open source (MIT and Apache-2.0). The gateway runs with Gateway.NoFetch: it answers only for blocks this node already holds and never fetches other content from the network. It is not a general public gateway, and nobody outside Gully Labs can pin to it.",
-   "updatedAt": "2026-10-26T08:51:33.289Z"
+   "text": "A Kubo node on Gully infrastructure. It pins Gully content so it stays available, announces those pins to the IPFS network, and serves them through its own gateway. Kubo is open source (MIT and Apache-2.0). The gateway runs with Gateway.NoFetch: it answers only for blocks this node already holds and never fetches other content from the network. It is not a general public gateway: it serves what Gully and its customers pin.",
+   "updatedAt": "2026-11-11T03:56:10.123Z"
+  },
+  {
+   "id": "8c84e4b09a6d",
+   "source": "Docs",
+   "title": "Gully IPFS",
+   "url": "https://docs.gullylabs.xyz/ipfs#start",
+   "section": "Pin in two minutes",
+   "text": "Sign in at app.gullylabs.xyz, open Gully IPFS and press Create a pinning key (or tick ipfs:pin when you create a key on the Keys page). The secret is shown once. Drop a file in the upload area, or point any Pinning Service API client at the base URL below. Your pins, their status and your usage are on the same page. Nobody else sees them.",
+   "updatedAt": "2026-11-11T03:56:10.123Z"
+  },
+  {
+   "id": "0fd2fe9af92f",
+   "source": "Docs",
+   "title": "Gully IPFS",
+   "url": "https://docs.gullylabs.xyz/ipfs#psa",
+   "section": "Pinning Service API",
+   "text": "Gully IPFS implements the IPFS Pinning Service API v1. Base URL, auth Authorization: Bearer gl_live_… with a key that has the ipfs:pin scope. GET /pins (200): your pins, newest first: count and results. Filters cid (up to 10), name with match exact, iexact, partial or ipartial, status (default pinned), before, after, limit (1 to 1000, default 10), meta POST /pins (202): a Pin object { cid, name?, origins?, meta? }: queued, then pinning, then pinned or failed (status_details says why) GET /pins/:requestid (200): one PinStatus POST /pins/:requestid (202): replace: a new pin and requestid, the old one removed DELETE /pins/:requestid (202): remove the pin errors (400 401 403 404 429 451): { error: { reason, details } }: 403 QUOTA_EXCEEDED or FORBIDDEN (no ipfs:pin scope), 451 TAKEN_DOWN, 429 RATE_LIMITED (300 requests a minute per key) A CID pinned by reference is fetched from the IPFS network. Its size is counted as it arrives: past the room left on your plan the pin fails with a reason, and nothing you already pinned is touched.",
+   "updatedAt": "2026-11-11T03:56:10.123Z"
+  },
+  {
+   "id": "9518e9f8cb13",
+   "source": "Docs",
+   "title": "Gully IPFS",
+   "url": "https://docs.gullylabs.xyz/ipfs#upload",
+   "section": "Uploads",
+   "text": "POST https://api.gullylabs.xyz/api/ipfs/upload takes the file as the request body (with a Content-Length), or a CAR with Content-Type: application/vnd.ipld.car. It adds, pins and records it in one step and answers a PinStatus. At most 60 uploads an hour per account.",
+   "updatedAt": "2026-11-11T03:56:10.123Z"
+  },
+  {
+   "id": "b9215346a860",
+   "source": "Docs",
+   "title": "Gully IPFS",
+   "url": "https://docs.gullylabs.xyz/ipfs#limits",
+   "section": "Plans and limits",
+   "text": "At a limit, new pins and uploads are refused with a reason. Nothing is ever deleted to make room.",
+   "updatedAt": "2026-11-11T03:56:10.123Z"
+  },
+  {
+   "id": "11aecd7276c6",
+   "source": "Docs",
+   "title": "Gully IPFS",
+   "url": "https://docs.gullylabs.xyz/ipfs#policy",
+   "section": "Content policy",
+   "text": "Pin only content you have the right to publish. No illegal content, no content that sexualises minors, no malware or phishing, no other people's private data, nothing that infringes copyright. Uploaded and pinned images and video are reviewed. Content that breaks the policy is taken down: unpinned from every Gully node and refused by the gateway, and the account may be closed. Report content to team@gullylabs.xyz.",
+   "updatedAt": "2026-11-11T03:56:10.123Z"
   },
   {
    "id": "571274f7bd88",
@@ -1952,8 +1997,8 @@
    "title": "Gully IPFS",
    "url": "https://docs.gullylabs.xyz/ipfs#gateway",
    "section": "The gateway",
-   "text": "Address a pinned file, or a file inside a pinned folder, by its CID: Read-only: GET and HEAD only. There is no upload or pin endpoint. The same CID works on any IPFS gateway or node, because the content is announced to the network. CIDs are content hashes: a file at a CID never changes.",
-   "updatedAt": "2026-10-26T08:51:33.289Z"
+   "text": "Address a pinned file, or a file inside a pinned folder, by its CID: Read-only: GET and HEAD only. Uploads and pins go through the pinning API, never the gateway. Two nodes on two servers hold every pin; when one is down, the gateway reads from the other. The same CID works on any IPFS gateway or node, because the content is announced to the network. CIDs are content hashes: a file at a CID never changes.",
+   "updatedAt": "2026-11-11T03:56:10.123Z"
   },
   {
    "id": "16432122ba53",
@@ -1970,8 +2015,8 @@
    "title": "Gully IPFS",
    "url": "https://docs.gullylabs.xyz/ipfs#api",
    "section": "GET /api/ipfs/stats",
-   "text": "Public, cached for 60 seconds, open CORS. The same path answers on gullylabs.xyz and api.gullylabs.xyz. source (string): 'kubo' when the node answered; 'gateway-internal' or 'gateway-public' when only the gateway did; 'none' otherwise pinned (number | null): recursive pins on the node repoBytes (number | null): size of the node’s repository storageMaxBytes (number | null): the garbage-collection target; pinned content is never collected gatewayUp (boolean | null): whether the gateway answered; null when it could not be reached at all gatewayMs (number | null): its response time history (array): one point a minute for the last hour: t, pinned, repoBytes, up, ms",
-   "updatedAt": "2026-10-26T08:51:33.289Z"
+   "text": "Public, cached for 60 seconds, open CORS. The same path answers on gullylabs.xyz and api.gullylabs.xyz. source (string): 'kubo' when the node answered; 'gateway-internal' or 'gateway-public' when only the gateway did; 'none' otherwise pinned (number | null): recursive pins on the node gatewayUp (boolean | null): whether the gateway answered; null when it could not be reached at all gatewayMs (number | null): its response time history (array): one point a minute for the last hour: t, pinned, up, ms",
+   "updatedAt": "2026-11-11T03:56:10.123Z"
   },
   {
    "id": "f12267559726",
@@ -4913,8 +4958,8 @@
    "title": "Gully Multisig (Gully Chain)",
    "url": "https://gullymultisig.xyz",
    "section": "Gully Multisig",
-   "text": "Gully Multisig is part of Gully Chain. Status: live now. Multisig wallets for teams and treasuries at gullymultisig.xyz: several owners, a confirmation threshold and batched transactions, on Anubis Network (chain 6714) and Kinetiq Elysium (chain 99901) mainnets and, for developers, on Gully Chain Testnet (chain 485590). Runs the open-source Safe stack on Gully infrastructure: Gully Labs' build of the Safe{Wallet} web app, a config service, a client gateway and one Safe transaction service per chain. It is run by Gully Labs, not by Safe. On Anubis Network (chain 6714, a mainnet) the contracts are the unmodified Safe 1.4.1 contracts at the canonical addresses, deployed through Safe's singleton factory. The 16 Safe contracts on Anubis are an exact match on verify.gullychain.xyz, Gully's source verification service; on Kinetiq Elysium the Safe 1.4.1 set and the passkey signer contracts are deployed through Gully's own route at Gully Chain's addresses and verified there too. A Gully ID passkey wallet can be a Safe owner and sign (approveHash); a chain switcher in the header moves between the served chains. On Anubis gasDAI pays gas only and cannot be sent as a value: a Safe there holds and sends ERC-20 tokens. On Gully Chain Testnet (chain 485590, test funds only) the same Safe 1.4.1 code is deployed at Gully's own addresses, because Safe's singleton factory is not on that chain. The hub shows Gully Multisig as live while gullymultisig.xyz answers (server/hub.mjs); multisig.gullychain.xyz redirects there; the docs are at docs.gullychain.xyz/multisig/.",
-   "updatedAt": "2026-11-10T04:14:14.061Z",
+   "text": "Gully Multisig is part of Gully Chain. Status: live now. Multisig wallets for teams and treasuries at gullymultisig.xyz: several owners, a confirmation threshold and batched transactions, on Anubis Network (chain 6714), Robinhood Chain (chain 4663) and Kinetiq Elysium (chain 99901) mainnets and, for developers, on Gully Chain Testnet (chain 485590). Runs the open-source Safe stack on Gully infrastructure: Gully Labs' build of the Safe{Wallet} web app, a config service, a client gateway and one Safe transaction service per chain. It is run by Gully Labs, not by Safe. On Anubis Network (chain 6714, a mainnet) the contracts are the unmodified Safe 1.4.1 contracts at the canonical addresses, deployed through Safe's singleton factory. The 16 Safe contracts on Anubis are an exact match on verify.gullychain.xyz, Gully's source verification service; on Kinetiq Elysium the Safe 1.4.1 set and the passkey signer contracts are deployed through Gully's own route at Gully Chain's addresses and verified there too. A Gully ID passkey wallet can be a Safe owner and sign (approveHash); a chain switcher in the header moves between the served chains. On Anubis gasDAI pays gas only and cannot be sent as a value: a Safe there holds and sends ERC-20 tokens. On Gully Chain Testnet (chain 485590, test funds only) the same Safe 1.4.1 code is deployed at Gully's own addresses, because Safe's singleton factory is not on that chain. The hub shows Gully Multisig as live while gullymultisig.xyz answers (server/hub.mjs); multisig.gullychain.xyz redirects there; the docs are at docs.gullychain.xyz/multisig/.",
+   "updatedAt": "2026-11-11T04:59:26.648Z",
    "feature": "gully-safe-multisig",
    "status": "live"
   },

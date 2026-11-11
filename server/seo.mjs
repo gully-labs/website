@@ -12,6 +12,7 @@ import { published, publishedJobs } from './security-store.mjs'
 import { headBrand, PRODUCT_BRANDS } from './product-brand.mjs'
 import { scorePageMeta, scoreSitemapPaths } from './gully-score.mjs'
 import { publicChains } from './payments.mjs'
+import { CHAINS as CHAIN_PLANS, SETUP_BUSINESS_DAYS } from './chains-plans.mjs'
 // Guarded: holders.mjs exports holdersAvailable(chain, kind), read at call time (env keys), so stock pages come back
 // on their own once a chain's key is set. Without it every stock chain counts as unavailable.
 import * as holdersModule from './holders.mjs'
@@ -194,7 +195,7 @@ const DOCS_PAGES = {
   '/swaps': ['Swaps · Gully Labs docs', 'How swaps work on Gully Labs stock pages: LI.FI on Robinhood Chain and BNB Chain, Jupiter on Solana, the region check (GET /api/geo), the Jupiter proxy, fees, and why your wallet signs everything.'],
   '/solana': ['Solana · Gully Labs docs', 'Gully Labs on Solana: xStocks in the tracker, fair prices from Chainlink or the issuer’s quote, the Holder Map on Solana, Solana Pay in Gully Pay, and Jupiter swaps on stock pages.'],
   '/contracts': ['Contracts · Gully Labs docs', 'Every on-chain address Gully Labs uses, per chain: the treasury Safe, the fee address, the third-party Request Network fee proxy and our projects’ contracts, each with its explorer link, Sourcify status and the file it is quoted from. Also at /.well-known/contracts.json.'],
-  '/ipfs': ['Gully IPFS · Gully Labs docs', 'Gully IPFS: our Kubo node and read-only gateway at ipfs.gullylabs.xyz. It serves only Gully-pinned content: token art, metadata, NFT art and .gully sites.'],
+  '/ipfs': ['Gully IPFS · Gully Labs docs', 'Gully IPFS: our Kubo node and read-only gateway at ipfs.gullylabs.xyz. It serves only content we pin: token art, metadata, NFT art and .gully sites. Self-serve pinning with hub keys (IPFS Pinning Service API).'],
   '/status': ['Status · Gully Labs docs', 'The Gully Labs status page and GET /api/status: what each check means, how 24-hour uptime is computed, how incidents open and close, and the JSON shape.'],
   '/telegram-mini-app': ['Telegram Mini App · Gully Labs docs', 'The Gully Labs Telegram Mini App at gullylabs.xyz/tg: how it opens, its screens, how each request is signed with Telegram’s initData, the /api/tg routes, rate limits and errors.'],
   '/news-gate': ['News gate · Gully Labs docs', 'Why the Gully Labs Telegram bot and Mini App ask you to follow @GullyLabsNews, how membership is checked and cached, and everything that stays open without it: alerts, Mute, pausing, deleting and unlinking.'],
@@ -403,7 +404,7 @@ function pageMetaFor(host, pathname) {
   }
   // The Gully Labs App.
   if (isAppHost(host) && /^\/create-chain\/orders(\/|$)/.test(p)) return { title: 'Your chain order · Gully Labs', description: 'The status of your chain order.', canonical: null, noindex: true, found: true, image: `${SITE}/social/og-developers.png` }
-  if (isAppHost(host) && p === '/create-chain') return { title: 'Create a chain · Gully Labs', description: 'Order your own Arbitrum Orbit chain: testnet free for 30 days, with explorer, bridge, faucet, RPC, Gully Core and Gully Multisig. A person at Gully Labs sets up each chain.', canonical: `${APP}/create-chain`, found: true, image: `${SITE}/social/og-developers.png` }
+  if (isAppHost(host) && p === '/create-chain') return { title: 'Request a testnet chain · Gully Labs', description: `Request your own Arbitrum Orbit testnet chain, free for ${CHAIN_PLANS.testnet.freeDays} days: explorer, bridge, faucet, Gully RPC, contract verification, status monitoring, Gully Multisig and account abstraction included. Our team sets it up within ${SETUP_BUSINESS_DAYS} business days.`, canonical: `${APP}/create-chain`, found: true, image: `${SITE}/social/og-developers.png` }
   if (isAppHost(host))
     return { title: APP_TITLE, description: APP_DESCRIPTION, canonical: `${APP}/`, found: true, image: `${SITE}/social/og-developers.png` }
   // The admin app is one page at the root of its host; any other path is not a page.

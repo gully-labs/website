@@ -79,6 +79,7 @@ export async function build() {
   const P = await load('src/content/projects.ts')
   const K = await load('src/content/stockCopy.ts')
   const GC = await load('src/content/gullyCore.generated.ts')
+  const B = await load('src/data/productBrands.ts')
 
   /* ---- titles and descriptions ---- */
   const meta = {}
@@ -255,7 +256,7 @@ export async function build() {
   const productCard = (p) => ({ key: p.key, name: p.name, line: p.line, icon: p.icon, label: statusWord(p), fact: FACT[p.key], href: `/products/${p.page}` })
   const chainProduct = (slug, key, label, fact) => {
     const p = C.productBySlug(slug)
-    return { key, name: p.name, line: p.short, icon: '/brand/web/logos/gc-icon.svg', label, fact, href: `/products/${slug}` }
+    return { key, name: p.name, line: p.short, icon: B.PRODUCT_BRANDS[key].icon.src, label, fact, href: `/products/${slug}` }
   }
   const landing = {
     headline: H.LANDING_HEADLINE,
@@ -276,7 +277,8 @@ export async function build() {
   // For JSON-LD: the landing's product list (name, own site) and the services (name, one line).
   const hub = [...H.HUB_PRODUCTS, ...H.PEDDLE_FAMILY].map((p) => [p.name, p.url])
   const services = C.SERVICES.map((s) => [s.title, s.desc])
-  return { version: 1, nav, meta, stocks, stockCopy: K.STOCK_COPY, product, project, hub, services, landing, body }
+  // The product brand registry (src/data/productBrands.ts): the server-drawn pages and GET /api/brands read it here.
+  return { version: 1, brands: B.PRODUCT_BRANDS, nav, meta, stocks, stockCopy: K.STOCK_COPY, product, project, hub, services, landing, body }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

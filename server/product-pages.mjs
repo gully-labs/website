@@ -7,7 +7,7 @@ import { hub } from './hub.mjs'
 import { hubProducts } from './hub-products.mjs'
 import { hubLive } from './hub-live.mjs'
 import { readStats } from './stats.mjs'
-import { BUILD, CSS, TILES, cap, esc, icon, pageFoot, pageTop } from './landing.mjs'
+import { BUILD, CSS, TILES, cap, esc, icon, iconOf, pageFoot, pageTop } from './landing.mjs'
 import { feeCurve, productView, ptTime } from './landing-graphs.mjs'
 import { gullyCore } from './gully-core.mjs'
 
@@ -20,8 +20,9 @@ const within = (p, ms) => Promise.race([p.catch(() => null), new Promise((r) => 
 const CARD = { 'gully-id': 'id', pay: 'pay', chain: 'chain', rpc: 'rpc', holders: 'holdermaps', security: 'security', studio: 'studio', ai: 'ai', safe: 'multisig', 'gully-core': 'core', street: 'kre8', bridge: 'bridge' }
 const METRIC = { chain: 'blocks', 'gully-core': 'launches', street: 'trades' }
 const CHART = { launches: 'Launches on Gully Chain testnet, last 24 hours', swaps: 'Swaps on Gully Chain testnet, last 24 hours', trades: 'Trades on Gully Chain testnet, last 24 hours', blocks: 'Newest Gully Chain blocks' }
-const CHAIN_ICON = '/brand/web/logos/gc-icon.svg'
-const CORE_ICON = '/brand/web/logos/gc-icon.svg'
+/** Marks from the product brand registry (src/data/productBrands.ts, carried in page-content.json). */
+const CHAIN = { key: 'chain', icon: CONTENT.brands.chain.icon.src }
+const CORE = { key: 'core', icon: CONTENT.brands.core.icon.src }
 
 /** The Core builds' own words. `presets` mirror LaunchPresets.sol, by way of the SDK's parity-tested table. */
 const BUILDS = {
@@ -80,7 +81,7 @@ function pageFor(kind, id) {
     const i = SLUGS.indexOf(id)
     const go = (d) => SLUGS[(i + d + SLUGS.length) % SLUGS.length]
     return {
-      id, name: p.name, line: p.line, icon: id === 'gully-core' ? CORE_ICON : t?.icon ?? CHAIN_ICON, stage: t?.label ?? '', hub: p.hub, card: CARD[id] ?? null, metric: METRIC[id] ?? null,
+      id, name: p.name, line: p.line, brand: id === 'gully-core' ? CORE : t ?? CHAIN, stage: t?.label ?? '', hub: p.hub, card: CARD[id] ?? null, metric: METRIC[id] ?? null,
       primary: [p.url, p.cta ?? `Open ${p.urlLabel}`], second: p.cta2, docs: p.docs, features: p.features.map((f) => [f.t, f.d]), how: p.how, price: id === 'gully-core' ? CORE_PRICE : p.price, faq: p.faq,
       prev: [`/preview/products/${go(-1)}`, CONTENT.product[go(-1)].name], next: [`/preview/products/${go(1)}`, CONTENT.product[go(1)].name], crumb: ['/preview/products/gully-core', 'Products'],
       extra: id === 'gully-core' ? coreLinks() : '',
@@ -93,7 +94,7 @@ function pageFor(kind, id) {
   const i = keys.indexOf(id)
   const at = (d) => BUILD.find((x) => x.key === keys[(i + d + keys.length) % keys.length])
   return {
-    id, name: b.title, line: b.body, icon: CORE_ICON, stage: 'Gully Core', hub: CORE_HUB, card: 'core', metric: b.metric,
+    id, name: b.title, line: b.body, brand: CORE, stage: 'Gully Core', hub: CORE_HUB, card: 'core', metric: b.metric,
     primary: [b.href, b.cta], second: null, docs: gullyCore().links.docs, features: own.features, how: b.steps.map((s, n) => [s, ['Start in the Gully Core app.', 'Each choice says what it does before you sign.', 'It is on chain and open to everyone.'][n]]), price: CORE_PRICE, faq: own.faq,
     prev: [`/preview/build/${at(-1).key}`, at(-1).title], next: [`/preview/build/${at(1).key}`, at(1).title], crumb: ['/preview/products/gully-core', 'Gully Core'],
     extra: own.presets ? presetPicker(own.presets) : '',
@@ -131,7 +132,7 @@ export async function renderProduct(head, kind, id, given = null) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${head}<link rel="preload" href="/fonts/figtree-latin-700.woff2" as="font" type="font/woff2" crossorigin><link rel="modulepreload" href="/landing/graphs.mjs"><script src="/landing/fx.js"></script><style>${CSS}${PCSS}</style></head><body>
 ${pageTop()}
 <main>
-<section class="ph"><div class="w"><nav class="crumb" aria-label="Breadcrumb"><a href="${esc(pg.crumb[0])}">${esc(pg.crumb[1])}</a><span>/</span><span>${esc(pg.name)}</span></nav><div class="ph-g"><div><div class="pm" data-state-of data-state="${v.state}"><img src="${esc(pg.icon)}" alt="" width="48" height="48"><span class="bg"><span data-v="word">${esc(v.word)}</span>${pg.stage ? `<span>${esc(pg.stage)}</span>` : ''}</span></div><h1>${esc(pg.name)}</h1><p class="lede">${esc(pg.line)}</p><div class="cta">${cap(pg.primary[0], pg.primary[1], 'solid')}${pg.second ? cap(pg.second[1], pg.second[0]) : ''}${pg.docs ? cap(pg.docs, 'Docs') : ''}</div></div>
+<section class="ph"><div class="w"><nav class="crumb" aria-label="Breadcrumb"><a href="${esc(pg.crumb[0])}">${esc(pg.crumb[1])}</a><span>/</span><span>${esc(pg.name)}</span></nav><div class="ph-g"><div><div class="pm" data-state-of data-state="${v.state}"><img src="${esc(iconOf(pg.brand))}" alt="" width="48" height="48" data-brand="${esc(pg.brand.key)}"><span class="bg"><span data-v="word">${esc(v.word)}</span>${pg.stage ? `<span>${esc(pg.stage)}</span>` : ''}</span></div><h1>${esc(pg.name)}</h1><p class="lede">${esc(pg.line)}</p><div class="cta">${cap(pg.primary[0], pg.primary[1], 'solid')}${pg.second ? cap(pg.second[1], pg.second[0]) : ''}${pg.docs ? cap(pg.docs, 'Docs') : ''}</div></div>
 <div class="box" data-anim><span class="capt">Read at <span data-v="at">${ptTime()}</span></span><span class="big" data-v="value">${esc(v.value || v.up)}</span><span class="capt" data-v="unit">${esc(v.value ? v.unit : 'surfaces answering')}</span><div class="g" data-v="latency">${v.latency}</div><span class="capt">Mean response time, last hour</span></div></div></div></section>
 <section class="s" aria-label="Live numbers" style="margin-top:8px"><div class="w"><div class="kpis"><div><small>Answering</small><b data-v="up">${esc(v.up)}</b></div><div><small>Response now</small><b data-v="ms">${esc(v.ms)}</b></div><div><small>Answered, last hour</small><b data-v="answered">${esc(v.answered)}</b></div><div><small>Mean, last hour</small><b data-v="meanMs">${esc(v.meanMs)}</b></div></div><div class="cells" data-v="cells">${v.cells}</div></div></section>
 ${v.activity ? `<section class="s"><div class="w"><div class="box" data-anim><span class="capt"><b>${esc(CHART[pg.metric])}</b></span><div class="g" data-v="activity">${v.activity}</div></div></div></section>` : ''}

@@ -2,6 +2,7 @@ import { ArrowUpRight, FileText, Lock } from 'lucide-react'
 import { Seo } from '../../components/Seo'
 import { PRODUCTS, type LogoDef, type Slug } from '../../terminal/catalog'
 import { LEGAL, Mail, To } from './kit'
+import { PRODUCT_BRANDS } from '../../data/productBrands.ts'
 
 /* gullylabs.xyz/legal: every Gully product's Terms and Privacy Policy in one place (owner, 2026-11-03), each with its
    kit logo (src/terminal/catalog.ts, files byte-identical to the kits) and one line on what it is. The addresses are
@@ -61,11 +62,8 @@ function KitLogo({ def, name }: { def: LogoDef; name: string }) {
     const h = 24
     return (
       <span className="inline-flex h-8 items-center gap-2 text-[17px] font-semibold text-ink" aria-hidden>
-        {def.mark === 'chain' ? (
-          <img src="/brand/web/logos/gc-icon.svg" width={h} height={h} alt="" decoding="async" loading="lazy" draggable={false} />
-        ) : (
-          <img src="/brand/kit/mark-reversed.svg" width={Math.round(h * 1.042)} height={h} alt="" decoding="async" loading="lazy" draggable={false} />
-        )}
+        {/* The product's own kit mark from the brand registry (src/data/productBrands.ts), byte-identical. */}
+        <img src={PRODUCT_BRANDS[def.mark].icon.src} width={Math.round((h * (PRODUCT_BRANDS[def.mark].icon.w ?? 1)) / (PRODUCT_BRANDS[def.mark].icon.h ?? 1))} height={h} alt="" decoding="async" loading="lazy" draggable={false} data-brand={def.mark} />
         {def.label}
       </span>
     )

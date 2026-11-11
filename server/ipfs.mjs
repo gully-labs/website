@@ -1,13 +1,16 @@
 // Gully IPFS (gully-ops gully/ipfs): a Kubo node on the gully box with a read-only gateway at
 // https://ipfs.gullylabs.xyz/ipfs/<CID> that serves ONLY content the node holds (Gateway.NoFetch).
 //
-//   GET /api/ipfs/stats   public, cached 60 s: repo size, pinned CIDs, whether the gateway answers, and a short history.
+//   GET /api/ipfs/stats   public, cached 60 s: pinned CIDs, whether the node and the gateway answer, and a short history.
+//                         Node internals (repo size, storage limit) are never served: node health is on the status page.
 //
 // How it reads: gully-web and gully-ipfs share the docker `edge` network, so the server calls the Kubo RPC
-// (IPFS_API, default http://gully-ipfs:5001) READ-ONLY (repo/stat, pin/ls) with a short timeout. The RPC is never
+// (IPFS_API, default http://gully-ipfs:5001) READ-ONLY (pin/ls) with a short timeout. The RPC is never
 // proxied or exposed: only these numbers leave the server. When the RPC cannot be reached the gateway itself is
 // probed (IPFS_GATEWAY, default http://gully-ipfs:8080, then the public https://ipfs.gullylabs.xyz) with the
 // inline empty-directory CID, and `source` says which one answered. Nothing is invented: an unread figure is null.
+
+import { replicaState } from './ipfs-pins.mjs'
 
 export const IPFS_PUBLIC_GATEWAY = 'https://ipfs.gullylabs.xyz'
 // The identity CID of an empty UnixFS directory: inline, so a NoFetch gateway can answer it without the network.
@@ -57,26 +60,25 @@ async function probeGateway() {
 }
 
 async function read() {
-  const [repo, pins, gw] = await Promise.all([kubo('repo/stat?size-only=true'), kubo('pin/ls?type=recursive&quiet=true'), probeGateway()])
+  const [pins, gw] = await Promise.all([kubo('pin/ls?type=recursive&quiet=true'), probeGateway()])
   const pinned = pins && pins.Keys && typeof pins.Keys === 'object' ? Object.keys(pins.Keys).length : null
-  const repoBytes = Number.isFinite(Number(repo?.RepoSize)) ? Number(repo.RepoSize) : null
-  const storageMaxBytes = Number.isFinite(Number(repo?.StorageMax)) ? Number(repo.StorageMax) : null
   const at = new Date().toISOString()
   const last = history[history.length - 1]
   // One history point a minute at most: the last hour.
   if (!last || Date.parse(at) - Date.parse(last.t) >= 60_000) {
-    history.push({ t: at, pinned, repoBytes, up: gw.up, ms: gw.ms })
+    history.push({ t: at, pinned, up: gw.up, ms: gw.ms })
     if (history.length > HISTORY) history.shift()
   }
   return {
     generatedAt: at,
-    source: repo || pins ? 'kubo' : gw.via ? `gateway-${gw.via}` : 'none',
+    source: pins ? 'kubo' : gw.via ? `gateway-${gw.via}` : 'none',
     gateway: IPFS_PUBLIC_GATEWAY,
     gatewayUp: gw.via ? gw.up : null,
     gatewayMs: gw.ms,
     pinned,
-    repoBytes,
-    storageMaxBytes,
+    // Node 2 (gully-l3, gully-ops gully/ipfs-replica): its last sync report. The status page rows read these.
+    replicaUp: replicaState().up,
+    replicaInSync: replicaState().inSync,
     history: [...history],
   }
 }

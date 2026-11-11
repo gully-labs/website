@@ -64,7 +64,7 @@ function OfferLine({ offer }: { offer: Offer | null }) {
   if (!offer) return <Skeleton h={18} w="60%" />
   return (
     <span className={mono} data-testid="chains-offer">
-      testnet free for {offer.freeDays} days · {offer.addons.length} add-ons · mainnet {offer.flags.mainnetOrders ? 'open' : 'on request'} · {offer.billing.note}
+      testnet free for {offer.freeDays} days · set up by our team within {offer.setupDays} business days · {offer.addons.length} add-ons · mainnet {offer.flags.mainnetOrders ? 'open' : 'coming soon'} · {offer.billing.note}
     </span>
   )
 }

@@ -34,6 +34,7 @@ import { ChainsWaitlist } from './ChainsWaitlist'
 import { ChainOrdersAdmin } from './ChainOrdersAdmin'
 import { ArrowMark } from './newTab'
 import { EcosystemSubmissions } from './EcosystemSubmissions'
+import { IpfsReviewAdmin } from './IpfsReviewAdmin'
 
 // The live charts (and ECharts with them) load on demand, after the dashboard's own figures.
 const AdminCharts = lazy(() => import('./AdminCharts'))
@@ -1186,6 +1187,9 @@ export function AdminPage() {
             </Sec>
             <Sec id="chainorders" at={sec}>
               <ChainOrdersAdmin token={token} />
+            </Sec>
+            <Sec id="ipfs" at={sec}>
+              <IpfsReviewAdmin token={token} />
             </Sec>
             <Sec id="chainkit" at={sec}>
               <ChainKitAdmin token={token} />

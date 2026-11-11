@@ -9,6 +9,7 @@ import { Seo } from '../../components/Seo'
 import { btnGold, eyebrow } from '../../components/ui'
 import { SCAN_APP_URL, usePublic } from './shared'
 import { securityHref } from '../../site-host'
+import { PRODUCT_BRANDS } from '../../data/productBrands.ts'
 
 /* The public report pages:
    /security/reports       every report its owner published, newest first (GET /api/security/reports)
@@ -134,7 +135,7 @@ export function PublicReportPage() {
       <Seo title={`Security scan report: ${r.title}`} description="An AI Security Scan report published by its owner: findings by severity, the tools that ran and the limits of an automated scan. Not an audit." noindex={!r.indexable} />
       <article className="flex flex-col gap-4 px-page pt-10 pb-16 print:p-0" data-testid="public-report">
         <div className="hidden items-center justify-between border-b border-[#ccc] pb-3 print:flex">
-          <img src="/brand/products/gullysecurity-logo-on-light.svg" width={169} height={28} alt="Gully Security" className="block shrink-0" style={{ width: 169, height: 28 }} />
+          <img src={PRODUCT_BRANDS.security.extra!.logoOnLight.src} width={169} height={28} alt="Gully Security" className="block shrink-0" style={{ width: 169, height: 28 }} />
           <span className="font-mono text-[11px] text-[#333]">gullylabs.xyz{r.url}</span>
         </div>
         <div className="flex flex-wrap items-center gap-3 print:hidden">

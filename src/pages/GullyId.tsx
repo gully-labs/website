@@ -2,6 +2,7 @@ import { ArrowUpRight, KeyRound, ShieldCheck } from 'lucide-react'
 import { Seo } from '../components/Seo'
 import { btnOutline, eyebrow, h2 } from '../components/ui'
 import { newTab } from '../components/LayoutNav'
+import { PRODUCT_BRANDS } from '../data/productBrands.ts'
 
 /* /gully-id: the official statement, from the established gullylabs.xyz domain, that gullyid.xyz is Gully Labs' own
    sign-in service (Safe Browsing review, 2026-10-31). gullyid.xyz/about links back here. The logo is the Gully ID
@@ -38,7 +39,7 @@ export function GullyId() {
       <Seo page="/gully-id" />
       <section className="flex max-w-[760px] flex-col gap-5">
         <span className={eyebrow}>GULLY LABS · SIGN-IN SERVICE</span>
-        <img src="/brand/gullyid/gullyid-lockup-on-dark.svg" width={176} height={52} alt="Gully ID" className="h-[52px] w-auto self-start" />
+        <img src={PRODUCT_BRANDS.id.logo!.src} width={176} height={52} alt="Gully ID" className="h-[52px] w-auto self-start" />
         <h1 className="m-0 font-display text-h1 font-extrabold">
           Gully ID is <span className="text-gold">our</span> sign-in service
         </h1>
