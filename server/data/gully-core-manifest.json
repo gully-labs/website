@@ -4064,7 +4064,7 @@
    "quote": "HYPE",
    "note": "HYPE is the gas coin and settles to HyperEVM. Gully Core is live on Kinetiq Elysium since 2026-11-09 (45 contracts, verified on our Sourcify, owned by the chain Safe 2-of-3).",
    "rpc": "https://rpc.gullyrpc.xyz/gullychain/evm/99901",
-   "explorer": "https://scan.elysp.com",
+   "explorer": "https://elysium.kinetiq.xyz/explorer",
    "app": "https://app.gullycore.xyz/",
    "governance": null,
    "icon": "https://gullycore.xyz/chains/elysium.png",
@@ -4075,7 +4075,7 @@
     "site": true,
     "docs": true,
     "core": true,
-    "explorer": "https://scan.elysp.com",
+    "explorer": "https://elysium.kinetiq.xyz/explorer",
     "multisig": true,
     "bridge": false,
     "offerwall": false,
@@ -4104,7 +4104,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xeeA52db4B0233c4170cca7ef109aE70FE8f67F4c",
       "sourcifyMatch": "exact_match",
-      "explorer": "https://scan.elysp.com/address/0xeeA52db4B0233c4170cca7ef109aE70FE8f67F4c",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xeeA52db4B0233c4170cca7ef109aE70FE8f67F4c",
       "explorerVerified": null
      }
     },
@@ -4115,7 +4115,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x90c882D9C307c2bF7E961bC279b0929f92997dD4",
       "explorerVerified": null
      }
     },
@@ -4126,7 +4126,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x6D0721230b6beD4bc9eeb65E200B6f90c2C9aEE6",
       "explorerVerified": null
      }
     },
@@ -4137,7 +4137,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x4255B0B14F3dd4e2350954Da78707E3fA6c94E2B",
       "explorerVerified": null
      }
     },
@@ -4148,7 +4148,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xAC57987b453533e3D67881026dA5CA271A7c7438",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xAC57987b453533e3D67881026dA5CA271A7c7438",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xAC57987b453533e3D67881026dA5CA271A7c7438",
       "explorerVerified": null
      }
     },
@@ -4159,7 +4159,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xF8b4B5b1444fC2843BcA72b56d094a947b63654a",
       "explorerVerified": null
      }
     },
@@ -4170,7 +4170,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x8504aD36c38D34b31B431169530eC56340e1dF5f",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x8504aD36c38D34b31B431169530eC56340e1dF5f",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x8504aD36c38D34b31B431169530eC56340e1dF5f",
       "explorerVerified": null
      }
     },
@@ -4181,7 +4181,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xb943e41CB331722c21bD5905B7F3EEc8aBC8f040",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xb943e41CB331722c21bD5905B7F3EEc8aBC8f040",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xb943e41CB331722c21bD5905B7F3EEc8aBC8f040",
       "explorerVerified": null
      }
     },
@@ -4192,7 +4192,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x824Fa9019B69BBCCB86066D9BA6590B13Dcb70B1",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x824Fa9019B69BBCCB86066D9BA6590B13Dcb70B1",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x824Fa9019B69BBCCB86066D9BA6590B13Dcb70B1",
       "explorerVerified": null
      }
     },
@@ -4203,7 +4203,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xAFFd2FcE14990C624aDf076C479a098Fa37b35eb",
       "explorerVerified": null
      }
     },
@@ -4214,7 +4214,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x4206Bb61C793027EcfB2d56e91Be78a5ba3b0BDB",
       "explorerVerified": null
      }
     },
@@ -4225,7 +4225,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x167737D0d044808d7b786D6E1Ead25Bd6B75C2Ce",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x167737D0d044808d7b786D6E1Ead25Bd6B75C2Ce",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x167737D0d044808d7b786D6E1Ead25Bd6B75C2Ce",
       "explorerVerified": null
      }
     },
@@ -4236,7 +4236,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x46B2C141271f676c1bdd1174BB05120e48990e64",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x46B2C141271f676c1bdd1174BB05120e48990e64",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x46B2C141271f676c1bdd1174BB05120e48990e64",
       "explorerVerified": null
      }
     },
@@ -4247,7 +4247,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x202965D0Bd6735050bE2A6EfDB9b9F04f4Df2B90",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x202965D0Bd6735050bE2A6EfDB9b9F04f4Df2B90",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x202965D0Bd6735050bE2A6EfDB9b9F04f4Df2B90",
       "explorerVerified": null
      }
     },
@@ -4258,7 +4258,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x352e2881Ae34bCcF8e6bB3BC38dC0Ffe9e99Aa2a",
       "explorerVerified": null
      }
     },
@@ -4269,7 +4269,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x232B22f21cF12Db740df21DE09915eC7F6e61039",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x232B22f21cF12Db740df21DE09915eC7F6e61039",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x232B22f21cF12Db740df21DE09915eC7F6e61039",
       "explorerVerified": null
      }
     },
@@ -4280,7 +4280,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x9a88B84193F790CD3E8d99594d67F83cE6900097",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x9a88B84193F790CD3E8d99594d67F83cE6900097",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x9a88B84193F790CD3E8d99594d67F83cE6900097",
       "explorerVerified": null
      }
     },
@@ -4291,7 +4291,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xc43AcDa7f74AA372Cab96E58C97Eb9a62cf1BE70",
       "explorerVerified": null
      }
     },
@@ -4302,7 +4302,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x98A0dC1FE694DB36eEdf767f976792eA00F20e68",
       "explorerVerified": null
      }
     },
@@ -4313,7 +4313,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xB4553D0e24E4d541c620612A99c816a89aA4f30A",
       "explorerVerified": null
      }
     },
@@ -4324,7 +4324,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x9D3B43CD5c5df9810B044b0694669b206646A70E",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x9D3B43CD5c5df9810B044b0694669b206646A70E",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x9D3B43CD5c5df9810B044b0694669b206646A70E",
       "explorerVerified": null
      }
     },
@@ -4335,7 +4335,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x72f5d873464899C163C7330909b371B452D37cA6",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x72f5d873464899C163C7330909b371B452D37cA6",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x72f5d873464899C163C7330909b371B452D37cA6",
       "explorerVerified": null
      }
     },
@@ -4346,7 +4346,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xf63a3359f9174C37131adbd2D3AB17b3e9De4041",
       "explorerVerified": null
      }
     },
@@ -4357,7 +4357,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xb204c2c6CB7Ad0758Fa90B73E1B0e2405A510636",
       "explorerVerified": null
      }
     },
@@ -4368,7 +4368,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x8aE0C023A4e345Ff9D14E123848816ad332fDe95",
       "explorerVerified": null
      }
     },
@@ -4379,7 +4379,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xB2Fc45D22683beC1e72Ec5D316d910294551bA00",
       "explorerVerified": null
      }
     },
@@ -4390,7 +4390,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x8664b12e10a5A1FE86c47481333Bf56894b68BBd",
       "explorerVerified": null
      }
     },
@@ -4401,7 +4401,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x26F5e7144dBe0ADB6767D7889b79e50693d50E5D",
       "explorerVerified": null
      }
     },
@@ -4412,7 +4412,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xA8F9049ec5a0b8D4451a3915606ac83278798eB9",
       "explorerVerified": null
      }
     },
@@ -4423,7 +4423,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xFcf532aFA09F822BC5c89f7a004CBd4d0BDCBf1c",
       "explorerVerified": null
      }
     },
@@ -4434,7 +4434,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xED0C799f0fe1BfDf85E9298BF6383d0526331Cd0",
       "explorerVerified": null
      }
     },
@@ -4445,7 +4445,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xFB740b71F8548b013f921dC331e5662f8bc5b7BD",
       "explorerVerified": null
      }
     },
@@ -4456,7 +4456,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x6e38c46A7f836896E635c28afE98b022f93D01df",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x6e38c46A7f836896E635c28afE98b022f93D01df",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x6e38c46A7f836896E635c28afE98b022f93D01df",
       "explorerVerified": null
      }
     },
@@ -4467,7 +4467,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x7b63b4C482E23C423ED65a8648358C5417703Ea3",
       "explorerVerified": null
      }
     },
@@ -4478,7 +4478,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x593a98b20A78538432571cb90704A234fa9D7ED5",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x593a98b20A78538432571cb90704A234fa9D7ED5",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x593a98b20A78538432571cb90704A234fa9D7ED5",
       "explorerVerified": null
      }
     },
@@ -4489,7 +4489,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x0D13fC3102079CBA6c2629c8de003DD3cB333bc4",
       "explorerVerified": null
      }
     },
@@ -4500,7 +4500,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x3259f54374e4970c908112c1682F000612d5D422",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x3259f54374e4970c908112c1682F000612d5D422",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x3259f54374e4970c908112c1682F000612d5D422",
       "explorerVerified": null
      }
     },
@@ -4511,7 +4511,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xA2098A55A9C6A01aBFcd71F56c018014f6a7Ea9C",
       "explorerVerified": null
      }
     },
@@ -4522,7 +4522,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x7577aEcB9862a7a6022Dcf1D3a3623ED91EdD9c6",
       "explorerVerified": null
      }
     },
@@ -4533,7 +4533,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x66a92Db09eB576bb90C0d1C209AeB160bAdE91E9",
       "explorerVerified": null
      }
     },
@@ -4544,7 +4544,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x5D39079CE27819682613b67D3EB13D88B3A1146F",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x5D39079CE27819682613b67D3EB13D88B3A1146F",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x5D39079CE27819682613b67D3EB13D88B3A1146F",
       "explorerVerified": null
      }
     },
@@ -4555,7 +4555,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xDB61faBF2B15654edB01c25E162ae579f729407F",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xDB61faBF2B15654edB01c25E162ae579f729407F",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xDB61faBF2B15654edB01c25E162ae579f729407F",
       "explorerVerified": null
      }
     },
@@ -4566,7 +4566,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xe0Dc3211294F5e00677051B00816015934cCD835",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xe0Dc3211294F5e00677051B00816015934cCD835",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xe0Dc3211294F5e00677051B00816015934cCD835",
       "explorerVerified": null
      }
     },
@@ -4577,7 +4577,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
+      "explorer": "https://elysium.kinetiq.xyz/address/0xb6E700a7fdC274f85E521A49159503d54E23fE4e",
       "explorerVerified": null
      }
     },
@@ -4588,7 +4588,7 @@
      "verification": {
       "sourcify": "https://verify.gullychain.xyz/v2/contract/99901/0x9199602A03696401bc7E15343E7D9CA00997Efb4",
       "sourcifyMatch": "match",
-      "explorer": "https://scan.elysp.com/address/0x9199602A03696401bc7E15343E7D9CA00997Efb4",
+      "explorer": "https://elysium.kinetiq.xyz/address/0x9199602A03696401bc7E15343E7D9CA00997Efb4",
       "explorerVerified": null
      }
     }
