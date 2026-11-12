@@ -95,7 +95,7 @@ export const GULLY_CORE: GullyCoreView = {
       "state": "Live",
       "multisig": true,
       "app": "https://app.gullycore.xyz/",
-      "explorer": "https://scan.elysp.com",
+      "explorer": "https://elysium.kinetiq.xyz/explorer",
       "logo": "/chains/elysium.png"
     },
     {
