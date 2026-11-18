@@ -29,7 +29,7 @@ export function VenueTicker({ data, state }: { data: Stats | null; state: 'loadi
             : state === 'error' || !ok
               ? 'unreadable'
               : ok.native && ok.noUsd
-                ? `24h ${fmtNative(ok.native.volume24h, ok.native.symbol, ok.native.testnet)} · ${ok.counts.launches ?? 0} launches`
+                ? `${ok.chainTvl ? `TVL ${fmtUsd(ok.chainTvl.totalUsd)} · ` : ''}24h ${fmtNative(ok.native.volume24h, ok.native.symbol, ok.native.testnet)} · ${ok.counts.launches ?? 0} launches`
               : ok.volumeAllUsd !== null
                 ? `24h ${fmtUsd(ok.volume24hUsd)}`
                 : ok.volume30dUsd !== null && ok.volume30dUsd !== undefined

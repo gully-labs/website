@@ -303,7 +303,9 @@ export function tapeItems(l: Live): TapeItem[] {
         v.state !== 'ok'
           ? { icon: 'activity', k: NAMES[v.key] || v.key, text: 'could not be read' }
           : v.noUsd
-            ? { icon: 'coins', k: NAMES[v.key] || v.key, text: 'launches on testnet', v: v.counts?.launches == null ? '—' : String(v.counts.launches) }
+            ? v.chainTvl
+              ? { icon: 'coins', k: NAMES[v.key] || v.key, text: 'value locked (testnet)', v: fmtUsd(v.chainTvl.totalUsd) }
+              : { icon: 'coins', k: NAMES[v.key] || v.key, text: 'launches on testnet', v: v.counts?.launches == null ? '—' : String(v.counts.launches) }
             : { icon: 'coins', k: NAMES[v.key] || v.key, text: 'value locked', v: fmtUsd(v.tvlUsd) },
       )
   const q = l.hub?.quests
