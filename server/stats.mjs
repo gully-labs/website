@@ -25,7 +25,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
 import { divergence, mergeDaily, onchainSnapshot } from './peddles.mjs'
-import { GULLY_CHAIN, ledgerFigures as gullyLedger } from './gully-chain.mjs'
+import { GULLY_CHAIN, indexerGet as gullyIndexerGet, ledgerFigures as gullyLedger } from './gully-chain.mjs'
 
 const CACHE_MS = 45_000
 const TIMEOUT_MS = 15_000
@@ -435,11 +435,32 @@ async function peddlequest() {
   }
 }
 
+/**
+ * Gully Chain's value locked in dollars: DeFi + bridged, as the shared indexer sums it (GET /stats/chain-tvl, one answer
+ * for every Gully surface). null when the answer is missing, not ok/partial, has no total or is older than 15 minutes:
+ * callers show a quiet "not available", never a hostname or a retry text.
+ */
+export async function gullyChainTvl(nowSec = Date.now() / 1000) {
+  try {
+    const r = await gullyIndexerGet('/stats/chain-tvl', 60_000)
+    const o = r?.body
+    if (r?.status !== 200 || !o || (o.status !== 'ok' && o.status !== 'partial')) return null
+    const usd = (x) => (x && typeof x.usd === 'number' && Number.isFinite(x.usd) ? x.usd : null)
+    const totalUsd = usd(o.total)
+    if (totalUsd === null) return null
+    const updatedAt = typeof o.updatedAt === 'number' ? o.updatedAt : null
+    if (updatedAt !== null && nowSec - updatedAt > 900) return null
+    return { totalUsd, defiUsd: usd(o.defi), bridgedUsd: usd(o.bridged), updatedAt: updatedAt === null ? null : new Date(updatedAt * 1000).toISOString() }
+  } catch {
+    return null
+  }
+}
+
 async function gullychain() {
   // Our own L3 testnet, read from its indexer (server/gully-chain.mjs): launches, graduations, holders and trades.
   // Every amount is in TEST ETH, which has no dollar value, so every USD field is null and nothing here enters the
   // totals or the stacked daily chart; the venue carries its own `native` figures and daily series instead.
-  const f = await gullyLedger()
+  const [f, chainTvl] = await Promise.all([gullyLedger(), gullyChainTvl()])
   const n = f.native
   return {
     volume24hUsd: null,
@@ -455,10 +476,12 @@ async function gullychain() {
     native: { symbol: n.symbol, testnet: true, volume24h: n.volume24h, volumeAll: n.volumeAll, liquidity: n.liquidity, mcap: n.mcap, daily: n.daily },
     testnet: true,
     noUsd: true,
+    // Testnet value in dollars (DeFi + bridged), shown on its own and still kept out of every real-money total.
+    chainTvl,
     counts: f.counts,
     chains: [{ chainId: GULLY_CHAIN.id, name: GULLY_CHAIN.name, testnet: true }],
     notes: [
-      'Gully Chain Testnet: every figure is in test ETH, which has no dollar value, so nothing here is added to the totals or drawn in the dollar charts.',
+      'Gully Chain Testnet: trading figures are in test ETH, which has no dollar value, so nothing here is added to the totals or drawn in the dollar charts. Its value locked (DeFi + bridged) is shown in dollars on its own.',
       `${f.counts.launches} launchpad token${f.counts.launches === 1 ? '' : 's'} (${f.counts.graduated} graduated), ${f.counts.holders} holder balances and ${f.counts.swaps} trades, read from our own indexer at block ${f.head.block}.`,
     ],
     sourceNote: `Gully Chain indexer · block ${f.head.block}`,

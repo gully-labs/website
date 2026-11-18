@@ -50,6 +50,8 @@ export interface VenueOk {
   /** A testnet venue (Gully Chain): figures in test ETH only, every USD field null, nothing in the totals. */
   testnet?: boolean
   noUsd?: boolean
+  /** Testnet value locked in USD (DeFi + bridged, the shared indexer's answer), null when it is not available. Never in the totals. */
+  chainTvl?: { totalUsd: number; defiUsd: number | null; bridgedUsd: number | null; updatedAt: string | null } | null
   native?: { symbol: string; testnet: boolean; volume24h: number; volumeAll: number; liquidity: number; mcap: number; daily: Point[] }
   volume7dUsd?: number | null
   /** Venues read straight from their contracts (server/peddles.mjs). `live` once every chain is scanned to head. */

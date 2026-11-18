@@ -34,6 +34,8 @@ const peddlesFees = peddlesVol.map(([t, v]) => [t, v / 100])
 const peddlesTvl = Array.from({ length: 40 }, (_, i) => ({ date: dayN(40 - i), totalLiquidityUSD: 60_000 + i * 100 }))
 const questTvl = Array.from({ length: 20 }, (_, i) => ({ date: dayN(19 - i), totalLiquidityUSD: 5000 + i }))
 
+let chainTvlDown = false
+let chainTvlStale = false
 globalThis.fetch = async (input) => {
   const url = String(input?.url ?? input)
   calls.push(url)
@@ -55,6 +57,7 @@ globalThis.fetch = async (input) => {
   if (u.hostname === 'indexer.gullychain.xyz') {
     const row = (a, vol) => ({ address: a, symbol: 'T', source: 'launchpad', creator: '0x' + '12'.repeat(20), createdAt: dayN(1), createdBlock: '74', win: { h24: { vol, buys: 1, sells: 1, makers: 1 } }, liquidityEth: 0.5, mcapEth: 2, holders: 3, txns: 4, progressPct: 10, graduated: false, pool: null, pools: [] })
     if (u.pathname === '/head') return json({ chainId: 485590, block: 207, timestamp: dayN(0) })
+    if (u.pathname === '/stats/chain-tvl') return chainTvlDown ? json({ error: 'down' }, 503) : json({ chainId: 485590, status: 'ok', updatedAt: Math.floor(Date.now() / 1000) - (chainTvlStale ? 3600 : 5), defi: { usd: 1365.5, eth: 0.75 }, bridged: { usd: 16938.7, eth: 9.35 }, total: { usd: 18304.2, eth: 10.1 } })
     if (u.pathname === '/tokens') return json({ tokens: [row('0x' + 'a1'.repeat(20), 0.25), row('0x' + 'a2'.repeat(20), 0.75)] })
     if (u.pathname.endsWith('/candles')) return json({ candles: [{ t: dayN(20), v: 1 }, { t: dayN(19), v: 0.5 }, { t: dayN(0), v: 0 }] })
     return json({ error: 'not found' }, 404)
@@ -76,6 +79,7 @@ registerHooks({
 
 const S = await import('../server/stats.mjs')
 const W = await import('../server/stats-watchdog.mjs')
+const G = await import('../server/gully-chain.mjs')
 const N = await import('../server/intake-notify.mjs')
 const L = await import('../src/lib/ledgerSeries.ts')
 
@@ -117,6 +121,30 @@ test('Gully Chain Testnet: test-ETH figures only, never in the dollar totals or 
   assert.match(g.sourceNote, /block 207/)
   for (const f of Object.keys(doc.totals.covers)) assert.ok(!doc.totals.covers[f].includes('gullychain'), `${f} never covered by the testnet`)
   assert.ok(g.notes.some((n) => /test ETH/.test(n)))
+})
+
+test('Gully Chain value locked: DeFi + bridged in USD from /stats/chain-tvl, kept out of the real-money totals; quiet null when stale or down', async () => {
+  const doc = await S.readStats()
+  const g1 = venue(doc, 'gullychain')
+  assert.equal(g1.chainTvl.totalUsd, 18304.2)
+  assert.equal(g1.chainTvl.defiUsd, 1365.5)
+  assert.equal(g1.chainTvl.bridgedUsd, 16938.7)
+  assert.equal(g1.tvlUsd, null, 'testnet value never enters tvlUsd')
+  assert.ok(!doc.totals.covers.tvlUsd.includes('gullychain'))
+  chainTvlStale = true
+  S.resetStatsForTest()
+  G.resetGullyChainForTest()
+  assert.equal(venue(await S.readStats(), 'gullychain').chainTvl, null, 'older than 15 minutes is not shown')
+  chainTvlStale = false
+  chainTvlDown = true
+  S.resetStatsForTest()
+  G.resetGullyChainForTest()
+  const g3 = venue(await S.readStats(), 'gullychain')
+  assert.equal(g3.chainTvl, null)
+  assert.equal(g3.state, 'ok', 'the venue itself still reads')
+  chainTvlDown = false
+  S.resetStatsForTest()
+  G.resetGullyChainForTest()
 })
 
 test('Peddles has no daily series of its own: DefiLlama fills volume, fees and TVL, named as the fallback', async () => {
