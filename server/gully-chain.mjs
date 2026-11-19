@@ -601,19 +601,22 @@ export const THIN_LIQUIDITY_USD = 500
 
 /**
  * The ledger's dollar figures from indexer token rows, or null with no ETH/USD rate. Pure.
- * rate = the median liquidityUsd / liquidityEth of rows that carry both; liquidity and market cap sum only coins
+ * rate = the median priceUsd / priceEth of rows that carry both; liquidity and market cap sum only coins
  * with at least THIN_LIQUIDITY_USD of real liquidity (thin coins are counted in `thin`).
  */
 export function ledgerUsd(tokens, { volume24h = 0, volumeAll = 0 } = {}) {
   const n = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
-  const rates = tokens.map((t) => (n(t.liquidityUsd) !== null && n(t.liquidityEth) !== null && t.liquidityEth > 0 && t.liquidityUsd > 0 ? t.liquidityUsd / t.liquidityEth : null)).filter((r) => r !== null).sort((a, b) => a - b)
+  // the rate is priceUsd / priceEth (the one ETH/USD the indexer priced the row at); liquidityUsd / liquidityEth is NOT it:
+  // liquidityEth also values a coin's own unsold side, liquidityUsd is the quote side only
+  const rates = tokens.map((t) => (n(t.priceUsd) !== null && n(t.priceEth) !== null && t.priceEth > 0 && t.priceUsd > 0 ? t.priceUsd / t.priceEth : null)).filter((r) => r !== null).sort((a, b) => a - b)
   if (!rates.length) return null
   const rate = rates[Math.floor(rates.length / 2)]
   let liquidity = 0
   let mcap = 0
   let thin = 0
   for (const t of tokens) {
-    const liq = n(t.liquidityEth) !== null ? t.liquidityEth * rate : null
+    // real liquidity = the quote side (liquidityUsd), else liquidityEth at the rate
+    const liq = n(t.liquidityUsd) ?? (n(t.liquidityEth) !== null ? t.liquidityEth * rate : null)
     if (liq === null) continue
     if (liq < THIN_LIQUIDITY_USD) { thin++; continue }
     liquidity += liq
