@@ -473,7 +473,7 @@ async function gullychain() {
     series: { volume: [], fees: [], tvl: [] },
     sources: { volume: { name: 'Gully Chain indexer (test ETH, not charted in dollars)', url: `${GULLY_CHAIN.indexer}/tokens`, fallback: false }, fees: null, tvl: null },
     lastActivity: f.lastActivity,
-    native: { symbol: n.symbol, testnet: true, volume24h: n.volume24h, volumeAll: n.volumeAll, liquidity: n.liquidity, mcap: n.mcap, daily: n.daily },
+    native: { symbol: n.symbol, testnet: true, volume24h: n.volume24h, volumeAll: n.volumeAll, liquidity: n.liquidity, mcap: n.mcap, daily: n.daily, usd: n.usd ?? null },
     testnet: true,
     noUsd: true,
     // Testnet value in dollars (DeFi + bridged), shown on its own and still kept out of every real-money total.

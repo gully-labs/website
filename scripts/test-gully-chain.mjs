@@ -313,3 +313,18 @@ test('chainHealth: both heads, and each failure on its own', async () => {
   assert.equal(h.indexer.block, 207)
   rpcUp = true
 })
+
+test('ledgerUsd: USD at the indexer rate, thin coins left out of liquidity and market cap, null only without a rate', () => {
+  const rows = [
+    { liquidityEth: 2, liquidityUsd: 4000, mcapEth: 10 },
+    { liquidityEth: 0.001, liquidityUsd: 2, mcapEth: 3 }, // thin: shown elsewhere, not summed
+  ]
+  const u = G.ledgerUsd(rows, { volume24h: 0.5, volumeAll: 2 })
+  assert.equal(u.rate, 2000)
+  assert.equal(u.volume24h, 1000)
+  assert.equal(u.volumeAll, 4000)
+  assert.equal(u.liquidity, 4000)
+  assert.equal(u.mcap, 20000)
+  assert.equal(u.thin, 1)
+  assert.equal(G.ledgerUsd([{ liquidityEth: 1, mcapEth: 1 }], {}), null, 'no rate at all: the page says unpriced, never a bare ETH amount')
+})

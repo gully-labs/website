@@ -52,7 +52,7 @@ export interface VenueOk {
   noUsd?: boolean
   /** Testnet value locked in USD (DeFi + bridged, the shared indexer's answer), null when it is not available. Never in the totals. */
   chainTvl?: { totalUsd: number; defiUsd: number | null; bridgedUsd: number | null; updatedAt: string | null } | null
-  native?: { symbol: string; testnet: boolean; volume24h: number; volumeAll: number; liquidity: number; mcap: number; daily: Point[] }
+  native?: { symbol: string; testnet: boolean; volume24h: number; volumeAll: number; liquidity: number; mcap: number; daily: Point[]; /** the same figures in USD at the indexer's ETH/USD (Thin coins left out of liquidity and market cap); null without a rate */ usd?: { rate: number; volume24h: number; volumeAll: number; liquidity: number; mcap: number; thin: number } | null }
   volume7dUsd?: number | null
   /** Venues read straight from their contracts (server/peddles.mjs). `live` once every chain is scanned to head. */
   onchain?: OnchainSummary
@@ -124,6 +124,12 @@ export function fmtNative(v: number | null | undefined, symbol: string, testnet 
   return `${v.toLocaleString('en-US', { maximumFractionDigits: digits })} ${testnet ? 'test ' : ''}${symbol}`
 }
 
+/** A testnet venue's volume as USD (owner money rule), else "unpriced" with the native amount; never a bare coin amount. */
+export function fmtNativeUsd(v: number | null | undefined, usdOf: number | null | undefined, native: string): string {
+  if (usdOf === null || usdOf === undefined || !Number.isFinite(usdOf)) return v === null || v === undefined ? '—' : `unpriced · ${native}`
+  return fmtUsd(usdOf)
+}
+
 /** A venue's display name from its stats key. */
 export const nameOf = (key: string) => projects.find((p) => p.key === key)?.name ?? key
 
@@ -150,7 +156,7 @@ export function metricsOf(v: Venue | undefined): [FigureLine, FigureLine] {
     case 'gullychain':
       return [
         { label: 'LAUNCHES', value: v.counts.launches === null || v.counts.launches === undefined ? '—' : String(v.counts.launches), missing: v.counts.launches === null || v.counts.launches === undefined },
-        { label: 'VOLUME 24H', value: v.native ? fmtNative(v.native.volume24h, v.native.symbol, v.native.testnet) : '—', missing: !v.native },
+        { label: 'VOLUME 24H', value: v.native ? fmtNativeUsd(v.native.volume24h, v.native.usd?.volume24h, fmtNative(v.native.volume24h, v.native.symbol, v.native.testnet)) : '—', missing: !v.native },
       ]
     default:
       return [usd('TVL', v.tvlUsd), usd('VOLUME ALL-TIME', v.volumeAllUsd)]
