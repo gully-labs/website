@@ -316,15 +316,16 @@ test('chainHealth: both heads, and each failure on its own', async () => {
 
 test('ledgerUsd: USD at the indexer rate, thin coins left out of liquidity and market cap, null only without a rate', () => {
   const rows = [
-    { liquidityEth: 2, liquidityUsd: 4000, mcapEth: 10 },
-    { liquidityEth: 0.001, liquidityUsd: 2, mcapEth: 3 }, // thin: shown elsewhere, not summed
+    { priceEth: 1e-6, priceUsd: 0.002, liquidityEth: 9, liquidityUsd: 4000, mcapEth: 10 }, // liquidityEth includes the unsold side: never the rate
+    { priceEth: 1e-6, priceUsd: 0.002, liquidityEth: 0.001, liquidityUsd: 2, mcapEth: 3 }, // thin: shown elsewhere, not summed
   ]
   const u = G.ledgerUsd(rows, { volume24h: 0.5, volumeAll: 2 })
-  assert.equal(u.rate, 2000)
-  assert.equal(u.volume24h, 1000)
-  assert.equal(u.volumeAll, 4000)
+  const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-6, `${a} ~ ${b}`)
+  near(u.rate, 2000)
+  near(u.volume24h, 1000)
+  near(u.volumeAll, 4000)
   assert.equal(u.liquidity, 4000)
-  assert.equal(u.mcap, 20000)
+  near(u.mcap, 20000)
   assert.equal(u.thin, 1)
-  assert.equal(G.ledgerUsd([{ liquidityEth: 1, mcapEth: 1 }], {}), null, 'no rate at all: the page says unpriced, never a bare ETH amount')
+  assert.equal(G.ledgerUsd([{ priceEth: 1e-6, liquidityEth: 1, mcapEth: 1 }], {}), null, 'no rate at all: the page says unpriced, never a bare ETH amount')
 })
