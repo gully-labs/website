@@ -339,7 +339,11 @@ export function cleanDomain(v) {
   return d.length <= 253 && DOMAIN_RE.test(d) ? d : null
 }
 
+/** Incident 2026-11-19: self-serve sign-ups stay shut until the owner sets ANALYTICS_SIGNUPS_OPEN=true. */
+export const signupsOpen = () => String(process.env.ANALYTICS_SIGNUPS_OPEN ?? '').toLowerCase() === 'true'
+
 async function start(address) {
+  if (!signupsOpen()) return { ok: false, status: 503, error: 'Analytics sign-ups are paused for maintenance.' }
   if (!umami.umamiConfigured()) return { ok: false, status: 503, error: 'Self-serve Gully Analytics is not switched on yet on this server. Write to team@gullylabs.xyz.' }
   if (findAccount(address)) return { ok: false, status: 409, error: 'This wallet already has a Gully Analytics account.' }
   if (starting.has(address)) return { ok: false, status: 409, error: 'Your account is being created already.' }
