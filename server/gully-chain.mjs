@@ -597,6 +597,31 @@ export async function blockTimeOf(n) {
 const DAY = 86_400
 const dayKey = (t) => Math.floor(t / DAY) * DAY
 
+export const THIN_LIQUIDITY_USD = 500
+
+/**
+ * The ledger's dollar figures from indexer token rows, or null with no ETH/USD rate. Pure.
+ * rate = the median liquidityUsd / liquidityEth of rows that carry both; liquidity and market cap sum only coins
+ * with at least THIN_LIQUIDITY_USD of real liquidity (thin coins are counted in `thin`).
+ */
+export function ledgerUsd(tokens, { volume24h = 0, volumeAll = 0 } = {}) {
+  const n = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
+  const rates = tokens.map((t) => (n(t.liquidityUsd) !== null && n(t.liquidityEth) !== null && t.liquidityEth > 0 && t.liquidityUsd > 0 ? t.liquidityUsd / t.liquidityEth : null)).filter((r) => r !== null).sort((a, b) => a - b)
+  if (!rates.length) return null
+  const rate = rates[Math.floor(rates.length / 2)]
+  let liquidity = 0
+  let mcap = 0
+  let thin = 0
+  for (const t of tokens) {
+    const liq = n(t.liquidityEth) !== null ? t.liquidityEth * rate : null
+    if (liq === null) continue
+    if (liq < THIN_LIQUIDITY_USD) { thin++; continue }
+    liquidity += liq
+    mcap += (n(t.mcapEth) ?? 0) * rate
+  }
+  return { rate, volume24h: volume24h * rate, volumeAll: volumeAll * rate, liquidity, mcap, thin }
+}
+
 /**
  * The home ledger's figures for Gully Chain Testnet, read from the indexer: launches, graduations, holders, trades and
  * volume in TEST ETH (never valued in dollars: testnet ether has none). Throws when the indexer cannot be read.
@@ -622,6 +647,10 @@ export async function ledgerFigures({ maxTokens = 40, days = 120 } = {}) {
       allTime += v
     }
   }
+  // USD view (owner money rule 2026-11-10, repeated 2026-11-19): the indexer's own ETH/USD (liquidityUsd / liquidityEth of its
+  // rows), never a second price source. A coin whose pools hold under THIN_LIQUIDITY_USD is Thin: shown, but left out of the
+  // liquidity and market-cap totals. No rate at all = null (the page says "unpriced").
+  const usd = ledgerUsd(tokens, { volume24h: sum((t) => t.win?.h24?.vol), volumeAll: allTime })
   const daily = [...byDay.entries()].sort((a, b) => a[0] - b[0]).map(([t, v]) => ({ t, v }))
   const lastTrade = daily.filter((p) => p.v > 0).at(-1)
   const launched = tokens.map((t) => num(t.createdAt)).filter((n) => n > 0)
@@ -635,6 +664,7 @@ export async function ledgerFigures({ maxTokens = 40, days = 120 } = {}) {
       volumeAllSince: launched.length ? new Date(Math.min(...launched) * 1000).toISOString() : null,
       liquidity: sum((t) => t.liquidityEth),
       mcap: sum((t) => t.mcapEth),
+      usd,
       daily,
       chartedTokens: charted,
     },
