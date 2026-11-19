@@ -227,6 +227,7 @@ delete process.env.ANALYTICS_ADMIN_USERNAME
 delete process.env.GULLY_BASE_RPC
 delete process.env.GULLY_MIN_CONFIRMATIONS
 process.env.ANALYTICS_ADOPT_MS = '0'
+process.env.ANALYTICS_SIGNUPS_OPEN = 'true'
 await import('../server/server.mjs')
 const accounts = await import('../server/analytics-accounts.mjs')
 await new Promise((r) => setTimeout(r, 300))
@@ -542,6 +543,12 @@ try {
   r = await cc.post('/api/developer/analytics/start')
   check('and starting a trial answers 503', r.status === 503, r.data?.error)
   process.env.ANALYTICS_ADMIN_PASSWORD = UMAMI_ADMIN_PASSWORD
+
+  /* ------------------------------------------------------------ sign-ups paused (default) --- */
+  delete process.env.ANALYTICS_SIGNUPS_OPEN
+  r = await cc.post('/api/developer/analytics/start')
+  check('sign-ups are paused unless ANALYTICS_SIGNUPS_OPEN=true (503, plain message)', r.status === 503 && /paused for maintenance/.test(r.data?.error ?? ''), JSON.stringify(r.data))
+  process.env.ANALYTICS_SIGNUPS_OPEN = 'true'
 
   const { pageMeta } = await import('../server/seo.mjs')
   check('the docs have a Gully Analytics page', pageMeta('docs.gullylabs.xyz', '/analytics').found)
