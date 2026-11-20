@@ -41,8 +41,8 @@ export const HUB_NAV_IDS = 'overview,activity,chains,ipfs,analytics,services,key
 /** The phone tab bar (under 860px): four pages and "More". */
 export const TAB_BAR_IDS: SidebarTab[] = ['overview', 'activity', 'analytics', 'billing']
 
-/** Every Gully product, on the web. The one link to the other products this app keeps (the sidebar footer). */
-export const PRODUCTS_URL = 'https://gullylabs.xyz/products'
+/** Every other Gully project, on the web (gullylabs.xyz/projects since 2026-11-20). The one link to them this app keeps (the sidebar footer). */
+export const PRODUCTS_URL = 'https://gullylabs.xyz/projects'
 
 /** The old Gully AI page id: the floating assistant opens instead (Dashboard.tsx). */
 export const AI_TAB = { id: 'ai', label: 'Gully AI', icon: Bot } as const
@@ -50,7 +50,7 @@ export const AI_TAB = { id: 'ai', label: 'Gully AI', icon: Bot } as const
 /** The pages that left this app, and where each hash goes now. `of` names the product the feature belongs to;
     `where` says what the destination is, for the report and the tests:
       page      the feature's own page on the web (gullylabs.xyz keeps the public Tracker, Gully Score and widget
-                builder; the products list is gullylabs.xyz/products)
+                builder; the project list is gullylabs.xyz/projects)
       home      the product's home, because the feature has no page of its own on the web yet (gap alerts and the
                 Telegram bot are HolderMaps features; their management UI moves there with HolderMaps' own app). */
 export type RemovedTab = 'products' | 'tracker' | 'alerts' | 'score' | 'widgets' | 'telegram'

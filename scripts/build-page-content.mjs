@@ -6,7 +6,7 @@
 //   titles and descriptions   src/content/seoPages.ts (the <Seo> component reads the same table)
 //   header and footer links   src/content/nav.ts, src/terminal/catalog.ts, src/pages/hub/hubData.ts
 //   product pages             src/terminal/catalog.ts (PRODUCTS, PRODUCT_SECTIONS, productFaq, pricingNote)
-//   the landing               src/pages/hub/hubData.ts (HUB_PRODUCTS, PEDDLE_FAMILY, NEWS) and its page's own sentences
+//   the landing               src/content/appServices.ts (what the app offers); /projects: src/pages/hub/hubData.ts (HUB_PRODUCTS, PEDDLE_FAMILY)
 //   services, projects        src/terminal/catalog.ts (SERVICES), src/content/projects.ts
 //   stock pages               server/data/*-stocks.json and src/content/stockCopy.ts (filled in per page by the server)
 //   every other page          the page's own TSX, read as an outline (scripts/lib/jsx-outline.mjs)
@@ -41,8 +41,6 @@ const JSX_PAGES = {
   '/gully-id': 'src/pages/GullyId.tsx',
   '/tracker': 'src/pages/Tracker.tsx',
   '/services': 'src/pages/Services.tsx',
-  '/products': 'src/pages/products/ProductsIndex.tsx',
-  '/': 'src/pages/hub/Constellation.tsx',
   '/legal': 'src/pages/legal/LegalIndex.tsx',
   '/terms': 'src/pages/legal/Terms.tsx',
   '/privacy': 'src/pages/legal/Privacy.tsx',
@@ -80,6 +78,7 @@ export async function build() {
   const K = await load('src/content/stockCopy.ts')
   const GC = await load('src/content/gullyCore.generated.ts')
   const B = await load('src/data/productBrands.ts')
+  const A = await load('src/content/appServices.ts')
 
   /* ---- titles and descriptions ---- */
   const meta = {}
@@ -140,53 +139,25 @@ export async function build() {
     sec(null, { list: an.how.map((h) => `${h.title}: ${h.body}`), p: an.licence ? [an.licence] : [] }),
   )
 
-  // The landing: its own sentences, then the directory (every product with its line and what is live), the Peddle
-  // family and the dated news, from the data the page draws them from.
-  const home = body['/'].sections
-  /** A section of the landing's own TSX by its heading; a missing one stops the build (the page changed: update here). */
-  const homeSec = (h) => home.find((s) => s.h === h) ?? (() => { throw new Error(`src/pages/hub/Constellation.tsx: no "${h}" heading`) })()
-  const homeLine = (re) => home.flatMap((s) => s.p).find((t) => re.test(t)) ?? (() => { throw new Error(`src/pages/hub/Constellation.tsx: no sentence matching ${re}`) })()
-  const peddle = fromJsx('src/pages/hub/PeddleFamily.tsx').sections.flatMap((s) => s.p)
-  if (!peddle.length) throw new Error('src/pages/hub/PeddleFamily.tsx: its sentence was not found')
-  const dir = homeSec('Where to go')
-  const build = homeSec('We build with you, on the same stack we run.')
-  const contact = homeSec('Tell us what you are building.')
-  body['/'].h1 = H.LANDING_HEADLINE.join(' ')
-  body['/'].sections = [
-    sec(null, { p: [H.LANDING_LEDE] }),
-    sec(dir.h, { p: dir.p.slice(0, 1) }),
-    ...H.HUB_PRODUCTS.map((p) =>
-      sec(`${p.name} · ${H.STATUS_LABEL[p.status]}`, {
-        level: 3,
-        p: [p.line, p.about],
-        list: p.live,
-        links: [
-          [`/products/${p.page}`, `${p.name} on Gully Labs`],
-          [p.url, p.domain],
-        ],
-      }),
-    ),
-    sec(peddle[0], { p: peddle.slice(1) }),
-    ...H.PEDDLE_FAMILY.map((p) =>
-      sec(`${p.name} · ${p.kind}`, {
-        level: 3,
-        p: [p.line],
-        links: [
-          [`/projects/${p.page}`, `${p.name} on Gully Labs`],
-          [p.url, p.domain],
-        ],
-      }),
-    ),
-    sec(null, { p: [homeLine(/^Every item is live or shipped/)], list: H.NEWS.map((n) => `${n.d} · ${H.productOf(n.p).name}: ${n.t} (${n.s})`) }),
-    sec(build.h, { links: build.links.filter(([href]) => href === '/services') }),
-    sec(contact.h, { p: contact.p.slice(0, 1) }),
-  ]
-
-  // /products: every product with its line, and the Peddle family.
-  body['/products'].sections.push(
-    sec(null, { links: C.PRODUCTS.map((p) => [`/products/${p.slug}`, `${p.name}: ${p.line}`]) }),
-    sec(null, { links: H.PEDDLE_FAMILY.map((p) => [`/projects/${p.page}`, `${p.name} (${p.kind}): ${p.line}`]) }),
-  )
+  // The landing (owner, 2026-11-20): only what the Gully Labs app offers, one section per service of the app.
+  body['/'] = {
+    h1: H.LANDING_HEADLINE.join(' '),
+    sections: [
+      sec(null, { p: [H.LANDING_LEDE] }),
+      sec('Everything in the app', { p: ['Sign in with a wallet or Gully ID, then pick a service.'] }),
+      ...A.APP_SERVICES.map((v) => sec(v.title, { level: 3, p: [v.body], list: v.steps, links: [[v.href, v.cta], ...(v.docs ? [[v.docs, `${v.title}: docs`]] : [])] })),
+      sec(null, { links: [['/projects', 'Every other Gully project'], ['/services', 'Development services'], ['/status', 'Live status']] }),
+    ],
+  }
+  // /projects: every Gully project and product that is not a service of the app, with the Peddle family.
+  body['/projects'] = {
+    h1: 'Everything else we build and run.',
+    sections: [
+      sec(null, { p: ['Gully Core, Gully Chain, kre8, payments, identity, RPC, data and games: each runs on its own site, and each is read live.'] }),
+      sec('Products', { level: 3, links: C.PRODUCTS.filter((p) => !['ipfs'].includes(p.slug)).map((p) => [`/products/${p.slug}`, `${p.name}: ${p.line}`]) }),
+      sec('Peddle family', { level: 3, links: H.PEDDLE_FAMILY.map((p) => [`/projects/${p.page}`, `${p.name} (${p.kind}): ${p.line}`]) }),
+    ],
+  }
 
   // /services: every service with its deliverables and timeline.
   body['/services'].sections.push(...C.SERVICES.map((s) => sec(s.title, { level: 3, p: [s.desc, `Typical timeline: ${s.timeline}.`], list: s.deliverables, links: [[`/products/${s.proof}`, `Our own product that proves it: ${C.productBySlug(s.proof)?.name ?? s.proof}`]] })))
@@ -213,7 +184,7 @@ export async function build() {
     const svc = C.SERVICES.find((s) => s.key === C.SERVICE_FOR[p.slug])
     body[`/products/${p.slug}`] = {
       h1: p.name,
-      crumbs: [['/products', 'Products']],
+      crumbs: [['/projects', 'Projects']],
       sections: [
         sec(null, {
           // (The line itself is the page's description, served just above.)
@@ -261,17 +232,10 @@ export async function build() {
   const landing = {
     headline: H.LANDING_HEADLINE,
     lede: H.LANDING_LEDE,
-    productsTitle: 'Where to go',
-    productsSub: dir.p[0],
+    appServices: A.APP_SERVICES,
     // Gully Multisig and Gully Core: state and chains from the Gully Core manifest reading (src/content/gullyCore.generated.ts).
     products: [...H.HUB_PRODUCTS.map(productCard), chainProduct('safe', 'multisig', 'Live', GC.GULLY_CORE.multisigChains.map((n) => n.replace(/ (Network|Chain)$/, '').replace(/^Gully Chain testnet$/, 'Gully Chain')).join(' · ')), chainProduct('gully-core', 'core', GC.GULLY_CORE.liveMainnets.length ? 'Live' : 'Testnet', `${GC.GULLY_CORE.liveMainnets.length} mainnets · ${GC.GULLY_CORE.builderFeePct}% for builders`)],
-    peddleTitle: 'Peddle family',
-    peddleSub: 'Gully Labs projects for trading and DeFi, each on its own site.',
     peddle: H.PEDDLE_FAMILY.map((p) => ({ key: p.key, name: p.name, line: p.line, icon: p.logo, kind: p.kind, fact: P.projects.find((x) => x.slug === p.page).chains.join(', '), href: `/projects/${p.page}` })),
-    newsTitle: "What's new",
-    news: H.NEWS.slice(0, 4).map((n) => ({ d: n.d, t: n.t, href: n.href })),
-    buildTitle: build.h,
-    buildSub: contact.p[0],
   }
 
   // For JSON-LD: the landing's product list (name, own site) and the services (name, one line).

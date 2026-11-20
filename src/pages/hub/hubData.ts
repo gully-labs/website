@@ -461,10 +461,10 @@ export const PRODUCT_COUNT_WORD = COUNT_WORDS[PRODUCT_COUNT] ?? String(PRODUCT_C
     written from too (scripts/test-hub-landing.mjs checks them against PRODUCT_COUNT). */
 export const LANDING_TITLE = SEO_PAGES['/'].title
 export const LANDING_DESCRIPTION = SEO_PAGES['/'].description
-/** The landing's headline, in the three parts the page sets it in: "One studio. Eleven products that work as one." */
-export const LANDING_HEADLINE: [string, string, string] = ['One studio.', `${PRODUCT_COUNT_WORD[0].toUpperCase()}${PRODUCT_COUNT_WORD.slice(1)} products`, 'that work as one.']
+/** The landing's headline, in the three parts the page sets it in (owner, 2026-11-20: only what the app offers). */
+export const LANDING_HEADLINE: [string, string, string] = ['Chains, storage, analytics', 'and builds,', 'in one app.']
 /** The landing's opening sentence, under its headline (the server's pre-render opens with it too). */
-export const LANDING_LEDE = 'We build the whole path a user takes on chain, from sign-in and payments to trading on PeddleSwap and launching on Peddles, and every piece plugs into the next.'
+export const LANDING_LEDE = 'The Gully Labs app is where you order your own chain, pin files to IPFS, track your sites and hire the team that runs Gully Chain in production.'
 
 /** One venue of the /api/stats document, as much of it as the family cards read. */
 export interface StatsVenue {

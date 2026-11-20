@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "note": "The footer of the server-drawn pages (the home page, /projects, product previews). Owner, 2026-11-20: the home page promotes only what the Gully Labs app offers, so its footer lists the app's services and the company, and one link to /projects for every other Gully project. server/data/footer.json (the catalog the blog theme pins) is unchanged. The app column is checked against src/content/appServices.ts by scripts/test-landing.mjs.",
+  "brand": {
+    "tagline": "You Think It, We Ship It. Web3 product studio and development services",
+    "copy": "© 2026 Gully Labs LLC",
+    "figures": "Figures are read live from each service and the Gully Chain testnet; a source that cannot be read says so."
+  },
+  "columns": [
+    {
+      "id": "app",
+      "title": "The app",
+      "links": [
+        { "label": "Create a chain", "href": "https://app.gullylabs.xyz/create-chain", "icon": "boxes", "service": "chains" },
+        { "label": "Gully IPFS", "href": "https://app.gullylabs.xyz/#ipfs", "icon": "hard-drive", "service": "ipfs" },
+        { "label": "Gully Analytics", "href": "https://app.gullylabs.xyz/#analytics", "icon": "chart-line", "service": "analytics" },
+        { "label": "Development", "href": "https://app.gullylabs.xyz/#services", "icon": "hammer", "service": "services" },
+        { "label": "API keys", "href": "https://app.gullylabs.xyz/#keys", "icon": "key-round", "service": "keys" },
+        { "label": "Billing and team", "href": "https://app.gullylabs.xyz/#billing", "icon": "users", "service": "billing" }
+      ]
+    },
+    {
+      "id": "company",
+      "title": "Company",
+      "links": [
+        { "label": "Projects", "href": "/projects", "icon": "layers" },
+        { "label": "Docs", "href": "https://docs.gullylabs.xyz", "icon": "book-open" },
+        { "label": "Blog", "href": "https://blog.gullylabs.xyz", "icon": "message-circle" },
+        { "label": "Status", "href": "/status", "icon": "activity" },
+        { "label": "Contact", "href": "/services#contact", "icon": "mail" }
+      ]
+    },
+    {
+      "id": "follow",
+      "title": "Follow",
+      "links": [
+        { "label": "X", "href": "https://x.com/Gully_Labs", "icon": "arrow-up-right" },
+        { "label": "Telegram", "href": "https://t.me/GullyLabsNews", "icon": "send" },
+        { "label": "GitHub", "href": "https://github.com/gully-labs", "icon": "box" }
+      ]
+    }
+  ],
+  "legal": [
+    { "label": "Terms", "href": "/terms", "icon": "file-text" },
+    { "label": "Privacy", "href": "/privacy", "icon": "lock" },
+    { "label": "Legal", "href": "/legal", "icon": "scale" }
+  ]
+}

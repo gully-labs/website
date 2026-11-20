@@ -22,12 +22,12 @@ export const fullTitle = (path: string, title: string) => (path === '/' ? `Gully
 
 export const SEO_PAGES: Record<string, SeoEntry> = {
   '/': {
-    title: 'Launch a token, a launchpad or a DEX',
-    description: 'Gully Labs builds Gully Core: launch tokens, launchpads and DEXes on your chain, with Gully ID, Gully Pay, Gully RPC and live status for every product.',
+    title: 'Chains, IPFS, analytics and builds in one app',
+    description: 'The Gully Labs app: order your own chain, pin files to IPFS, track your sites with Gully Analytics, create API keys and request a build, with live status.',
   },
-  '/products': {
-    title: 'Products',
-    description: 'Every Gully Labs product on one page, each with live charts: Gully ID, Gully Pay, Gully Chain, Gully RPC, HolderMaps, Gully Security and the Peddle family.',
+  '/projects': {
+    title: 'Projects: everything else we build',
+    description: 'Every Gully Labs project, read live: Gully Core, Gully Chain, kre8, Gully Pay, Gully ID, Gully RPC, HolderMaps, Gully Security, Gully Studio and Peddle.',
   },
   '/tracker': {
     title: 'Stock token tracker: price vs fair price',

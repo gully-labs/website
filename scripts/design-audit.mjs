@@ -12,7 +12,7 @@ const out = process.argv[2]
 const di = process.argv.indexOf('--dist')
 const dist = di > 0 ? process.argv[di + 1] : null
 fs.mkdirSync(out, { recursive: true })
-const TARGETS = JSON.parse(process.env.TARGETS || '[["hub","https://gullylabs.xyz/"],["products","https://gullylabs.xyz/products"],["hm","https://holdermaps.xyz/"],["hm-token","https://holdermaps.xyz/robinhood/AAPL"],["hm-gully","https://holdermaps.xyz/gully/0xf0fd2800d4d6201857c674369411a7536e633008"]]')
+const TARGETS = JSON.parse(process.env.TARGETS || '[["hub","https://gullylabs.xyz/"],["projects","https://gullylabs.xyz/projects"],["hm","https://holdermaps.xyz/"],["hm-token","https://holdermaps.xyz/robinhood/AAPL"],["hm-gully","https://holdermaps.xyz/gully/0xf0fd2800d4d6201857c674369411a7536e633008"]]')
 const WIDTHS = JSON.parse(process.env.WIDTHS || '[390,768,1024,1440,1920]')
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.avif': 'image/avif', '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json' }
 

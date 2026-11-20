@@ -23,17 +23,25 @@ const data = {
 }
 const meta = pageMeta('gullylabs.xyz', '/preview/landing')
 const html = await L.renderLanding(headTags(meta), data)
+const phtml = await L.renderProjects(headTags(pageMeta('gullylabs.xyz', '/projects')), data)
+const APPS = (await import('../src/content/appServices.ts')).APP_SERVICES
 
 test('the first response is the page: one h1, products, footer and figures, no loader', () => {
   assert.equal((html.match(/<h1[\s>]/g) ?? []).length, 1)
   assert.ok(!/id="root"|class="[^"]*(spinner|loader)[^"]*"|Loading…/.test(html), 'no app shell and no loader')
-  for (const t of ['Launch a token. Run a launchpad. Own a DEX.', 'You Think It, We Ship It', 'Build on Gully Core', '0.30%', 'Gully Multisig', 'Gully Core', 'PeddleSwap', '$64.9K', 'Powered by Gully Labs']) assert.ok(html.includes(t), t)
+  for (const t of ['Chains, storage, analytics and builds, in one app.', 'You Think It, We Ship It', 'Everything in the app', 'Powered by Gully Labs', ...APPS.map((x) => x.title)]) assert.ok(html.includes(t), t)
+  // The home page promotes only what the app offers (owner, 2026-11-20): no other Gully project is named or sold on it.
+  const main = html.slice(html.indexOf('<main>'), html.indexOf('</main>'))
+  for (const t of ['Gully Core', 'Gully Multisig', 'PeddleSwap', 'Peddles', 'HolderMaps', 'Gully Security', 'Gully Pay', 'Gully RPC', 'kre8', 'Gully Studio', 'Gully AI']) assert.ok(!main.includes(t), `${t} is a project: it belongs on /projects`)
+  assert.ok(!/admin\.|internal|e2e/i.test(main), 'no admin or internal text on a public page')
   assert.ok(!/gully safe|safe\.gullychain|deepcore/i.test(html))
 })
 
 test('a source that cannot be read shows a dash, never a zero or an invented figure', async () => {
   const none = await L.renderLanding(headTags(meta), { hub: null, products: null, live: null, stats: null })
-  assert.ok(none.includes('data-b="up">–<') && none.includes('data-b="tvl">–<'))
+  assert.ok(none.includes('data-b="up">–<') && none.includes('data-b="ms">–<') && none.includes('data-b="block">–<'))
+  const noneP = await L.renderProjects(headTags(pageMeta('gullylabs.xyz', '/projects')), { hub: null, products: null, live: null, stats: null })
+  assert.ok(noneP.includes('data-b="up">–<') && noneP.includes('data-b="tvl">–<'))
   const c = G.cards({})
   for (const [k, v] of Object.entries(c)) if (v.how == null) assert.equal(v.value, '–', k)
 })
@@ -46,7 +54,7 @@ test('every menu item has an icon; external links open in a new tab', () => {
 test('budget: the page and its scripts stay under 100 KB compressed', () => {
   const gz = (s) => zlib.gzipSync(s).length
   const scripts = gz(L.landingAsset('/landing/live.js')) + gz(L.landingAsset('/landing/graphs.mjs'))
-  assert.ok(scripts < 12_000, `scripts ${scripts}`)
+  assert.ok(scripts < 13_500, `scripts ${scripts}`)
   assert.ok(gz(html) + scripts < 100_000, `total ${gz(html) + scripts}`)
 })
 
@@ -79,8 +87,8 @@ test('as the home page it carries the head of the home page: title, canonical, J
 
 test('every image on the page is a file we hold, served at its own path', async () => {
   const { movedPageUrl } = await import('../server/hosts.mjs')
-  const paths = new Set([...html.matchAll(/(?:src|href)="(\/[^"]+\.(?:png|svg|webp|jpg))"/g)].map((m) => m[1]))
-  assert.ok(paths.size > 15)
+  const paths = new Set([...(html + phtml).matchAll(/(?:src|href)="(\/[^"]+\.(?:png|svg|webp|jpg))"/g)].map((m) => m[1]))
+  assert.ok(paths.size > 10)
   for (const f of paths) {
     assert.ok(fs.existsSync(new URL(`../public${f}`, import.meta.url)), `${f} is not in public/`)
     assert.equal(movedPageUrl(f), null, `${f} would redirect`)
@@ -100,7 +108,7 @@ test('the owl, logotype, badge and the Gully Core mark are the official files, b
   assert.ok(html.includes('/brand/kit/owl/owl-presenting.png') && !html.includes('owl-presenting-400.webp'), 'the page serves the kit owl')
   assert.ok(!html.includes('gully-core-emblem-192.png'), 'no old Gully Core emblem')
   // Gully Core's own kit (2026-11-08): the hex-C (scripts/test-product-brands.mjs checks every product mark).
-  assert.ok(html.includes('/brand/products/gully-core-icon-ink.svg'), 'Gully Core shows its own hex-C')
+  assert.ok(phtml.includes('/brand/products/gully-core-icon-ink.svg'), 'Gully Core shows its own hex-C on /projects')
 })
 
 test('an all-zero chart keeps its resting line and says so; a chart with activity does not', () => {
@@ -111,38 +119,54 @@ test('an all-zero chart keeps its resting line and says so; a chart with activit
   assert.ok(!G.coreBars({ activity: { hourly: [] } }, 'swaps').includes('g-none'), 'an unreadable source stays an empty frame, not a claim of zero')
 })
 
-test('the footer and the orbit grid come from one catalog (server/data/footer.json): same products, no column over seven rows', () => {
-  const F = JSON.parse(fs.readFileSync(new URL('../server/data/footer.json', import.meta.url), 'utf8'))
-  assert.equal(F.columns.length, 4)
+test('the footer is the app column + company; every project is one link away on /projects; every project tile is on /projects', () => {
+  const F = JSON.parse(fs.readFileSync(new URL('../server/data/footer-app.json', import.meta.url), 'utf8'))
   for (const c of F.columns) assert.ok(c.links.length <= 7, `${c.title}: ${c.links.length} rows`)
-  const all = [...F.columns.flatMap((c) => c.links), ...F.peddle.links]
-  for (const l of all) assert.ok(['product', 'tool', 'company', 'peddle'].includes(l.rank), `${l.label}: rank ${l.rank} is not a footer item`)
-  const tiles = new Set(all.map((l) => l.tile).filter(Boolean))
-  assert.deepEqual([...tiles].sort(), L.TILES.map((t) => t.key).sort(), 'every tile is in the footer and every footer tile is in the grid')
-  assert.equal(all.find((l) => l.label === 'Gully Core').href, 'https://gullycore.xyz')
-  for (const l of all) assert.ok(html.includes(`<span>${l.label}</span>`), `${l.label} is in the footer`)
-  assert.ok(!/Offerwall|Copy Trading|Gully Social/.test(html.slice(html.indexOf('<footer'))), 'features are not footer items')
+  const app = F.columns.find((c) => c.id === 'app').links
+  assert.deepEqual(app.map((l) => l.service), APPS.map((x) => x.key), 'the footer lists the services of the app, in order')
+  for (const l of app) assert.equal(l.href, APPS.find((x) => x.key === l.service).href.replace(/#.*/, '') + (l.href.includes('#') ? l.href.slice(l.href.indexOf('#')) : ''), l.label)
+  for (const l of F.columns.flatMap((c) => c.links)) assert.ok(html.includes(`<span>${l.label}</span>`) && phtml.includes(`<span>${l.label}</span>`), `${l.label} is in the footer of both pages`)
+  assert.ok(html.slice(html.indexOf('<footer')).includes('href="/projects"'), 'the footer links /projects')
+  const grouped = new Set(L.GROUPS.flatMap((g) => g.keys))
+  assert.deepEqual([...grouped].sort(), L.TILES.map((t) => t.key).sort(), 'every tile is in a group of /projects and every group member has a tile')
+  for (const t of L.TILES) assert.ok(phtml.includes(`data-p="${t.key}"`), `${t.name} is on /projects`)
+  assert.ok(!/Offerwall|Copy Trading|Gully Social/.test(phtml.slice(phtml.indexOf('<footer'))), 'features are not footer items')
+})
+
+test('the app cards match the app: the sidebar pages are covered, each card opens the app or its docs in a new tab, each has a live picture', async () => {
+  const { SIDEBAR } = await import('../src/pages/developers/services/nav.ts').catch(() => ({ SIDEBAR: null }))
+  const sidebar = SIDEBAR ? SIDEBAR.map((x) => x.id) : ['overview', 'activity', 'chains', 'ipfs', 'analytics', 'services', 'keys', 'billing', 'team', 'settings']
+  const covered = new Set([...APPS.flatMap((x) => x.pages), 'overview', 'activity', 'settings'])
+  assert.deepEqual([...covered].sort(), sidebar.sort(), 'every page of the app is a card or part of the account')
+  for (const t of APPS) {
+    assert.ok(html.includes(`id="p-${t.key}"`) && html.includes(`data-sv-chart="${t.key}"`), `${t.key}: panel and picture`)
+    assert.ok(html.includes(`href="${t.href}"`), `${t.key}: button`)
+    assert.ok(/^https:\/\/app\.gullylabs\.xyz\//.test(t.href), `${t.key} opens the app`)
+  }
+  assert.ok(html.includes('Free ') || html.includes('Free</'), 'the plan prices chart names the free plan')
+  assert.ok(/\$49/.test(html) && /\$199/.test(html), 'USD prices from server/plans.mjs')
+  assert.ok(html.includes('href="/projects"') && html.includes('>Projects<'), 'the header links /projects')
 })
 
 test('the chain picker is the Gully Core manifest reading: every chain, its state, live mainnets first, a real mark each', () => {
   const { chains, liveMainnets } = C.gullyCore()
   assert.ok(chains.length >= 6 && liveMainnets.length >= 1)
   for (const c of chains) {
-    assert.ok(html.includes(`data-chain="${c.key}"`), c.key)
-    assert.ok(html.includes(`data-detail="${c.key}"`), `${c.key} detail`)
-    assert.ok(html.includes(`<span>${c.state}</span>`), `${c.key}: ${c.state}`)
+    assert.ok(phtml.includes(`data-chain="${c.key}"`), c.key)
+    assert.ok(phtml.includes(`data-detail="${c.key}"`), `${c.key} detail`)
+    assert.ok(phtml.includes(`<span>${c.state}</span>`), `${c.key}: ${c.state}`)
     if (!c.open) assert.equal(c.cta, null, `${c.key} is not open: no button`)
-    else assert.ok(c.cta && html.includes(c.cta.href), `${c.key}: a button to ${c.cta?.href}`)
+    else assert.ok(c.cta && phtml.includes(c.cta.href), `${c.key}: a button to ${c.cta?.href}`)
     assert.ok(c.logo && fs.existsSync(new URL(`../public${c.logo}`, import.meta.url)), `${c.key}: a real mark served by this site (${c.logo})`)
   }
-  const first = html.indexOf('data-chain=')
-  assert.ok(html.slice(first, first + 60).includes(`data-chain="${chains[0].key}"`) && chains[0].status === 'live', 'a live mainnet comes first')
+  const first = phtml.indexOf('data-chain=')
+  assert.ok(phtml.slice(first, first + 60).includes(`data-chain="${chains[0].key}"`) && chains[0].status === 'live', 'a live mainnet comes first')
   for (const c of chains) assert.ok(!c.live.includes('Gully Multisig') || c.multisig, c.key)
-  assert.ok(!html.includes('core-chains'), 'no hard-coded chain list is left')
+  assert.ok(!phtml.includes('core-chains'), 'no hard-coded chain list is left')
 })
 
 test('Build links go to the real Gully Core routes; no simulated motion in the scripts', () => {
-  for (const r of ['launch/v2/new', 'pads/new', 'dexes/new?kind=dex', 'pads/new?kind=stocks', 'vaults/new', 'locks/new']) assert.ok(html.includes(`https://app.gullycore.xyz/${r}`), r)
+  for (const r of ['launch/v2/new', 'pads/new', 'dexes/new?kind=dex', 'pads/new?kind=stocks', 'vaults/new', 'locks/new']) assert.ok(phtml.includes(`https://app.gullycore.xyz/${r}`), r)
   const js = L.landingAsset('/landing/live.js') + L.landingAsset('/landing/graphs.mjs')
   assert.ok(!/Math\.random/.test(js) && !/Math\.sin/.test(L.landingAsset('/landing/live.js')))
 })

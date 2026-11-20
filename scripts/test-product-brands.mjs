@@ -122,7 +122,7 @@ const marksIn = (html) => [...html.matchAll(/(?:src|href)="(\/brand\/[^"]+)"/g)]
 test('the landing draws every product node, tile and heading with its own registry mark', async () => {
   const { headTags, pageMeta } = await import('../server/seo.mjs')
   const L = await import('../server/landing.mjs')
-  const html = await L.renderLanding(headTags(pageMeta('gullylabs.xyz', '/preview/landing')), data)
+  const html = await L.renderProjects(headTags(pageMeta('gullylabs.xyz', '/projects')), data)
   for (const p of marksIn(html)) assert.ok(PATHS.has(p), `${p} is not a registry file`)
   // The constellation (both layouts), the "Everything in orbit" tiles.
   const TOOLS = ['bridge', 'faucet', 'explorer']

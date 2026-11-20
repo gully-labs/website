@@ -64,7 +64,7 @@ export const productsNav: NavGroup = {
     scoreNavEntry,
     { label: 'Gully RPC', desc: 'One RPC key for every Gully chain', href: 'https://gullyrpc.xyz/', newTab: true, icon: Network },
     { label: 'Gully Pay', desc: 'x402, checkout and merchants', href: 'https://gullypay.xyz/', newTab: true, icon: CircleDollarSign },
-    { label: 'All products', desc: 'Every Gully product, each on its own domain', to: '/products', icon: LayoutGrid },
+    { label: 'All projects', desc: 'Every Gully project, each on its own domain', to: '/projects', icon: LayoutGrid, match: ['/projects'] },
   ],
 }
 
@@ -102,7 +102,7 @@ export const navGroups: NavGroup[] = [productsNav, developersNav, companyNav]
 
 /** Plain header links, between the App & API and Company menus. */
 export const navLinks: NavEntry[] = [
-  { label: 'Projects', desc: 'The venues we run', to: '/#projects', icon: FlaskConical, match: ['/projects'] },
+  { label: 'Projects', desc: 'Everything else we build and run', to: '/projects', icon: FlaskConical, match: ['/projects'] },
   { label: 'Pricing', desc: 'API, alerts and analytics plans', to: '/pricing', icon: Tag, match: ['/pricing'] },
   { label: 'Gully AI', desc: 'Ask anything about Gully Labs, with sources (⌘K)', to: '/ask', icon: Sparkles, match: ['/ask'] },
   { label: 'Holder Map', desc: 'Who really holds any token, on six chains with Gully Chain', to: '/holders', icon: ScanSearch, match: ['/holders'], newDot: true },

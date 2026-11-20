@@ -72,6 +72,9 @@ export const SURFACES = [
   { key: 'studio-docs', group: 'labs', name: 'Gully Studio docs', url: 'https://docs.gullystudio.xyz', soon: true },
   // The gateway serves only pinned content: the inline empty-directory CID answers without the network.
   { key: 'ipfs', group: 'labs', name: 'Gully IPFS', url: 'https://docs.gullylabs.xyz/ipfs', probe: 'https://ipfs.gullylabs.xyz/ipfs/bafyaabakaieac' },
+  // The app's own services (owner, 2026-11-20: the landing promotes what the app offers, so each has a probe).
+  { key: 'analytics', group: 'labs', name: 'Gully Analytics', url: 'https://analytics.gullylabs.xyz' },
+  { key: 'api', group: 'labs', name: 'Gully Labs API', url: 'https://gullylabs.xyz/api/plans' },
   { key: 'status', group: 'labs', name: 'Status page', url: 'https://status.gullylabs.xyz' },
 ]
 

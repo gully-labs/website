@@ -37,11 +37,18 @@ const BUILT_ON = (() => {
 const KIT_OG = 'https://gullylabs.xyz/brand/kit/og-default-1200x630.png'
 /** The landing's own share image ("Constellation", 2026-10-27): the eight products around the Gully Labs mark. */
 const HUB_OG = KIT_OG
-/** The landing's product list for crawlers (src/pages/hub/hubData.ts HUB_PRODUCTS in story order, then PEDDLE_FAMILY). */
+/** The landing's list for crawlers: the services of the Gully Labs app (src/content/appServices.ts). */
 const HUB_LD = {
   '@context': 'https://schema.org',
   '@type': 'ItemList',
-  name: 'Gully Labs products',
+  name: 'Gully Labs app services',
+  itemListElement: CONTENT.landing.appServices.map((v, i) => ({ '@type': 'ListItem', position: i + 1, name: v.title, url: v.href })),
+}
+/** /projects: every Gully project and product (src/pages/hub/hubData.ts HUB_PRODUCTS in story order, then PEDDLE_FAMILY). */
+const PROJECTS_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'Gully Labs projects',
   itemListElement: CONTENT.hub.map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, url })),
 }
 /* Titles and descriptions. gullylabs.xyz's own pages (the home page, /products and one page per product, the Peddle
@@ -465,8 +472,8 @@ function pageMetaFor(host, pathname) {
     ? prod.ld
     : p === '/'
       ? [ORG, WEBSITE_LD, APP_LD, HUB_LD]
-      : p === '/products'
-        ? [{ '@context': 'https://schema.org', '@type': 'ItemList', name: 'Gully Labs products', itemListElement: Object.entries(CONTENT.product).map(([slug, d], i) => ({ '@type': 'ListItem', position: i + 1, name: d.name, url: `${SITE}/products/${slug}` })) }, crumbsLd([HOME_CRUMB, [name, url]])]
+      : p === '/projects'
+        ? [PROJECTS_LD, { '@context': 'https://schema.org', '@type': 'ItemList', name: 'Gully Labs products', itemListElement: Object.entries(CONTENT.product).map(([slug, d], i) => ({ '@type': 'ListItem', position: i + 1, name: d.name, url: `${SITE}/products/${slug}` })) }, crumbsLd([HOME_CRUMB, [name, url]])]
         : p === '/services'
           ? [ORG, SERVICES_LD, crumbsLd([HOME_CRUMB, [name, url]])]
           : p === '/tracker'
@@ -627,8 +634,8 @@ export function sitemapFor(host) {
     // listed here; nor are the pages of products that moved to their own domains (hosts.mjs movedPageUrl).
     urls = [...Object.keys(MAIN).filter((p) => !movedPageUrl(p) && !(holderMapsPrimary() && p === '/holders') && !(securityPrimary() && securityShortPath(p))), ...(holderMapsPrimary() ? [] : holderPaths().slice(1)), ...(securityPrimary() ? [] : securityPaths().filter((p) => p.startsWith('/security/reports/')))].map((p) => [
       SITE + (p === '/' ? '/' : p),
-      p === '/' ? '1.0' : p === '/tracker' ? '0.9' : p.startsWith('/projects/') ? '0.8' : '0.7',
-      p === '/tracker' ? 'hourly' : p.startsWith('/tracker/') ? 'daily' : p === '/' || p === '/score' || p === '/ecosystem' || p.startsWith('/projects/') ? 'daily' : 'monthly',
+      p === '/' ? '1.0' : p === '/tracker' || p === '/projects' ? '0.9' : p.startsWith('/projects/') ? '0.8' : '0.7',
+      p === '/tracker' ? 'hourly' : p.startsWith('/tracker/') ? 'daily' : p === '/' || p === '/projects' || p === '/score' || p === '/ecosystem' || p.startsWith('/projects/') ? 'daily' : 'monthly',
     ])
   // Listed Gully Score pages (a watched contract that allows listing, or one with a published report).
   if (!host.startsWith('docs.') && !isAppHost(host) && !isHolderMapsHost(host) && !isSecurityHost(host)) for (const p of scoreSitemapPaths()) urls.push([SITE + p, '0.5', 'daily'])

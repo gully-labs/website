@@ -156,6 +156,7 @@ export function cards({ hub, products, live, stats }) {
     studio: { state: stateOf(hub, KEYS.studio), value: '', unit: '', graph: diagrams.studio(), how },
     ai: { state: stateOf(hub, ['ai-api']) === 'live' ? 'live' : 'coming', value: '', unit: '', graph: diagrams.ai(), how },
     multisig: { state: stateOf(hub, KEYS.multisig), value: '', unit: '', graph: diagrams.multisig(), how },
+    quests: { state: stateOf(hub, ['street', 'indexer']), value: '', unit: '', graph: '', how: '' },
     kre8: { state: stateOf(hub, ['street']), value: '', unit: '', graph: '', how: '' },
     bridge: { state: stateOf(hub, ['bridge']), value: '', unit: '', graph: '', how: '' },
     faucet: { state: stateOf(hub, ['faucet']), value: '', unit: '', graph: '', how: '' },
@@ -316,4 +317,29 @@ export function productView({ hub, products, live, stats }, page) {
 export function feeCurve(p) {
   const y = (v) => (H - 8 - (v / 50) * (H - 16)).toFixed(1)
   return svg(`<path class="g-line" pathLength="1" d="M0 ${y(p.from)}L${p.from === p.to ? W : W * 0.8} ${y(p.to)}L${W} ${y(p.to)}" vector-effect="non-scaling-stroke"/>`, `The fee falls from ${p.from}% to ${p.to}%`, true)
+}
+
+/** What the landing's app cards draw (owner, 2026-11-20): one live picture per service of the app. `plans`: the API
+    plans as [{ name, usd }], read from server/plans.mjs (the one place the prices live); an unreadable list is an empty
+    frame. USD always. */
+export function priceBars(plans, label) {
+  const list = (plans ?? []).filter((p) => num(p.usd) != null)
+  if (!list.length) return empty(label)
+  const max = Math.max(...list.map((p) => p.usd), 1)
+  const w = W / list.length
+  const body = list.map((p, i) => {
+    const h = p.usd === 0 ? 2 : Math.max(6, (p.usd / max) * (H - 36))
+    const x = i * w + w * 0.2
+    return `<rect class="g-bar" style="--i:${i * 4}" x="${x.toFixed(1)}" y="${(H - 16 - h).toFixed(1)}" width="${(w * 0.6).toFixed(1)}" height="${h.toFixed(1)}" rx="3"/><text class="g-t" x="${(i * w + w / 2).toFixed(1)}" y="${H - 3}" text-anchor="middle">${p.name} ${p.usd === 0 ? 'Free' : `$${p.usd}`}</text>`
+  }).join('')
+  return svg(`<line x1="0" y1="${H - 16}" x2="${W}" y2="${H - 16}" class="g-axis"/>${body}`, label)
+}
+
+/** One app card's live reading: its state, response time, probes answering and the picture. `s`: the service as in
+    src/content/appServices.ts ({ probes, chart, caption }). Same rules as the landing: an unreadable source is a dash. */
+export function serviceView(data, s) {
+  const v = productView(data, { card: null, hub: s.probes, metric: s.chart === 'blocks' ? 'blocks' : null })
+  const chart = s.chart === 'blocks' ? v.activity : s.chart === 'plans' ? priceBars(data.plans, s.caption) : v.latency
+  const probed = s.probes.length > 0
+  return { state: probed ? v.state : 'live', word: probed ? v.word : 'Live', ms: probed ? v.ms : '–', up: probed ? v.up : '–', chart }
 }

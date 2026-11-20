@@ -133,26 +133,24 @@ test('Peddle family: PeddleSwap (DEX), Peddles (launchpad) and PeddleQuest, offi
   for (const p of H.PEDDLE_FAMILY) assert.match(projects, new RegExp(`slug: '${p.page}',\\s+key: '${p.key}',\\s+family: 'Peddle'`), p.key)
 })
 
-test('product count: eight Gully-named products + the Peddle family, the same in the title, the H1, crawlers and JSON-LD', async () => {
+test('product count: eleven projects (eight Gully-named + the Peddle family) are on /projects; the home page is the app (2026-11-20)', async () => {
   assert.equal(H.PRODUCT_COUNT, 11)
   assert.equal(H.PRODUCT_COUNT_WORD, 'eleven')
-  assert.match(H.LANDING_TITLE, /^Launch a token, a launchpad or a DEX$/)
-  assert.ok(H.LANDING_DESCRIPTION.includes('Gully Core') && H.LANDING_TITLE.length + 13 <= 60 && H.LANDING_DESCRIPTION.length <= 160, 'the home title and description are in range')
-  const page = read('src/pages/hub/Constellation.tsx')
-  assert.ok(!/Eight (connected )?products/.test(page), 'no stale count on the landing')
-  assert.ok(page.includes('<PeddleFamily stats={stats}'), 'the family is in the product line-up')
+  assert.ok(H.LANDING_TITLE.length + 13 <= 60 && H.LANDING_DESCRIPTION.length >= 120 && H.LANDING_DESCRIPTION.length <= 160, 'the home title and description are in range')
   // The server's head tags come from the same table as the page's (src/content/seoPages.ts, through
-  // server/data/page-content.json), and its product list from hubData: the two are read here as the server serves them.
+  // server/data/page-content.json), and its list from src/content/appServices.ts (home) and hubData (/projects).
   const { pageMeta } = await import('../server/seo.mjs')
   const served = pageMeta('gullylabs.xyz', '/')
   assert.equal(served.title, `Gully Labs · ${H.LANDING_TITLE}`, 'server title equals the page')
   assert.equal(served.description, H.LANDING_DESCRIPTION, 'server description equals the page')
-  assert.ok(H.LANDING_HEADLINE.join(' ').toLowerCase().includes(`${H.PRODUCT_COUNT_WORD} products`), 'the headline counts the products')
   assert.equal(served.body.h1, H.LANDING_HEADLINE.join(' '), 'the served h1 is the page headline')
   assert.ok(!/Eight connected/.test(read('server/seo.mjs')))
-  const list = served.ld.find((x) => x['@type'] === 'ItemList')
-  for (const p of H.PEDDLE_FAMILY) assert.ok(list.itemListElement.some((i) => i.name === p.name && i.url === p.url), `${p.name} in the ItemList JSON-LD`)
-  assert.equal(list.itemListElement.length, H.PRODUCT_COUNT, 'the ItemList counts every product')
+  const apps = served.ld.find((x) => x['@type'] === 'ItemList')
+  assert.equal(apps.itemListElement.length, 6, 'the home ItemList is the six services of the app')
+  const projects = pageMeta('gullylabs.xyz', '/projects')
+  const list = projects.ld.find((x) => x['@type'] === 'ItemList' && x.name === 'Gully Labs projects')
+  for (const p of H.PEDDLE_FAMILY) assert.ok(list.itemListElement.some((i) => i.name === p.name && i.url === p.url), `${p.name} in the /projects ItemList JSON-LD`)
+  assert.equal(list.itemListElement.length, H.PRODUCT_COUNT, 'the ItemList counts every project')
   // llms.txt / llms-full.txt name the family and link the two sites
   for (const f of ['server/data/llms.txt', 'server/data/llms-full.txt']) {
     const t = read(f)
@@ -160,8 +158,8 @@ test('product count: eight Gully-named products + the Peddle family, the same in
     assert.ok(t.includes('- [PeddleSwap](https://peddleswap.xyz/): A Gully Labs project (Peddle family, DEX).'), f)
     assert.ok(t.includes('- [Peddles](https://peddles.xyz/): A Gully Labs project (Peddle family, Launchpad).'), f)
   }
-  // /products, /ecosystem and the footer present them; the header menus are unchanged (slim nav)
-  assert.ok(read('src/pages/products/ProductsIndex.tsx').includes('<PeddleFamily stats={live.stats}'))
+  // /projects (server-drawn, server/landing.mjs), /ecosystem and the footer present them
+  assert.ok(read('server/landing.mjs').includes("keys: ['peddleswap', 'peddles', 'peddlequest']"))
   assert.ok(read('src/pages/Ecosystem.tsx').includes('FAMILY'))
   // the site footer lists the family under "Peddle" (external hosts open in a new tab through NavLink's href branch);
   // the header and the Menu sheet do not change
