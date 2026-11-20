@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-11T04:59:26.648Z",
+ "updatedAt": "2026-11-20T20:54:22.009Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -1979,8 +1979,8 @@
    "title": "Gully IPFS",
    "url": "https://docs.gullylabs.xyz/ipfs#policy",
    "section": "Content policy",
-   "text": "Pin only content you have the right to publish. No illegal content, no content that sexualises minors, no malware or phishing, no other people's private data, nothing that infringes copyright. Uploaded and pinned images and video are reviewed. Content that breaks the policy is taken down: unpinned from every Gully node and refused by the gateway, and the account may be closed. Report content to team@gullylabs.xyz.",
-   "updatedAt": "2026-11-11T03:56:10.123Z"
+   "text": "Pin only content you have the right to publish. No illegal content, no content that sexualises minors, no malware or phishing, no other people's private data, nothing that infringes copyright. Uploaded and pinned images are scanned automatically, and video, SVG and anything the scanner flags is looked at by a person. Content that breaks the policy is taken down: unpinned from every Gully node and refused by the gateway, the same file is refused if it is uploaded again, and the account may be closed. Report content to team@gullylabs.xyz.",
+   "updatedAt": "2026-11-20T20:54:22.009Z"
   },
   {
    "id": "571274f7bd88",
@@ -2406,15 +2406,6 @@
    "updatedAt": "2026-11-06T16:07:55.653Z"
   },
   {
-   "id": "3a7a9f90ec9e",
-   "source": "Site",
-   "title": "Gully Labs home",
-   "url": "https://gullylabs.xyz/",
-   "section": null,
-   "text": "Gully Labs · product studio Services up all Gully sites Gully Chain blocktestnet 485590 See the products Work with us Building something? Send us a brief or browse every product page.",
-   "updatedAt": "2026-11-07T01:38:40.876Z"
-  },
-  {
    "id": "e386696a4751",
    "source": "Site",
    "title": "Stock token tracker",
@@ -2604,13 +2595,13 @@
    "updatedAt": "2026-10-17T16:09:52.545Z"
   },
   {
-   "id": "03d58268d3cb",
+   "id": "3a7a9f90ec9e",
    "source": "Site",
    "title": "Gully Labs links and contact",
    "url": "https://gullylabs.xyz/",
    "section": null,
-   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsNews. TelegramBot: https://t.me/GullyLabsBot. YouTube: https://www.youtube.com/@Gully_Labs. TikTok: https://www.tiktok.com/@gully_labs. Facebook: https://www.facebook.com/gullylabsllc. Medium: https://medium.com/@labsgully. Stock tracker: https://gullylabs.xyz/tracker. HolderMaps: https://holdermaps.xyz/. Swap: https://gullylabs.xyz/tracker/robinhood/NVDA#swap. Alerts: https://gullylabs.xyz/#alerts. Gully Analytics: https://gullylabs.xyz/analytics. Gully Chain: https://gullychain.xyz/. Gully Security: https://gullysecurity.xyz/. Gully RPC: https://gullyrpc.xyz/. Gully Pay: https://gullypay.xyz/. All products: https://gullylabs.xyz/products. Docs: https://docs.gullylabs.xyz. API docs: (live value)/api. SDK: https://github.com/gully-labs/sdk. Widget: https://gullylabs.xyz/widget. Changelog: (live value)/changelog. Status: https://gullylabs.xyz/status. Services: https://gullylabs.xyz/services. About: https://gullylabs.xyz/about. Ecosystem: https://gullylabs.xyz/ecosystem. Partners: https://gullylabs.xyz/partners. Blog: https://blog.gullylabs.xyz. Projects: https://gullylabs.xyz/#projects. Pricing: https://gullylabs.xyz/pricing. Gully AI: https://gullylabs.xyz/ask. Holder Map: https://gullylabs.xyz/holders. Gully Labs App: https://app.gullylabs.xyz/. Gully Score: https://gullylabs.xyz/score. Roadmap: https://docs.gullylabs.xyz/roadmap. L3 roadmap: https://docs.gullylabs.xyz/roadmap-l3. Every link in one place: https://gullylabs.xyz/links. For project enquiries use the contact form on https://gullylabs.xyz/services.",
-   "updatedAt": "2026-10-26T08:51:33.289Z"
+   "text": "Where to find Gully Labs. X: https://x.com/Gully_Labs. GitHub: https://github.com/gully-labs. Telegram: https://t.me/GullyLabsNews. TelegramBot: https://t.me/GullyLabsBot. YouTube: https://www.youtube.com/@Gully_Labs. TikTok: https://www.tiktok.com/@gully_labs. Facebook: https://www.facebook.com/gullylabsllc. Medium: https://medium.com/@labsgully. Stock tracker: https://gullylabs.xyz/tracker. HolderMaps: https://holdermaps.xyz/. Swap: https://gullylabs.xyz/tracker/robinhood/NVDA#swap. Alerts: https://gullylabs.xyz/#alerts. Gully Analytics: https://gullylabs.xyz/analytics. Gully Chain: https://gullychain.xyz/. Gully Security: https://gullysecurity.xyz/. Gully RPC: https://gullyrpc.xyz/. Gully Pay: https://gullypay.xyz/. All projects: https://gullylabs.xyz/projects. Docs: https://docs.gullylabs.xyz. API docs: (live value)/api. SDK: https://github.com/gully-labs/sdk. Widget: https://gullylabs.xyz/widget. Changelog: (live value)/changelog. Status: https://gullylabs.xyz/status. Services: https://gullylabs.xyz/services. About: https://gullylabs.xyz/about. Ecosystem: https://gullylabs.xyz/ecosystem. Partners: https://gullylabs.xyz/partners. Blog: https://blog.gullylabs.xyz. Pricing: https://gullylabs.xyz/pricing. Gully AI: https://gullylabs.xyz/ask. Holder Map: https://gullylabs.xyz/holders. Gully Labs App: https://app.gullylabs.xyz/. Gully Score: https://gullylabs.xyz/score. Roadmap: https://docs.gullylabs.xyz/roadmap. L3 roadmap: https://docs.gullylabs.xyz/roadmap-l3. Every link in one place: https://gullylabs.xyz/links. For project enquiries use the contact form on https://gullylabs.xyz/services.",
+   "updatedAt": "2026-11-20T20:54:22.009Z"
   },
   {
    "id": "b33b0edf6fb3",
@@ -4942,13 +4933,13 @@
    "status": "live"
   },
   {
-   "id": "04845cb60ae1",
+   "id": "bac06cb174f3",
    "source": "Features",
    "title": "Live board and product launcher (Gully Labs)",
-   "url": "https://gullylabs.xyz/products",
+   "url": "https://gullylabs.xyz/projects",
    "section": "Live board and product launcher",
-   "text": "Live board and product launcher is part of Gully Labs. Status: live now. Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve. GET /api/hub probes every public Gully surface once a minute from the server and caches the answer for 60 seconds (server/hub.mjs). New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.kre8.fun), Gully Multisig (gullymultisig.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals. A surface still being set up reads \"coming\" until it answers 200; it is never shown as up or down before that. The same launcher and board appear on gullylabs.xyz, /products and the Gully Labs App (app.gullylabs.xyz).",
-   "updatedAt": "2026-11-10T04:14:14.061Z",
+   "text": "Live board and product launcher is part of Gully Labs. Status: live now. Shows every Gully product as one compact card with its live state, and a live board with the Gully Chain head, surfaces up, Gully Quests and the networks Gully Pay and Gully RPC serve. GET /api/hub probes every public Gully surface once a minute from the server and caches the answer for 60 seconds (server/hub.mjs). New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.kre8.fun), Gully Multisig (gullymultisig.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals. A surface still being set up reads \"coming\" until it answers 200; it is never shown as up or down before that. The same board appears on gullylabs.xyz, /projects and the Gully Labs App (app.gullylabs.xyz).",
+   "updatedAt": "2026-11-20T20:54:22.009Z",
    "feature": "gully-labs-live-board",
    "status": "live"
   },

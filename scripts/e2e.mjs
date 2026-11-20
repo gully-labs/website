@@ -595,7 +595,7 @@ await step('portal', async () => {
 const APP_PAGES = ['overview', 'activity', 'chains', 'ipfs', 'analytics', 'services', 'keys', 'billing', 'team', 'settings']
 /** The hashes that left the app and where each goes (services/nav.ts REMOVED_TABS / HANDOFF_TABS). */
 const LEFT = [
-  ['products', 'https://gullylabs.xyz/products'],
+  ['projects', 'https://gullylabs.xyz/projects'],
   ['alerts', 'https://holdermaps.xyz/'],
   ['tracker', 'https://gullylabs.xyz/tracker'],
   ['chain', 'https://kre8.fun'],
@@ -621,7 +621,7 @@ await step('app pages', async () => {
   check('sidebar: every item has an icon', iconless.length === 0, iconless.join(', '))
   check('sidebar: no other product and no HolderMaps / Security tool is listed', (await appNav.getByRole('link', { name: /Products|Merchant|Tracker|Gully AI|Gully Score|Widgets|Telegram|Alerts|Gully Chain|Gully Pay|Gully RPC|HolderMaps|Gully Security|Gully Studio/ }).count()) === 0)
   const prod = page.getByTestId('app-sidebar').getByTestId('products-link')
-  check('sidebar footer: one "All Gully products" link to the web, in a new tab', (await prod.count()) === 1 && (await prod.getAttribute('href')) === 'https://gullylabs.xyz/products' && (await prod.getAttribute('target')) === '_blank' && /noopener/.test((await prod.getAttribute('rel')) ?? ''))
+  check('sidebar footer: one "All Gully projects" link to the web, in a new tab', (await prod.count()) === 1 && (await prod.getAttribute('href')) === 'https://gullylabs.xyz/projects' && (await prod.getAttribute('target')) === '_blank' && /noopener/.test((await prod.getAttribute('rel')) ?? ''))
   check('sidebar: a flat list, no group headings (no Trade / Build / Manage)', (await appNav.locator('[data-nav-group]').count()) === 0)
   check('header: no Gully Core chain picker', (await page.getByTestId('chain-picker').count()) === 0)
   // The Overview of a brand-new workspace: the four Labs services, the workspace's own figures in words ("none yet"),
@@ -746,7 +746,7 @@ await step('app pages', async () => {
   await sp.waitForTimeout(300)
   const tip = keysRow.locator('[data-tooltip]')
   check('icon rail: hovering a row shows its name as a tooltip', (await tip.textContent())?.trim() === 'Keys' && Number(await tip.evaluate((el) => getComputedStyle(el).opacity)) > 0.9)
-  check('icon rail: the products link keeps its name for screen readers', (await sp.getByTestId('sidebar-footer').getByTestId('products-link').getAttribute('aria-label')) === 'All Gully products (opens in a new tab)')
+  check('icon rail: the products link keeps its name for screen readers', (await sp.getByTestId('sidebar-footer').getByTestId('products-link').getAttribute('aria-label')) === 'All Gully projects (opens in a new tab)')
   await shot(sp, 'app-1440x840-rail')
   await sp.getByTestId('sidebar-toggle').click()
   const perRow = async (sel) =>

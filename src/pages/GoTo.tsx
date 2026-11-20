@@ -17,3 +17,12 @@ export function GoTo({ url }: { url: string }) {
 export function ToSite() {
   return <GoTo url={SITE_URL + window.location.pathname + window.location.search} />
 }
+
+/** Local runs: the home page is drawn by the server at /preview/landing (the real host serves it at /). */
+export function LocalHome() {
+  return (
+    <p className="px-page py-24 font-mono text-[13px] text-faint">
+      The home page is drawn by the server: <a href="/preview/landing">/preview/landing</a>. Every other project is at <a href="/projects">/projects</a>.
+    </p>
+  )
+}

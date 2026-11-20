@@ -25,7 +25,7 @@ import { pillSm } from './styles'
 /* The signed-in Gully Labs App (app.gullylabs.xyz): the AppShell frame (a ten-item sidebar with the workspace
    switcher and the wallet menu; a slim header with the breadcrumb; Gully AI as a floating assistant on every page)
    around one page at a time. Only the services Gully Labs itself offers are pages here (owner, 2026-11-08); the
-   other Gully products are on the web (gullylabs.xyz/products) and in their own apps.
+   other Gully products are on the web (gullylabs.xyz/projects) and in their own apps.
 
    Pages are deep-linkable by hash. The sidebar's ten: #overview (the home), #activity, #chains, #ipfs, #analytics,
    #services, #keys, #billing, #team, #settings. Old hashes (#quickstart, #requests, #widget) open Keys at that

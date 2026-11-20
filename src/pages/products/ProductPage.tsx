@@ -716,7 +716,7 @@ export function ProductView({ p }: { p: ProductDef }) {
         <div className="gt-wrap">
           <div className="gt-hero-copy rise">
             <nav className="gt-crumb gt-k" aria-label="Breadcrumb">
-              <Link to="/">gully labs</Link> / <Link to="/products">products</Link> / <span aria-current="page">{p.slug}</span>
+              <Link to="/">gully labs</Link> / <Link to="/projects">projects</Link> / <span aria-current="page">{p.slug}</span>
             </nav>
             <Logo def={p.logo} name={p.name} scale={1.35} />
             <h1 id="p-h" className="gt-sr-h">
@@ -867,8 +867,8 @@ export function ProductView({ p }: { p: ProductDef }) {
           <Link to={`/products/${PRODUCTS[(idx + PRODUCTS.length - 1) % PRODUCTS.length].slug}`} className="gt-btn ter sm">
             ← {PRODUCTS[(idx + PRODUCTS.length - 1) % PRODUCTS.length].name}
           </Link>
-          <Link to="/products" className="gt-btn ter sm">
-            All products
+          <Link to="/projects" className="gt-btn ter sm">
+            All projects
           </Link>
           <Link to={`/products/${PRODUCTS[(idx + 1) % PRODUCTS.length].slug}`} className="gt-btn ter sm">
             {PRODUCTS[(idx + 1) % PRODUCTS.length].name} →

@@ -44,7 +44,7 @@ test('sidebar: exactly ten pages, in order, each with an svg icon, no product or
   for (const id of [...PRODUCT_IDS, ...TOOL_IDS]) assert.ok(!ids.includes(id), `${id} is not a sidebar page`)
   assert.equal(new Set(nav.SIDEBAR.map((s) => s.label)).size, 10, 'ten distinct labels')
   // The one link to the other products: the web, not a page here.
-  assert.equal(nav.PRODUCTS_URL, 'https://gullylabs.xyz/products')
+  assert.equal(nav.PRODUCTS_URL, 'https://gullylabs.xyz/projects')
 })
 
 test('tab bar: four sidebar pages (Overview, Activity, Analytics, Billing)', () => {
@@ -55,7 +55,7 @@ test('tab bar: four sidebar pages (Overview, Activity, Analytics, Billing)', () 
 test('removed pages: Products and the five HolderMaps / Gully Security tools leave for the web, each with a destination that says what it is', () => {
   assert.deepEqual(nav.REMOVED_TABS.map((t) => t.id).sort(), ['alerts', 'products', 'score', 'telegram', 'tracker', 'widgets'])
   const want = {
-    products: ['https://gullylabs.xyz/products', 'page'],
+    products: ['https://gullylabs.xyz/projects', 'page'],
     tracker: ['https://gullylabs.xyz/tracker', 'page'],
     alerts: ['https://holdermaps.xyz/', 'home'],
     score: ['https://gullylabs.xyz/score', 'page'],

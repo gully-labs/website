@@ -43,8 +43,8 @@ export function NotFound({ ticker, chain }: { ticker?: string; chain?: string })
               <Btn icon={Home} href="/" arrow>
                 Home
               </Btn>
-              <Btn kind="sec" icon={LayoutGrid} href="/products">
-                Products
+              <Btn kind="sec" icon={LayoutGrid} href="/projects">
+                Projects
               </Btn>
               <Btn kind="ter" icon={BookOpen} href={DOCS_URL}>
                 Docs

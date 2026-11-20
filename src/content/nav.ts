@@ -15,18 +15,18 @@ export const NAV_APP_URL = 'https://app.gullylabs.xyz'
 export const NAV_BLOG_URL = 'https://blog.gullylabs.xyz'
 
 /** The header. "Contact" opens the form on the page that has one: the home page's, else the Services page's. */
-export const headerNav = (home: boolean): NavLinkDef[] => [
-  { label: 'Products', to: '/products' },
+export const headerNav = (_home: boolean): NavLinkDef[] => [
+  { label: 'Projects', to: '/projects' },
   { label: 'Services', to: '/services' },
-  { label: 'Live', to: '/#live' },
+  { label: 'App', href: NAV_APP_URL },
   { label: 'Docs', href: NAV_DOCS_URL },
   { label: 'Blog', href: NAV_BLOG_URL },
-  { label: 'Contact', to: home ? '/#contact' : '/services#contact' },
+  { label: 'Contact', to: '/services#contact' },
 ]
 
 /** Gully Labs' own pages (the Menu sheet lists them under the header's items). */
 export const PAGES_NAV: NavLinkDef[] = [
-  { label: 'All products', to: '/products' },
+  { label: 'All projects', to: '/projects' },
   { label: 'Tracker', to: '/tracker' },
   { label: 'Gully Score', to: '/score' },
   { label: 'Pricing', to: '/pricing' },
@@ -35,7 +35,7 @@ export const PAGES_NAV: NavLinkDef[] = [
 ]
 
 export const FOOTER_LINKS: NavLinkDef[] = [
-  { label: 'Products', to: '/products' },
+  { label: 'Projects', to: '/projects' },
   { label: 'Docs', href: NAV_DOCS_URL },
   { label: 'App', href: NAV_APP_URL },
   { label: 'Status', to: '/status' },
@@ -46,7 +46,7 @@ export const FOOTER_LINKS: NavLinkDef[] = [
 
 /** The footer's second row, on every page but the home page (which links these in its own sections). */
 export const FOOTER_MORE: NavLinkDef[] = [
-  { label: 'Products', to: '/products' },
+  { label: 'Projects', to: '/projects' },
   { label: 'Services', to: '/services' },
   { label: 'Tracker', to: '/tracker' },
   { label: 'Gully Score', to: '/score' },

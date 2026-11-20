@@ -1,9 +1,8 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from './components/Layout'
 import { docsRoutes } from './docs/routes'
-import { Constellation } from './pages/hub/Constellation'
 import { AboutRoute, AdminRoute, AnalyticsRoute, AskRoute, DevelopersRoute, EmbedHoldersRoute, HmLandingRoute, HmNotFoundRoute, HoldersDeepRoute, HoldersLandingRoute, HoldersRoute, LinksRoute, NotFoundRoute, PayLinkRoute, PayRoute, PricingRoute, ProjectDetailRoute, ReceiptRoute, SecurityReportRoute, SecurityReportsRoute, SecurityRoute, SecuritySampleRoute, ServicesRoute, StockRoute, TgRoute, TrackerRoute, WidgetRoute } from './pages/LazyRoutes'
-import { GoTo, ToSite } from './pages/GoTo'
+import { GoTo, LocalHome, ToSite } from './pages/GoTo'
 import { CheckoutRoot } from './pages/pay/CheckoutFrame'
 import { RouteError } from './pages/RouteError'
 import { APP_URL, isAdminHost, isAppHost, isDocsHost, isEmbedHost, isHolderMapsHost, isLocalHost, isPayHost, isSecurityHost } from './site-host'
@@ -66,7 +65,10 @@ const mainRoutes = [
   {
     element: <Layout />,
     children: [
-      { path: '/', element: <Constellation /> },
+      // The home page and /projects are drawn by the server (server/landing.mjs): the app's services, and every other project.
+      // A client-side visit reloads the path from the server; local runs show a pointer instead of looping.
+      { path: '/', element: isLocalHost() ? <LocalHome /> : <GoTo url="/" /> },
+      { path: '/projects', element: <GoTo url="/projects" /> },
       { path: '/projects/:slug', element: <ProjectDetailRoute /> },
       { path: '/services', element: <ServicesRoute /> },
       { path: '/about', element: <AboutRoute /> },
@@ -83,7 +85,8 @@ const mainRoutes = [
       ...MOVED_PATHS.map(([path, key]) => ({ path, element: <Navigate to={`/products/${key}`} replace /> })),
       { path: '/ask', element: <AskRoute /> },
       // The six products (lab console): the list and one compact page each; each links out to its own domain.
-      { path: '/products', lazy: () => import('./pages/products/ProductsIndex').then((m) => ({ Component: m.ProductsIndex })) },
+      // The product list moved to /projects (owner, 2026-11-20); the server answers /products with a 301 first.
+      { path: '/products', element: <GoTo url="/projects" /> },
       { path: '/products/:key', lazy: () => import('./pages/products/ProductPage').then((m) => ({ Component: m.ProductPage })) },
       // Our own projects with live numbers, what the code integrates with, and the partner page with its two forms.
       { path: '/ecosystem', lazy: () => import('./pages/Ecosystem').then((m) => ({ Component: m.Ecosystem })) },

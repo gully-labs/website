@@ -1,6 +1,6 @@
 // The landing's only script (served at /landing/live.js). The page is complete without it: this keeps the figures,
 // graphics and board current from the same-origin APIs, and shows toasts for real events only. No framework.
-import { board, cards, coreBars, mapNodes, METRIC, metricNote } from '/landing/graphs.mjs'
+import { board, cards, coreBars, mapNodes, METRIC, metricNote, ptTime, serviceView } from '/landing/graphs.mjs'
 
 const data = JSON.parse(document.getElementById('boot')?.textContent ?? '{}')
 const SOURCES = { hub: ['/api/hub', 60_000], products: ['/api/hub/products', 120_000], live: ['/api/hub/live', 60_000], stats: ['/api/stats', 60_000] }
@@ -13,7 +13,7 @@ function set(el, html) {
   drawn.set(el, html)
 }
 
-let metric = document.querySelector('[data-tab][aria-selected="true"]')?.dataset.metric ?? 'launches'
+let metric = document.querySelector('[data-tab][aria-selected="true"]')?.dataset.metric ?? null
 
 function draw() {
   const c = cards(data)
@@ -36,13 +36,30 @@ function draw() {
     g.classList.toggle('is-up', v.up)
   })
   const b = board(data)
-  for (const k of ['up', 'vol', 'tvl']) {
+  for (const [k, key] of [['up', 'up'], ['up2', 'up'], ['vol', 'vol'], ['tvl', 'tvl'], ['ms', 'ms'], ['block', 'block']]) {
     const el = document.querySelector(`[data-b="${k}"]`)
-    if (el && el.textContent !== b[k]) el.textContent = b[k]
+    if (el && el.textContent !== b[key]) el.textContent = b[key]
   }
   const cells = document.querySelector('[data-b="cells"]')
   if (cells && b.cells) set(cells, b.cells)
-  set(document.querySelector('[data-b="core"]'), coreBars(data.products, metric))
+  const pulse = document.querySelector('[data-b="pulse"]')
+  if (pulse) set(pulse, b.pulse)
+  const at = document.querySelector('[data-b="at"]')
+  if (at) at.textContent = ptTime()
+  const core = document.querySelector('[data-b="core"]')
+  if (core && metric) set(core, coreBars(data.products, metric))
+  // The app's services (the home page): state, response time and picture of each card.
+  for (const s of data.app ?? []) {
+    const v = serviceView(data, s)
+    const chart = document.querySelector(`[data-sv-chart="${s.key}"]`)
+    if (chart) set(chart, v.chart)
+    const st = document.querySelector(`[data-sv-state="${s.key}"]`)
+    if (st) st.dataset.state = v.state
+    const w = document.querySelector(`[data-sv-word="${s.key}"]`)
+    if (w && w.textContent !== v.word) w.textContent = v.word
+    const ms = document.querySelector(`[data-sv-ms="${s.key}"]`)
+    if (ms && ms.textContent !== v.ms) ms.textContent = v.ms
+  }
 }
 
 /* ---- toasts: real events, at most one every 20 s, three on screen, dismissible, read out politely ---- */
@@ -122,9 +139,14 @@ function pickTab(btn) {
     t.tabIndex = on ? 0 : -1
     document.getElementById(`p-${t.dataset.tab}`).hidden = !on
   }
-  metric = btn.dataset.metric
-  document.querySelector('[data-b="mname"]').textContent = METRIC[metric]
-  document.querySelector('[data-b="mnote"]').textContent = metricNote(metric)
+  // The home page: each service has a picture beside its panel.
+  document.querySelectorAll('[data-for]').forEach((d) => (d.hidden = d.dataset.for !== btn.dataset.tab))
+  // /projects: the Gully Core builds share one live chart.
+  if (btn.dataset.metric) {
+    metric = btn.dataset.metric
+    document.querySelector('[data-b="mname"]').textContent = METRIC[metric]
+    document.querySelector('[data-b="mnote"]').textContent = metricNote(metric)
+  }
   draw()
 }
 tabs.forEach((t, i) => {

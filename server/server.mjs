@@ -31,7 +31,7 @@ import { handleGullyAdminRoute } from './admin-auth.mjs'
 import { handleEcosystem } from './ecosystem.mjs'
 import { handleDiscovery } from './discovery.mjs'
 import { headTags, pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
-import { landingAsset, renderLanding } from './landing.mjs'
+import { landingAsset, renderLanding, renderProjects } from './landing.mjs'
 import { productMeta, renderProduct } from './product-pages.mjs'
 import { brandsJson } from './brand-registry.mjs'
 import { handleBlog } from './blog.mjs'
@@ -369,6 +369,12 @@ async function handleRequest(req, res) {
   if (url.pathname === '/' && host === 'gullylabs.xyz' && (req.method === 'GET' || req.method === 'HEAD')) {
     const meta = pageMeta(host, '/')
     if (meta.found) return send(res, 200, await renderLanding(headTags(meta), null, { preview: false }), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' })
+  }
+  // /projects (owner, 2026-11-20): every Gully project and product that is not a service of the app, drawn by the server
+  // like the home page. Local runs (and the suite) serve it too; the other hosts send /projects to the main site.
+  if (url.pathname.replace(/(.)\/+$/, '$1') === '/projects' && (req.method === 'GET' || req.method === 'HEAD') && !isAppHost(host) && !isHolderMapsHost(host) && !isSecurityHost(host) && !host.startsWith('docs.') && !host.startsWith('admin.')) {
+    const meta = pageMeta(host, '/projects')
+    if (meta.found) return send(res, 200, await renderProjects(headTags(meta), null, { preview: false }), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' })
   }
   // One page per product and per Gully Core build, on the shared template: preview only, noindex, until the owner flips them.
   const preview = /^\/preview\/(products|build)\/([a-z0-9-]+)$/.exec(url.pathname)

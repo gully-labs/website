@@ -1852,9 +1852,9 @@ export const features: Feature[] = [
       "GET /api/hub probes every public Gully surface once a minute from the server and caches the answer for 60 seconds (server/hub.mjs).",
       "New surfaces are checked too: the Gully Street feed, the copy trading engine (copy.kre8.fun), Gully Multisig (gullymultisig.xyz), Gully AI (gullyai.xyz and its API), the Gully Pay admin and the Gully Studio portals.",
       "A surface still being set up reads \"coming\" until it answers 200; it is never shown as up or down before that.",
-      "The same launcher and board appear on gullylabs.xyz, /products and the Gully Labs App (app.gullylabs.xyz)."
+      "The same board appears on gullylabs.xyz, /projects and the Gully Labs App (app.gullylabs.xyz)."
     ],
-    url: "https://gullylabs.xyz/products",
+    url: "https://gullylabs.xyz/projects",
     source: [
       "website:server/hub.mjs",
       "website:src/console/Launcher.tsx"

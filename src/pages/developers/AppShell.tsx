@@ -21,7 +21,7 @@ import { HUB_NAV_IDS, PRODUCTS_URL, TAB_BAR_IDS } from './services/nav'
 
    Sidebar, top to bottom: the Gully mark (home), the workspace switcher and the collapse button in one row,
    the ten pages (services/nav.ts SIDEBAR: Overview, Activity, Chains, IPFS, Analytics, Services, Keys, Billing,
-   Team, Settings) as one flat list of 40px rows with 16px Lucide icons, one "All Gully products ↗" link (the other
+   Team, Settings) as one flat list of 40px rows with 16px Lucide icons, one "All Gully projects ↗" link (the other
    products are on the web, gullylabs.xyz/products; nothing else of them is in this app), and the wallet menu. From
    1280px it is open (212px); from 860px to 1279px it starts as an icon rail (64px, each row with a tooltip); the
    chevron toggles it at any width and the choice is remembered. Under 860px there is no sidebar: a bottom tab bar
@@ -381,8 +381,8 @@ function FooterLinks({ compact, health, onStatus }: { compact: boolean; health: 
         </ExtLink>
       </li>
       <li>
-        <ExtLink href={PRODUCTS_URL} arrow={false} className={footItem(compact)} title={compact ? 'All Gully products (opens in a new tab)' : undefined} data-testid="products-link">
-          <Boxes size={ICON} aria-hidden /> {txt('All Gully products ↗')}
+        <ExtLink href={PRODUCTS_URL} arrow={false} className={footItem(compact)} title={compact ? 'All Gully projects (opens in a new tab)' : undefined} data-testid="products-link">
+          <Boxes size={ICON} aria-hidden /> {txt('All Gully projects ↗')}
         </ExtLink>
       </li>
       <li>
@@ -621,12 +621,12 @@ export function AppShell<T extends string>({
           </nav>
           {/* The sidebar footer: the one link to the other Gully products (they live on the web), then the wallet. */}
           <div className="flex flex-col gap-[6px] border-t border-line pt-[6px]" data-testid="sidebar-footer">
-            <ExtLink href={PRODUCTS_URL} arrow={false} className={`group/row relative flex min-h-10 items-center gap-[10px] rounded-md text-[13px] font-medium text-dim transition-colors hover:bg-surface-hover hover:text-ink ${compact ? 'justify-center px-0' : 'px-[10px]'}`} aria-label="All Gully products (opens in a new tab)" data-testid="products-link">
+            <ExtLink href={PRODUCTS_URL} arrow={false} className={`group/row relative flex min-h-10 items-center gap-[10px] rounded-md text-[13px] font-medium text-dim transition-colors hover:bg-surface-hover hover:text-ink ${compact ? 'justify-center px-0' : 'px-[10px]'}`} aria-label="All Gully projects (opens in a new tab)" data-testid="products-link">
               <Boxes size={ICON} aria-hidden />
-              <span className={compact ? 'sr-only' : 'flex-1 truncate'}>All Gully products ↗</span>
+              <span className={compact ? 'sr-only' : 'flex-1 truncate'}>All Gully projects ↗</span>
               {compact && (
                 <span className="pointer-events-none absolute top-1/2 left-[calc(100%+10px)] z-50 -translate-y-1/2 rounded-[8px] border border-line-strong bg-surface-deep px-[10px] py-[5px] text-[12px] whitespace-nowrap text-ink opacity-0 shadow-[0_8px_24px_rgba(0,0,0,.45)] transition-opacity duration-150 group-hover/row:opacity-100 group-focus-visible/row:opacity-100" aria-hidden data-tooltip>
-                  All Gully products ↗
+                  All Gully projects ↗
                 </span>
               )}
             </ExtLink>
