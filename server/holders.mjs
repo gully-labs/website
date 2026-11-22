@@ -45,7 +45,7 @@ import { clientIp, json } from './http.mjs'
 import { holderMapFeatures } from './plans.mjs'
 import { readLaunchFeed, readLive, readWalletDetail, recordScan, resolveHolders, setMapPeek, topScans } from './holders-intel.mjs'
 import { FEE_PROXY_REGISTRY } from './fee-proxy-guard.mjs'
-import { readHistory, readTracker } from './tracker.mjs'
+import { readHistory, readTracker, trackedStocks } from './tracker.mjs'
 import { isOnCurve, b58decode, isSolanaAddress, solanaRpc } from './solana.mjs'
 import { archiveKnown, readOwnHistory } from './holders-logs.mjs'
 import { probeToken, reserveAnySlot, resetAnyForTest, takeAnyBuild } from './holders-any.mjs'
@@ -72,6 +72,8 @@ const RECENT_MAX_CALLS = 8
 export const FRAMES = 24
 export const RECENT_FLOWS = 24
 const MAX_BUILDS = 3
+/** How long an expired good map may still be shown while a fresh one is read behind it. */
+const STALE_OK_MS = 6 * 3_600_000
 const PER_IP_PER_MIN = 12
 const CACHE_MAX = 200
 const FAIL_TTL_MS = 60_000
@@ -1272,8 +1274,12 @@ export async function readHolderMap(chainKey, token, { ip = null, tier = 'pro' }
   const key = `${chainKey}:${chainKey === 'solana' ? token : lower(token)}:${tier}`
   const hit = cache.get(key)
   if (hit && Date.now() - hit.at < hit.ttl) return { ...hit.body, cached: true }
-  if (inflight.has(key)) return inflight.get(key)
-  if (ip) {
+  // Stale-while-revalidate: a map built in the last STALE_OK_MS answers at once while a fresh one is read in the
+  // background, so a visitor never waits out a cold rebuild (a Robinhood stock took 42 s, owner report 2026-11-22).
+  const serveStale = !!hit && hit.body?.state === 'ok' && Date.now() - hit.at < STALE_OK_MS
+  if (inflight.has(key)) return serveStale ? { ...hit.body, cached: true, stale: true } : inflight.get(key)
+  if (serveStale && building >= MAX_BUILDS) return { ...hit.body, cached: true, stale: true }
+  if (ip && !serveStale) {
     const now = Date.now()
     const list = (ipHits.get(ip) ?? []).filter((t) => now - t < 60_000)
     if (list.length >= PER_IP_PER_MIN) return { state: 'busy', reason: 'Too many new maps from this address in the last minute; try again shortly.', status: 429 }
@@ -1301,8 +1307,39 @@ export async function readHolderMap(chainKey, token, { ip = null, tier = 'pro' }
       inflight.delete(key)
     })
   inflight.set(key, p)
+  if (serveStale) {
+    p.catch(() => {})
+    return { ...hit.body, cached: true, stale: true }
+  }
   return p
 }
+/* ----------------------------------------------------- warm-up of stock maps --- */
+
+let warmTimer = null
+/** One warm pass: reads the maps of tracked stocks that hold no good map yet (a few per pass, one at a time), so the
+    first visitor to a stock page never waits out a cold build. Maps already held are kept fresh by stale-while-revalidate. */
+export async function warmStockMaps({ max = 4 } = {}) {
+  let n = 0
+  for (const s of trackedStocks()) {
+    if (n >= max || building >= MAX_BUILDS - 1) break
+    if (s.chain === 'solana') continue
+    const key = `${s.chain}:${lower(s.ticker)}:free`
+    const hit = cache.get(key) // the stock page asks by ticker
+    if (hit && (hit.body?.state === 'ok' || Date.now() - hit.at < hit.ttl)) continue
+    n++
+    await readHolderMap(s.chain, s.ticker, { tier: 'free' }).catch(() => {})
+  }
+  return n
+}
+/** The warm-up loop: 90 s after start, then every 5 minutes. Off with TRACKER_LOOP=off or HOLDERS_WARM=off (the tests). */
+export function startHolderWarm() {
+  if (warmTimer || process.env.TRACKER_LOOP === 'off' || process.env.HOLDERS_WARM === 'off') return
+  const run = () => warmStockMaps().catch((e) => console.error('holders warm:', e?.message ?? e))
+  setTimeout(run, 90_000).unref?.()
+  warmTimer = setInterval(run, 300_000)
+  warmTimer.unref?.()
+}
+
 /** A cached map without building one (the launch feed), or null. */
 export function peekHolderMap(chainKey, token) {
   for (const tier of ['free', 'pro']) {
@@ -1314,8 +1351,8 @@ export function peekHolderMap(chainKey, token) {
 setMapPeek(peekHolderMap)
 
 /** Test hook: puts a map in the cache (both tiers unless `tiers` says which), as if it had just been built. */
-export function seedHolderMapForTest(chainKey, token, body, tiers = ['free', 'pro']) {
-  for (const tier of tiers) cache.set(`${chainKey}:${chainKey === 'solana' ? token : lower(token)}:${tier}`, { at: Date.now(), ttl: cacheMs(), body })
+export function seedHolderMapForTest(chainKey, token, body, tiers = ['free', 'pro'], ageMs = 0) {
+  for (const tier of tiers) cache.set(`${chainKey}:${chainKey === 'solana' ? token : lower(token)}:${tier}`, { at: Date.now() - ageMs, ttl: cacheMs(), body })
 }
 
 /** Test hook. */

@@ -18,6 +18,7 @@ export const NAV_BLOG_URL = 'https://blog.gullylabs.xyz'
 export const headerNav = (_home: boolean): NavLinkDef[] => [
   { label: 'Projects', to: '/projects' },
   { label: 'Services', to: '/services' },
+  { label: 'Tracker', to: '/tracker' },
   { label: 'App', href: NAV_APP_URL },
   { label: 'Docs', href: NAV_DOCS_URL },
   { label: 'Blog', href: NAV_BLOG_URL },

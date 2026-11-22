@@ -247,6 +247,8 @@ export function useHolderMap(chain: string | null, token: string | null): Load<H
     const tick = () =>
       fetch(holdersPath(chain, token), {
         headers: { accept: 'application/json' },
+        // A read that never answers must end in a message and a retry, never a frame that loads forever.
+        signal: AbortSignal.timeout(120_000),
       })
         .then((r) => r.json().then((b: HolderMap) => (b && typeof b === 'object' && 'state' in b ? b : Promise.reject(new Error(String(r.status))))))
         .then(
@@ -262,7 +264,12 @@ export function useHolderMap(chain: string | null, token: string | null): Load<H
             }
             if (alive) setState((s) => (data.state !== 'ok' && s.key === key && s.load.k === 'ok' && s.load.data.state === 'ok' ? s : { key, load: { k: 'ok', data } }))
           },
-          () => alive && setState((s) => (s.key === key && s.load.k === 'ok' ? s : { key, load: { k: 'error' } })),
+          () => {
+            if (!alive) return
+            setState((s) => (s.key === key && s.load.k === 'ok' ? s : { key, load: { k: 'error' } }))
+            clearTimeout(retry)
+            retry = setTimeout(tick, 20_000)
+          },
         )
     tick()
     const id = setInterval(tick, REFRESH_MS)

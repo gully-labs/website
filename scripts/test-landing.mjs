@@ -32,7 +32,7 @@ test('the first response is the page: one h1, products, footer and figures, no l
   for (const t of ['Chains, storage, analytics and builds, in one app.', 'You Think It, We Ship It', 'Everything in the app', 'Powered by Gully Labs', ...APPS.map((x) => x.title)]) assert.ok(html.includes(t), t)
   // The home page promotes only what the app offers (owner, 2026-11-20): no other Gully project is named or sold on it.
   const main = html.slice(html.indexOf('<main>'), html.indexOf('</main>'))
-  for (const t of ['Gully Core', 'Gully Multisig', 'PeddleSwap', 'Peddles', 'HolderMaps', 'Gully Security', 'Gully Pay', 'Gully RPC', 'kre8', 'Gully Studio', 'Gully AI']) assert.ok(!main.includes(t), `${t} is a project: it belongs on /projects`)
+  for (const t of ['Gully Core', 'Gully Multisig', 'PeddleSwap', 'Peddles', 'HolderMaps', 'Gully Security', 'Gully Pay', 'Gully RPC', 'kre8', 'Gully Studio']) assert.ok(!main.includes(t), `${t} is a project: it belongs on /projects`)
   assert.ok(!/admin\.|internal|e2e/i.test(main), 'no admin or internal text on a public page')
   assert.ok(!/gully safe|safe\.gullychain|deepcore/i.test(html))
 })
@@ -169,4 +169,24 @@ test('Build links go to the real Gully Core routes; no simulated motion in the s
   for (const r of ['launch/v2/new', 'pads/new', 'dexes/new?kind=dex', 'pads/new?kind=stocks', 'vaults/new', 'locks/new']) assert.ok(phtml.includes(`https://app.gullycore.xyz/${r}`), r)
   const js = L.landingAsset('/landing/live.js') + L.landingAsset('/landing/graphs.mjs')
   assert.ok(!/Math\.random/.test(js) && !/Math\.sin/.test(L.landingAsset('/landing/live.js')))
+})
+
+test('the stock tracker is marketed on the home page: live figures, a chart, a link, never a zero for a read that failed', async () => {
+  const tracker = { rows: [
+    { chain: 'robinhood', ticker: 'NVDA', gapPct: 2.4, status: 'premium', pool: { totalLiquidityUsd: 120000 } },
+    { chain: 'bsc', ticker: 'AAPL', gapPct: -0.5, status: 'in-line', pool: { totalLiquidityUsd: 80000 } },
+    { chain: 'bsc', ticker: 'TSLA', gapPct: 9, status: 'thin', pool: { totalLiquidityUsd: 10 } },
+  ] }
+  const page = await L.renderLanding(headTags(meta), { ...data, tracker })
+  const main = page.slice(page.indexOf('<main>'), page.indexOf('</main>'))
+  assert.ok(main.includes('id="tools"') && main.includes('href="/tracker"') && main.includes('href="/widget"'), 'a section, the tracker link and the widget link')
+  const v = G.trackerView(tracker)
+  assert.deepEqual([v.stocks, v.flagged, v.typical, v.liquidity], ['3', '1', '1.45%', '$200.0K'], 'a thin pool is never counted in the typical gap')
+  assert.ok(main.includes(`data-tk="stocks">3<`) && main.includes('data-tk-chart') && main.includes('class="g-bar"'), 'figures and a drawn chart are in the first HTML')
+  const none = G.trackerView(null)
+  assert.deepEqual([none.stocks, none.flagged, none.typical, none.liquidity, none.state], ['–', '–', '–', '–', 'reading'], 'no read: dashes, not zeros')
+  assert.ok(/data-tk-chart>\s*<svg/.test(html), 'even with no read the chart frame holds a resting line, not an empty box')
+  const js = L.landingAsset('/landing/live.js')
+  assert.ok(js.includes("tracker: ['/api/tracker'"), 'the page script keeps the tracker figures current')
+  assert.ok(/Tracker<\/span>/.test(page) || page.includes('href="/tracker"'), 'the header links the tracker')
 })

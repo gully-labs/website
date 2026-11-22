@@ -12,7 +12,7 @@ import { evaluateAlerts, startHolderAlerts } from './alerts.mjs'
 import { handleDeepcoreLaunches, handleDeepcoreQuote } from './deepcore.mjs' // retired 2026-11-08: both answer 410
 import { alertChannels, handleTelegramWebhook, startTelegram } from './telegram.mjs'
 import { handleMiniApp } from './telegram-miniapp.mjs'
-import { handleHolders } from './holders.mjs'
+import { handleHolders, startHolderWarm } from './holders.mjs'
 import { readHero } from './holders-hero.mjs'
 import { handleHolderBadge, handlePartnerLaunch } from './holders-partners.mjs'
 import { handleHolderDeep, startDeepRunner } from './holders-deep-routes.mjs'
@@ -707,6 +707,8 @@ function startLoops() {
   startPeddlesLoop()
   // Holder Map alerts: each watched token's map is re-read every ten minutes (alerts.mjs).
   startHolderAlerts()
+  // Stock Holder Maps are read ahead so a first visit is not a cold build (holders.mjs warmStockMaps).
+  startHolderWarm()
   // The Telegram bot registers its webhook and commands when TELEGRAM_BOT_TOKEN is set; otherwise it stays off.
   startTelegram().catch((e) => console.error('telegram start:', e?.message ?? e))
   startChannel() // @GullyLabsNews: scheduled posts and auto posts (telegram-channel.mjs)

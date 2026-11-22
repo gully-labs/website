@@ -178,10 +178,28 @@ export function HolderMap({ chain, token, compact = false, embed = false, tradeH
 
 const mapHeight = (page: boolean, compact: boolean, wide: boolean) => (compact ? 340 : page ? (wide ? 'clamp(440px, calc(100svh - 190px), 780px)' : 'clamp(340px, 58svh, 620px)') : wide ? 540 : 'clamp(340px, 60svh, 520px)')
 
+/** Words over the loading frame, so it is never a dark box with outlines: what is happening, and why a first read can be slow. */
+function SkeletonNote() {
+  const [slow, setSlow] = useState(false)
+  useEffect(() => {
+    const id = setTimeout(() => setSlow(true), 5_000)
+    return () => clearTimeout(id)
+  }, [])
+  return (
+    <div className="flex flex-wrap items-center gap-3" data-holder-map="loading">
+      <span className="relative inline-flex size-3 flex-none">
+        <span className="absolute inset-0 animate-[gl-live-pulse_2s_ease-out_infinite] rounded-full bg-gold" />
+        <span className="relative size-3 rounded-full bg-gold" />
+      </span>
+      <span className="font-mono text-[13px] text-ink-2">{slow ? 'Still reading this token’s holders. A first read can take up to a minute, then it is kept for the next visitor.' : 'Reading who holds this token…'}</span>
+    </div>
+  )
+}
+
 function MapSkeleton({ compact, page = false }: { compact: boolean; page?: boolean }) {
   return (
     <div role="status" aria-label="Reading who holds this token" className="card card-pad flex flex-col gap-3">
-      <div className="h-[14px] w-[160px] animate-[gl-skeleton_1.4s_ease-in-out_infinite] rounded-full bg-surface" />
+      <SkeletonNote />
       <div
         className="relative grid place-items-center overflow-hidden rounded-[10px] bg-surface-deep"
         style={{
