@@ -71,8 +71,8 @@ function EmptyUsage({ height, children }: { height: number; children: string }) 
 function Usage({ a }: { a: IpfsAccount }) {
   const pts = useMemo(() => {
     const p = a.days.map((d) => [Date.parse(`${d.day}T12:00:00Z`), Number((d.bytes / 1024 ** 3).toFixed(4))] as LivePoint)
-    // One recorded day is a flat line from that day to now: the stored size has not changed since, and that is all we know.
-    if (p.length === 1 && a.usage.pins > 0) p.push([Math.max(Date.now(), p[0][0] + 1), p[0][1]])
+    // One recorded day draws as a flat line across that day; it moves once a second day is recorded.
+    if (p.length === 1 && a.usage.pins > 0) p.push([p[0][0] + 12 * 3600_000, p[0][1]])
     return p
   }, [a.days, a.usage.pins])
   if (pts.length < 2) return <EmptyUsage height={170}>{a.usage.pins ? 'One point a day: the chart starts with your second day of pins.' : 'No pins yet. Upload a file or pin a CID and your stored size draws here, one point a day.'}</EmptyUsage>

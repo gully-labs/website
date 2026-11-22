@@ -656,7 +656,7 @@ await step('app pages', async () => {
   check('chains: the offer line comes from the server (free testnet days)', /testnet free for \d+ days/.test((await page.getByTestId('chains-offer').textContent()) ?? ''), await page.getByTestId('chains-offer').textContent())
   await shot(page, 'app-1440-chains')
   await open('ipfs')
-  check('ipfs: the page header and four account tiles', (await page.locator('main[data-page="ipfs"] h1').textContent())?.trim() === 'Gully IPFS' && (await page.locator('main[data-page="ipfs"] [data-tile]').count()) === 4)
+  check('ipfs: the page header and five account tiles', (await page.locator('main[data-page="ipfs"] h1').textContent())?.trim() === 'Gully IPFS' && (await page.locator('main[data-page="ipfs"] [data-tile]').count()) === 5)
   check('ipfs: no node internals in the customer view', !/repo size|storage limit|of the node|node, last hour/i.test((await page.locator('main[data-page="ipfs"]').textContent()) ?? ''))
   await page.getByTestId('ipfs-upload').waitFor({ timeout: 15_000 })
   check('ipfs: the upload area, the account own (empty) pins and the Pinning Service API panel', (await page.getByTestId('ipfs-upload').count()) === 1 && (await page.getByTestId('ipfs-pins-empty').count()) === 1 && (await page.getByTestId('ipfs-api').locator('code, pre').count()) >= 1)
