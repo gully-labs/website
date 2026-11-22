@@ -75,7 +75,7 @@ type Row = [ReactNode, string, string]
 function IpfsPlans() {
   const p = useApi<PlansIpfs>('/api/plans', 300_000)
   const free = p && p !== 'error' ? p.ipfs?.plans.find((x) => x.id === 'free') : null
-  if (!free) return <P>{p === 'error' ? 'The plans could not be read right now.' : 'Reading the plans…'}</P>
+  if (!free) return <P>{p === 'error' ? 'The plans could not be read right now.' : 'Reading the plansâ€¦'}</P>
   const paid = p && p !== 'error' && p.ipfs?.paid.enabled ? p.ipfs.paid.plans : []
   const rows: Row[] = [[<C key="free">Early access</C>, mb(free.storageBytes), `stored, up to ${free.maxPins} pins, files up to ${mb(free.maxFileBytes)}, ${free.transferBytesMonth ? `${mb(free.transferBytesMonth)} uploaded or pinned a month, ` : ''}every pin on ${free.copies} nodes. Limits during early access, not a plan.`]]
   if (paid.length) for (const x of paid) rows.push([<C key={x.id}>{x.name}</C>, mb(x.storageBytes), `stored, up to ${x.maxPins} pins, files up to ${mb(x.maxFileBytes)}, $${((x.monthlyCents ?? 0) / 100).toFixed(2)} a month through Gully Pay.`])

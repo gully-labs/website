@@ -203,11 +203,11 @@ function PlansPanel({ a }: { a: IpfsAccount }) {
           <li key={p.id} className="flex flex-col gap-1 rounded-[10px] border border-line p-3" data-plan={p.id}>
             <b className="text-[15px] text-ink">{p.name}</b>
             <span className="text-[13px] text-muted">
-              {gb(p.storageBytes)} stored � {p.maxPins} pins � files up to {gb(p.maxFileBytes)}
+              {gb(p.storageBytes)} stored · {p.maxPins} pins · files up to {gb(p.maxFileBytes)}
             </span>
             <span className="text-[13px] text-ink-2">${(p.monthlyCents / 100).toFixed(2)} a month</span>
             <button type="button" className={`${pillGold} min-h-11 self-start`} disabled={!can || busy === p.id || a.plan.id === p.id} onClick={() => void buy(p)}>
-              <CreditCard size={15} aria-hidden /> {a.plan.id === p.id ? 'Your plan' : busy === p.id ? 'Opening�' : 'Pay with Gully Pay'}
+              <CreditCard size={15} aria-hidden /> {a.plan.id === p.id ? 'Your plan' : busy === p.id ? 'Opening…' : 'Pay with Gully Pay'}
             </button>
           </li>
         ))}
@@ -271,7 +271,7 @@ export function IpfsTab() {
     { label: 'YOUR PINS', value: a?.usage.pins ?? null, unknown: 'reading…', note: a ? `of ${a.plan.maxPins} on your plan` : 'pins held for this account' },
     { label: 'STORAGE USED', value: a ? Number((a.usage.bytes / MB).toFixed(1)) : null, format: { minimumFractionDigits: 1, maximumFractionDigits: 1 }, suffix: ' MB', unknown: 'reading…', note: a ? `of ${size(a.plan.storageBytes)}` : 'by your pins' },
     { label: 'UPLOADS', value: a?.usage.uploadsThisMonth ?? null, unknown: 'reading…', note: 'files and CARs this month' },
-    { label: 'TRANSFER THIS MONTH', value: a ? Number(((a.usage.transferBytes ?? 0) / MB).toFixed(1)) : null, format: { minimumFractionDigits: 1, maximumFractionDigits: 1 }, suffix: ' MB', unknown: 'reading�', note: a?.plan.transferBytesMonth ? `of ${gb(a.plan.transferBytesMonth)} uploaded or pinned` : 'uploaded or pinned' },
+    { label: 'TRANSFER THIS MONTH', value: a ? Number(((a.usage.transferBytes ?? 0) / MB).toFixed(1)) : null, format: { minimumFractionDigits: 1, maximumFractionDigits: 1 }, suffix: ' MB', unknown: 'reading…', note: a?.plan.transferBytesMonth ? `of ${gb(a.plan.transferBytesMonth)} uploaded or pinned` : 'uploaded or pinned' },
     { label: 'COPIES PER PIN', value: a ? (a.replica.inSync ? 2 : 1) : null, unknown: 'reading…', note: a?.replica.inSync ? 'two nodes on two servers' : 'second copy syncing' },
   ]
   return (
