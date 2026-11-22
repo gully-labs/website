@@ -193,3 +193,10 @@ test('gateway meter: the edge reports bytes per CID, attributed to the holders; 
   assert.equal(up.status, 403)
   assert.match((await up.json()).error.details, /gateway traffic used up/)
 })
+
+test('server.mjs routes /api/ipfs/report to the abuse handler, before the pinning routes', () => {
+  const src = fs.readFileSync(new URL('../server/server.mjs', import.meta.url), 'utf8')
+  const a = src.indexOf('await handleIpfsAbuse(req, res, url)')
+  assert.ok(a > 0, 'the abuse handler is called')
+  assert.ok(a < src.indexOf('await handleIpfsPins(req, res, url)'))
+})
