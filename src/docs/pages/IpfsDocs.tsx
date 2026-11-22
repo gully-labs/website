@@ -5,7 +5,7 @@ import type { IpfsStats } from '../../console/live'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 import { useApi } from '../useApi'
-import { IpfsReportForm } from './IpfsReportForm'
+import { IpfsReportForm } from '../IpfsReportForm'
 
 const sections = [
   { id: 'what', title: 'What Gully IPFS is' },
