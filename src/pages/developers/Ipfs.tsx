@@ -1,10 +1,9 @@
-import { Globe, HardDrive, KeyRound, Pin, Trash2, Upload } from 'lucide-react'
+import { CreditCard, Globe, HardDrive, KeyRound, Pin, Trash2, Upload } from 'lucide-react'
 import { useMemo, useRef, useState, type DragEvent } from 'react'
 import { LiveChart, type LivePoint } from '../../components/live/GlLive'
 import { toastError, toastSuccess } from '../../components/ui/toast'
 import { CodeBlock } from '../../docs/CodeBlock'
 import { api } from './api'
-import { GhostCurves } from './charts'
 import { CopyButton } from './Dialog'
 import { ExtLink } from './ExtLink'
 import { usePoll } from './poll'
@@ -32,9 +31,21 @@ export interface IpfsPin {
   review: 'queued' | 'scanned' | 'ok' | 'removed' | null
   copies: number
 }
+export interface BillingPlan {
+  id: string
+  name: string
+  priceUsdPerGbMonth: number
+  monthlyCents: number
+  storageBytes: number
+  maxFileBytes: number
+  maxPins: number
+  transferBytesMonth: number | null
+  egressBytesMonth: number | null
+}
 export interface IpfsAccount {
-  plan: { id: string; name: string; storageBytes: number; maxFileBytes: number; maxPins: number; copies: number }
-  usage: { pins: number; bytes: number; uploadsThisMonth: number }
+  plan: { id: string; name: string; storageBytes: number; maxFileBytes: number; maxPins: number; copies: number; transferBytesMonth?: number | null; egressBytesMonth?: number | null }
+  usage: { pins: number; bytes: number; uploadsThisMonth: number; transferBytes?: number; egressBytes?: number }
+  billing?: { enabled: boolean; plans: BillingPlan[]; paidUntil: string | null }
   pins: IpfsPin[]
   days: { day: string; bytes: number }[]
   replica: { inSync: boolean }
@@ -47,14 +58,24 @@ const size = (b: number | null) => (b == null ? '—' : b >= 1024 ** 3 ? `${(b /
 const shortCid = (c: string) => `${c.slice(0, 10)}…${c.slice(-6)}`
 const TONE: Record<IpfsPin['status'], string> = { pinned: 'text-up', queued: 'text-muted', pinning: 'text-gold', failed: 'text-down' }
 
+/** Honest empty frame: a flat grid and one line of text on a solid card. No placeholder curves, so nothing collides with the words. */
+function EmptyUsage({ height, children }: { height: number; children: string }) {
+  return (
+    <div className="relative flex items-center justify-center overflow-hidden rounded-[12px] border border-dashed border-line-strong bg-surface px-6 text-center" style={{ height }} data-testid="ipfs-usage-empty">
+      <div aria-hidden className="absolute inset-0 opacity-40" style={{ backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent 41px, var(--color-line, rgba(127,127,127,.25)) 41px, var(--color-line, rgba(127,127,127,.25)) 42px)' }} />
+      <span className="relative max-w-[460px] rounded-[8px] bg-surface px-3 py-2 text-[13px] leading-[1.5] text-muted">{children}</span>
+    </div>
+  )
+}
+
 function Usage({ a }: { a: IpfsAccount }) {
-  const pts = useMemo(() => a.days.map((d) => [Date.parse(`${d.day}T12:00:00Z`), Number((d.bytes / 1024 ** 3).toFixed(4))] as LivePoint), [a.days])
-  if (pts.length < 2)
-    return (
-      <GhostCurves height={170} title="Your storage will draw here">
-        <span className="max-w-[460px] text-[13px] text-muted">{a.usage.pins ? 'One point a day: the chart starts with your second day of pins.' : 'This account has no pins yet. Upload a file or pin a CID and your stored size draws here, one point a day.'}</span>
-      </GhostCurves>
-    )
+  const pts = useMemo(() => {
+    const p = a.days.map((d) => [Date.parse(`${d.day}T12:00:00Z`), Number((d.bytes / 1024 ** 3).toFixed(4))] as LivePoint)
+    // One recorded day draws as a flat line across that day; it moves once a second day is recorded.
+    if (p.length === 1 && a.usage.pins > 0) p.push([p[0][0] + 12 * 3600_000, p[0][1]])
+    return p
+  }, [a.days, a.usage.pins])
+  if (pts.length < 2) return <EmptyUsage height={170}>{a.usage.pins ? 'One point a day: the chart starts with your second day of pins.' : 'No pins yet. Upload a file or pin a CID and your stored size draws here, one point a day.'}</EmptyUsage>
   return <LiveChart kind="area" title="Stored" unit="GB" height={170} series={pts} empty="No usage recorded yet." label={`Your stored size in GB over the last ${pts.length} days.`} />
 }
 
@@ -163,6 +184,38 @@ function PinsList({ a, onDone }: { a: IpfsAccount; onDone: () => void }) {
   )
 }
 
+function PlansPanel({ a }: { a: IpfsAccount }) {
+  const [busy, setBusy] = useState<string | null>(null)
+  const can = useWrite('billing', 'buy a plan').ok
+  const buy = async (p: BillingPlan) => {
+    setBusy(p.id)
+    const r = await api<{ checkoutUrl: string }>('/api/developer/ipfs/subscribe', { method: 'POST', body: { plan: p.id } })
+    setBusy(null)
+    if (!r.ok) return toastError('Checkout did not open', { detail: r.error })
+    window.open(r.data.checkoutUrl, '_blank', 'noopener,noreferrer')
+  }
+  const gb = (b: number) => `${+(b / 1024 ** 3).toFixed(1)} GB`
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="m-0 text-[13px] text-muted">One month at a time, paid through Gully Pay. {a.billing?.paidUntil ? `Your plan runs until ${new Date(a.billing.paidUntil).toISOString().slice(0, 10)}.` : 'Nothing renews by itself.'}</p>
+      <ul className="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,240px),1fr))] gap-2 p-0">
+        {a.billing?.plans.map((p) => (
+          <li key={p.id} className="flex flex-col gap-1 rounded-[10px] border border-line p-3" data-plan={p.id}>
+            <b className="text-[15px] text-ink">{p.name}</b>
+            <span className="text-[13px] text-muted">
+              {gb(p.storageBytes)} stored · {p.maxPins} pins · files up to {gb(p.maxFileBytes)}
+            </span>
+            <span className="text-[13px] text-ink-2">${(p.monthlyCents / 100).toFixed(2)} a month</span>
+            <button type="button" className={`${pillGold} min-h-11 self-start`} disabled={!can || busy === p.id || a.plan.id === p.id} onClick={() => void buy(p)}>
+              <CreditCard size={15} aria-hidden /> {a.plan.id === p.id ? 'Your plan' : busy === p.id ? 'Opening…' : 'Pay with Gully Pay'}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function ApiPanel({ a }: { a: IpfsAccount }) {
   const [name, setName] = useState('IPFS pinning')
   const [secret, setSecret] = useState<string | null>(null)
@@ -213,10 +266,11 @@ export function IpfsTab() {
   const a = poll.data
   const err = a ? null : (poll.error ?? (poll.timedOut ? 'no answer in time' : null))
   const status: Status = !a ? (err ? { tone: 'down', text: 'unreadable' } : { tone: 'checking', text: 'reading' }) : { tone: 'live', text: `${a.plan.name} plan` }
+  const gb = (b: number) => (b >= 1024 ** 3 ? `${+(b / 1024 ** 3).toFixed(1)} GB` : `${Math.round(b / MB)} MB`)
   const tiles: Tile[] = [
     { label: 'YOUR PINS', value: a?.usage.pins ?? null, unknown: 'reading…', note: a ? `of ${a.plan.maxPins} on your plan` : 'pins held for this account' },
     { label: 'STORAGE USED', value: a ? Number((a.usage.bytes / MB).toFixed(1)) : null, format: { minimumFractionDigits: 1, maximumFractionDigits: 1 }, suffix: ' MB', unknown: 'reading…', note: a ? `of ${size(a.plan.storageBytes)}` : 'by your pins' },
-    { label: 'UPLOADS', value: a?.usage.uploadsThisMonth ?? null, unknown: 'reading…', note: 'files and CARs this month' },
+    { label: 'TRANSFER THIS MONTH', value: a ? Number(((a.usage.transferBytes ?? 0) / MB).toFixed(1)) : null, format: { minimumFractionDigits: 1, maximumFractionDigits: 1 }, suffix: ' MB', unknown: 'reading…', note: a?.plan.transferBytesMonth ? `of ${gb(a.plan.transferBytesMonth)} uploaded or pinned` : 'uploaded or pinned' },
     { label: 'COPIES PER PIN', value: a ? (a.replica.inSync ? 2 : 1) : null, unknown: 'reading…', note: a?.replica.inSync ? 'two nodes on two servers' : 'second copy syncing' },
   ]
   return (
@@ -228,6 +282,13 @@ export function IpfsTab() {
         <ErrorLine onRetry={() => void poll.reload()}>Your pins could not be read: {err}</ErrorLine>
       ) : (
         <div className="flex flex-wrap items-stretch gap-2">
+          {a && (
+            <section aria-label="Early access" className={`${panel} w-full flex-[1_1_100%] gap-1`} style={rise(0)} data-testid="ipfs-early-access">
+              <p className="m-0 text-[14px] leading-[1.55] text-ink-2">
+                <b className="text-ink">{a.plan.name}.</b> {a.plan.id === 'free' ? `Free while we open up: ${gb(a.plan.storageBytes)} stored, up to ${a.plan.maxPins} pins, files up to ${gb(a.plan.maxFileBytes)}, every pin on ${a.plan.copies} nodes.` : `Your ${a.plan.name} plan: ${gb(a.plan.storageBytes)} stored, up to ${a.plan.maxPins} pins, files up to ${gb(a.plan.maxFileBytes)}.`} These are early-access limits, not a plan; paid plans and prices are not set yet. Nothing is deleted when you reach a limit.
+              </p>
+            </section>
+          )}
           <section aria-labelledby="ipfs-up" className={`${panel} flex-[999_1_520px] gap-3`} style={rise(1)}>
             <h2 id="ipfs-up" className={panelTitle}>
               Upload
@@ -251,6 +312,14 @@ export function IpfsTab() {
               <Globe size={15} aria-hidden /> Try the gateway
             </ExtLink>
           </section>
+          {a?.billing?.enabled && a.billing.plans.length > 0 && (
+            <section aria-labelledby="ipfs-plans" className={`${panel} w-full flex-[1_1_100%] gap-3`} style={rise(3)} data-testid="ipfs-plans">
+              <h2 id="ipfs-plans" className={panelTitle}>
+                Plans
+              </h2>
+              <PlansPanel a={a} />
+            </section>
+          )}
           <section aria-labelledby="ipfs-api" className={`${panel} flex-[999_1_520px] gap-3`} style={rise(3)} data-testid="ipfs-api">
             <h2 id="ipfs-api" className={panelTitle}>
               Pinning Service API
