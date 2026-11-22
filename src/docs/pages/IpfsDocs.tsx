@@ -1,9 +1,11 @@
+import type { ReactNode } from 'react'
 import { TZ } from '../../lib/time'
 import { MiniSpark } from '../../components/charts/MiniSpark'
 import type { IpfsStats } from '../../console/live'
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 import { useApi } from '../useApi'
+import { IpfsReportForm } from './IpfsReportForm'
 
 const sections = [
   { id: 'what', title: 'What Gully IPFS is' },
@@ -12,6 +14,7 @@ const sections = [
   { id: 'upload', title: 'Uploads' },
   { id: 'limits', title: 'Plans and limits' },
   { id: 'policy', title: 'Content policy' },
+  { id: 'report', title: 'Report content' },
   { id: 'gateway', title: 'The gateway' },
   { id: 'live', title: 'Live figures' },
   { id: 'uses', title: 'What we pin' },
@@ -51,24 +54,33 @@ curl -s -X POST "https://api.gullylabs.xyz/api/ipfs/upload?name=logo.png" \\
 curl -s -X POST https://api.gullylabs.xyz/api/ipfs/upload -H "Authorization: Bearer $KEY" \\
   -H 'Content-Type: application/vnd.ipld.car' --data-binary @site.car`
 
+interface IpfsPlan {
+  id: string
+  name: string
+  storageBytes: number
+  maxFileBytes: number
+  maxPins: number
+  copies: number
+  transferBytesMonth?: number | null
+  egressBytesMonth?: number | null
+  monthlyCents?: number
+}
 interface PlansIpfs {
-  ipfs?: { plans: { id: string; name: string; storageBytes: number; maxFileBytes: number; maxPins: number; copies: number }[]; paid: { priceUsdPerGbMonth: number | null; checkout: boolean; reason: string } }
+  ipfs?: { plans: IpfsPlan[]; paid: { enabled: boolean; plans: IpfsPlan[]; reason: string | null } }
 }
 const mb = (b: number) => (b >= 1024 ** 3 ? `${(b / 1024 ** 3).toFixed(b % 1024 ** 3 ? 1 : 0)} GB` : `${Math.round(b / 1024 ** 2)} MB`)
+type Row = [ReactNode, string, string]
 
 /** The plans as the server enforces them (GET /api/plans, field ipfs): nothing typed here. */
 function IpfsPlans() {
   const p = useApi<PlansIpfs>('/api/plans', 300_000)
   const free = p && p !== 'error' ? p.ipfs?.plans.find((x) => x.id === 'free') : null
-  if (!free) return <P>{p === 'error' ? 'The plans could not be read right now.' : 'Reading the plansâ€¦'}</P>
-  return (
-    <Fields
-      rows={[
-        [<C>Early access</C>, mb(free.storageBytes), `stored, up to ${free.maxPins} pins, files up to ${mb(free.maxFileBytes)}, every pin on ${free.copies} nodes. Limits during early access, not a plan.`],
-        [<C>Plans and prices</C>, 'not set yet', 'The free tier and the price per GB are not set yet. When they are, storage is bought with Gully Pay in the hub.'],
-      ]}
-    />
-  )
+  if (!free) return <P>{p === 'error' ? 'The plans could not be read right now.' : 'Reading the plans…'}</P>
+  const paid = p && p !== 'error' && p.ipfs?.paid.enabled ? p.ipfs.paid.plans : []
+  const rows: Row[] = [[<C key="free">Early access</C>, mb(free.storageBytes), `stored, up to ${free.maxPins} pins, files up to ${mb(free.maxFileBytes)}, ${free.transferBytesMonth ? `${mb(free.transferBytesMonth)} uploaded or pinned a month, ` : ''}every pin on ${free.copies} nodes. Limits during early access, not a plan.`]]
+  if (paid.length) for (const x of paid) rows.push([<C key={x.id}>{x.name}</C>, mb(x.storageBytes), `stored, up to ${x.maxPins} pins, files up to ${mb(x.maxFileBytes)}, $${((x.monthlyCents ?? 0) / 100).toFixed(2)} a month through Gully Pay.`])
+  else rows.push([<C key="paid">Plans and prices</C>, 'not set yet', 'Paid plans and their prices are not set yet. When they are, storage is bought with Gully Pay in the hub.'])
+  return <Fields rows={rows} />
 }
 
 const CURL = `curl -s https://api.gullylabs.xyz/api/ipfs/stats | jq '{source, pinned, gatewayUp}'`
@@ -164,8 +176,15 @@ export function IpfsDocs() {
       <Section id="policy" title="Content policy">
         <P>
           Pin only content you have the right to publish. No illegal content, no content that sexualises minors, no malware or phishing, no other people&apos;s private data, nothing that infringes copyright. Uploaded and pinned images are scanned automatically, and video, SVG and anything the scanner flags is looked at by a person. Content that
-          breaks the policy is taken down: unpinned from every Gully node and refused by the gateway, the same file is refused if it is uploaded again, and the account may be closed. Report content to <Ext href="mailto:team@gullylabs.xyz">team@gullylabs.xyz</Ext>.
+          breaks the policy is taken down: unpinned from every Gully node and refused by the gateway, the same file is refused if it is uploaded again, and the account may be closed. Report content with the form below.
         </P>
+      </Section>
+
+      <Section id="report" title="Report content">
+        <P>
+          Found something on the gateway that should not be there? Send its CID or link. A person reads every report, the most serious ones first. A report never removes anything by itself. You can also write to <Ext href="mailto:team@gullylabs.xyz">team@gullylabs.xyz</Ext>.
+        </P>
+        <IpfsReportForm />
       </Section>
 
       <Section id="live" title="Live figures">

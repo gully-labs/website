@@ -102,7 +102,8 @@ import { status as scanEngineStatus } from './security-engine.mjs'
 import { askStatus } from './ask.mjs'
 import { embedStatus } from './ask-embed.mjs'
 import { teamView } from './workspaces.mjs'
-import { ipfsReviewOk, ipfsReviews, ipfsTakedown } from './ipfs-pins.mjs'
+import { decideReport, ipfsReports } from './ipfs-abuse.mjs'
+import { ipfsReviewOk, ipfsReviews, ipfsSubscriptions, ipfsTakedown } from './ipfs-pins.mjs'
 
 const failures = new Map()
 
@@ -387,6 +388,15 @@ export async function handleAdmin(req, res, url) {
   if (p === '/api/admin/integrations' || p.startsWith('/api/admin/integrations/')) return handleIntegrationsAdmin(req, res, url)
   // Gully IPFS review queue and takedowns (ipfs-pins.mjs): images and video wait here for a look.
   if (p === '/api/admin/ipfs/reviews') return json(res, 200, { reviews: ipfsReviews() }), true
+  // Abuse reports from the public form (ipfs-abuse.mjs): a takedown here uses the same path as the review queue.
+  if (p === '/api/admin/ipfs/reports') return json(res, 200, { reports: ipfsReports() }), true
+  if (p === '/api/admin/ipfs/subscriptions') return json(res, 200, { subscriptions: ipfsSubscriptions() }), true
+  const rep = p.match(/^\/api\/admin\/ipfs\/reports\/([\w-]{1,40})\/(takedown|dismiss)$/)
+  if (rep) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
+    const out = await decideReport(rep[1], rep[2], 'admin')
+    return json(res, out.status, out.body), true
+  }
   if (p === '/api/admin/ipfs/takedown' || /^\/api\/admin\/ipfs\/reviews\/[\w-]{1,40}\/ok$/.test(p)) {
     if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
     if (p.endsWith('/ok')) {

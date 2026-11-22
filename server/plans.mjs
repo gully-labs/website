@@ -25,19 +25,63 @@ export const PLANS = {
 /* ---------------------------------------------------------- Gully IPFS --- */
 
 // OWNER-EDITABLE: Gully IPFS pinning plans (ipfs-pins.mjs enforces them; the hub and docs read them through GET /api/plans,
-// field `ipfs`). Only early-access limits apply: the free tier and the price per GB are the owner's call (2026-11-10), so
-// neither is shown; priceUsdPerGbMonth stays null and checkout stays shut until the owner sets them (then billing goes
-// through Gully Pay checkout). The early-access limits can be set without a code change:
-// IPFS_FREE_STORAGE_GB, IPFS_FREE_MAX_FILE_MB, IPFS_FREE_MAX_PINS (server env).
+// field `ipfs`). The free tier is "Early access" and is the single source for every page: IPFS_FREE_STORAGE_GB (default 1),
+// IPFS_FREE_MAX_FILE_MB (100), IPFS_FREE_MAX_PINS (500), IPFS_FREE_TRANSFER_GB (monthly upload cap, default 5), all server env.
+// Paid tiers are plumbing only and OFF: the owner and counsel set no price. A tier exists only when IPFS_PAID_PLANS_JSON
+// lists it, e.g. [{"id":"pro","name":"Pro","priceUsdPerGbMonth":0.05,"storageGb":100,"maxFileMb":1024,"maxPins":10000,
+// "transferGb":500,"egressGb":500}], and checkout opens only with IPFS_PAID_ENABLED=1 as well (and Gully Pay set up).
+// A paid month costs priceUsdPerGbMonth x storageGb and is bought through Gully Pay checkout (ipfs-billing in ipfs-pins.mjs).
 const envNum = (k, d) => (Number.isFinite(Number(process.env[k])) && Number(process.env[k]) > 0 ? Number(process.env[k]) : d)
 export function ipfsPlans() {
   return {
-    free: { id: 'free', name: 'Early access', priceUsdPerGbMonth: null, storageBytes: Math.round(envNum('IPFS_FREE_STORAGE_GB', 1) * 1024 ** 3), maxFileBytes: Math.round(envNum('IPFS_FREE_MAX_FILE_MB', 100) * 1024 ** 2), maxPins: envNum('IPFS_FREE_MAX_PINS', 500), copies: 2 },
+    free: { id: 'free', name: 'Early access', priceUsdPerGbMonth: null, storageBytes: Math.round(envNum('IPFS_FREE_STORAGE_GB', 1) * 1024 ** 3), maxFileBytes: Math.round(envNum('IPFS_FREE_MAX_FILE_MB', 100) * 1024 ** 2), maxPins: envNum('IPFS_FREE_MAX_PINS', 500), copies: 2, transferBytesMonth: Math.round(envNum('IPFS_FREE_TRANSFER_GB', 5) * 1024 ** 3), egressBytesMonth: null },
   }
 }
-/** The IPFS limits in force for an account (early access until the owner sets the free tier and the price). */
-export const ipfsPlanOf = () => ipfsPlans().free
-export const IPFS_PAID = { priceUsdPerGbMonth: null, checkout: false, reason: 'Plans and prices are not set yet.' }
+/** Paid tiers from IPFS_PAID_PLANS_JSON, validated; a malformed entry or a missing price is dropped (never a default price). */
+export function ipfsPaidPlans() {
+  let raw
+  try {
+    raw = JSON.parse(process.env.IPFS_PAID_PLANS_JSON || '[]')
+  } catch {
+    return []
+  }
+  if (!Array.isArray(raw)) return []
+  const num = (v) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : null)
+  const out = []
+  for (const p of raw.slice(0, 8)) {
+    const price = num(p?.priceUsdPerGbMonth)
+    const gb = num(p?.storageGb)
+    if (!/^[a-z0-9-]{2,24}$/.test(String(p?.id ?? '')) || p.id === 'free' || price == null || gb == null || out.some((x) => x.id === p.id)) continue
+    out.push({
+      id: p.id,
+      name: String(p.name ?? p.id).slice(0, 40),
+      priceUsdPerGbMonth: price,
+      monthlyCents: Math.round(price * gb * 100),
+      storageBytes: Math.round(gb * 1024 ** 3),
+      maxFileBytes: Math.round((num(p.maxFileMb) ?? 100) * 1024 ** 2),
+      maxPins: num(p.maxPins) ?? 5000,
+      copies: 2,
+      transferBytesMonth: num(p.transferGb) == null ? null : Math.round(num(p.transferGb) * 1024 ** 3),
+      egressBytesMonth: num(p.egressGb) == null ? null : Math.round(num(p.egressGb) * 1024 ** 3),
+    })
+  }
+  return out
+}
+/** Paid tiers can be bought: the flag is on and at least one priced tier exists. Gully Pay readiness is checked at checkout. */
+export const ipfsPaidEnabled = () => process.env.IPFS_PAID_ENABLED === '1' && ipfsPaidPlans().length > 0
+let ipfsSubResolver = null
+/** ipfs-pins.mjs registers how to find an owner's paid tier (a paid month still running), so plans.mjs holds no state. */
+export const setIpfsSubResolver = (f) => (ipfsSubResolver = f)
+/** The IPFS limits in force for an account: its paid tier while a paid month runs and the flag is on, else early access. */
+export function ipfsPlanOf(owner) {
+  if (owner && ipfsPaidEnabled() && ipfsSubResolver) {
+    const id = ipfsSubResolver(owner)
+    const p = id && ipfsPaidPlans().find((x) => x.id === id)
+    if (p) return p
+  }
+  return ipfsPlans().free
+}
+export const ipfsPaidState = () => ({ enabled: ipfsPaidEnabled(), plans: ipfsPaidPlans(), reason: ipfsPaidEnabled() ? null : 'Plans and prices are not set yet.' })
 
 /* ------------------------------------------------------ Gully Analytics --- */
 
@@ -182,7 +226,7 @@ export function publicPlans({ treasuryOverride } = {}) {
     holderMap: { gated: holderMapGated(), tiers: HOLDER_MAP.tiers },
     analytics: { plans: Object.values(ANALYTICS_PLANS), trialDays: ANALYTICS_TRIAL_DAYS, graceDays: ANALYTICS_GRACE_DAYS, periodDays: PERIOD_DAYS },
     security: SECURITY,
-    ipfs: { plans: Object.values(ipfsPlans()), paid: IPFS_PAID },
+    ipfs: { plans: Object.values(ipfsPlans()), paid: ipfsPaidState() },
     holderDeep: HOLDER_DEEP,
     // A treasury that is a fee proxy is never shown (pay-guard.mjs: logged, PaymentGuardError, 500).
     checkout: t ? { enabled: true, treasury: guardRecipient(t, 'plans checkout'), solanaTreasury: solanaTreasury() } : { enabled: false, treasury: null, solanaTreasury: null, reason: 'Paid plans cannot be bought yet: no treasury wallet is configured.' },

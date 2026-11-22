@@ -34,7 +34,8 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { bearer, clientIp, DATA_DIR, json } from './http.mjs'
-import { ipfsPlanOf } from './plans.mjs'
+import { createHostedCheckout, gullyPayEnabled, gullyPayHandlers } from './gullypay.mjs'
+import { ipfsPaidEnabled, ipfsPaidPlans, ipfsPlanOf, setIpfsSubResolver } from './plans.mjs'
 import { findKey, safeEqual } from './store.mjs'
 
 export const PSA_BASE = '/api/ipfs/psa'
@@ -63,6 +64,10 @@ function load() {
   db.denyHashes ??= []
   db.days ??= {}
   db.replica ??= null
+  db.subs ??= {} // owner -> { plan, paidUntil, sessionId, paidAt }: a paid month (IPFS_PAID_ENABLED only)
+  db.checkouts ??= {} // Gully Pay session id -> { owner, plan, cents, created, status }
+  db.transfer ??= {} // owner -> { month, bytes }: bytes uploaded or newly pinned this UTC month
+  db.egress ??= {} // owner -> { month, bytes }: gateway bytes served for the owner's CIDs (reported by the edge)
   return db
 }
 function save() {
@@ -175,6 +180,32 @@ function noteDay(owner) {
   const keys = Object.keys(d.days[owner]).sort()
   for (const k of keys.slice(0, Math.max(0, keys.length - 60))) delete d.days[owner][k]
 }
+
+const monthNow = () => nowIso().slice(0, 7)
+/** Bytes taken in (uploads and newly pinned DAGs) or served (gateway) for an account this UTC month. */
+function meterOf(kind, owner) {
+  const m = load()[kind][owner]
+  return m && m.month === monthNow() ? m.bytes : 0
+}
+function addMeter(kind, owner, n) {
+  if (!(n > 0)) return
+  const d = load()[kind]
+  const cur = d[owner]?.month === monthNow() ? d[owner].bytes : 0
+  d[owner] = { month: monthNow(), bytes: cur + Math.round(n) }
+}
+/** Why an account may not take more in right now: its monthly transfer or gateway limit is used up (null = fine). */
+function meterError(owner, addBytes = 0) {
+  const plan = ipfsPlanOf(owner)
+  if (plan.transferBytesMonth != null && meterOf('transfer', owner) + addBytes > plan.transferBytesMonth) return `Monthly upload and pin transfer used up (${Math.round(plan.transferBytesMonth / 1048576)} MB on the ${plan.name} plan). It resets on the 1st (UTC). Nothing was deleted.`
+  if (plan.egressBytesMonth != null && meterOf('egress', owner) >= plan.egressBytesMonth) return `Monthly gateway traffic used up (${Math.round(plan.egressBytesMonth / 1048576)} MB on the ${plan.name} plan). It resets on the 1st (UTC).`
+  return null
+}
+/** The paid tier id of an account while its paid month runs (plans.mjs reads it through this). */
+const subOf = (owner) => {
+  const s = load().subs[owner]
+  return s && Date.parse(s.paidUntil) > Date.now() ? s.plan : null
+}
+setIpfsSubResolver(subOf)
 
 /* -------------------------------------------------------------- kubo ops --- */
 
@@ -397,6 +428,7 @@ async function pinOne(r) {
   if (load().pins.find((x) => x.id === r.id)?.status !== 'pinning') return // deleted while pinning
   await kubo(`pin/add?arg=${encodeURIComponent(r.cid)}&recursive=true`, { timeout: PIN_TIMEOUT_MS() })
   r.bytes = size
+  addMeter('transfer', r.owner, size)
   // Media is screened before the record reads `pinned`, so a caller that sees `pinned` also sees its review state.
   let mime = null
   try {
@@ -447,7 +479,7 @@ function quotaError(owner, addBytes = 0) {
   const u = usageOf(owner)
   if (u.pins >= plan.maxPins) return `Your plan holds at most ${plan.maxPins} pins. Remove one first.`
   if (u.bytes + addBytes > plan.storageBytes) return `Over your storage quota (${Math.round(plan.storageBytes / 1048576)} MB on the ${plan.name} plan). Remove a pin first. Nothing was deleted.`
-  return null
+  return meterError(owner, addBytes)
 }
 
 const readBody = (req, max) =>
@@ -527,6 +559,7 @@ export async function upload(req, res, url, owner, keyId) {
     if (!car) await kubo(`pin/add?arg=${encodeURIComponent(cid)}&recursive=true`, { timeout: 120_000 })
     const r = addRecord(owner, keyId, { cid, name, origins: [], meta: null }, { status: 'pinned', bytes: body.length, pinnedAt: nowIso(), source: car ? 'car' : 'upload', sha256: hash, localBefore, noPurge: car, preexisting: pre && !load().pins.some((x) => x.cid === cid && LIVE.has(x.status) && !x.preexisting) })
     if (!car) await screen(r, sniff(body), body)
+    addMeter('transfer', owner, body.length)
     noteDay(owner)
     save()
     await peerId()
@@ -689,7 +722,16 @@ export function accountIpfs(owner) {
     .map(([day, bytes]) => ({ day, bytes }))
   const month = nowIso().slice(0, 7)
   const uploads = load().pins.filter((r) => r.owner === owner && (r.source === 'upload' || r.source === 'car') && r.created.startsWith(month)).length
-  return { plan, usage: { ...u, uploadsThisMonth: uploads }, pins, days, replica: { inSync: rep.inSync }, api: { base: `https://api.gullylabs.xyz${PSA_BASE}`, scope: SCOPE } }
+  const sub = load().subs[owner]
+  return {
+    plan,
+    usage: { ...u, uploadsThisMonth: uploads, transferBytes: meterOf('transfer', owner), egressBytes: meterOf('egress', owner) },
+    pins,
+    days,
+    replica: { inSync: rep.inSync },
+    api: { base: `https://api.gullylabs.xyz${PSA_BASE}`, scope: SCOPE },
+    billing: { enabled: ipfsPaidEnabled(), plans: ipfsPaidPlans().map(({ id, name, priceUsdPerGbMonth, monthlyCents, storageBytes, maxFileBytes, maxPins, transferBytesMonth, egressBytesMonth }) => ({ id, name, priceUsdPerGbMonth, monthlyCents, storageBytes, maxFileBytes, maxPins, transferBytesMonth, egressBytesMonth })), paidUntil: sub && Date.parse(sub.paidUntil) > Date.now() ? sub.paidUntil : null },
+  }
 }
 
 /** /api/developer/ipfs* for the signed-in workspace (ctx from developer.mjs). Returns true when it answered. */
@@ -701,6 +743,7 @@ export async function handleIpfsAccount(req, res, url, ctx) {
     return json(res, 200, accountIpfs(owner)), true
   }
   if (p === '/api/developer/ipfs/upload') return (await upload(req, res, url, owner, null)), true
+  if (p === '/api/developer/ipfs/subscribe') return (await subscribe(req, res, owner)), true
   const m = p.match(/^\/api\/developer\/ipfs\/pins\/([\w-]{1,64})\/delete$/)
   if (m && req.method === 'POST') {
     const r = load().pins.find((x) => x.id === m[1] && x.owner === owner && !x.deletedAt)
@@ -710,6 +753,66 @@ export async function handleIpfsAccount(req, res, url, ctx) {
   }
   return json(res, 404, { error: 'not found' }), true
 }
+
+/* ------------------------------------------------- paid tiers (Gully Pay) --- */
+
+const PAID_MS = 30 * 86_400_000
+/**
+ * POST /api/developer/ipfs/subscribe { plan }: a hosted Gully Pay checkout for one paid month of a tier. OFF unless
+ * IPFS_PAID_ENABLED=1 and IPFS_PAID_PLANS_JSON lists a priced tier (plans.mjs), and Gully Pay is configured. The tier
+ * unlocks only on a verified Gully Pay webhook for that session with the exact amount; reading the page never unlocks it.
+ */
+async function subscribe(req, res, owner) {
+  if (req.method !== 'POST') return json(res, 405, { error: 'POST only' })
+  if (!ipfsPaidEnabled()) return json(res, 402, { error: 'Paid plans are not available yet.', code: 'paid-off' })
+  if (!gullyPayEnabled()) return json(res, 402, { error: 'Checkout is not set up yet.', code: 'checkout-off' })
+  if (!allow('subscribe', owner, 10, 3_600_000)) return json(res, 429, { error: 'Too many checkout attempts. Try again in an hour.' })
+  const body = await readJsonBody(req, 2_000)
+  const plan = ipfsPaidPlans().find((x) => x.id === body?.plan)
+  if (!plan) return json(res, 400, { error: 'Unknown plan.' })
+  if (!(plan.monthlyCents >= 1)) return json(res, 400, { error: 'This plan has no price set.' })
+  const nonce = crypto.randomBytes(8).toString('hex')
+  try {
+    const s = await createHostedCheckout({ amountCents: plan.monthlyCents, currency: 'USD', clientReferenceId: `ipfs:${nonce}:${plan.id}`, successUrl: 'https://app.gullylabs.xyz/#ipfs', cancelUrl: 'https://app.gullylabs.xyz/#ipfs' })
+    load().checkouts[s.sessionId] = { owner, plan: plan.id, cents: plan.monthlyCents, created: nowIso(), status: 'open' }
+    save()
+    return json(res, 202, { checkoutUrl: s.checkoutUrl, expiresAt: s.expiresAt })
+  } catch (e) {
+    return json(res, 502, { error: e?.message ?? 'Gully Pay could not open a checkout. Nothing was charged.', code: 'checkout-unavailable' })
+  }
+}
+
+/** Gully Pay's verified webhook: a completed session of exactly the plan's price buys 30 days (added to a running month). */
+export function onGullyPayIpfsEvent({ type, eventId, object }) {
+  if (!/^ipfs:/.test(String(object?.clientReferenceId ?? ''))) return 'ignored'
+  const c = load().checkouts[String(object?.id ?? '')]
+  if (!c) return 'ignored'
+  if (type === 'checkout.session.expired') {
+    if (c.status === 'open') c.status = 'expired'
+    save()
+    return 'handled'
+  }
+  if (type !== 'checkout.session.completed') return 'ignored'
+  if (c.status === 'paid') return 'handled'
+  const chainName = String(object.crypto?.chain ?? '')
+  const realMoney = object.crypto ? chainName !== '' && !/testnet|sepolia|devnet|goerli|holesky/i.test(chainName) : process.env.IPFS_ACCEPT_CARDS === '1'
+  if (Number(object.amount) !== c.cents || String(object.currency ?? '').toUpperCase() !== 'USD' || !realMoney || (object.status && object.status !== 'completed')) {
+    console.error(`ipfs billing: session ${object.id} completed with ${object.amount} ${object.currency}, want ${c.cents} USD: not unlocked`)
+    c.mismatch = { eventId, at: nowIso() }
+    save()
+    return 'ignored'
+  }
+  const cur = load().subs[c.owner]
+  const base = cur && cur.plan === c.plan && Date.parse(cur.paidUntil) > Date.now() ? Date.parse(cur.paidUntil) : Date.now()
+  load().subs[c.owner] = { plan: c.plan, paidUntil: new Date(base + PAID_MS).toISOString(), sessionId: String(object.id), paidAt: nowIso() }
+  c.status = 'paid'
+  save()
+  return 'handled'
+}
+gullyPayHandlers.push(onGullyPayIpfsEvent)
+
+/** Admin: the owner's own paid-tier state (for support). */
+export const ipfsSubscriptions = () => Object.entries(load().subs).map(([owner, s]) => ({ owner, ...s }))
 
 /* -------------------------------------------------------------- admin --- */
 
@@ -803,9 +906,25 @@ export async function handleIpfsPins(req, res, url) {
     await upload(req, res, url, key.owner, key.id)
     return true
   }
-  if (p === '/api/ipfs/internal/pinset' || p === '/api/ipfs/internal/replica') {
+  if (p === '/api/ipfs/internal/pinset' || p === '/api/ipfs/internal/replica' || p === '/api/ipfs/internal/egress') {
     if (!syncAuth(req)) return err(res, 401, 'UNAUTHORIZED', 'not allowed'), true
     if (!allow('sync', clientIp(req), 120, 60_000)) return err(res, 429, 'RATE_LIMITED', 'slow down'), true
+    if (p.endsWith('/egress')) {
+      // The gateway edge's report { bytesByCid: { <cid>: <bytes served> } }: attributed to the accounts holding the CID
+      // (split evenly), so a plan's gateway limit has a meter. Gully's own pins belong to no account and count for none.
+      if (req.method !== 'POST') return err(res, 405, 'METHOD_NOT_ALLOWED', 'POST'), true
+      const b = await readJsonBody(req, 256_000)
+      let attributed = 0
+      for (const [cid, bytes] of Object.entries(b?.bytesByCid ?? {}).slice(0, 5000)) {
+        const n = Number(bytes)
+        if (!validCid(cid) || !Number.isFinite(n) || n <= 0) continue
+        const owners = [...new Set(load().pins.filter((r) => r.cid === cid && !r.deletedAt && LIVE.has(r.status)).map((r) => r.owner))]
+        for (const o of owners) addMeter('egress', o, n / owners.length)
+        if (owners.length) attributed += n
+      }
+      save()
+      return json(res, 200, { ok: true, attributed: Math.round(attributed) }), true
+    }
     if (p.endsWith('/pinset')) {
       try {
         return json(res, 200, { generatedAt: nowIso(), cids: await pinset() }), true
