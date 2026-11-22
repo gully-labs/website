@@ -7,7 +7,7 @@
 // existing path, ipfsTakedown in ipfs-pins.mjs (unpin everywhere, purge, gateway denylist, SHA-256 denylist). Reports of
 // the most serious categories sort first in the queue. The reporter's email is kept only to answer them and never shown
 // to anyone but admins. Rate limits: 5 an hour per IP, 200 a day in all, one open report per (CID, IP) a day.
-// The wording of the policy this serves is a DRAFT until the owner and counsel approve it (docs/ipfs-content-policy-DRAFT.md).
+// The wording of the policy this serves is a DRAFT until the owner and counsel approve it (docs/ipfs/CONTENT-POLICY-AND-TERMS-DRAFT.md).
 
 import crypto from 'node:crypto'
 import fs from 'node:fs'
