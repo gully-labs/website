@@ -423,6 +423,7 @@ async function handleRequest(req, res) {
   // Gully IPFS (ipfs.mjs): repo size, pinned CIDs and gateway health, read from the node over the docker network. Public.
   // Self-serve pinning (ipfs-pins.mjs): the Pinning Service API at /api/ipfs/psa, uploads, and the replica's sync routes.
   if (url.pathname.startsWith('/api/ipfs/')) {
+    if (await handleIpfsAbuse(req, res, url)) return
     if (await handleIpfsPins(req, res, url)) return
     if (await handleIpfs(req, res, url, send)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
