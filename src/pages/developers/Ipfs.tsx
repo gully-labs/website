@@ -270,7 +270,6 @@ export function IpfsTab() {
   const tiles: Tile[] = [
     { label: 'YOUR PINS', value: a?.usage.pins ?? null, unknown: 'reading…', note: a ? `of ${a.plan.maxPins} on your plan` : 'pins held for this account' },
     { label: 'STORAGE USED', value: a ? Number((a.usage.bytes / MB).toFixed(1)) : null, format: { minimumFractionDigits: 1, maximumFractionDigits: 1 }, suffix: ' MB', unknown: 'reading…', note: a ? `of ${size(a.plan.storageBytes)}` : 'by your pins' },
-    { label: 'UPLOADS', value: a?.usage.uploadsThisMonth ?? null, unknown: 'reading…', note: 'files and CARs this month' },
     { label: 'TRANSFER THIS MONTH', value: a ? Number(((a.usage.transferBytes ?? 0) / MB).toFixed(1)) : null, format: { minimumFractionDigits: 1, maximumFractionDigits: 1 }, suffix: ' MB', unknown: 'reading…', note: a?.plan.transferBytesMonth ? `of ${gb(a.plan.transferBytesMonth)} uploaded or pinned` : 'uploaded or pinned' },
     { label: 'COPIES PER PIN', value: a ? (a.replica.inSync ? 2 : 1) : null, unknown: 'reading…', note: a?.replica.inSync ? 'two nodes on two servers' : 'second copy syncing' },
   ]
