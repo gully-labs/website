@@ -343,3 +343,25 @@ export function serviceView(data, s) {
   const probed = s.probes.length > 0
   return { state: probed ? v.state : 'live', word: probed ? v.word : 'Live', ms: probed ? v.ms : '–', up: probed ? v.up : '–', chart }
 }
+
+/** The stock tracker's card on the home page: the figures and the picture of the widest gaps, from one /api/tracker read
+    (the server draws the first one, the page script the later ones; rows may carry only the fields read here). */
+export function trackerView(t) {
+  const rows = Array.isArray(t?.rows) ? t.rows : []
+  const trusted = rows.filter((r) => num(r.gapPct) != null && r.status !== 'thin')
+  const abs = trusted.map((r) => Math.abs(r.gapPct)).sort((a, b) => a - b)
+  const median = abs.length ? (abs.length % 2 ? abs[(abs.length - 1) / 2] : (abs[abs.length / 2 - 1] + abs[abs.length / 2]) / 2) : null
+  const liquidity = rows.reduce((sum, r) => sum + (num(r.pool?.totalLiquidityUsd) ?? 0), 0)
+  const flagged = rows.filter((r) => r.status === 'premium' || r.status === 'discount').length
+  const widest = [...abs].reverse().slice(0, 28).reverse()
+  const have = rows.length > 0
+  return {
+    state: have ? 'live' : 'reading',
+    word: have ? 'Live' : 'Reading',
+    stocks: have ? String(rows.length) : '–',
+    flagged: have ? String(flagged) : '–',
+    typical: median == null ? '–' : `${median.toFixed(2)}%`,
+    liquidity: have ? fmtUsd(liquidity) : '–',
+    chart: bars(widest, 'Gap to fair price for the widest tracked stocks right now, in percent', 'Every tracked stock is in line right now'),
+  }
+}

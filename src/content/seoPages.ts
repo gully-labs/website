@@ -23,7 +23,7 @@ export const fullTitle = (path: string, title: string) => (path === '/' ? `Gully
 export const SEO_PAGES: Record<string, SeoEntry> = {
   '/': {
     title: 'Chains, IPFS, analytics and builds in one app',
-    description: 'The Gully Labs app: order your own chain, pin files to IPFS, track your sites with Gully Analytics, create API keys and request a build, with live status.',
+    description: 'The Gully Labs app: order your own chain, pin files to IPFS, track your sites, create API keys and request a build. Free live stock token tracker.',
   },
   '/projects': {
     title: 'Projects: everything else we build',

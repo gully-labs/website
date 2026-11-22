@@ -277,6 +277,10 @@
     "Services"
    ],
    [
+    "/tracker",
+    "Tracker"
+   ],
+   [
     "https://app.gullylabs.xyz",
     "App"
    ],
@@ -301,6 +305,10 @@
    [
     "/services",
     "Services"
+   ],
+   [
+    "/tracker",
+    "Tracker"
    ],
    [
     "https://app.gullylabs.xyz",
@@ -500,7 +508,7 @@
  "meta": {
   "/": [
    "Gully Labs · Chains, IPFS, analytics and builds in one app",
-   "The Gully Labs app: order your own chain, pin files to IPFS, track your sites with Gully Analytics, create API keys and request a build, with live status."
+   "The Gully Labs app: order your own chain, pin files to IPFS, track your sites, create API keys and request a build. Free live stock token tracker."
   ],
   "/projects": [
    "Projects: everything else we build · Gully Labs",

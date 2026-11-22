@@ -332,6 +332,23 @@ const seedLaunch = (tiers = ['free', 'pro']) => {
   for (const tier of tiers) H.seedHolderMapForTest('robinhood', TOKEN, H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'launch', history: { transfers: launchHistory(), complete: true, fromBlock: 100, toBlock: 200 }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {}, tier }), [tier])
 }
 
+test('stale while revalidate: an expired good map answers at once and is re-read behind the visitor (a cold build took 42 s)', async () => {
+  H.resetHoldersForTest()
+  const good = H.buildMap({ chainKey: 'robinhood', token: TOKEN, symbol: 'TST', decimals: 18, kind: 'launch', history: { transfers: launchHistory(), complete: true, fromBlock: 100, toBlock: 200 }, labels: LABELS(), supply: 1_000_000n * E18, launch: LAUNCH, sources: {}, tier: 'free' })
+  H.seedHolderMapForTest('robinhood', TOKEN, good, ['free'], H.cacheMs() + 60_000)
+  const t0 = Date.now()
+  const r = await H.readHolderMap('robinhood', TOKEN, { tier: 'free' })
+  assert.equal(r.state, 'ok')
+  assert.equal(r.stale, true, 'marked stale')
+  assert.ok(Date.now() - t0 < 500, 'answered without waiting for a rebuild')
+  // A map older than the stale window is not served as if it were current: the read waits for a rebuild.
+  H.resetHoldersForTest()
+  H.seedHolderMapForTest('robinhood', TOKEN, good, ['free'], 7 * 3_600_000)
+  const old = await H.readHolderMap('robinhood', TOKEN, { tier: 'free' })
+  assert.notEqual(old.stale, true)
+  H.resetHoldersForTest()
+})
+
 test('cache: a second read within the window makes no upstream call; tiers are cached apart', async () => {
   H.resetHoldersForTest()
   process.env.BLOCKSCOUT_API_KEY = 'proapi_test'

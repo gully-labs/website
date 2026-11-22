@@ -1,9 +1,9 @@
 // The landing's only script (served at /landing/live.js). The page is complete without it: this keeps the figures,
 // graphics and board current from the same-origin APIs, and shows toasts for real events only. No framework.
-import { board, cards, coreBars, mapNodes, METRIC, metricNote, ptTime, serviceView } from '/landing/graphs.mjs'
+import { board, cards, coreBars, mapNodes, METRIC, metricNote, ptTime, serviceView, trackerView } from '/landing/graphs.mjs'
 
 const data = JSON.parse(document.getElementById('boot')?.textContent ?? '{}')
-const SOURCES = { hub: ['/api/hub', 60_000], products: ['/api/hub/products', 120_000], live: ['/api/hub/live', 60_000], stats: ['/api/stats', 60_000] }
+const SOURCES = { hub: ['/api/hub', 60_000], products: ['/api/hub/products', 120_000], live: ['/api/hub/live', 60_000], stats: ['/api/stats', 60_000], tracker: ['/api/tracker', 60_000] }
 
 /** Redraws only when the data changed, so a poll with nothing new does not restart an animation. */
 const drawn = new WeakMap()
@@ -48,6 +48,17 @@ function draw() {
   if (at) at.textContent = ptTime()
   const core = document.querySelector('[data-b="core"]')
   if (core && metric) set(core, coreBars(data.products, metric))
+  // The stock tracker card (the home page): its figures and the widest gaps.
+  if (document.querySelector('[data-tk-chart]')) {
+    const t = trackerView(data.tracker)
+    for (const k of ['stocks', 'flagged', 'typical', 'liquidity', 'word']) {
+      const el = document.querySelector(`[data-tk="${k}"]`)
+      if (el && el.textContent !== t[k]) el.textContent = t[k]
+    }
+    const st = document.querySelector('[data-tk-state]')
+    if (st) st.dataset.state = t.state
+    set(document.querySelector('[data-tk-chart]'), t.chart)
+  }
   // The app's services (the home page): state, response time and picture of each card.
   for (const s of data.app ?? []) {
     const v = serviceView(data, s)

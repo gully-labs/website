@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-20T20:54:22.009Z",
+ "updatedAt": "2026-11-22T13:55:05.464Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -3617,44 +3617,35 @@
    "title": "Gully SDK (gully-labs/sdk README)",
    "url": "https://github.com/gully-labs/sdk/blob/main/README.md",
    "section": null,
-   "text": "Typed tools for the Gully Labs stock token tracker: an API client and an embeddable widget. Part of Gully Labs, a blockchain development company that builds, launches and runs its own Web3 projects.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "You Think It, We Ship It. Typed clients and embeds for Gully Labs products: tracker, Holder Map, Gully Security, kre8.fun and Gully Ads. MIT. Built and run by Gully Labs. You Think It, We Ship It.",
+   "updatedAt": "2026-11-22T13:55:05.464Z"
   },
   {
-   "id": "8a027845dacd",
+   "id": "ed6affe04077",
    "source": "GitHub README",
    "title": "Gully SDK (gully-labs/sdk README)",
-   "url": "https://github.com/gully-labs/sdk/blob/main/README.md#gully-labs-sdk",
-   "section": "Gully Labs SDK",
-   "text": "Build on the Gully Labs stock token tracker: every tokenised stock on Robinhood Chain and BNB Chain, priced from its deepest pool on chain against its Chainlink fair price, refreshed every minute. Package — What it is @gullylabs/tracker — A typed client for the tracker API. No dependencies; runs in browsers, Node 18+, Bun, Deno and edge runtimes. @gullylabs/widget — The embeddable widget (ticker, badge, table) with a loader and a React component. @gullylabs/holders — A typed client for the Holder Map API (who holds a token, wallet clusters) and a React component that frames the map.",
-   "updatedAt": "2026-10-21T23:48:05.022Z"
+   "url": "https://github.com/gully-labs/sdk/blob/main/README.md#gully-labs-sdks",
+   "section": "Gully Labs SDKs",
+   "text": "The Gully Labs packages on npm, all under the @gullylabs scope. Every package: ESM + CommonJS builds with TypeScript types, MIT, semver 0.x, a 5-minute quickstart in its README, a CHANGELOG, and a files allowlist (no tests, no secrets). Package — What it is @gullylabs/widgets — Stock token tracker client, Holder Map client + (Gully Chain included), the tracker widget + . Replaces @gullylabs/tracker, @gullylabs/holders, @gullylabs/widget. @gullylabs/security — Gully Security scan-a-token API client and the \"Secured by Gully Security\" badge web component. @gullylabs/kre8-embed — kre8.fun embeds: coin card, Drop / track player and \"Back this\" button as sandboxed-iframe web components with a React wrapper. @gullylabs/ads — Gully Ads publisher SDK (beta): ad slot component, signed serve requests, impression and click reporting. Integrate in 5 minutes: https://docs.gullylabs.xyz/integrate (Gully Labs) and https://docs.gullychain.xyz/sdks/ (Gully Chain builders).",
+   "updatedAt": "2026-11-22T13:55:05.464Z"
   },
   {
-   "id": "657efa7a3f14",
+   "id": "1b2914900317",
    "source": "GitHub README",
    "title": "Gully SDK (gully-labs/sdk README)",
-   "url": "https://github.com/gully-labs/sdk/blob/main/README.md#quick-start",
-   "section": "Quick start",
-   "text": "No build step? One script tag does the same:",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "url": "https://github.com/gully-labs/sdk/blob/main/README.md#develop",
+   "section": "Develop",
+   "text": "Each package is self-contained: cd packages/ && npm install && npm test && npm run build. npm pack --dry-run shows exactly what would ship.",
+   "updatedAt": "2026-11-22T13:55:05.464Z"
   },
   {
-   "id": "f80bee21deac",
+   "id": "d824d1d7015c",
    "source": "GitHub README",
    "title": "Gully SDK (gully-labs/sdk README)",
-   "url": "https://github.com/gully-labs/sdk/blob/main/README.md#limits-and-keys",
-   "section": "Limits and keys",
-   "text": "Anonymous calls get 60 a minute per IP. A key from the Gully Labs app (sign in with your wallet, no form) gets 600:",
-   "updatedAt": "2026-10-19T19:01:05.209Z"
-  },
-  {
-   "id": "6e12edc900ac",
-   "source": "GitHub README",
-   "title": "Gully SDK (gully-labs/sdk README)",
-   "url": "https://github.com/gully-labs/sdk/blob/main/README.md#links",
-   "section": "Links",
-   "text": "API reference: https://docs.gullylabs.xyz/api Methodology: https://docs.gullylabs.xyz/methodology Live tracker: https://gullylabs.xyz/tracker X: @Gully_Labs Information only, not investment advice. MIT licensed.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "url": "https://github.com/gully-labs/sdk/blob/main/README.md#release",
+   "section": "Release",
+   "text": "Bump version in the package's package.json and add a CHANGELOG.md entry. Run npm ci && npm run typecheck && npm test && npm run build at the root, then npm publish --dry-run in the package folder. Publish from the package folder: npm publish --access public (prerelease versions such as 0.1.0-beta.0 with --tag beta). Information only, not investment advice. MIT. Built and run by Gully Labs.",
+   "updatedAt": "2026-11-22T13:55:05.464Z"
   },
   {
    "id": "d03d44916100",
@@ -3716,8 +3707,8 @@
    "title": "Gully Analytics, the Umami fork (gully-labs/umami README)",
    "url": "https://github.com/gully-labs/umami/blob/gully/analytics/README.md",
    "section": null,
-   "text": "Gully Analytics: privacy-friendly web analytics that also see wallets, chains and transactions. Part of Gully Labs, a blockchain development company that builds, launches and runs its own Web3 projects. Gully Analytics — this is Gully Labs' fork of Umami with Web3 tracking (wallets, chains, transactions) for dapps. See docs/gully/README.md for the data-web3 tracker option, the event schema, the Web3 dashboard and Docker Compose self-hosting. Umami is MIT licensed, Copyright (c) Umami Software, Inc.; Gully's changes are MIT too.",
-   "updatedAt": "2026-10-19T01:11:03.920Z"
+   "text": "You Think It, We Ship It. Gully Analytics: privacy-friendly web analytics that also see wallets, chains and transactions. A Gully Labs fork of umami-software/umami, maintained by Gully Labs. It is used under its MIT licence; the upstream LICENSE, copyright and attribution notices are kept unchanged. The upstream README follows below as published. Not affiliated with or endorsed by umami-software. Gully Analytics — this is Gully Labs' fork of Umami with Web3 tracking (wallets, chains, transactions) for dapps. See docs/gully/README.md for the data-web3 tracker option, the event schema, the Web3 dashboard and Docker Compose self-hosting. Umami is MIT licensed, Copyright (c) Umami Software, Inc.; Gully's changes are MIT too.",
+   "updatedAt": "2026-11-22T13:55:05.464Z"
   },
   {
    "id": "47f787adaa5d",

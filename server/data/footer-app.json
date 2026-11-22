@@ -24,6 +24,7 @@
       "title": "Company",
       "links": [
         { "label": "Projects", "href": "/projects", "icon": "layers" },
+        { "label": "Stock tracker", "href": "/tracker", "icon": "chart-candlestick" },
         { "label": "Docs", "href": "https://docs.gullylabs.xyz", "icon": "book-open" },
         { "label": "Blog", "href": "https://blog.gullylabs.xyz", "icon": "message-circle" },
         { "label": "Status", "href": "/status", "icon": "activity" },
