@@ -52,6 +52,7 @@
 // (DATA_DIR/ask-feedback.jsonl, 90 days) holds the answer id, the rating, the question and the same hash.
 // The "my" tools take no workspace argument: the workspace comes only from the session, never from the model.
 
+import { redact, redactEntry, scrubForModel } from './redact.mjs'
 import { dayLA, nextDayStartLA } from './time-la.mjs'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -1193,7 +1194,7 @@ export const hashId = (s) => crypto.createHmac('sha256', logSalt()).update(Strin
 function writeLog(entry) {
   try {
     fs.mkdirSync(dataDir(), { recursive: true })
-    fs.appendFileSync(LOG_FILE(), JSON.stringify({ at: new Date().toISOString(), ...entry }) + '\n')
+    fs.appendFileSync(LOG_FILE(), JSON.stringify({ at: new Date().toISOString(), ...redactEntry(entry) }) + '\n')
   } catch (e) {
     console.error('ask log:', e?.message ?? e)
   }
@@ -1267,7 +1268,8 @@ export function recordFeedback({ id, rating, key }) {
   if (!a || now - a.at > ANSWER_TTL_MS) return { ok: false, status: 404, error: 'That answer can no longer be rated.' }
   try {
     fs.mkdirSync(dataDir(), { recursive: true })
-    fs.appendFileSync(FEEDBACK_FILE(), JSON.stringify({ at: new Date().toISOString(), id, rating, question: a.question, channel: a.channel, who: k, ...(rating === 'down' && a.answer ? { answer: a.answer, sources: a.sources ?? [] } : {}) }) + '\n')
+    fs.appendFileSync(FEEDBACK_FILE(), JSON.stringify({ at: new Date().toISOString(), id, rating, question: redact(a.question ?? '', { maxLen: 2000 }).text, channel: a.channel, who: k, ...(rating === 'down' && a.answer ? { answer: redact(a.answer, { maxLen: 1500 }).text, sources: a.sources ?? [] } : {}) }) + '
+')
   } catch (e) {
     console.error('ask feedback:', e?.message ?? e)
     return { ok: false, status: 500, error: 'The rating could not be saved.' }
@@ -1324,9 +1326,13 @@ async function degradedAnswer({ q, id, who, t0, why, history, error = null }) {
  */
 export async function ask({ question, history, who, onStage, ctx = null, holders = null }) {
   if (!askConfigured()) return { ok: false, status: 503, error: 'Ask is not available yet.', configured: false }
-  const q = typeof question === 'string' ? question.replace(/\s+/g, ' ').trim() : ''
-  if (!q) return { ok: false, status: 400, error: 'Ask a question.' }
-  if (q.length > MAX_QUESTION) return { ok: false, status: 400, error: `A question can be at most ${MAX_QUESTION} characters.` }
+  const qRaw = typeof question === 'string' ? question.replace(/\s+/g, ' ').trim() : ''
+  if (!qRaw) return { ok: false, status: 400, error: 'Ask a question.' }
+  if (qRaw.length > MAX_QUESTION) return { ok: false, status: 400, error: `A question can be at most ${MAX_QUESTION} characters.` }
+  // Emails, phone numbers and keys are masked before the question is logged or sent to a model provider.
+  const scrubbed = scrubForModel(qRaw)
+  if (scrubbed.blocked) return { ok: false, status: 400, error: 'That looks like a private key or recovery phrase. Never share one with anyone, including Gully AI. Remove it and ask again.' }
+  const q = scrubbed.text
   const gate = takeAllowance(`${who.channel}:${who.key}`, who)
   const t0 = Date.now()
   const id = `a_${crypto.randomBytes(12).toString('base64url')}`
