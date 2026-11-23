@@ -4,10 +4,11 @@
 // callClaude, so this mirrors it, adding structured output (JSON schema) and the server-side refusal
 // fallback. The key is only ever put in the x-api-key header; it is never logged or put in a prompt.
 
+import { aiSetting } from '../ai-settings.mjs'
 import { config } from './config.mjs'
 
 const apiKey = () => {
-  const k = String(process.env.ANTHROPIC_API_KEY ?? '').trim()
+  const k = aiSetting('ANTHROPIC_API_KEY')
   return k.length >= 20 ? k : null
 }
 export const aiConfigured = () => !!apiKey() || !!impl
