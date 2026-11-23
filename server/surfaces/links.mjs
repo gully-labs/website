@@ -119,7 +119,7 @@ export async function handleLinks(req, res, url, deps) {
   if (p === '/api/surfaces/link/telegram') {
     if (req.method !== 'POST' || req.headers['x-requested-with'] !== 'gully') return json(res, 403, { error: 'Cross-site request refused.' }), true
     const h = String(req.headers.authorization ?? '')
-    const auth = deps.validateInitData(h.startsWith('tma ') ? h.slice(4).trim() : '', deps.token)
+    const auth = deps.validateInitData(h.startsWith('tma ') ? h.slice(4).trim() : '', deps.token, { maxAgeS: 3600 })
     if (!auth.ok) return json(res, 401, { error: auth.error }), true
     const body = (await readJson(req, 2_048)) ?? {}
     if (body.confirm !== true) return json(res, 200, { platform: 'telegram', platformName: auth.user.username ? `@${auth.user.username}` : auth.user.firstName, gully: ctx.user.slice(0, 6) + '…' + ctx.user.slice(-4), confirm: 'Send { confirm: true } to link these two accounts.' }), true

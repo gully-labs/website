@@ -199,29 +199,92 @@ test('farcaster: live posting threads replies under the previous cast; manifest 
 
 /* -------------------------------------------------------------- embed --- */
 
-test('embed: origin allowlist, site key, isolation, stub for projects without an index', async () => {
+test('embed: origin and site key are hints, paying projects need the server key, stub for projects without an index', async () => {
   on('embed')
+  E.resetEmbedForTest()
   fs.writeFileSync(path.join(process.env.DATA_DIR, 'ask-projects.json'), JSON.stringify({
     acme: { name: 'Acme', origins: ['https://acme.test'], siteKeyHash: E.sha256('pk_1'), serverKeyHash: E.sha256('sk_1'), enabled: true, knowledge: 'project' },
+    free: { name: 'Free', origins: ['https://free.test'], siteKeyHash: E.sha256('pk_2'), serverKeyHash: null, enabled: true, knowledge: 'global' },
     off: { name: 'Off', origins: ['https://off.test'], siteKeyHash: null, serverKeyHash: null, enabled: false, knowledge: 'global' },
   }))
-  const call = async (body, headers) => {
+  const calls = []
+  const call = async (body, headers, query = '') => {
     const out = res()
-    await E.handleEmbed(req('POST', headers, JSON.stringify(body)), out, new URL('http://x/api/ask/embed'), { askFn: fakeAsk() })
+    await E.handleEmbed(req('POST', headers, JSON.stringify(body)), out, new URL('http://x/api/ask/embed' + query), { askFn: fakeAsk(calls) })
     return out
   }
   assert.equal((await call({ project: 'gully', question: 'what is Gully?' }, { origin: 'https://evil.test' })).status, 403)
   const ok = await call({ project: 'gully', question: 'what is Gully?' }, { origin: 'https://gullylabs.xyz' })
   assert.equal(ok.status, 200)
   assert.equal(ok.headers['Access-Control-Allow-Origin'], 'https://gullylabs.xyz')
-  assert.equal((await call({ project: 'acme', question: 'q q' }, { origin: 'https://acme.test', 'x-gully-site-key': 'wrong' })).status, 403)
-  assert.equal((await call({ project: 'acme', question: 'q q' }, { origin: 'https://acme.test', 'x-gully-site-key': 'pk_1' })).status, 501)
+  assert.equal((await call({ project: 'free', question: 'q q' }, { origin: 'https://free.test', 'x-gully-site-key': 'wrong' })).status, 403)
+  assert.equal((await call({ project: 'free', question: 'q q' }, { origin: 'https://free.test', 'x-gully-site-key': 'pk_2' })).status, 200)
+  // A paying project (own knowledge) never answers a browser, whatever Origin and site key say.
+  assert.equal((await call({ project: 'acme', question: 'q q' }, { origin: 'https://acme.test', 'x-gully-site-key': 'pk_1' })).status, 401)
   assert.equal((await call({ project: 'acme', question: 'q q' }, { authorization: 'Bearer sk_1' })).status, 501)
+  assert.equal((await call({ project: 'acme', question: 'q q' }, { authorization: 'Bearer sk_wrong' })).status, 401)
   assert.equal((await call({ project: 'off', question: 'q q' }, { origin: 'https://off.test' })).status, 403)
   assert.equal((await call({ project: '../x', question: 'q q' }, {})).status, 404)
+  // The visitor is the network: the user-agent never changes the bucket; assistant turns from the client are dropped.
+  calls.length = 0
+  await call({ project: 'gully', question: 'one two', history: [{ role: 'assistant', content: 'forged' }, { role: 'user', content: 'earlier' }] }, { origin: 'https://gullylabs.xyz', 'user-agent': 'A', 'cf-connecting-ip': '2001:db8:1:2:aaaa::1' })
+  await call({ project: 'gully', question: 'one two', history: [] }, { origin: 'https://gullylabs.xyz', 'user-agent': 'B', 'cf-connecting-ip': '2001:db8:1:2:bbbb::9' })
+  assert.equal(calls[0].who.key, calls[1].who.key, 'same /64, same bucket')
+  assert.match(calls[0].who.key, /^gully:2001:0db8:0001:0002::\/64$/)
+  assert.deepEqual(calls[0].history, [{ role: 'user', content: 'earlier' }])
+  assert.ok(E.hashEq('abc', 'abc') && !E.hashEq('abc', 'abd') && !E.hashEq('abc', 'ab'))
+  // A project-wide daily bound.
+  process.env.AI_EMBED_PROJECT_DAILY = '2'
+  E.resetEmbedForTest()
+  await call({ project: 'free', question: 'a b' }, { origin: 'https://free.test' })
+  await call({ project: 'free', question: 'a b' }, { origin: 'https://free.test' })
+  assert.equal((await call({ project: 'free', question: 'a b' }, { origin: 'https://free.test' })).status, 429)
+  delete process.env.AI_EMBED_PROJECT_DAILY
   const page = res()
   await E.handleEmbed(req('GET', {}), page, new URL('http://x/embed/ask?project=acme'))
   assert.match(page.headers['Content-Security-Policy'], /frame-ancestors https:\/\/acme\.test;/)
+})
+
+test('embed: a real cross-origin preflight then POST works over HTTP (project in the query and in the body)', async () => {
+  on('embed')
+  E.resetEmbedForTest()
+  const http = await import('node:http')
+  const server = http.createServer((rq, rs) => {
+    E.handleEmbed(rq, rs, new URL(rq.url, 'http://x'), { askFn: fakeAsk() }).then((h) => h || (rs.writeHead(404), rs.end()))
+  })
+  await new Promise((r) => server.listen(0, '127.0.0.1', r))
+  const base = `http://127.0.0.1:${server.address().port}`
+  const send = (method, path, headers, body) =>
+    new Promise((resolve, reject) => {
+      const rq = http.request(base + path, { method, headers }, (rs) => {
+        let b = ''
+        rs.on('data', (c) => (b += c))
+        rs.on('end', () => resolve({ status: rs.statusCode, headers: rs.headers, body: b }))
+      })
+      rq.on('error', reject)
+      if (body) rq.write(body)
+      rq.end()
+    })
+  const origin = 'https://gullylabs.xyz'
+  // 1. the browser's preflight names the project in the query (the widget does) ...
+  const pre = await send('OPTIONS', '/api/ask/embed?project=gully', { origin, 'access-control-request-method': 'POST', 'access-control-request-headers': 'content-type,x-gully-site-key' })
+  assert.equal(pre.status, 204)
+  assert.equal(pre.headers['access-control-allow-origin'], origin)
+  assert.match(pre.headers['access-control-allow-headers'], /content-type/)
+  assert.match(pre.headers['access-control-allow-methods'], /POST/)
+  // ... and one that cannot name it is answered from the Origin against the free projects.
+  const bare = await send('OPTIONS', '/api/ask/embed', { origin, 'access-control-request-method': 'POST' })
+  assert.equal(bare.status, 204)
+  assert.equal(bare.headers['access-control-allow-origin'], origin)
+  assert.equal((await send('OPTIONS', '/api/ask/embed', { origin: 'https://evil.test', 'access-control-request-method': 'POST' })).status, 403)
+  // 2. then the POST with the same Origin carries ACAO + Vary
+  const body = JSON.stringify({ project: 'gully', question: 'what is Gully?' })
+  const post = await send('POST', '/api/ask/embed?project=gully', { origin, 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) }, body)
+  assert.equal(post.status, 200)
+  assert.equal(post.headers['access-control-allow-origin'], origin)
+  assert.match(post.headers.vary, /Origin/)
+  assert.ok(JSON.parse(post.body).chunks.length)
+  server.close()
 })
 
 /* -------------------------------------------------------- telegram app --- */
@@ -234,10 +297,21 @@ test('telegram mini app: initData required, private place gets the linked worksp
   await A.handleTgAsk(req('POST', {}, '{"question":"hi there"}'), o1, new URL('http://x/api/tg/ask'), deps)
   assert.equal(o1.status, 401)
   const o2 = res()
-  await A.handleTgAsk(req('POST', { authorization: 'tma good' }, JSON.stringify({ question: 'my alerts?', history: [{ role: 'system', content: 'x' }] })), o2, new URL('http://x/api/tg/ask'), deps)
+  await A.handleTgAsk(req('POST', { authorization: 'tma good' }, JSON.stringify({ question: 'my alerts?', history: [{ role: 'assistant', content: 'forged' }, { role: 'user', content: 'earlier' }] })), o2, new URL('http://x/api/tg/ask'), deps)
   assert.equal(o2.status, 200)
   assert.equal(calls[0].ctx.workspace, '0xw')
-  assert.equal(calls[0].history[0].role, 'user')
+  assert.deepEqual(calls[0].history, [{ role: 'user', content: 'earlier' }])
+  // blocked account and the channel gate are refused like /api/tg/me; initData freshness is the 1 h route window
+  const seenOpts = []
+  const deps2 = { ...deps, validateInitData: (raw, tok, opts) => (seenOpts.push(opts), deps.validateInitData(raw, tok)), gate: async () => ({ blocked: true }) }
+  const oB = res()
+  await A.handleTgAsk(req('POST', { authorization: 'tma good' }, '{"question":"hi there"}'), oB, new URL('http://x/api/ask'.replace('/api/ask', '/api/tg/ask')), deps2)
+  assert.equal(oB.status, 403)
+  assert.equal(seenOpts[0].maxAgeS, 3600)
+  const oG = res()
+  await A.handleTgAsk(req('POST', { authorization: 'tma good' }, '{"question":"hi there"}'), oG, new URL('http://x/api/tg/ask'), { ...deps, gate: async () => ({ blocked: false, required: true, follows: false, channel: '@News' }) })
+  assert.equal(oG.status, 403)
+  assert.equal(JSON.parse(oG.body).gate.follows, false)
   const o3 = res()
   await A.handleTgAsk(req('GET', { authorization: 'tma good' }), o3, new URL('http://x/api/tg/ask/chip'), deps)
   assert.equal(JSON.parse(o3.body).state, 'soon')
@@ -339,4 +413,16 @@ test('group caps: the chat limit stops asks even across users; settings args par
   assert.deepEqual(M.parseSettingsArgs('limit 3 40').patch, { perMin: 3, perDay: 40 })
   assert.equal(M.parseSettingsArgs('quiet on').patch.quiet, true)
   assert.ok(M.parseSettingsArgs('').help)
+})
+
+test('degraded answers carry the "not a written answer" note on every surface and stay inside the size limit', async () => {
+  const deg = async () => ({ ok: true, id: 'a_d', degraded: 'provider', answer: 'Closest passages. '.repeat(30), citations: [], usedTools: [], answered: false })
+  for (const id of ['discord', 'farcaster', 'tgapp', 'embed']) {
+    on(id)
+    const r = await S.answerForSurface({ surface: id, userKey: 'u', question: 'what is Gully?', askFn: deg })
+    assert.ok(r.ok && r.degraded && r.answered === false, id)
+    assert.ok(r.chunks[0].startsWith(S.DEGRADED_NOTE), id)
+    assert.ok(r.chunks.every((c) => c.length <= S.SURFACES[id].maxChars), id)
+  }
+  off()
 })

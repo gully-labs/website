@@ -27,6 +27,7 @@ export const surfaceEnabled = (id) => !!SURFACES[id] && env(SURFACES[id].flag) =
 /** "dm" and "private" places may carry a linked user's own data. "public" places (channels, casts, threads others can read) never do. */
 export const PLACES = ['dm', 'private', 'public']
 
+export const DEGRADED_NOTE = 'This is not a written answer: the closest passages from our docs.'
 const RISK_LINE = 'Information only, not financial advice. Check on-chain facts yourself.'
 const AI_LINE = 'AI answer from Gully AI.'
 
@@ -131,6 +132,9 @@ export async function answerForSurface({ surface, userKey, question, place = 'pu
   note(s.id, 'ok')
   const topic = (r.usedTools ?? []).some((t) => /holder|token|score|market|gap/.test(t)) ? 'token' : 'general'
   let body = s.markdown ? String(r.answer ?? '') : toPlain(r.answer)
+  // Degraded mode (provider down, busy or cap reached): the passages are not a written answer, and the user is told.
+  const degraded = !!r.degraded
+  if (degraded) body = DEGRADED_NOTE + (s.id === 'farcaster' ? ' ' : String.fromCharCode(10, 10)) + body
   const src = sourceLines(r.citations, s.id === 'farcaster' ? 0 : 3)
   if (src.length) body += `\n\n${src.join('\n')}`
   const foot = footerFor(s.id, { topic })
@@ -138,7 +142,7 @@ export async function answerForSurface({ surface, userKey, question, place = 'pu
   const chunks = chunkText(body, s.maxChars - foot.length - sep.length)
   if (!chunks.length) chunks.push(r.answered === false ? 'I could not find that in what Gully knows.' : '...')
   chunks[chunks.length - 1] += `${sep}${foot}`
-  return { ok: true, chunks, id: r.id, answered: r.answered !== false }
+  return { ok: true, chunks, id: r.id, answered: r.answered !== false && !degraded, degraded }
 }
 
 function configuredFor(id) {

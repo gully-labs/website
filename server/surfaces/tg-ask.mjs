@@ -13,6 +13,9 @@ import { json, readJson } from '../http.mjs'
 import { answerForSurface, surfaceEnabled } from './surface.mjs'
 import { ctxOfLink } from './links.mjs'
 
+// A cost route: a fresher initData than the Mini App's other routes (they allow 24 h).
+export const ASK_INITDATA_MAX_AGE_S = 3600
+
 let chipHook = async () => ({ state: 'soon', balance: null })
 export const setChipHook = (fn) => (chipHook = fn ?? (async () => ({ state: 'soon', balance: null })))
 
@@ -21,15 +24,19 @@ export async function handleTgAsk(req, res, url, deps) {
   if (url.pathname !== '/api/tg/ask' && url.pathname !== '/api/tg/ask/chip') return false
   if (!surfaceEnabled('tgapp') || !deps.token) return json(res, 404, { error: 'not found' }), true
   const h = String(req.headers.authorization ?? '')
-  const auth = deps.validateInitData(h.startsWith('tma ') ? h.slice(4).trim() : '', deps.token)
+  const auth = deps.validateInitData(h.startsWith('tma ') ? h.slice(4).trim() : '', deps.token, { maxAgeS: ASK_INITDATA_MAX_AGE_S })
   if (!auth.ok) return json(res, 401, { error: auth.error }), true
   const uid = auth.user.id
+  // The same checks as /api/tg/me: a blocked linked account, or a user outside the required channel, cannot spend asks.
+  const g = (await deps.gate?.(uid)) ?? { blocked: false, required: false, follows: true }
+  if (g.blocked) return json(res, 403, { error: 'This account is blocked.' }), true
+  if (g.required && !g.follows) return json(res, 403, { error: 'Join the Gully Labs news channel first.', gate: { required: true, follows: false, channel: g.channel ?? null, url: g.url ?? null } }), true
   if (url.pathname === '/api/tg/ask/chip') return json(res, 200, { ...(await chipHook({ platform: 'telegram', id: uid })) }), true
   if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }), true
   const body = (await readJson(req, 16_384)) ?? {}
   const link = deps.linkForTelegramUser?.(uid)
   const ctx = link?.address ? { user: link.address, workspace: link.address, role: 'linked chat' } : ctxOfLink('telegram', uid)
-  const history = Array.isArray(body.history) ? body.history.slice(-6).map((m) => ({ role: m?.role === 'assistant' ? 'assistant' : 'user', content: String(m?.content ?? '').slice(0, 1500) })) : []
+  const history = Array.isArray(body.history) ? body.history.filter((m) => m && m.role === 'user').slice(-4).map((m) => ({ role: 'user', content: String(m.content ?? '').slice(0, 500) })) : []
   const r = await answerForSurface({ surface: 'tgapp', userKey: uid, question: body.question, place: 'private', locale: auth.user.languageCode ?? '', ctx, history, askFn: deps.askFn })
   if (!r.ok) return json(res, r.status, { error: r.message }, r.retryAfter ? { 'Retry-After': String(r.retryAfter) } : {}), true
   return json(res, 200, { id: r.id, chunks: r.chunks, answered: r.answered }), true

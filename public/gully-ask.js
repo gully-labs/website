@@ -56,7 +56,7 @@
         var headers = { 'content-type': 'application/json' }
         var key = self.getAttribute('site-key')
         if (key) headers['x-gully-site-key'] = key
-        fetch(api + '/api/ask/embed', { method: 'POST', headers: headers, body: JSON.stringify({ project: self.getAttribute('project'), question: q, history: self.history.slice(-6) }) })
+        fetch(api + '/api/ask/embed?project=' + encodeURIComponent(self.getAttribute('project') || ''), { method: 'POST', headers: headers, body: JSON.stringify({ project: self.getAttribute('project'), question: q, history: self.history.filter(function (m) { return m.role === 'user' }).slice(-4) }) })
           .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j } }) })
           .then(function (x) {
             wait.remove()
