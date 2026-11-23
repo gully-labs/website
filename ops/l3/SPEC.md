@@ -316,7 +316,7 @@ prices as of 2026-10-17 are not quoted because they change: fill the right-hand 
 | **S1 total, docs figures only** | | **≈ $2,900–3,000 / month** (1,500 + 500 + 850 + 75) before the RPC node, Chain Kit, the relayer and the batch poster's gas | sum of the quoted rows |
 | **S2 total, docs figures only** | | **≈ $5,100–5,300 / month** (2 × 1,500 + 500 + 2 × 850 + 3 × 75) before the same unquoted rows | sum of the quoted rows |
 
-The shared box (`40.160.136.124`, 97 % disk, ~5 GB RAM free) can host **none** of the S1 roles; it is only the S0
+The shared box (`the old shared box`, 97 % disk, ~5 GB RAM free) can host **none** of the S1 roles; it is only the S0
 devnet target, and only when `preflight.sh` passes. S1 needs its own machines.
 
 ## 12. Order of work
