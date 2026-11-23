@@ -32,6 +32,7 @@ import path from 'node:path'
 import { adminSessionOf, stepUpUntil } from './admin-auth.mjs'
 import { subTag } from './admin-gully-id.mjs'
 import { DATA_DIR, json, readJson } from './http.mjs'
+import { DEVTOOLS_GROUPS, pemShape, progressOf, runDevtoolsTest } from './admin-integrations-devtools.mjs'
 import { looksLikeWalletSecret, RateLimit, WALLET_REFUSED } from './integrations-guard.mjs'
 
 const OVH_ENDPOINTS = ['ovh-eu', 'ovh-ca', 'ovh-us', 'soyoustart-eu', 'soyoustart-ca', 'kimsufi-eu', 'kimsufi-ca']
@@ -57,11 +58,19 @@ export const INTEGRATION_GROUPS = [
     fields: [{ name: 'GULLYPAY_CHAINKIT_WEBHOOK_SECRET', label: 'Webhook signing key', hint: 'shown once by Gully Pay', format: /^[A-Za-z0-9_-]{16,128}$/, hexKeyOk: true }],
   },
 ]
+INTEGRATION_GROUPS.push(...DEVTOOLS_GROUPS)
 const FIELDS = new Map(INTEGRATION_GROUPS.flatMap((g) => g.fields.map((f) => [f.name, f])))
 
 export const integrationsDir = () => process.env.CHAINKIT_INTEGRATIONS_DIR || '/srv/chainkit/integrations'
 const auditFile = () => path.join(process.env.DATA_DIR ?? DATA_DIR, 'admin-integrations-audit.json')
 const writes = new RateLimit(20, 10 * 60_000)
+const checks = new RateLimit(10, 10 * 60_000)
+/** Tests only: forget the write and check counts. */
+export const resetLimits = () => { writes.hits.clear(); checks.hits.clear() }
+/** Tests swap the network out with setCheckFetch; production uses fetch. */
+let checkFetchImpl = null
+export const setCheckFetch = (fn) => { checkFetchImpl = fn }
+const checkFetch = () => checkFetchImpl ?? fetch
 const idOf = (n) => (Number.isInteger(n) && n >= 0 ? n : null)
 
 function readAudit() {
@@ -129,6 +138,29 @@ function writeValue(name, value) {
   }
 }
 
+/** The stored value, or null. Used for plain fields in the list and by the Check button; never sent for a secret. */
+export function readStored(name) {
+  try {
+    const v = fs.readFileSync(path.join(integrationsDir(), name), 'utf8').trim()
+    return v || null
+  } catch {
+    return null
+  }
+}
+
+function groupView(g, rows) {
+  const out = { id: g.id, title: g.title, body: g.body, fields: g.fields.map((f) => fieldView(f, rows)) }
+  if (g.section) out.section = g.section
+  if (g.usedIn) out.usedIn = g.usedIn
+  if (g.guide) out.guide = g.guide
+  if (g.optionalGroup) out.optionalGroup = true
+  if (g.guideOnly) out.guideOnly = true
+  if (g.notes) out.notes = g.notes
+  if (g.test) out.canCheck = true
+  else if (g.section === 'devtools' && !g.guideOnly) out.canCheck = true
+  return out
+}
+
 function fieldView(f, rows) {
   let set = false
   let mtime = null
@@ -140,14 +172,22 @@ function fieldView(f, rows) {
     /* unset */
   }
   const last = [...rows].reverse().find((r) => r.name === f.name && r.result === 'ok')
-  return { name: f.name, label: f.label, hint: f.hint, optional: !!f.optional, dflt: f.dflt ?? null, set, updatedAt: last?.at ?? mtime, updatedBy: last ? (last.sub ?? 'unknown') : null }
+  const view = { name: f.name, label: f.label, hint: f.hint, optional: !!f.optional, dflt: f.dflt ?? null, set, updatedAt: last?.at ?? mtime, updatedBy: last ? (last.sub ?? 'unknown') : null }
+  // Only the fields marked plain (an id, a namespace: not secret) come back with their value; everything else is write-only.
+  if (f.plain) view.value = set ? readStored(f.name) : null
+  if (f.multiline) view.multiline = true
+  return view
 }
 
 /** Refusal reason for a value, or null. */
+/** The text that is stored: trimmed, and a PEM gets LF line ends and one trailing newline. */
+export const cleanValue = (f, value) => (f.pem ? pemShape(value) : value.trim())
+
 export function refuseValue(f, value) {
   if (typeof value !== 'string') return { status: 400, code: 'invalid_request', message: 'Send {"value": "..."}.' }
   const v = value.trim()
   if (!v || v.length > 4096) return { status: 400, code: 'invalid_value', message: 'The value is empty or too long.' }
+  if (f.pem) return pemShape(v) ? null : { status: 400, code: 'invalid_value', message: `That does not look like ${f.label.toLowerCase()} (${f.hint}). It must be a full RSA private key with its BEGIN and END lines.` }
   const wallet = looksLikeWalletSecret(v)
   if (wallet && !(wallet === 'hex32' && f.hexKeyOk && /^[0-9a-fA-F]{64}$/.test(v))) return { status: 422, ...WALLET_REFUSED, why: wallet }
   if (!f.format.test(v)) return { status: 400, code: 'invalid_value', message: `That does not look like ${f.label.toLowerCase()} (${f.hint}).` }
@@ -161,7 +201,15 @@ export async function handleIntegrationsAdmin(req, res, url) {
   if (p === '/api/admin/integrations') {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
     const rows = readAudit()
-    return json(res, 200, { groups: INTEGRATION_GROUPS.map((g) => ({ id: g.id, title: g.title, body: g.body, fields: g.fields.map((f) => fieldView(f, rows)) })), stepUp: { via: s ? 'gully_id' : 'token', until: stepUpUntil(s) } }), true
+    return json(res, 200, { groups: INTEGRATION_GROUPS.map((g) => groupView(g, rows)), progress: progressOf((n) => readStored(n) !== null), stepUp: { via: s ? 'gully_id' : 'token', until: stepUpUntil(s) } }), true
+  }
+  const chk = /^\/api\/admin\/integrations\/check\/(dt_[a-z0-9_]{2,40})$/.exec(p)?.[1]
+  if (chk) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }, { Allow: 'POST' }), true
+    if (!checks.take(s?.sub ?? 'token')) return json(res, 429, { code: 'rate_limited', error: 'Too many checks. Wait a few minutes.' }), true
+    const r = await runDevtoolsTest(chk, readStored, checkFetch())
+    audit(s?.sub, chk, 'check', r.result)
+    return json(res, r.status, { ok: r.ok, result: r.result, detail: r.detail }), true
   }
   const name = /^\/api\/admin\/integrations\/([A-Z][A-Z0-9_]{2,63})$/.exec(p)?.[1]
   if (!name) return json(res, 404, { error: 'not found' }), true
@@ -185,7 +233,7 @@ export async function handleIntegrationsAdmin(req, res, url) {
         audit(s.sub, name, action, 'refused', bad.why ?? bad.code)
         return json(res, bad.status, { code: bad.code, error: bad.message }), true
       }
-      writeValue(name, body.value.trim())
+      writeValue(name, cleanValue(f, body.value))
     }
   } catch (e) {
     audit(s.sub, name, action, 'error', String(e?.code ?? 'error').slice(0, 40))

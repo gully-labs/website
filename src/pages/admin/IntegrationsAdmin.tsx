@@ -1,5 +1,5 @@
-import { KeyRound, Loader2, ShieldCheck, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { CheckCircle2, CircleDashed, ExternalLink, KeyRound, Loader2, ShieldCheck, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { toastError, toastSuccess } from '../../components/ui/toast'
 import { dateTimePT } from '../../lib/time'
 import { field44, goldCtl, ctl, pillCls } from './ui'
@@ -18,21 +18,44 @@ interface Field {
   set: boolean
   updatedAt: string | null
   updatedBy: string | null
+  value?: string | null
+  multiline?: boolean
+}
+interface Note {
+  id: string
+  title: string
+  text: string
+  links: { label: string; url: string }[]
 }
 interface Group {
   id: string
   title: string
   body: string
   fields: Field[]
+  section?: string
+  usedIn?: string
+  guide?: { steps: string[]; links: { label: string; url: string }[]; note?: string }
+  optionalGroup?: boolean
+  guideOnly?: boolean
+  canCheck?: boolean
+  notes?: Note[]
+}
+interface Progress {
+  tool: string
+  ready: boolean | null
+  missing: string[]
+  optional?: boolean
+  heldByOwner?: string
 }
 interface Data {
   groups: Group[]
+  progress?: Progress[]
   stepUp: { via: 'gully_id' | 'token'; until: number | null }
 }
 
 const card = 'flex min-w-0 flex-col gap-4 rounded-card border border-line bg-surface p-6 max-[600px]:p-4'
 
-async function call(token: string, path: string, method: 'GET' | 'PUT' | 'DELETE', body?: unknown) {
+async function call(token: string, path: string, method: 'GET' | 'PUT' | 'DELETE' | 'POST', body?: unknown) {
   const r = await fetch(path, { method, headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) }).catch(() => null)
   const d = r ? await r.json().catch(() => null) : null
   return { ok: !!r?.ok, status: r?.status ?? 0, data: d, error: (d?.error as string | undefined) ?? 'The server could not be reached.' }
@@ -42,6 +65,8 @@ function FieldRow({ f, token, unlocked, onSaved }: { f: Field; token: string; un
   const [value, setValue] = useState('')
   const [busy, setBusy] = useState(false)
   const id = `int-${f.name}`
+  const plain = f.value !== undefined
+  const inputCls = `${field44} min-w-0 flex-1 font-mono`
   const save = async (clear: boolean) => {
     if (clear && !window.confirm(`Remove ${f.label}? The Chain Kit runner stops using it on its next run.`)) return
     setBusy(true)
@@ -60,22 +85,42 @@ function FieldRow({ f, token, unlocked, onSaved }: { f: Field; token: string; un
         </label>
         <span className={pillCls(f.set ? 'border-green/40 text-green' : 'border-line-strong text-faint')}>{f.set ? 'Set' : 'Not set'}</span>
       </div>
+      {plain && f.value && (
+        <span className="font-mono text-[13px] break-all text-ink" data-testid={`${id}-value`}>
+          Current: {f.value}
+        </span>
+      )}
       <span className="font-mono text-[12px] break-all text-faint">
         {f.name}
         {f.updatedAt && ` · changed ${dateTimePT(f.updatedAt)}${f.updatedBy ? ` by ${f.updatedBy}` : ''}`}
       </span>
       <div className="flex flex-wrap gap-2">
-        <input
-          id={id}
-          type="password"
-          autoComplete="off"
-          spellCheck={false}
-          className={`${field44} min-w-0 flex-1 font-mono`}
-          placeholder={f.set ? 'Type a new value to replace it' : f.hint}
-          value={value}
-          disabled={!unlocked || busy}
-          onChange={(e) => setValue(e.target.value)}
-        />
+        {f.multiline ? (
+          <textarea
+            id={id}
+            autoComplete="off"
+            spellCheck={false}
+            rows={4}
+            className={`${inputCls} h-auto py-2`}
+            style={{ WebkitTextSecurity: 'disc' } as CSSProperties}
+            placeholder={f.set ? 'Paste a new key to replace it' : f.hint}
+            value={value}
+            disabled={!unlocked || busy}
+            onChange={(e) => setValue(e.target.value)}
+          />
+        ) : (
+          <input
+            id={id}
+            type={plain ? 'text' : 'password'}
+            autoComplete="off"
+            spellCheck={false}
+            className={inputCls}
+            placeholder={f.set ? 'Type a new value to replace it' : f.hint}
+            value={value}
+            disabled={!unlocked || busy}
+            onChange={(e) => setValue(e.target.value)}
+          />
+        )}
         <button type="button" className={goldCtl} disabled={!unlocked || busy || !value.trim()} onClick={() => void save(false)}>
           {busy ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <KeyRound size={16} aria-hidden />}
           Save
@@ -88,6 +133,90 @@ function FieldRow({ f, token, unlocked, onSaved }: { f: Field; token: string; un
         )}
       </div>
     </li>
+  )
+}
+
+function ProgressPanel({ rows }: { rows: Progress[] }) {
+  return (
+    <section className="flex flex-col gap-2 rounded-input border border-line px-3 py-3" aria-label="Setup progress" data-testid="devtools-progress">
+      <h4 className="m-0 text-[14px] font-semibold text-ink">Setup progress</h4>
+      <ul className="m-0 flex list-none flex-col gap-1 p-0">
+        {rows.map((r) => (
+          <li key={r.tool} className="flex flex-wrap items-baseline gap-2 text-[13px]" data-testid="devtools-progress-row">
+            {r.ready ? <CheckCircle2 size={15} className="text-green" aria-hidden /> : <CircleDashed size={15} className="text-faint" aria-hidden />}
+            <span className="text-ink">{r.tool}</span>
+            <span className="text-muted">{r.heldByOwner ? r.heldByOwner : r.ready ? 'Ready to publish when you say so' : `${r.optional ? 'Optional. ' : ''}Waiting for: ${r.missing.join(', ')}`}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function GroupCard({ g, token, unlocked, onSaved }: { g: Group; token: string; unlocked: boolean; onSaved: () => void }) {
+  const [check, setCheck] = useState<{ busy: boolean; ok?: boolean; detail?: string }>({ busy: false })
+  const run = async () => {
+    setCheck({ busy: true })
+    const r = await call(token, `/api/admin/integrations/check/${g.id}`, 'POST')
+    setCheck(r.ok ? { busy: false, ok: !!r.data?.ok, detail: String(r.data?.detail ?? '') } : { busy: false, ok: false, detail: r.error })
+  }
+  return (
+    <div className="flex min-w-0 flex-col gap-3" data-testid={`integrations-${g.id}`}>
+      <h3 className="m-0 text-[16px] font-semibold text-ink">
+        {g.title} {g.optionalGroup && <span className="text-[12px] font-normal text-faint">optional</span>}
+      </h3>
+      <p className="m-0 text-[13px] text-muted">{g.body}</p>
+      {g.usedIn && <p className="m-0 text-[12px] text-faint">Where this is used: {g.usedIn}</p>}
+      {g.guide && (
+        <details className="rounded-input border border-line px-3 py-2 text-[13px] text-muted" data-testid={`guide-${g.id}`}>
+          <summary className="cursor-pointer text-ink">How to get these</summary>
+          <ol className="mt-2 mb-2 flex list-decimal flex-col gap-1 pl-5">
+            {g.guide.steps.map((st) => (
+              <li key={st}>{st}</li>
+            ))}
+          </ol>
+          <div className="flex flex-wrap gap-3">
+            {g.guide.links.map((l) => (
+              <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-ink underline">
+                {l.label} <ExternalLink size={13} aria-hidden />
+              </a>
+            ))}
+          </div>
+          {g.guide.note && <p className="mt-2 mb-0 text-[12px] text-faint">{g.guide.note}</p>}
+        </details>
+      )}
+      {g.notes?.map((n) => (
+        <div key={n.id} className="flex flex-col gap-1 rounded-input border border-line px-3 py-3" data-testid={`note-${n.id}`}>
+          <span className="text-[14px] font-medium text-ink">{n.title}</span>
+          <span className="text-[13px] text-muted">{n.text}</span>
+          {n.links.map((l) => (
+            <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[13px] text-ink underline">
+              {l.label} <ExternalLink size={13} aria-hidden />
+            </a>
+          ))}
+        </div>
+      ))}
+      {g.fields.length > 0 && (
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+          {g.fields.map((f) => (
+            <FieldRow key={f.name} f={f} token={token} unlocked={unlocked} onSaved={onSaved} />
+          ))}
+        </ul>
+      )}
+      {g.canCheck && (
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" className={ctl} disabled={check.busy} onClick={() => void run()} data-testid={`check-${g.id}`}>
+            {check.busy ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <ShieldCheck size={16} aria-hidden />}
+            Check
+          </button>
+          {check.detail && (
+            <span className={`text-[13px] ${check.ok ? 'text-green' : 'text-muted'}`} role="status">
+              {check.detail}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -134,17 +263,23 @@ export default function IntegrationsAdmin({ token }: { token: string }) {
       <p className="m-0 text-[14px] text-muted">Values are write-only. Once saved they are never shown again, here or anywhere else. Wallet private keys and seed phrases are refused.</p>
       {err && <p className="m-0 font-mono text-[12px] text-error">{err}</p>}
       {!data && !err && <span className="font-mono text-[12px] text-faint">Loading…</span>}
-      {data?.groups.map((g) => (
-        <div key={g.id} className="flex min-w-0 flex-col gap-3" data-testid={`integrations-${g.id}`}>
-          <h3 className="m-0 text-[16px] font-semibold text-ink">{g.title}</h3>
-          <p className="m-0 text-[13px] text-muted">{g.body}</p>
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {g.fields.map((f) => (
-              <FieldRow key={f.name} f={f} token={token} unlocked={unlocked} onSaved={load} />
-            ))}
-          </ul>
-        </div>
+      {data?.groups.filter((g) => !g.section).map((g) => (
+        <GroupCard key={g.id} g={g} token={token} unlocked={unlocked} onSaved={load} />
       ))}
+      {data?.groups.some((g) => g.section === 'devtools') && (
+        <div className="flex min-w-0 flex-col gap-4 border-t border-line pt-5" data-testid="integrations-devtools">
+          <h3 className="m-0 font-display text-[18px] font-bold uppercase">Developer tools</h3>
+          <p className="m-0 text-[13px] text-muted">
+            Publisher and App details for the Gully developer tools. Values are only stored here. Nothing is published automatically: the release lane reads them when you say publish.
+          </p>
+          {data.progress && <ProgressPanel rows={data.progress} />}
+          {data.groups
+            .filter((g) => g.section === 'devtools')
+            .map((g) => (
+              <GroupCard key={g.id} g={g} token={token} unlocked={unlocked} onSaved={load} />
+            ))}
+        </div>
+      )}
     </section>
   )
 }
