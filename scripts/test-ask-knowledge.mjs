@@ -20,7 +20,7 @@ const chunk = (o) => ({ id: Math.random().toString(36).slice(2), source: 'Docs',
 
 test('public-text guard: refuses internal data, lets public docs through', () => {
   const bad = {
-    'box address': 'ssh into 57.128.190.109 to read it',
+    'box address': 'ssh into 57.120.0.1 to read it',
     'server path': 'the files live in /srv/gully-web/data',
     'admin console': 'sign in at admin.swoopads.xyz first',
     'secret or key': 'use sk-ant-api03-abcdefghijkl',
