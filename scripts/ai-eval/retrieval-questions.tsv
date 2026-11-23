@@ -1,0 +1,104 @@
+# gold (url suffix on docs.gullylabs.xyz or full url)<TAB>question. Paraphrased on purpose (few shared words with the passage).
+methodology#two-prices	How does the tracker decide what a stock token should be worth versus what it trades for?
+methodology#onchain	How often does the tracker look up the pools for each token and where does it get them?
+methodology#sessions	When are the price feeds for US equities active during the week?
+methodology#limits	Is the DEX price an average across all exchanges?
+methodology#freshness	How old can a price be before the tracker stops trusting it?
+api#history	How far back can I fetch the gap snapshots for a single token?
+api#gap-index	Is there one number summarising how mispriced the whole market is today?
+api#score	Which endpoint rates a smart contract from 0 to 100?
+api#geo	How does the site know if swapping is allowed in my country?
+api#healthz	What route can a load balancer poll to see if the web server is alive?
+api#rate-limits	How many requests per minute can I make without logging in?
+api#plans	Where do the prices and limits for subscriptions come from?
+api#errors	What does the API return when something goes wrong?
+api#caching	How long are API answers cached?
+widget#options	What attributes can I put on the widget element to change it?
+widget#badge	Can I show just one stock with its fair price on my page?
+widget#theming	Does the embeddable component support light and dark colours?
+widget#csp	What do I have to allow in my content security policy to use the embed?
+widget#holder-map	Can I show who holds a token inside my own website?
+sdk#packages	Which npm packages do you publish for developers?
+sdk#errors	How does the JavaScript client report failures?
+api-keys#when	Do I need a key just to try the data feed?
+api-keys#manage	How many keys can one wallet have and how do I replace a leaked one?
+api-keys#limits	Which headers tell me how much of my quota is left?
+api-keys#safety	How should I store my secret so it does not leak?
+plans-alerts#plans	What do paid subscriptions include?
+plans-alerts#paying	How do I pay for a plan with crypto?
+plans-alerts#alerts	Can I get notified when a stock drifts too far from its fair price?
+plans-alerts#launch-alerts	Can I be told when a new token is launched on a launchpad?
+plans-alerts#verify	How do I check that a webhook really came from you?
+plans-alerts#telegram	Can alerts go to a chat app instead of a webhook?
+badges#family	Where are the little status images served from?
+badges#embed	How do I put a score image on my repository page?
+teams#workspaces	What happens the first time my wallet signs in?
+teams#roles	What can an admin do that a member cannot?
+teams#invites	How do I add a teammate by their email?
+teams#activity	Is there a log of who changed what in the workspace?
+teams#exports	Can I download my workspace data?
+holder-map#what	Which blockchains can the holder map analyse?
+holder-map#clusters	What does it mean when wallets are drawn grouped together?
+holder-map#health	How does the map tell me if a token distribution looks unhealthy?
+holder-map#live	Can I watch transfers happening in real time on the map?
+holder-map#api	Can I get the list of holders as a spreadsheet?
+holder-map-integrate#embed	What is the HTML to embed the bubble map in my launchpad?
+holder-map-integrate#response	What does the state field in a map answer mean?
+holder-map-integrate#sdk	Is there a React component for the holder map?
+holder-map-integrate#launchpads	How can a launchpad show maps for its own launches?
+analytics#start	How do I begin using the website statistics product?
+analytics#install	Where do I paste the tracking script?
+analytics#privacy	Do you store the visitor's wallet address in plain text?
+analytics#web3	What wallet-related numbers does the analytics dashboard add to normal page views?
+analytics#plans	How much does website analytics cost?
+gully-security#tiers	What levels of code review do you offer?
+gully-security#scan	What are the steps to scan my contract?
+gully-security#quota	How many free scans do I get?
+gully-security#report	What do the labels like static+ai on a report mean?
+gully-security#publish	Can I share a finished report with a public link?
+gully-security#review	How do I ask for a human to look at my code?
+gully-score#what	Is there a public page showing a contract's rating over time?
+gully-score#components	What goes into a contract's rating?
+gully-score#verified-source	How do you know a contract's source code matches what is on chain?
+gully-score#no-pay	Can paying customers get a better rating?
+gully-score#embed	Can I show a rating widget on my site?
+gully-ai#what	What can the assistant on your site answer questions about?
+gully-ai#privacy	How long do you keep the questions people ask the assistant?
+gully-ai#where	How do I open the assistant from the keyboard?
+gully-ai#sources	Where does the assistant get its facts from?
+gully-ai#limits	Is there a limit on how many questions I can ask?
+telegram#channel	Do I have to join your news channel before using the bot?
+telegram#commands	What can I type into the bot to see the widest price gaps?
+telegram#groups	Can I use the bot inside a group chat?
+telegram-mini-app#open	Why does the mini app say to open it inside Telegram?
+news-gate#fail-open	What happens if the bot cannot check whether I follow the channel?
+stock-pages#missing	What does a dash on a stock page mean?
+stock-pages#side	Which services route a swap from a stock page?
+swaps#gates	What checks happen before the swap panel loads?
+swaps#custody	Do you ever hold my funds when I swap?
+solana#pay	Which coins can I accept on Solana checkout?
+solana-pay#paying	How does the checkout page notice that a Solana payment arrived?
+solana-pay#off	Why would Solana payments be unavailable on a store?
+ipfs#start	How do I upload my first file to your pinning service?
+ipfs#policy	What content am I not allowed to pin?
+ipfs#gateway	Can I upload files through the public gateway address?
+ipfs#upload	What is the endpoint to add a CAR archive?
+contracts#rules	When do you list an address as ours?
+status#checks	How often do the health checks run?
+status#incidents	When is an outage marked as resolved on the status page?
+roadmap#security	Have you published any audits?
+integrate#id	How do I add sign-in with your identity button to my app?
+integrate#chain	How do I add your test network to a wallet library?
+integrate#coming	Why is there no npm install line for some of your SDKs yet?
+https://gullylabs.xyz/privacy#s11	How long are backups and logs retained?
+https://gullylabs.xyz/privacy#s13	How can I ask you to delete the data you hold about me?
+https://gullylabs.xyz/privacy#s9	Which cookies do you set?
+https://gullylabs.xyz/privacy#s3	What analytics software do you run on your sites?
+https://gullylabs.xyz/terms#s4	Which sanctioned parties may not use the services?
+https://gullylabs.xyz/terms#s12	Are the signals you show financial advice?
+https://gullylabs.xyz/legal/merchant-terms#s5	What fee does a merchant pay on each payment?
+https://gullylabs.xyz/legal/merchant-terms#s7	What if a webhook arrives twice or late?
+https://gullylabs.xyz/legal/scan-terms#s2	Is a scan the same as a professional audit?
+https://gullylabs.xyz/legal/scan-terms#s6	Where is my code sent when it is reviewed?
+https://gullylabs.xyz/legal/scan-terms#s8	Can I unpublish a report after sharing it?
+changelog#2026-10-16	When did the tracker first launch?
