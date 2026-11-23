@@ -715,7 +715,8 @@ function cardChart(ch) {
 /** Gully AI's answer: the text with its [n] / [Ln] labels, the live cards as short lines, then sources and the one-tap actions as buttons. */
 export function aiAnswerView(r) {
   if (!r.ok) return { text: `<b>🤖 Gully AI</b>\n${esc(friendlyError(r.error, 'Gully AI could not answer just now. Try again in a minute.'))}`, keyboard: [[btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]] }
-  const body = esc(String(r.answer).replace(/\*\*([^*]+)\*\*/g, '$1'))
+  const note = r.degraded ? '<i>This is not a written answer: the closest passages from our docs.</i>' + String.fromCharCode(10) : ''
+  const body = note + esc(String(r.answer).replace(/\*\*([^*]+)\*\*/g, '$1'))
   const sources = (r.citations ?? []).filter((c) => /^https:\/\//.test(String(c.url))).slice(0, 3)
   const live = (r.live ?? []).filter((l) => /^https:\/\//.test(String(l.url))).slice(0, 3)
   const cards = (r.cards ?? []).slice(0, 2).map((c) => {

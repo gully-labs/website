@@ -1,16 +1,19 @@
 import { CodeBlock } from '../CodeBlock'
 import { C, Callout, Details, DocLink, DocPage, Ext, Fields, List, P, Section } from '../DocPage'
 import { AskStatusPanel, StatusHistory } from '../ProductCharts'
+import { AskDataFlow, AskKnowledgeSources } from '../AskKnowledgePanel'
 import { GullyAiBanner } from '../../brand/GullyAiBrand'
 
 const sections = [
   { id: 'what', title: 'What it answers' },
   { id: 'live', title: 'Live status' },
   { id: 'sources', title: 'Sources and citations' },
+  { id: 'knows', title: 'What Gully AI knows' },
   { id: 'tools', title: 'Live tools' },
   { id: 'where', title: 'Where it runs' },
   { id: 'limits', title: 'Limits' },
   { id: 'privacy', title: 'Privacy and safety' },
+  { id: 'dataflow', title: 'Where your question goes' },
   { id: 'api', title: 'The API' },
 ]
 
@@ -34,8 +37,8 @@ export function GullyAiDocs() {
       <Section id="what" title="What it answers">
         <GullyAiBanner>Answers from our own docs and live data, with every source linked.</GullyAiBanner>
         <P>
-          Gully AI answers questions about Gully Labs and its products: the stock token tracker and its API, the widget, API keys, plans and alerts, the Holder Map, Gully Analytics, Gully Pay and merchant stores, Chain Kit, the roadmap, Gully Core,
-          the Telegram bot, privacy and the services we offer.
+          Gully AI answers questions about Gully Labs and its products: the stock token tracker and its API, the widget, API keys, plans and alerts, the Holder Map, Gully Analytics, Gully Pay and merchant stores, Chain Kit, Gully Chain, Gully Core, kre8, Gully ID, Gully RPC, Gully IPFS,
+          Gully Multisig, Swoop Ads, the roadmap, the Telegram bot, privacy and the services we offer. Only public docs and pages are indexed; see <DocLink to="gully-ai" hash="knows">What Gully AI knows</DocLink> for the list, product by product.
         </P>
         <Details summary="What it answers: the details">
           <List>
@@ -65,6 +68,14 @@ export function GullyAiDocs() {
         <P>
           A fact read live from a tool is cited with a label like <C>[L1]</C> and the time it was read.
         </P>
+      </Section>
+
+      <Section id="knows" title="What Gully AI knows">
+        <P>
+          Gully AI reads only public pages: these docs, the site, the legal pages, the changelog, public READMEs, the blog and the public docs of our other products. It never reads internal notes, admin pages, keys or server details; a
+          passage that looks like one is refused when the index is built. Where a product has few or no public pages it says so and does not guess. Read live from the server:
+        </P>
+        <AskKnowledgeSources />
       </Section>
 
       <Section id="tools" title="Live tools">
@@ -119,7 +130,7 @@ export function GullyAiDocs() {
             ['Conversation history', 'last 4 turns', 'Each turn trimmed to 600 characters'],
             ['Per visitor', '6 a minute, 60 a day', 'Counted per IP address; a 429 says when to try again'],
             ['Per Telegram chat', '5 a minute, 60 a day', 'Counted per chat'],
-            ['Whole service', '2,000 answers a day', 'Across every surface; the spending cap'],
+            ['Whole service', '2,000 answers a day (default)', 'Across every surface; the spending cap, set by the team. Past it, or when the answer service is down or busy, Gully AI shows the closest docs passages with links and says they are not a written answer'],
           ]}
         />
         <P>
@@ -131,7 +142,8 @@ export function GullyAiDocs() {
         <Details summary="Privacy and safety: the details">
           <List>
             <li>Questions are logged for 90 days to find gaps in these docs. The log never holds a raw IP address: only a salted hash of it.</li>
-            <li>A thumbs up or down keeps the answer id, the rating, the question and the same hash, also for 90 days.</li>
+            <li>A thumbs up or down keeps the answer id, the rating, the question and the same hash, also for 90 days. A thumbs down also keeps the answer text and its sources, so we can fix the docs.</li>
+            <li>Gully AI is not a model we train or host: the question and the matching passages go to third-party providers, named under “Where your question goes”.</li>
             <li>
               Retrieved text and tool results are treated as data, not instructions: they are wrapped in blocks tagged with a random id per request, and any instruction inside them is ignored.
             </li>
@@ -143,10 +155,14 @@ export function GullyAiDocs() {
         </P>
       </Section>
 
+      <Section id="dataflow" title="Where your question goes">
+        <AskDataFlow />
+      </Section>
+
       <Section id="api" title="The API">
         <P>
-          <C>GET /api/ask/status</C> answers <C>{'{ configured, model, indexSize, updatedAt, retrieval }'}</C>. <C>POST /api/ask</C> takes <C>{'{ question, history? }'}</C> and needs the header <C>X-Requested-With: gully</C>; it answers{' '}
-          <C>{'{ id, answer, citations, live, cards, actions, usedTools, model, signedIn }'}</C>. Send <C>Accept: text/event-stream</C> to get progress events before the answer.
+          <C>GET /api/ask/status</C> answers <C>{'{ configured, model, indexSize, updatedAt, retrieval, provider, cap }'}</C>; <C>GET /api/ask/knowledge</C> lists the sources by product, the providers, retention and limits. <C>POST /api/ask</C> takes <C>{'{ question, history? }'}</C> and needs the header <C>X-Requested-With: gully</C>; it answers{' '}
+          <C>{'{ id, answer, citations, live, cards, actions, usedTools, model, signedIn, degraded? }'}</C>; <C>degraded</C> is set (<C>provider</C>, <C>busy</C> or <C>cap</C>) when the answer is the closest docs passages instead of written text. Send <C>Accept: text/event-stream</C> to get progress events before the answer.
         </P>
         <CodeBlock lang="bash" code={CURL} />
         <P>

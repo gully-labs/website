@@ -228,6 +228,7 @@ export function AskExplain({ m }: { m: HolderMapOk }) {
         k: 'ok'
         answer: string
         citations: { n: number; title: string; url: string }[]
+        degraded?: boolean
       }
     | { k: 'error'; text: string }
   >({ k: 'idle' })
@@ -260,6 +261,7 @@ export function AskExplain({ m }: { m: HolderMapOk }) {
     setS({
       k: 'ok',
       answer: String(d.answer),
+      degraded: !!d.degraded,
       citations: Array.isArray(d.citations) ? d.citations.filter((c: { url?: string }) => /^https:\/\//.test(String(c.url))).slice(0, 3) : [],
     })
   }
@@ -275,6 +277,7 @@ export function AskExplain({ m }: { m: HolderMapOk }) {
       )}
       {s.k === 'ok' && (
         <div className="flex flex-col gap-2 rounded-[10px] border border-line px-3 py-2 animate-[gl-fade_.3s_ease_both]" role="status">
+          {s.degraded && <p className="m-0 text-[13px] text-gold">Not a written answer: the closest passages from our docs.</p>}
           <p className="m-0 text-[14px] leading-[1.6] whitespace-pre-line text-ink">{s.answer.replace(/\*\*([^*]+)\*\*/g, '$1')}</p>
           {s.citations.length > 0 && (
             <ul className="m-0 flex list-none flex-wrap gap-2 p-0 font-mono text-[11px]">

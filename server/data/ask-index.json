@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-11-22T13:55:05.464Z",
+ "updatedAt": "2026-11-23T20:21:12.727Z",
  "chunks": [
   {
    "id": "783da129e921",
@@ -1313,8 +1313,8 @@
    "title": "Gully AI",
    "url": "https://docs.gullylabs.xyz/gully-ai#what",
    "section": "What it answers",
-   "text": "Answers from our own docs and live data, with every source linked. Gully AI answers questions about Gully Labs and its products: the stock token tracker and its API, the widget, API keys, plans and alerts, the Holder Map, Gully Analytics, Gully Pay and merchant stores, Chain Kit, the roadmap, Gully Core, the Telegram bot, privacy and the services we offer. It describes; it never advises. It does not predict prices or gaps, and never says whether to buy, sell or hold anything. It never invents a price, fee, limit, date, address or link. A figure that is not in a source or a tool result is not given. When the sources do not cover a question it searches once more in other words, then says plainly that it does not know and points to these docs or the contact form. Answers are short: a few plain sentences or a short list. Live figures appear as a card under the answer.",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "text": "Answers from our own docs and live data, with every source linked. Gully AI answers questions about Gully Labs and its products: the stock token tracker and its API, the widget, API keys, plans and alerts, the Holder Map, Gully Analytics, Gully Pay and merchant stores, Chain Kit, Gully Chain, Gully Core, kre8, Gully ID, Gully RPC, Gully IPFS, Gully Multisig, Swoop Ads, the roadmap, the Telegram bot, privacy and the services we offer. Only public docs and pages are indexed; see What Gully AI knows for the list, product by product. It describes; it never advises. It does not predict prices or gaps, and never says whether to buy, sell or hold anything. It never invents a price, fee, limit, date, address or link. A figure that is not in a source or a tool result is not given. When the sources do not cover a question it searches once more in other words, then says plainly that it does not know and points to these docs or the contact form. Answers are short: a few plain sentences or a short list. Live figures appear as a card under the answer.",
+   "updatedAt": "2026-11-23T20:21:12.727Z"
   },
   {
    "id": "57ddd5b9b74b",
@@ -1333,6 +1333,15 @@
    "section": "Sources and citations",
    "text": "Every answer is built from numbered sources: passages of these docs, the main site, the changelog, the legal pages, the roadmap, the Gully Pay contract notes, the Telegram bot and Mini App, our public READMEs and the blog. Each sentence that states a fact carries its source number, like [1], and the sources are listed as links under the answer. Retrieval is hybrid when semantic search is configured: keyword search (BM25) on your question and on a synonym-expanded version of it, plus nearest passages by meaning, fused and re-ranked. Without it the mode is BM25: keyword search with synonyms. The panel above shows which one this server uses. A fact read live from a tool is cited with a label like [L1] and the time it was read.",
    "updatedAt": "2026-10-18T19:46:28.270Z"
+  },
+  {
+   "id": "3d5f09e7e524",
+   "source": "Docs",
+   "title": "Gully AI",
+   "url": "https://docs.gullylabs.xyz/gully-ai#knows",
+   "section": "What Gully AI knows",
+   "text": "Gully AI reads only public pages: these docs, the site, the legal pages, the changelog, public READMEs, the blog and the public docs of our other products. It never reads internal notes, admin pages, keys or server details; a passage that looks like one is refused when the index is built. Where a product has few or no public pages it says so and does not guess. Read live from the server:",
+   "updatedAt": "2026-11-23T20:21:12.727Z"
   },
   {
    "id": "53fcf6be5a77",
@@ -1358,8 +1367,8 @@
    "title": "Gully AI",
    "url": "https://docs.gullylabs.xyz/gully-ai#limits",
    "section": "Limits",
-   "text": "Question length (500 characters): Longer questions are refused with a 400 Request body (16 KB): Larger requests get a 413 Conversation history (last 4 turns): Each turn trimmed to 600 characters Per visitor (6 a minute, 60 a day): Counted per IP address; a 429 says when to try again Per Telegram chat (5 a minute, 60 a day): Counted per chat Whole service (2,000 answers a day): Across every surface; the spending cap Gully Labs can change these on the server. When Gully AI is not configured on a server, every surface says it is not available (the API answers 503 with configured: false).",
-   "updatedAt": "2026-11-07T01:38:40.876Z"
+   "text": "Question length (500 characters): Longer questions are refused with a 400 Request body (16 KB): Larger requests get a 413 Conversation history (last 4 turns): Each turn trimmed to 600 characters Per visitor (6 a minute, 60 a day): Counted per IP address; a 429 says when to try again Per Telegram chat (5 a minute, 60 a day): Counted per chat Whole service (2,000 answers a day (default)): Across every surface; the spending cap, set by the team. Past it, or when the answer service is down or busy, Gully AI shows the closest docs passages with links and says they are not a written answer Gully Labs can change these on the server. When Gully AI is not configured on a server, every surface says it is not available (the API answers 503 with configured: false).",
+   "updatedAt": "2026-11-23T20:21:12.727Z"
   },
   {
    "id": "7d0f40dc252f",
@@ -1367,8 +1376,8 @@
    "title": "Gully AI",
    "url": "https://docs.gullylabs.xyz/gully-ai#privacy",
    "section": "Privacy and safety",
-   "text": "Questions are logged for 90 days to find gaps in these docs. The log never holds a raw IP address: only a salted hash of it. A thumbs up or down keeps the answer id, the rating, the question and the same hash, also for 90 days. Retrieved text and tool results are treated as data, not instructions: they are wrapped in blocks tagged with a random id per request, and any instruction inside them is ignored. Gully AI is information only. It is not investment, financial, legal or tax advice. The full policy is at gullylabs.xyz/privacy.",
-   "updatedAt": "2026-11-06T16:07:55.653Z"
+   "text": "Questions are logged for 90 days to find gaps in these docs. The log never holds a raw IP address: only a salted hash of it. A thumbs up or down keeps the answer id, the rating, the question and the same hash, also for 90 days. A thumbs down also keeps the answer text and its sources, so we can fix the docs. Gully AI is not a model we train or host: the question and the matching passages go to third-party providers, named under “Where your question goes”. Retrieved text and tool results are treated as data, not instructions: they are wrapped in blocks tagged with a random id per request, and any instruction inside them is ignored. Gully AI is information only. It is not investment, financial, legal or tax advice. The full policy is at gullylabs.xyz/privacy.",
+   "updatedAt": "2026-11-23T20:21:12.727Z"
   },
   {
    "id": "381a0b0bce96",
@@ -1376,8 +1385,8 @@
    "title": "Gully AI",
    "url": "https://docs.gullylabs.xyz/gully-ai#api",
    "section": "The API",
-   "text": "GET /api/ask/status answers { configured, model, indexSize, updatedAt, retrieval }. POST /api/ask takes { question, history? } and needs the header X-Requested-With: gully; it answers { id, answer, citations, live, cards, actions, usedTools, model, signedIn }. Send Accept: text/event-stream to get progress events before the answer. POST /api/ask/feedback with { id, rating: 'up' | 'down' } rates an answer from the last 24 hours.",
-   "updatedAt": "2026-10-18T19:46:28.270Z"
+   "text": "GET /api/ask/status answers { configured, model, indexSize, updatedAt, retrieval, provider, cap }; GET /api/ask/knowledge lists the sources by product, the providers, retention and limits. POST /api/ask takes { question, history? } and needs the header X-Requested-With: gully; it answers { id, answer, citations, live, cards, actions, usedTools, model, signedIn, degraded? }; degraded is set (provider, busy or cap) when the answer is the closest docs passages instead of written text. Send Accept: text/event-stream to get progress events before the answer. POST /api/ask/feedback with { id, rating: 'up' | 'down' } rates an answer from the last 24 hours.",
+   "updatedAt": "2026-11-23T20:21:12.727Z"
   },
   {
    "id": "cb4cc8c9240d",
@@ -1979,8 +1988,17 @@
    "title": "Gully IPFS",
    "url": "https://docs.gullylabs.xyz/ipfs#policy",
    "section": "Content policy",
-   "text": "Pin only content you have the right to publish. No illegal content, no content that sexualises minors, no malware or phishing, no other people's private data, nothing that infringes copyright. Uploaded and pinned images are scanned automatically, and video, SVG and anything the scanner flags is looked at by a person. Content that breaks the policy is taken down: unpinned from every Gully node and refused by the gateway, the same file is refused if it is uploaded again, and the account may be closed. Report content to team@gullylabs.xyz.",
-   "updatedAt": "2026-11-20T20:54:22.009Z"
+   "text": "Pin only content you have the right to publish. No illegal content, no content that sexualises minors, no malware or phishing, no other people's private data, nothing that infringes copyright. Uploaded and pinned images are scanned automatically, and video, SVG and anything the scanner flags is looked at by a person. Content that breaks the policy is taken down: unpinned from every Gully node and refused by the gateway, the same file is refused if it is uploaded again, and the account may be closed. Report content with the form below.",
+   "updatedAt": "2026-11-23T20:21:12.727Z"
+  },
+  {
+   "id": "e8014f751add",
+   "source": "Docs",
+   "title": "Gully IPFS",
+   "url": "https://docs.gullylabs.xyz/ipfs#report",
+   "section": "Report content",
+   "text": "Found something on the gateway that should not be there? Send its CID or link. A person reads every report, the most serious ones first. A report never removes anything by itself. You can also write to team@gullylabs.xyz.",
+   "updatedAt": "2026-11-23T20:21:12.727Z"
   },
   {
    "id": "571274f7bd88",

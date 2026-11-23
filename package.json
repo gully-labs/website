@@ -40,6 +40,8 @@
     "test:redact": "node --test scripts/test-redact.mjs",
     "test:ai-gateway": "node scripts/test-ai-gateway.mjs && node scripts/ai-eval/regression.mjs",
     "test:ask-coverage": "node scripts/test-ask-coverage.mjs",
+    "test:ask-knowledge": "node --test scripts/test-ask-knowledge.mjs",
+    "load:ask-fake": "node scripts/load-ask-fake.mjs",
     "test:workspaces": "node scripts/test-workspaces.mjs",
     "test:merchants": "node scripts/test-merchants.mjs",
     "test:safe-deploy": "node scripts/test-safe-deploy.mjs",

@@ -454,10 +454,11 @@ async function handleRequest(req, res) {
   }
   // Gully Ask (ask.mjs): POST /api/ask, GET /api/ask/status and POST /api/ask/feedback.
   // Its status is public and read-only: the docs host reads it cross-origin.
-  if (url.pathname === '/api/ask/status') res.setHeader('Access-Control-Allow-Origin', '*')
-  if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status' || url.pathname === '/api/ask/feedback') return void (await handleAsk(req, res, url))
+  if (url.pathname === '/api/ask/status' || url.pathname === '/api/ask/knowledge') res.setHeader('Access-Control-Allow-Origin', '*')
+  if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status' || url.pathname === '/api/ask/knowledge' || url.pathname === '/api/ask/feedback') return void (await handleAsk(req, res, url))
   // Gully AI Explain this transaction (ai/explain-tx.mjs): 404 unless AI_EXPLAIN_TX=1.
   if (url.pathname === '/api/ai/explain-tx') return void (await handleExplainTx(req, res, url))
+
   // Gully Pay gas costs per chain, cached (gas.mjs): the app's Merchant tab reads it. Public.
   if (url.pathname === '/api/pay/gas') {
     // Public and read-only: the docs host reads it cross-origin (writeHead keeps headers set here).
