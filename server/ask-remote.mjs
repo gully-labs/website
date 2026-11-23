@@ -43,6 +43,30 @@ export function remoteSources() {
       return secs.flatMap((s) => chunkSection({ source: 'GitHub', title, url: s.heading ? `${page}#${githubAnchor(s.heading)}` : page, section: s.heading, paragraphs: s.paras }))
     },
   }))
+  // Swoop Ads docs (docs.swoopads.xyz), read from the docs site's own search JSON, so Gully AI and the Swoop Copilot know the same pages.
+  if (process.env.ASK_SWOOP_DOCS !== '0') {
+    const base = String(process.env.ASK_SWOOP_DOCS_URL ?? 'https://docs.swoopads.xyz').replace(/\/$/, '')
+    list.push({
+      key: 'swoop-docs',
+      label: 'Swoop Ads docs',
+      async load(f) {
+        const home = await getText(f, `${base}/`)
+        const m = /data-search="([^"]+)"/.exec(home)
+        if (!m) throw new Error('no search index link')
+        const idx = new URL(m[1].replace(/&amp;/g, '&'), `${base}/`)
+        if (idx.origin !== new URL(base).origin) throw new Error('search index on another origin')
+        const doc = JSON.parse(await getText(f, idx.href))
+        const out = []
+        for (const e of Array.isArray(doc?.entries) ? doc.entries : []) {
+          if (typeof e?.url !== 'string' || typeof e?.text !== 'string') continue
+          const url = new URL(e.url, `${base}/`)
+          if (url.origin !== new URL(base).origin) continue
+          out.push(...chunkSection({ source: 'Swoop Ads docs', title: clean(e.page).slice(0, 160), url: url.href, section: e.heading && e.heading !== e.page ? clean(e.heading).slice(0, 160) : null, paragraphs: [e.text] }))
+        }
+        return out
+      },
+    })
+  }
   const key = String(process.env.GHOST_CONTENT_KEY ?? '').trim()
   if (/^[a-f0-9]{16,64}$/i.test(key)) {
     list.push({
