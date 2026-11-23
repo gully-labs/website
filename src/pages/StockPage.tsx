@@ -25,6 +25,7 @@ import { HolderMap } from '../components/holders/HolderMap'
 import { HoldersChip } from '../components/holders/HoldersChip'
 import { TokenLogo } from '../components/logos/TokenLogo'
 import { feeText, jupiterFeeText } from '../components/swap/swapConfig'
+import { GullySpot } from '../components/GullySpot'
 import { stockSeo } from '../content/seoPages'
 import { fillCopy, STOCK_COPY } from '../content/stockCopy'
 
@@ -284,6 +285,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
           {STOCK_COPY.disclaimer}
         </p>
       </section>
+      <GullySpot unit="banner" className="mx-auto mt-8 mb-12" />
     </>
   )
 }

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "note": "House promos for Gully spots. Plain https links, no tracking, logos are same-origin copies of official kit files. See design/swoop-spots-2026-11-23/SPOT-RULES.md.",
+    "banners": { "manifest": "house-banners/banners.json", "base": "house-banners/", "note": "Animated Swoop Ads house banners. Pick by unit: banner -> 728x90, 970x250, 320x100, 300x250, 160x600, 1200x400; native/text -> native. Filter by audience (creator, sponsor, developer) and the product context list in the manifest; use the static twin for reduced motion or Save-Data; theme dark/light follows the page.", "units": { "banner": ["728x90","970x250","320x100","300x250","160x600","1200x400"], "text": ["native"], "native": ["native"] } },
+  "promos": [
+    { "id": "kre8", "title": "kre8", "line": "Create, share and trade on Gully Chain.", "href": "https://kre8.fun", "hrefTestnet": "https://testnet.kre8.fun", "logo": "kre8" },
+    { "id": "gully-core", "title": "Gully Core", "line": "Launch a token or open a DEX on a shared core.", "href": "https://gullycore.xyz", "logo": "gully-core" },
+    { "id": "bridge", "title": "Gully Bridge", "line": "Move funds to and from Gully Chain.", "href": "https://bridge.gullychain.xyz", "hrefTestnet": "https://testnet-bridge.gullychain.xyz", "logo": "gully-chain" },
+    { "id": "faucet", "title": "Gully Faucet", "line": "Get testnet coins for Gully Chain.", "href": "https://faucet.gullychain.xyz", "logo": "gully-chain", "testnetOnly": true },
+    { "id": "multisig", "title": "Gully Multisig", "line": "Shared wallets for teams on Gully Chain and more.", "href": "https://gullymultisig.xyz", "logo": "gully-multisig" },
+    { "id": "swoop", "title": "Swoop Ads", "line": "Sponsor or earn with ads that respect readers.", "href": "https://swoopads.xyz", "logo": "swoop" },
+    { "id": "chain", "title": "Gully Chain", "line": "An L3 built for apps that need low fees.", "href": "https://gullychain.xyz", "logo": "gully-chain" },
+    { "id": "holder-maps", "title": "Holder Maps", "line": "See who holds a token, as a bubble map.", "href": "https://holdermaps.xyz", "logo": "holder-maps" },
+    { "id": "tracker", "title": "Stock tracker", "line": "Compare tokenized stocks with their market price.", "href": "https://gullylabs.xyz/tracker", "logo": "gully-labs" }
+  ]
+}
