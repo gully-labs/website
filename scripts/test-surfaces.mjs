@@ -298,3 +298,45 @@ test('status rows: one per surface, counts only', () => {
   assert.deepEqual(rows.map((r) => r.surface).sort(), ['discord', 'embed', 'farcaster', 'tgapp'])
   assert.ok(rows.every((r) => r.enabled === false))
 })
+
+/* ------------------------------------------------- status rows + group caps --- */
+
+test('status rows: none while off; configured/keys/streak states with counts only', async () => {
+  const St = await import('../server/surfaces/status.mjs')
+  const rr = (id, group, name, state, detail) => ({ id, group, name, state, detail })
+  off()
+  S.resetSurfaceCountsForTest()
+  assert.deepEqual(St.checkSurfaces(rr), [])
+  on('discord')
+  delete process.env.DISCORD_BOT_TOKEN
+  assert.equal(St.checkSurfaces(rr)[0].state, 'degraded')
+  process.env.DISCORD_BOT_TOKEN = 'x'
+  process.env.DISCORD_APP_ID = '1'
+  process.env.DISCORD_APP_PUBLIC_KEY = pubHex
+  await S.answerForSurface({ surface: 'discord', userKey: 'u', question: 'hello there', askFn: fakeAsk() })
+  let row = St.checkSurfaces(rr)[0]
+  assert.equal(row.state, 'up')
+  assert.match(row.detail, /1 answered, 0 refused, 0 failed/)
+  const bad = async () => ({ ok: false, status: 502, error: 'x' })
+  for (let i = 0; i < 3; i++) await S.answerForSurface({ surface: 'discord', userKey: 'u', question: 'hello there', askFn: bad })
+  row = St.checkSurfaces(rr)[0]
+  assert.equal(row.state, 'down')
+  assert.ok(!JSON.stringify(row).includes('hello there'), 'counts only, never content')
+  delete process.env.DISCORD_BOT_TOKEN
+  delete process.env.DISCORD_APP_ID
+  delete process.env.DISCORD_APP_PUBLIC_KEY
+  off()
+})
+
+test('group caps: the chat limit stops asks even across users; settings args parse', () => {
+  M.resetTgModesForTest()
+  const m = (fromId) => ({ chatId: 'cap', chatType: 'group', fromId, text: '/ask@B hi there', replyToBot: false })
+  M.updateGroupSettings('cap', { perMin: 2, cooldownS: 0 }, { isAdmin: true })
+  assert.equal(M.decideGroupMessage(m('a'), 'B', 1000).act, 'ask')
+  assert.equal(M.decideGroupMessage(m('b'), 'B', 1001).act, 'ask')
+  assert.equal(M.decideGroupMessage(m('c'), 'B', 1002).act, 'limited')
+  assert.equal(M.decideGroupMessage(m('c'), 'B', 62_000).act, 'ask', 'the minute window rolls')
+  assert.deepEqual(M.parseSettingsArgs('limit 3 40').patch, { perMin: 3, perDay: 40 })
+  assert.equal(M.parseSettingsArgs('quiet on').patch.quiet, true)
+  assert.ok(M.parseSettingsArgs('').help)
+})

@@ -29,6 +29,7 @@ import { CHAIN_LIST, publicChains, rpc } from './payments.mjs'
 import { solanaRpc } from './solana.mjs'
 import { SOLANA_CHAIN_ID } from './solana-pay.mjs'
 import { askStatus } from './ask.mjs'
+import { checkSurfaces } from './surfaces/status.mjs'
 import { status as securityStatus } from './security-engine.mjs'
 import { monitorStats } from './sec-monitor.mjs'
 import * as holders from './holders.mjs'
@@ -322,6 +323,7 @@ export async function runChecks({ now = Date.now(), record = true } = {}) {
   running = (async () => {
     const groups = await Promise.all([settle('api', checkApi), settle('tracker', checkTracker), settle('telegram', checkTelegram), settle('telegram-gate', checkNewsGate), settle('payments', checkPayments), settle('pay-feeproxy', checkFeeProxy), settle('ai', checkAi), settle('security', checkSecurity), settle('monitors', checkMonitors), settle('holders', checkHolders), settle('gullychain', checkGullyChain)])
     const results = groups.flat()
+    results.push(...(await settle('ai-surfaces', async () => checkSurfaces(r))))
     if (record) recordResults(results, now)
     lastRun = { at: now, results }
     return lastRun

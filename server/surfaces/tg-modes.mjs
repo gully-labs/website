@@ -51,11 +51,26 @@ export function updateGroupSettings(chatId, patch, { isAdmin }) {
 }
 
 const lastAsk = new Map() // `${chat}:${user}` -> ms
-export const resetTgModesForTest = () => lastAsk.clear()
+const chatWindow = new Map() // chat -> { minute: [ms], day: day, dayN }
+export const resetTgModesForTest = () => (lastAsk.clear(), chatWindow.clear())
+
+/** The group's own caps (set by an admin, never above the global ones): true when this ask may go on, and counts it. */
+function takeChatAllowance(chatId, s, now) {
+  const w = chatWindow.get(chatId) ?? { minute: [], day: '', dayN: 0 }
+  w.minute = w.minute.filter((t) => now - t < 60_000)
+  const day = new Date(now).toISOString().slice(0, 10)
+  if (w.day !== day) Object.assign(w, { day, dayN: 0 })
+  if (w.minute.length >= s.perMin || w.dayN >= s.perDay) return false
+  w.minute.push(now)
+  w.dayN++
+  chatWindow.set(chatId, w)
+  if (chatWindow.size > 5000) chatWindow.delete(chatWindow.keys().next().value)
+  return true
+}
 
 /**
  * What to do with one group message. msg: { chatId, chatType, fromId, text, replyToBot }; bot: username without @.
- * Returns { act: 'ask'|'ignore'|'cooldown', question?, settings?, retryAfter? }. ctx is never offered for a group.
+ * Returns { act: 'ask'|'ignore'|'cooldown'|'limited', question?, settings?, retryAfter? }. ctx is never offered for a group.
  */
 export function decideGroupMessage(msg, bot, now = Date.now()) {
   if (!['group', 'supergroup'].includes(msg.chatType)) return { act: 'ignore' }
@@ -74,6 +89,7 @@ export function decideGroupMessage(msg, bot, now = Date.now()) {
   const last = lastAsk.get(key)
   const wait = last === undefined ? 0 : last + s.cooldownS * 1000 - now
   if (wait > 0) return { act: 'cooldown', retryAfter: Math.ceil(wait / 1000), settings: s }
+  if (!takeChatAllowance(String(msg.chatId), s, now)) return { act: 'limited', settings: s }
   lastAsk.set(key, now)
   if (lastAsk.size > 5000) lastAsk.delete(lastAsk.keys().next().value)
   return { act: 'ask', question: q, settings: s }
@@ -99,4 +115,17 @@ export function inlineResult(id, question, shortAnswer, openUrl) {
 /** A scheduled channel digest is post-only: it carries facts the caller already read, a footer and no question UI. */
 export function channelDigest(lines, footer = 'AI-assisted digest. Information only, not financial advice.') {
   return `${lines.slice(0, 8).map((l) => String(l).slice(0, 200)).join('\n')}\n\n${footer}`
+}
+
+/** Parses "/aisettings ..." arguments into a settings patch, or { help }. */
+export function parseSettingsArgs(args) {
+  const [k, v, w] = String(args ?? '').trim().split(/\s+/)
+  if (!k) return { help: true }
+  if (k === 'lang') return { patch: { lang: v === 'auto' ? 'auto' : v } }
+  if (k === 'scope') return v === 'project' ? { patch: { scope: 'project', projectId: w } } : { patch: { scope: 'gully' } }
+  if (k === 'limit') return { patch: { perMin: Number(v), ...(w ? { perDay: Number(w) } : {}) } }
+  if (k === 'cooldown') return { patch: { cooldownS: Number(v) } }
+  if (k === 'quiet') return { patch: { quiet: v === 'on' } }
+  if (k === 'billing') return { patch: { billing: v } }
+  return { help: true }
 }

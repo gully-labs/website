@@ -112,7 +112,10 @@ export async function answerForSurface({ surface, userKey, question, place = 'pu
   // Privacy rule: a public place never carries a session, whatever the caller passed.
   const safeCtx = place === 'public' ? null : ctx
   const cr = await creditsHook({ surface, userKey, estimate: 1, place })
-  if (!cr.ok) return { ok: false, status: 402, message: cr.message || 'You are out of free Gully AI answers. Add credits at gullylabs.xyz/ask.' }
+  if (!cr.ok) {
+    note(s.id, 'refused')
+    return { ok: false, status: 402, message: cr.message || 'You are out of free Gully AI answers. Add credits at gullylabs.xyz/ask.' }
+  }
   const lang = String(locale || '').slice(0, 12).replace(/[^A-Za-z-]/g, '')
   const asked = lang && !/^en/i.test(lang) ? `${q}\n(Answer in the language with code "${lang}".)` : q
   const r = await askFn({
@@ -121,7 +124,11 @@ export async function answerForSurface({ surface, userKey, question, place = 'pu
     ctx: safeCtx,
     who: { channel: s.askChannel, key: `${project ? `${project}:` : ''}${userKey}`, perMin: envInt(`${s.flag}_PER_MIN`, s.perMin), perDay: envInt(`${s.flag}_PER_DAY`, s.perDay) },
   })
-  if (!r.ok) return { ok: false, status: r.status ?? 502, message: r.error || 'Gully AI could not answer just now.', retryAfter: r.retryAfter }
+  if (!r.ok) {
+    note(s.id, r.status === 429 ? 'refused' : 'failed')
+    return { ok: false, status: r.status ?? 502, message: r.error || 'Gully AI could not answer just now.', retryAfter: r.retryAfter }
+  }
+  note(s.id, 'ok')
   const topic = (r.usedTools ?? []).some((t) => /holder|token|score|market|gap/.test(t)) ? 'token' : 'general'
   let body = s.markdown ? String(r.answer ?? '') : toPlain(r.answer)
   const src = sourceLines(r.citations, s.id === 'farcaster' ? 0 : 3)
@@ -140,6 +147,20 @@ function configuredFor(id) {
   if (id === 'tgapp') return !!env('TELEGRAM_BOT_TOKEN')
   return id === 'embed'
 }
+
+/* Counts only (never content): what the status row reads. */
+const stats = {}
+const stat = (id) => (stats[id] ??= { ok: 0, refused: 0, failed: 0, streak: 0, lastAt: 0, day: '' })
+function note(id, kind) {
+  const x = stat(id)
+  const day = new Date().toISOString().slice(0, 10)
+  if (x.day !== day) Object.assign(x, { day, ok: 0, refused: 0, failed: 0 })
+  x[kind]++
+  x.streak = kind === 'failed' ? x.streak + 1 : kind === 'ok' ? 0 : x.streak
+  x.lastAt = Date.now()
+}
+export const surfaceCounts = (id) => ({ ...stat(id) })
+export const resetSurfaceCountsForTest = () => Object.keys(stats).forEach((k) => delete stats[k])
 
 /** What the status service reads per surface (counts only, no content): see SPEC.md section 9. */
 export function surfaceStatus(now = Date.now()) {

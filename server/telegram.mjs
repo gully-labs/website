@@ -76,6 +76,7 @@ import { workspaceName } from './workspaces.mjs'
 import * as ui from './telegram-ui.mjs'
 import { onInlineQuery } from './telegram-inline.mjs'
 import { createRelay } from './telegram-relay.mjs'
+import { decideGroupMessage, groupSettings, parseSettingsArgs, tgModesEnabled, updateGroupSettings } from './surfaces/tg-modes.mjs'
 import { backfillFromLinks, botUser, noteFirstUse, noteGateShown, recordStart, setFollows, setLinked, setOptOut, takeFreeAction, touchUser } from './telegram-users.mjs'
 
 const { chainName, shortAddr, btn, ubtn } = ui
@@ -836,8 +837,55 @@ async function showNew(chatId, view) {
   return s
 }
 
+/**
+ * Gully AI in groups (flag AI_TG_MODES=1, off by default): answers /ask@bot, "@bot question" and replies to the bot with the
+ * group's own cooldown and caps; never a session (askFn gets the group chat, so ctx is null); /aisettings for group admins
+ * (tighten-only). Privacy mode stays ON (Telegram default), so the bot only ever sees what is addressed to it. Returns true
+ * when it handled the message.
+ */
+async function groupModes(msg) {
+  if (!tgModesEnabled() || !['group', 'supergroup'].includes(msg.chat?.type) || typeof msg.text !== 'string') return false
+  const chatId = String(msg.chat.id)
+  const name = await botUsername()
+  if (!name) return false
+  const text = msg.text.slice(0, 800)
+  const cmd = text.match(new RegExp(`^/aisettings(?:@${name})?(?:\\s+([\\s\\S]*))?$`, 'i'))
+  if (cmd) {
+    const m = await tg('getChatMember', { chat_id: chatId, user_id: Number(msg.from?.id) })
+    const isAdmin = !!m.ok && ['creator', 'administrator'].includes(m.result?.status)
+    const p = parseSettingsArgs(cmd[1])
+    if (p.help || !isAdmin) {
+      const s = groupSettings(chatId)
+      await sendText(chatId, isAdmin ? esc(`Gully AI settings: language ${s.lang}, ${s.perMin}/min and ${s.perDay}/day, cooldown ${s.cooldownS}s, quiet ${s.quiet ? 'on' : 'off'}. Change with /aisettings lang es | limit 3 40 | cooldown 30 | quiet on`) : esc('Only a group admin can change Gully AI settings.'))
+      return true
+    }
+    const r = updateGroupSettings(chatId, p.patch, { isAdmin })
+    await sendText(chatId, esc(r.ok ? 'Saved.' : r.error))
+    return true
+  }
+  const rt = msg.reply_to_message
+  const replyToBot = !!rt && String(rt.from?.id) === botId()
+  if (replyToBot && ui.getState(chatId)?.pending) return false // an answer to one of the bot's own prompts
+  const d = decideGroupMessage({ chatId, chatType: msg.chat.type, fromId: msg.from?.id, text, replyToBot }, name)
+  if (d.act === 'ignore') return false
+  if (d.act === 'cooldown' || d.act === 'limited') {
+    if (!d.settings?.quiet) await sendText(chatId, esc(d.act === 'cooldown' ? `Please wait ${d.retryAfter}s before asking again.` : 'This group has used its Gully AI questions for now. Try again later.'))
+    return true
+  }
+  if (d.settings.scope === 'project') {
+    await sendText(chatId, esc('Project mode is not available yet.'))
+    return true
+  }
+  const q = d.settings.lang !== 'auto' ? `${d.question}
+(Answer in the language with code "${d.settings.lang}".)` : d.question
+  const view = await aiAnswer(chatId, q)
+  if (view) await showNew(chatId, view)
+  return true
+}
+
 async function onMessage(msg) {
   if (!msg?.chat || typeof msg.text !== 'string') return
+  if (await groupModes(msg)) return
   const m = msg.text.slice(0, 800).match(/^\/([a-z_]{1,32})(?:@([A-Za-z0-9_]{3,64}))?(?:\s+([\s\S]*))?$/i)
   if (!m) return onText(msg)
   const [, rawCmd, at, rawArgs = ''] = m

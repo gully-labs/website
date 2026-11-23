@@ -45,6 +45,7 @@ for (const k of ['log', 'error', 'warn']) {
 /* -------------------------------------------------------------- Bot API stub --- */
 
 const calls = [] // { method, body, at, resultId }
+const admins = new Set() // user ids the stub reports as group administrators
 const nonMembers = new Set() // user ids the stub reports as not following the News channel
 let memberCheckBroken = false // the stub refuses getChatMember (bot not an admin of the channel)
 const msgs = new Map() // message_id -> { chatId, kind, text, markup }
@@ -76,7 +77,7 @@ const stub = http.createServer((req, res) => {
     if (method === 'getMe') return send(200, { ok: true, result: { id: BOT_ID, is_bot: true, username: BOT } })
     if (method === 'getChatMember') {
       if (memberCheckBroken) return bad('Bad Request: member list is inaccessible')
-      return send(200, { ok: true, result: { status: nonMembers.has(Number(body.user_id)) ? 'left' : 'member', user: { id: Number(body.user_id) } } })
+      return send(200, { ok: true, result: { status: nonMembers.has(Number(body.user_id)) ? 'left' : admins.has(Number(body.user_id)) ? 'administrator' : 'member', user: { id: Number(body.user_id) } } })
     }
     if (method === 'sendMessage' && fail429 > 0) {
       fail429--
@@ -155,6 +156,7 @@ delete process.env.TELEGRAM_WEBHOOK_SECRET
 delete process.env.GULLY_TREASURY_ADDRESS
 await import('../server/server.mjs')
 const tg = await import('../server/telegram.mjs')
+const g = await import('../server/surfaces/tg-modes.mjs')
 const ui = await import('../server/telegram-ui.mjs')
 const { evaluateAlerts } = await import('../server/alerts.mjs')
 await new Promise((r) => setTimeout(r, 300))
@@ -710,6 +712,37 @@ try {
   await say(c850, 'after a restart?', 850, { reply_to_message: { message_id: 5, from: { id: BOT_ID, is_bot: true }, text: '🤖 Ask Gully AI: type your question about Gully Labs, the tracker, alerts or plans.' } })
   check('Gully AI: a reply to the prompt works without state', askedQ.at(-1)?.[1] === 'after a restart?')
   tg.setAskForTest(null)
+
+  /* ------------------------------------------------- Gully AI in groups (AI_TG_MODES) --- */
+  {
+    const grp = { id: -100901, type: 'supergroup', title: 'Dev chat' }
+    const asked = []
+    tg.setAskForTest(async (chatId, q) => (asked.push([chatId, q]), { ok: true, answer: 'Group answer.', citations: [] }))
+    delete process.env.AI_TG_MODES
+    await say(grp, `@${BOT} what is Gully Core?`, 31)
+    await say(grp, `hello all`, 31)
+    check('groups: flag off, a mention is not answered', asked.length === 0)
+    process.env.AI_TG_MODES = '1'
+    await say(grp, 'hello all', 31)
+    check('groups: a plain message is ignored (privacy-mode assumption)', asked.length === 0)
+    await say(grp, `@${BOT} what is Gully Core?`, 31)
+    check('groups: @mention is answered, the chat id (not the user) goes to ask', asked.length === 1 && asked[0][0] === '-100901' && asked[0][1] === 'what is Gully Core?')
+    await say(grp, `/ask@${BOT} again please`, 31)
+    check('groups: the same user inside the cooldown gets a wait notice, no ask', asked.length === 1 && /Please wait \d+s/.test(lastText(-100901)))
+    await say(grp, 'and more?', 32, { reply_to_message: { message_id: 7, from: { id: BOT_ID, is_bot: true }, text: 'Group answer.' } })
+    check('groups: a reply to the bot is answered for another user', asked.length === 2 && asked[1][1] === 'and more?')
+    await say(grp, '/aisettings cooldown 1', 33)
+    check('groups: a non-admin cannot change settings', /Only a group admin/.test(lastText(-100901)))
+    admins.add(34)
+    await say(grp, '/aisettings limit 99 999', 34)
+    check('groups: an admin saves limits but they can only tighten (5/min, 60/day)', /Saved/.test(lastText(-100901)) && JSON.stringify(g.groupSettings('-100901')).includes('"perMin":5,"perDay":60'))
+    await say(grp, '/aisettings quiet on', 34)
+    await say(grp, `/ask@${BOT} quiet please`, 32)
+    const quietBefore = sent(-100901).length
+    check('groups: quiet mode sends no wait notice', asked.length === 2 && sent(-100901).length === quietBefore)
+    delete process.env.AI_TG_MODES
+    tg.setAskForTest(null)
+  }
 
   /* ------------------------------------------------------------ settings --- */
   await press(ada, 'set')
