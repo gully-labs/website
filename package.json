@@ -23,6 +23,7 @@
     "test:chains-launch": "node scripts/test-chains-launch.mjs",
     "test:chain-orders": "node scripts/test-chain-orders.mjs",
     "test:chain-flow": "node scripts/e2e-chain-flow.mjs",
+    "test:surfaces": "node --test --test-force-exit scripts/test-surfaces.mjs",
     "test:telegram": "node scripts/test-telegram.mjs",
     "test:tg-channel": "node scripts/test-tg-channel.mjs",
     "test:tg-broadcast": "node scripts/test-tg-broadcast.mjs",

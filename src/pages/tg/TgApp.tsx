@@ -1,5 +1,5 @@
-import { BellRing, ChartNoAxesColumn, Check, Megaphone } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { BellRing, ChartNoAxesColumn, Check, Megaphone, Sparkles } from 'lucide-react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Wordmark } from '../../components/brand'
 import { useTracker, type TrackerRow } from '../../lib/tracker'
 import { useTgApi } from './hooks'
@@ -12,7 +12,8 @@ import { haptic, isLight, loadTelegram, themeVars, type ThemeParams, type WebApp
    small screen stack: Telegram's BackButton pops it, the MainButton creates alerts on a stock, and taps
    give haptic feedback. Following @GullyLabsNews is required here as in the bot (the join screen). */
 
-type Tab = 'gaps' | 'alerts'
+const AskTab = lazy(() => import('./AskTab').then((m) => ({ default: m.AskTab })))
+type Tab = 'gaps' | 'alerts' | 'ask'
 type Screen = { k: 'home' } | { k: 'stock'; chain: string; ticker: string } | { k: 'holders'; chain: string; token: string }
 
 /**
@@ -38,6 +39,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'gaps', label: 'Gaps', icon: <ChartNoAxesColumn size={14} aria-hidden /> },
   { id: 'alerts', label: 'My alerts', icon: <BellRing size={14} aria-hidden /> },
 ]
+const ASK_TAB = { id: 'ask' as Tab, label: 'Gully AI', icon: <Sparkles size={14} aria-hidden /> }
 const BOT_URL = 'https://t.me/GullyLabsBot'
 
 export function TgApp() {
@@ -138,6 +140,8 @@ function Brand({ right }: { right?: React.ReactNode }) {
 
 function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: string }) {
   const [fresh, setFresh] = useState(0)
+  // The Gully AI tab shows only when the server has the surface on (the chip route answers 404 otherwise).
+  const { load: askChip } = useTgApi<{ state: 'free' | 'credits' | 'soon'; balance: number | null }>(initData, '/api/tg/ask/chip')
   const { load: me } = useTgApi<Me>(initData, `/api/tg/me${fresh ? `?fresh=1&n=${fresh}` : ''}`)
   const tracker = useTracker()
   const [stack, setStack] = useState<Screen[]>(() => {
@@ -240,9 +244,14 @@ function Signed({ wa, initData, ink }: { wa: WebApp; initData: string; ink: stri
       ) : (
         <>
           <div className="sticky top-0 z-10 -mx-4 bg-bg px-4 py-2">
-            <Chips value={tab} options={TABS} onChange={setTab} label="Section" />
+            <Chips value={tab} options={askChip.k === 'ok' ? [...TABS, ASK_TAB] : TABS} onChange={setTab} label="Section" />
           </div>
           {tab === 'gaps' && <GapsTab initData={initData} tracker={tracker} ink={ink} onOpen={(r) => openStock(r.chain, r.ticker)} />}
+          {tab === 'ask' && askChip.k === 'ok' && (
+            <Suspense fallback={null}>
+              <AskTab initData={initData} chip={askChip.data} />
+            </Suspense>
+          )}
           {tab === 'alerts' && (
             <>
               <AlertsTab wa={wa} initData={initData} me={m} version={alertsVersion} onOpenStock={openStock} />

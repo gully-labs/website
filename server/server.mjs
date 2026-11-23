@@ -62,6 +62,7 @@ import { startTreasuryWatch } from './treasury-chains.mjs'
 import { geoFor } from './geo.mjs'
 import { handleAsk, startAsk } from './ask.mjs'
 import { handleExplainTx } from './ai/explain-tx.mjs'
+import { handleSurfaces } from './surfaces/index.mjs'
 import { handleSolana } from './solana-routes.mjs'
 import { GUARD_PUBLIC_ERROR, PaymentGuardError } from './pay-guard.mjs'
 import { startFeeProxyMonitor } from './fee-proxy-monitor.mjs'
@@ -406,6 +407,8 @@ async function handleRequest(req, res) {
     if (await handleDeveloper(req, res, url)) return
     return send(res, 404, JSON.stringify({ error: 'not found' }), { 'Content-Type': 'application/json' })
   }
+  // Gully AI on other surfaces (Discord, Farcaster, Telegram Mini App, embed, account links): surfaces/index.mjs, each off until its flag is 1.
+  if (/^\/(api\/(discord|farcaster|surfaces|ask\/embed|tg\/ask)|embed\/ask|\.well-known\/farcaster\.json)/.test(url.pathname) && (await handleSurfaces(req, res, url))) return
   // The Telegram Mini App's API (telegram-miniapp.mjs): initData-authenticated, 404 without a bot token.
   if (url.pathname.startsWith('/api/tg/')) return void (await handleMiniApp(req, res, url))
   // Telegram's webhook (telegram.mjs): 404 unless the bot is configured and the secret path matches.
