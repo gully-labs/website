@@ -60,7 +60,8 @@ if (urlArg) {
   const gap = Number(argv[argv.indexOf('--gap-ms') + 1]) || 12_000
   const nRet = argv.includes('--retrieval') ? Number(argv[argv.indexOf('--retrieval') + 1]) || 0 : 0
   const tsv = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'retrieval-questions.tsv'), 'utf8').split(String.fromCharCode(10)).filter((l) => l && !l.startsWith('#')).map((l) => l.split(String.fromCharCode(9)))
-  const items = [...CASES.map((c) => ({ c })), ...tsv.slice(0, nRet).map(([g, q], i) => ({ c: { id: `ret-${i + 1}`, q, expect: { cites: true } }, gold: (g.startsWith('http') ? g : `https://docs.gullylabs.xyz/${g}`).split('#')[0] }))]
+  const only = argv.includes('--only') ? argv[argv.indexOf('--only') + 1].split(',') : null
+  const items = [...CASES.filter((c) => !only || only.includes(c.id)).map((c) => ({ c })), ...tsv.slice(0, only ? 0 : nRet).map(([g, q], i) => ({ c: { id: `ret-${i + 1}`, q, expect: { cites: true } }, gold: (g.startsWith('http') ? g : `https://docs.gullylabs.xyz/${g}`).split('#')[0] }))]
   let bad = 0, goldHit = 0, goldN = 0
   const rows = []
   for (const { c, gold } of items) {
@@ -80,6 +81,7 @@ if (urlArg) {
     if (hard.length) bad++
     rows.push({ id: c.id, ok: !hard.length, fails })
     console.log(`${hard.length ? 'FAIL' : 'ok  '} ${c.id}${fails.length ? ': ' + fails.join('; ') : ''}`)
+    if (hard.length && argv.includes('--show')) console.log(`     answer: ${String(r.answer).replace(/\s+/g, ' ').slice(0, 500)} | tools: ${(r.usedTools ?? []).join(',')}`)
   }
   console.log(JSON.stringify({ total: items.length, failed: bad, goldPageCited: goldN ? `${goldHit}/${goldN}` : null, at: new Date().toISOString() }))
   process.exit(bad ? 1 : 0)
