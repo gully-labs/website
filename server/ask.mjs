@@ -1268,8 +1268,7 @@ export function recordFeedback({ id, rating, key }) {
   if (!a || now - a.at > ANSWER_TTL_MS) return { ok: false, status: 404, error: 'That answer can no longer be rated.' }
   try {
     fs.mkdirSync(dataDir(), { recursive: true })
-    fs.appendFileSync(FEEDBACK_FILE(), JSON.stringify({ at: new Date().toISOString(), id, rating, question: redact(a.question ?? '', { maxLen: 2000 }).text, channel: a.channel, who: k, ...(rating === 'down' && a.answer ? { answer: redact(a.answer, { maxLen: 1500 }).text, sources: a.sources ?? [] } : {}) }) + '
-')
+    fs.appendFileSync(FEEDBACK_FILE(), JSON.stringify({ at: new Date().toISOString(), id, rating, question: redact(a.question ?? '', { maxLen: 2000 }).text, channel: a.channel, who: k, ...(rating === 'down' && a.answer ? { answer: redact(a.answer, { maxLen: 1500 }).text, sources: a.sources ?? [] } : {}) }) + String.fromCharCode(10))
   } catch (e) {
     console.error('ask feedback:', e?.message ?? e)
     return { ok: false, status: 500, error: 'The rating could not be saved.' }
