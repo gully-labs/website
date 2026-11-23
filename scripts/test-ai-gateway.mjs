@@ -10,6 +10,7 @@ import { rewriteQuery } from '../server/ai/rewrite.mjs'
 import * as memory from '../server/ai/memory.mjs'
 import { rerankItems } from '../server/ai/rerank-client.mjs'
 import { overlap } from '../server/ai/embed-provider.mjs'
+import { fuseV2 } from '../server/ai/retrieve-v2.mjs'
 
 let n = 0
 const ok = (name) => console.log(`ok ${++n} ${name}`)
@@ -124,6 +125,16 @@ const env = (o) => Object.assign(process.env, o)
   assert.equal((await rerankItems('q', items)).applied, false)
   ok('reranker re-orders, and never breaks retrieval when down or off')
 }
+{
+  const c = (id, source = 'Docs') => ({ id, source, url: `https://x/${id}`, title: id, text: `text ${id}` })
+  const [a, b, d] = [c('a'), c('b'), c('d')]
+  // bm25 says a first, the vector list says b first with a clear margin: v2 must follow the vector list
+  const r = fuseV2('text', { bm25: [{ chunk: a }, { chunk: b }], expanded: [], vector: [{ chunk: b, score: 0.9 }, { chunk: a, score: 0.5 }, { chunk: d, score: 0.1 }] })
+  assert.equal(r[0].chunk.id, 'b')
+  assert.ok(!r.some((x) => x.chunk.id === 'd'), 'below minCosine is dropped')
+  assert.deepEqual(fuseV2('text', { bm25: [{ chunk: a }] }).map((x) => x.chunk.id), ['a'], 'works with BM25 only')
+}
+ok('retrieve v2 follows the vector list and degrades to BM25')
 assert.equal(overlap(['a', 'b'], ['b', 'c']), 1 / 3)
 ok('shadow overlap metric')
 console.log(`\nall ${n} passed`)

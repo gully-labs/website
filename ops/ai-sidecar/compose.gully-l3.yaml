@@ -1,0 +1,56 @@
+# Gully AI sidecar for gully-l3 (NOT the gully box: its disk is ~85 %). NOT STARTED: this file is a definition only.
+# Flag-off: the compose profile `ai-sidecar` keeps `docker compose up` from starting it; gully-web ignores it until
+# ASK_EMBED_PROVIDER=local and ASK_LOCAL_EMBED_URL are set (a separate, coordinated change).
+#
+# Start by hand when the owner says go, from a clean checkout of gully-labs/website, as ONE job inside the box's
+# agent slot (the image build and first model download are heavy), e.g.:
+#   /srv/tmp/agent-slot.sh docker compose -f ops/ai-sidecar/compose.gully-l3.yaml --profile ai-sidecar build
+#   docker compose -f ops/ai-sidecar/compose.gully-l3.yaml --profile ai-sidecar up -d
+# Roll back / stop: docker compose -f ops/ai-sidecar/compose.gully-l3.yaml --profile ai-sidecar down
+#
+# Reachability: bound to 127.0.0.1 on gully-l3 only. gully-web runs on the OTHER box, so it cannot reach it until the
+# owner chooses a private path (SSH tunnel, WireGuard, or Caddy + SIDECAR_TOKEN over TLS): that is an owner decision,
+# nothing here opens a public port. SIDECAR_TOKEN is read from the env file below (never in git).
+name: gully-ai-sidecar
+services:
+  ai-sidecar:
+    profiles: ["ai-sidecar"]
+    build: .
+    image: gully-ai-sidecar:local
+    container_name: gully-ai-sidecar
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8801:8801"
+    env_file:
+      - /srv/l3/ai-sidecar/sidecar.env   # SIDECAR_TOKEN=..., written by hand on the box, 0600, never committed
+    environment:
+      EMBED_MODEL: Xenova/bge-small-en-v1.5   # MIT (BAAI/bge-small-en-v1.5), ONNX conversion by Xenova: confirm its terms
+      EMBED_POOLING: cls
+      EMBED_PREFIX_QUERY: "Represent this sentence for searching relevant passages: "
+      EMBED_PREFIX_DOC: ""
+      EMBED_DTYPE: q8
+      RERANK_MODEL: ""                          # reranker OFF (about 1 s per question on CPU: too slow live)
+      MAX_BATCH: "16"
+      MODEL_DIR: /models
+    volumes:
+      - ai-sidecar-models:/models
+    mem_limit: 1536m
+    memswap_limit: 1536m
+    cpus: 2
+    pids_limit: 256
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8801/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "3" }
+volumes:
+  ai-sidecar-models:
