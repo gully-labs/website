@@ -88,7 +88,7 @@ runs `cast` steps after the node starts:
 Do this from a laptop with Foundry, not on the box, through a tunnel:
 
 ```sh
-ssh -N -L 8547:127.0.0.1:8547 ubuntu@40.160.136.124 &
+ssh -N -L 8547:127.0.0.1:8547 <user>@<box> &
 git clone https://github.com/OffchainLabs/nitro-devnode && cd nitro-devnode && git checkout ebb523d
 # run the script's steps from "Make the caller a chain owner" onwards against http://127.0.0.1:8547
 ```
