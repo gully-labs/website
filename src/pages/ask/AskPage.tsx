@@ -45,7 +45,7 @@ export function AskPage() {
               <h1 className={h1}>
                 Ask about <span className="text-gold">Gully Labs</span>
               </h1>
-              <p className="m-0 max-w-[620px] text-[17px] leading-[1.6] text-muted">The tracker, its API and widget, plans and alerts, Gully Analytics, Chain Kit and our projects. Answers come from our docs and site, with the sources linked, and live figures where they matter.</p>
+              <p className="m-0 max-w-[620px] text-[17px] leading-[1.6] text-muted">The tracker, its API and widget, plans and alerts, Gully Analytics, Gully Pay, Chain Kit, Gully Chain, Gully Core, kre8, Gully ID, Gully RPC, Gully IPFS, Swoop Ads and our other projects. Answers come from our public docs and site, with the sources linked, and live figures where they matter.</p>
             </header>
             <AskPanel variant="page" />
           </div>
@@ -63,8 +63,11 @@ export function AskPage() {
                 ) : (
                   <span className="font-display text-[22px] leading-none font-bold text-dim">not tracked yet</span>
                 )}
-                <span className="text-[12px] text-muted">passages from the docs, the site and the changelog</span>
+                <span className="text-[12px] text-muted">passages from our public docs, the site and the changelog</span>
               </span>
+              <a href="https://docs.gullylabs.xyz/gully-ai#knows" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-[13px] text-gold hover:text-gold-hover">
+                See every source, product by product
+              </a>
               <span className="font-mono text-[11px] text-faint">
                 {st?.updatedAt
                   ? `Index built ${new Date(st.updatedAt).toLocaleString('en-GB', { timeZone: TZ, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })} PT`

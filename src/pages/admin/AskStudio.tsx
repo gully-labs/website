@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { copyWithToast } from '../../components/ui/toast'
 import { MiniBars } from '../../components/charts/MiniBars'
 import { ArrowMark } from './newTab'
+import { CapacityCard, EvalCard, KnowledgeConsole, QueuesCard } from './AskKnowledge'
 
 /* Gully Ask in the admin dashboard: the content studio (drafts from the docs and live data, never
    posted anywhere), the ask log (what people ask, and how often Ask had no answer), and the
@@ -400,6 +401,10 @@ export function AskStudio({ token }: { token: string }) {
   return (
     <>
       <Studio token={token} configured={log?.status.configured ?? true} features={log?.status.features ?? []} />
+      <KnowledgeConsole token={token} />
+      <CapacityCard token={token} />
+      <QueuesCard token={token} />
+      <EvalCard token={token} />
       <GapsCard token={token} />
       {log ? <Log log={log} /> : <p className={`m-0 ${small}`}>{err ?? 'Reading the ask log…'}</p>}
     </>

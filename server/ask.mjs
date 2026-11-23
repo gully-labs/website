@@ -29,7 +29,15 @@
 //   ANTHROPIC_API_URL   optional, tests: the API base (default https://api.anthropic.com)
 //   ASK_MODEL           answers (default claude-haiku-5-5)
 //   ASK_DRAFT_MODEL     admin drafts (default claude-sonnet-5-5)
-//   ASK_DAILY_LIMIT     answers + drafts a UTC day, across every surface (default 2000): the spending cap
+//   ASK_DAILY_CAP      answers + drafts a UTC day, across every surface (default 2000): the spending cap. ASK_DAILY_LIMIT is the
+//                       old name and still read. At 80 % and at 100 % one alert goes to the operators' Telegram chat and the
+//                       status page shows a row; at 100 % answers fall back to docs passages only (degraded mode).
+//   ASK_FALLBACK_MODEL  optional: a second model tried once when the first fails with a 429, 5xx or timeout
+//   ASK_MAX_CONCURRENT  provider calls in flight (default 6); ASK_QUEUE_MAX waiting (default 24), each waits at most 20 s
+//   ASK_RETRY_BASE_MS   first retry delay (default 800 ms, doubled with jitter, up to 3 tries); a Retry-After up to 5 s is honoured
+//   ASK_PRICE_INPUT_PER_MTOK, ASK_PRICE_OUTPUT_PER_MTOK, ASK_PRICE_CACHE_READ_PER_MTOK, ASK_PRICE_CACHE_WRITE_PER_MTOK
+//                       the owner's price per million tokens, USD. Nothing is hard-coded: without the first two the admin cost
+//                       tile says "not set".
 //   ASK_IP_PER_MIN / ASK_IP_PER_DAY   per visitor (default 6 / 60); ASK_CHAT_PER_MIN per Telegram chat (default 5)
 //   ASK_LOG_SALT        optional: the salt for hashing IPs in the log (default: a random one kept in DATA_DIR)
 //   ASK_REMOTE=off      do not refresh the remote corpus (tests)
@@ -60,6 +68,9 @@ import { readStats } from './stats.mjs'
 import * as tracker from './tracker.mjs'
 import { chainKeyOf, findStock, readHolderMap } from './holders.mjs'
 import { holdersFacts } from './holders-intel.mjs'
+import { diffSnapshots, knowledgeView, publicView, VersionStore } from './ask-knowledge.mjs'
+import { CapAlerter, capLevel, Gate, opsView, pricesFromEnv } from './ask-ops.mjs'
+import { EvalHistory, EVAL_SET, runEval } from './ask-eval.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 // ASK_INDEX_FILE (tests): another built index, e.g. npm run ask:index -- --out <file>.
@@ -111,9 +122,12 @@ try {
 let remote = readRemote()
 let index = makeIndex([...local.chunks, ...remoteChunks(remote)])
 
+let recordVersions = false
+const versionStore = () => new VersionStore(path.join(dataDir(), 'ask-versions.json'))
 function rebuild(doc = readRemote()) {
   remote = doc
   index = makeIndex([...local.chunks, ...remoteChunks(remote)])
+  if (recordVersions) versionStore().record(index.chunks)
   if (embedConfigured()) syncEmbeddings(index.chunks)
 }
 /** Test hook: adds chunks (e.g. a hostile one) to the live index. */
@@ -186,7 +200,7 @@ function indexUpdatedAt() {
     billing or key problem makes it 'unavailable' until a call succeeds again); no provider text is ever public. */
 export const askStatus = () => {
   const e = embedStatus()
-  return { configured: askConfigured(), model: askModel(), indexSize: index.size, updatedAt: indexUpdatedAt(), retrieval: e.configured && e.ready > 0 ? 'hybrid' : 'bm25', provider: providerHealth.ok ? 'ok' : 'unavailable', since: providerHealth.since }
+  return { configured: askConfigured(), model: askModel(), indexSize: index.size, updatedAt: indexUpdatedAt(), retrieval: e.configured && e.ready > 0 ? 'hybrid' : 'bm25', provider: !providerHealth.ok ? 'unavailable' : failing.n >= FAILING_AFTER ? 'degraded' : 'ok', since: !providerHealth.ok ? providerHealth.since : failing.n >= FAILING_AFTER ? failing.since : providerHealth.since, cap: capLevel(usedToday(), dailyCap()) }
 }
 
 /* ------------------------------------------------------------------ tools --- */
@@ -601,7 +615,7 @@ export async function runTool(name, input = {}, ctx = null) {
 
 /* ----------------------------------------------------------------- prompt --- */
 
-const RULES = `You are Gully AI, the assistant on gullylabs.xyz, docs.gullylabs.xyz, the Gully Labs app and the Telegram bot. You answer questions about Gully Labs: its projects, the stock token tracker and its API, the widget, API keys, plans and alerts, Gully Analytics, Gully Pay and merchant stores, the Holder Map, Gully Security (scans, the Gully Score, monitors and reviews), Chain Kit, the Gully L3 roadmap, its open-source repositories, Gully Core, the bot, privacy, and its services.
+const RULES = `You are Gully AI, the assistant on gullylabs.xyz, docs.gullylabs.xyz, the Gully Labs app and the Telegram bot. You answer questions about Gully Labs: its projects, the stock token tracker and its API, the widget, API keys, plans and alerts, Gully Analytics, Gully Pay and merchant stores, the Holder Map, Gully Security (scans, the Gully Score, monitors and reviews), Chain Kit, the Gully L3 roadmap, its open-source repositories, Gully Core, Gully Chain, kre8, Gully ID, Gully RPC, Gully IPFS, Gully Multisig, Swoop Ads, the bot, privacy, and its services. For every product, only what the numbered sources say about it counts: say what is live, in beta, on testnet or planned exactly as they say.
 
 Voice: short, direct, plain English, like the site's copy. Say what is true now and where it comes from. Never hype, never sell, never advise.
 
@@ -692,6 +706,14 @@ class AskError extends Error {
    The provider's own message goes to the server log only (cut to 200 characters, the key scrubbed). */
 export const PROVIDER_UNAVAILABLE = "Gully AI is unavailable right now. We're on it — try again later."
 const providerHealth = { ok: true, lastError: null, since: null }
+/* Calls that failed after every retry, in a row (a 5xx or rate-limit outage, not an account problem). Three in a row =
+   the status page says the answer service is failing; one success clears it. */
+const failing = { n: 0, since: null }
+const FAILING_AFTER = 3
+export const noteCallResult = (ok) => {
+  if (ok) Object.assign(failing, { n: 0, since: null })
+  else if (++failing.n === 1) failing.since = new Date().toISOString()
+}
 const PROVIDER_ACCOUNT = /credit balance|billing|plan.*(upgrade|purchase)|disabled|deactivated|suspended|invalid (x-)?api[- ]?key|api[- ]?key.*(invalid|disabled|revoked)|authentication|permission/i
 const isProviderAccountError = (status, message) => status === 401 || ((status === 400 || status === 403) && PROVIDER_ACCOUNT.test(message))
 function scrub(text, key) {
@@ -708,13 +730,44 @@ function markProvider(ok, message = null) {
 /** The provider's state for the admin view and tests (lastError is the scrubbed provider message; never public). */
 export const askProviderHealth = () => ({ ...providerHealth })
 /** Tests: back to healthy. */
-export const resetAskProviderForTest = () => Object.assign(providerHealth, { ok: true, lastError: null, since: null })
+export const resetAskProviderForTest = () => (Object.assign(providerHealth, { ok: true, lastError: null, since: null }), noteCallResult(true))
 
-async function callClaude(body) {
+const gate = new Gate({ max: envInt('ASK_MAX_CONCURRENT', 6), queue: envInt('ASK_QUEUE_MAX', 24), waitMs: 20_000 })
+export const providerQueue = () => gate.stats()
+const sleep = (ms) => new Promise((res) => setTimeout(res, ms))
+
+/** One call with the concurrency gate, up to 3 tries with backoff, then once on ASK_FALLBACK_MODEL (if set). */
+export async function callClaude(body) {
+  let first
+  try {
+    const out = await gate.run(() => callClaudeTries(body))
+    noteCallResult(true)
+    return out
+  } catch (e) {
+    if (e?.busy) throw new AskError('Ask is busy just now. Try again in a minute.', 503, 'busy')
+    first = e
+  }
+  const fb = String(process.env.ASK_FALLBACK_MODEL ?? '').trim()
+  if (!fb || fb === body.model || first?.code === 'provider-unavailable' || !first?.retriable) {
+    if (first?.retriable) noteCallResult(false)
+    throw first
+  }
+  try {
+    const out = await gate.run(() => callClaudeTries({ ...body, model: fb }, 1))
+    noteCallResult(true)
+    return out
+  } catch {
+    if (first?.retriable) noteCallResult(false)
+    throw first
+  }
+}
+
+async function callClaudeTries(body, tries = 3) {
   const key = apiKey()
   if (!key) throw new AskError('Ask is not configured.', 503)
+  const base = envInt('ASK_RETRY_BASE_MS', 800)
   let last
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < tries; attempt++) {
     let r
     try {
       r = await fetch(`${apiBase()}/v1/messages`, {
@@ -726,6 +779,8 @@ async function callClaude(body) {
       })
     } catch (e) {
       last = new AskError(e?.name === 'TimeoutError' ? 'The answer took too long. Try again.' : 'The answer service could not be reached. Try again.')
+      last.retriable = true
+      if (attempt < tries - 1) await sleep(base * 2 ** attempt + Math.random() * base)
       continue
     }
     const j = await r.json().catch(() => null)
@@ -742,8 +797,12 @@ async function callClaude(body) {
     }
     console.error(`ask: Claude API ${r.status} ${String(type).slice(0, 60)}${message ? `: ${message}` : ''}`)
     last = new AskError(r.status === 429 || r.status === 529 ? 'Ask is busy just now. Try again in a minute.' : 'The answer could not be written just now. Try again.', r.status === 429 || r.status === 529 ? 503 : 502)
-    if (!(r.status === 429 || r.status >= 500)) break
-    await new Promise((res) => setTimeout(res, 800))
+    last.retriable = r.status === 429 || r.status >= 500
+    if (!last.retriable) break
+    if (attempt < tries - 1) {
+      const ra = Number(r.headers.get('retry-after'))
+      await sleep(Number.isFinite(ra) && ra > 0 ? Math.min(ra, 5) * 1000 : base * 2 ** attempt + Math.random() * base)
+    }
   }
   throw last
 }
@@ -767,9 +826,12 @@ async function searchDocs(input, results) {
  * (null: signed out), `extraSystem` an uncached second system block (the channel and session).
  * Every successful tool result (search_docs aside) is labelled L1, L2… in call order: `runs` keeps them for
  * the live citations, the cards and the actions.
+ * Other lanes pass their own tool set: `tools` (Anthropic tool definitions; default this module's TOOLS), `runToolFn(name, input, ctx)`
+ * (default runTool) and `searchFn(input, results)` for a tool named search_docs (default: this index). A tool result
+ * with `error` or `available: false` is not labelled L<n>. With `tools: []` the model gets no tools.
  * Returns { text, results, usedTools, runs, model, usage, stop }.
  */
-async function generate({ model, system, extraSystem = null, userText, history = [], results, maxTokens, effort, onStage = () => {}, ctx = null }) {
+export async function generate({ model, system, extraSystem = null, userText, history = [], results, maxTokens, effort, onStage = () => {}, ctx = null, tools = TOOLS, runToolFn = runTool, searchFn = searchDocs }) {
   const messages = [...history, { role: 'user', content: userText }]
   const usage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }
   const usedTools = []
@@ -782,7 +844,7 @@ async function generate({ model, system, extraSystem = null, userText, history =
       model,
       max_tokens: maxTokens,
       system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }, ...(extraSystem ? [{ type: 'text', text: extraSystem }] : [])],
-      tools: TOOLS,
+      ...(tools.length ? { tools } : {}),
       ...(rounds >= MAX_TOOL_ROUNDS ? { tool_choice: { type: 'none' } } : {}),
       ...(effort ? { output_config: { effort } } : {}),
       messages,
@@ -801,7 +863,7 @@ async function generate({ model, system, extraSystem = null, userText, history =
       calls.map(async (c) => {
         onStage(`tool:${c.name}`)
         if (!usedTools.includes(c.name)) usedTools.push(c.name)
-        const out = c.name === 'search_docs' ? await searchDocs(c.input, results) : await runTool(c.name, c.input ?? {}, ctx)
+        const out = c.name === 'search_docs' ? await searchFn(c.input, results) : await runToolFn(c.name, c.input ?? {}, ctx)
         return { c, out, at: new Date().toISOString() }
       }),
     )
@@ -1039,7 +1101,7 @@ export async function answerQuestion({ question, history = [], onStage, ctx = nu
   const { text: answer, citations, live } = mapCitations(text, g.results, g.runs)
   const cards = cardsFrom(g.runs)
   const actions = actionsFrom(question, g.runs, { signedIn: !!ctx?.workspace, usedTools: g.usedTools })
-  return { answer, citations, live, cards, actions, usedTools: g.usedTools, model: g.model, usage: g.usage, answered: !DONT_KNOW.test(answer) && g.stop !== 'refusal', retrieval: r.mode }
+  return { answer, citations, live, cards, actions, usedTools: g.usedTools, model: g.model, usage: g.usage, answered: !DONT_KNOW.test(answer) && g.stop !== 'refusal', retrieval: r.mode, runs: g.runs }
 }
 
 /* ---------------------------------------------------------------- limits --- */
@@ -1048,6 +1110,22 @@ const day = (t = Date.now()) => dayLA(t)
 const toMidnight = () => Math.max(1, Math.ceil((nextDayStartLA() - Date.now()) / 1000))
 const buckets = new Map() // key -> { min: number[], day, n }
 let daily = { day: day(), n: 0 }
+
+/** The service-wide daily cap: ASK_DAILY_CAP, else the old ASK_DAILY_LIMIT, else 2,000. */
+export const dailyCap = () => envInt('ASK_DAILY_CAP', envInt('ASK_DAILY_LIMIT', 2_000))
+export const usedToday = () => (daily.day === day() ? daily.n : 0)
+const capAlerter = new CapAlerter(async (text) => {
+  console.error('ask cap:', text)
+  try {
+    const { sendAdminTelegram } = await import('./telegram.mjs')
+    await sendAdminTelegram(text)
+  } catch {
+    /* the status row still shows it */
+  }
+})
+/** Tests: where the cap alerts go. */
+export const setCapAlertSendForTest = (fn) => (capAlerter.send = fn)
+export const resetCapAlertsForTest = () => capAlerter.fired.clear()
 
 function countLogToday() {
   try {
@@ -1062,11 +1140,11 @@ function countLogToday() {
 countLogToday()
 
 /** Takes one unit of the caller's allowance and the global daily cap. Returns { ok } or { ok: false, status, error, retryAfter }. */
-export function takeAllowance(key, { perMin, perDay }) {
+export function takeAllowance(key, { perMin, perDay, noCap = false }) {
   const now = Date.now()
   if (daily.day !== day()) daily = { day: day(), n: 0 }
-  const cap = envInt('ASK_DAILY_LIMIT', 2_000)
-  if (daily.n >= cap) return { ok: false, status: 429, error: 'Ask has answered as many questions as it can today. Try again tomorrow, or read the docs.', retryAfter: toMidnight() }
+  const cap = dailyCap()
+  if (!noCap && daily.n >= cap) return { ok: false, status: 429, code: 'cap', error: 'Ask has answered as many questions as it can today. Try again tomorrow, or read the docs.', retryAfter: toMidnight() }
   const b = buckets.get(key) ?? { min: [], day: day(), n: 0 }
   b.min = b.min.filter((t) => now - t < 60_000)
   if (b.day !== day()) Object.assign(b, { day: day(), n: 0 })
@@ -1075,7 +1153,10 @@ export function takeAllowance(key, { perMin, perDay }) {
   if (b.n >= perDay) return { ok: false, status: 429, error: `At most ${perDay} questions a day from one place. Try again tomorrow.`, retryAfter: toMidnight() }
   b.min.push(now)
   b.n++
-  daily.n++
+  if (!noCap) {
+    daily.n++
+    capAlerter.check(daily.n, dailyCap(), day())
+  }
   return { ok: true }
 }
 setInterval(() => {
@@ -1160,7 +1241,7 @@ function readLog(days, file = LOG_FILE()) {
 const FEEDBACK_FILE = () => path.join(dataDir(), 'ask-feedback.jsonl')
 const ANSWER_TTL_MS = 24 * 3_600_000
 const MAX_RECENT = 5_000
-const recentAnswers = new Map() // id -> { question, who, channel, at }
+const recentAnswers = new Map() // id -> { question, who, channel, answer?, sources?, at }
 const feedbackHits = new Map() // ip hash -> timestamps
 
 function rememberAnswer(id, entry) {
@@ -1186,12 +1267,52 @@ export function recordFeedback({ id, rating, key }) {
   if (!a || now - a.at > ANSWER_TTL_MS) return { ok: false, status: 404, error: 'That answer can no longer be rated.' }
   try {
     fs.mkdirSync(dataDir(), { recursive: true })
-    fs.appendFileSync(FEEDBACK_FILE(), JSON.stringify({ at: new Date().toISOString(), id, rating, question: a.question, channel: a.channel, who: k }) + '\n')
+    fs.appendFileSync(FEEDBACK_FILE(), JSON.stringify({ at: new Date().toISOString(), id, rating, question: a.question, channel: a.channel, who: k, ...(rating === 'down' && a.answer ? { answer: a.answer, sources: a.sources ?? [] } : {}) }) + '\n')
   } catch (e) {
     console.error('ask feedback:', e?.message ?? e)
     return { ok: false, status: 500, error: 'The rating could not be saved.' }
   }
   return { ok: true }
+}
+
+/* -------------------------------------------------------- degraded mode --- */
+
+const DEGRADED_INTRO = {
+  provider: "Gully AI's writing service is not answering right now, so this is not a written answer. These are the closest passages from our docs (no generated text):",
+  busy: "Gully AI is very busy right now, so this is not a written answer. These are the closest passages from our docs (no generated text):",
+  cap: "Gully AI has answered as many questions as it can today, so this is not a written answer. These are the closest passages from our docs (no generated text):",
+}
+const excerpt = (t, n = 260) => {
+  const x = String(t).replace(/\s+/g, ' ').trim()
+  if (x.length <= n) return x
+  const cut = x.slice(0, n)
+  return cut.slice(0, Math.max(cut.lastIndexOf(' '), 80)) + ' …'
+}
+
+/** The top retrieval results as a plain answer with links, no model call. Pure: results in, { answer, citations } out. */
+export function degradedText(results, why = 'provider') {
+  const top = results.slice(0, 4)
+  if (!top.length) return { answer: `${DEGRADED_INTRO[why] ?? DEGRADED_INTRO.provider} nothing matched. Try the docs at ${DOCS} or the contact form at ${SITE}/services.`, citations: [] }
+  const lines = top.map((r, i) => `[${i + 1}] ${r.chunk.title}${r.chunk.section ? ` · ${r.chunk.section}` : ''}: ${excerpt(r.chunk.text)}`)
+  return {
+    answer: `${DEGRADED_INTRO[why] ?? DEGRADED_INTRO.provider}\n\n${lines.join('\n')}`,
+    citations: top.map((r, i) => ({ n: i + 1, title: r.chunk.title, url: currentPageUrl(r.chunk.url), source: r.chunk.source })),
+  }
+}
+
+async function degradedAnswer({ q, id, who, t0, why, history, error = null }) {
+  try {
+    const hist = sanitiseHistory(history)
+    const lastUser = [...hist].reverse().find((h) => h.role === 'user')?.content ?? ''
+    let r = await retrieve(q, { k: 4 })
+    if (r.results.length < 2 && lastUser) r = await retrieve(`${q} ${lastUser}`, { k: 4 })
+    const d = degradedText(r.results, why)
+    writeLog({ id, channel: who.channel, who: hashId(who.key), question: q, answerChars: d.answer.length, answered: false, degraded: why, citations: d.citations.map((c) => c.url), usedTools: [], retrieval: r.mode, latencyMs: Date.now() - t0, tokens: null, model: null, ...(error ? { error: String(error.message).slice(0, 120) } : {}) })
+    rememberAnswer(id, { question: q, who: hashId(who.key), channel: who.channel })
+    return { ok: true, id, degraded: why, answer: d.answer, citations: d.citations, live: [], cards: [], actions: [], usedTools: [], model: null, usage: null, answered: false, retrieval: r.mode }
+  } catch {
+    return { ok: false, status: 503, error: PROVIDER_UNAVAILABLE }
+  }
 }
 
 /* -------------------------------------------------------- shared answer --- */
@@ -1207,9 +1328,15 @@ export async function ask({ question, history, who, onStage, ctx = null, holders
   if (!q) return { ok: false, status: 400, error: 'Ask a question.' }
   if (q.length > MAX_QUESTION) return { ok: false, status: 400, error: `A question can be at most ${MAX_QUESTION} characters.` }
   const gate = takeAllowance(`${who.channel}:${who.key}`, who)
-  if (!gate.ok) return gate
   const t0 = Date.now()
   const id = `a_${crypto.randomBytes(12).toString('base64url')}`
+  if (!gate.ok) {
+    // The service-wide cap: docs passages, no model call, with its own small per-visitor allowance.
+    if (gate.code !== 'cap') return gate
+    const own = takeAllowance(`degraded:${who.channel}:${who.key}`, { perMin: 20, perDay: 200, noCap: true })
+    if (!own.ok) return own
+    return degradedAnswer({ q, id, who, t0, why: 'cap', history })
+  }
   try {
     // A question asked from a Holder Map names the map it is about, so the model fetches those facts.
     const hc = holders && typeof holders === 'object' ? chainKeyOf(holders.chain) : null
@@ -1217,9 +1344,19 @@ export async function ask({ question, history, who, onStage, ctx = null, holders
     const asked = hc && /^[A-Za-z0-9]{1,64}$/.test(ht) ? `${q}\n(Asked from the Holder Map of chain ${hc}, token ${ht}: call get_holders with them.)` : q
     const a = await answerQuestion({ question: asked, history, onStage, ctx, channel: who.channel })
     writeLog({ id, channel: who.channel, who: hashId(who.key), signedIn: !!ctx?.workspace, question: q, answerChars: a.answer.length, answered: a.answered, citations: a.citations.map((c) => c.url), usedTools: a.usedTools, retrieval: a.retrieval, latencyMs: Date.now() - t0, tokens: a.usage, model: a.model })
-    rememberAnswer(id, { question: q, who: hashId(who.key), channel: who.channel })
-    return { ok: true, id, ...a }
+    const own = !a.usedTools.some((t) => MY_TOOLS.has(t)) && !ctx?.workspace
+    rememberAnswer(id, { question: q, who: hashId(who.key), channel: who.channel, ...(own ? { answer: a.answer.slice(0, 1_500), sources: a.citations.map((c) => c.url).slice(0, 6) } : {}) })
+    const { runs: _runs, ...pub } = a
+    return { ok: true, id, ...pub, runs: _runs }
   } catch (e) {
+    // The provider failed after its retries (down, busy, billing): the closest docs passages instead of a bare 503.
+    if (e instanceof AskError && (e.status === 502 || e.status === 503) && e.code !== 'configured') {
+      const own = takeAllowance(`degraded:${who.channel}:${who.key}`, { perMin: 20, perDay: 200, noCap: true })
+      if (own.ok) {
+        const d = await degradedAnswer({ q, id, who, t0, why: e.code === 'busy' ? 'busy' : 'provider', history, error: e })
+        if (d.ok) return d
+      }
+    }
     writeLog({ id, channel: who.channel, who: hashId(who.key), question: q, answerChars: 0, answered: false, citations: [], usedTools: [], latencyMs: Date.now() - t0, tokens: null, model: askModel(), error: String(e?.message ?? e).slice(0, 120) })
     return { ok: false, status: e instanceof AskError ? e.status : 502, error: e instanceof AskError ? e.message : 'The answer could not be written just now. Try again.', ...(e instanceof AskError && e.code ? { code: e.code } : {}) }
   }
@@ -1232,7 +1369,7 @@ export async function ask({ question, history, who, onStage, ctx = null, holders
 export const askForChat = (chatId, question, ctx = null) => ask({ question, ctx, who: { channel: 'telegram', key: String(chatId), perMin: envInt('ASK_CHAT_PER_MIN', 5), perDay: envInt('ASK_CHAT_PER_DAY', 60) } })
 
 /** The answer as the API returns it. */
-const publicAnswer = (r) => ({ id: r.id, answer: r.answer, citations: r.citations, live: r.live, cards: r.cards, actions: r.actions, usedTools: r.usedTools, model: r.model, retrieval: r.retrieval })
+const publicAnswer = (r) => ({ id: r.id, answer: r.answer, citations: r.citations, live: r.live, cards: r.cards, actions: r.actions, usedTools: r.usedTools, model: r.model, retrieval: r.retrieval, ...(r.degraded ? { degraded: r.degraded } : {}) })
 
 /* ------------------------------------------------------------------ HTTP --- */
 
@@ -1276,6 +1413,10 @@ export async function handleAsk(req, res, url) {
     if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'GET only' }), true
     return json(res, 200, askStatus(), { 'Cache-Control': 'public, max-age=60' }), true
   }
+  if (p === '/api/ask/knowledge') {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return json(res, 405, { error: 'GET only' }), true
+    return json(res, 200, knowledgePublic(), { 'Cache-Control': 'public, max-age=300' }), true
+  }
   if (p === '/api/ask/feedback') {
     if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }, { Allow: 'POST' }), true
     if (req.headers['x-requested-with'] !== 'gully') return json(res, 403, { error: 'Cross-site request refused.' }), true
@@ -1301,7 +1442,7 @@ export async function handleAsk(req, res, url) {
   if (!stream) {
     const r = await ask({ question: body.value.question, history: body.value.history, who, ctx, holders: body.value.holders ?? null })
     if (!r.ok) return json(res, r.status, { error: r.error, ...(r.code ? { code: r.code } : {}), ...(r.configured === false ? { configured: false } : {}) }, r.retryAfter ? { 'Retry-After': String(r.retryAfter) } : {}), true
-    return json(res, 200, { ...publicAnswer(r), signedIn: !!ctx }, { 'Cache-Control': 'no-store' }), true
+    return json(res, 200, { ...publicAnswer(r), signedIn: !!ctx }, { 'Cache-Control': 'no-store', ...(r.degraded ? { 'X-Ask-Degraded': r.degraded } : {}) }), true
   }
   // Server-sent events: validation and limits answer with plain JSON statuses before the stream opens.
   let open = false
@@ -1479,7 +1620,7 @@ function logView(days) {
   const tokens = entries.reduce((a, e) => ({ input: a.input + (e.tokens?.input ?? 0), output: a.output + (e.tokens?.output ?? 0), cacheRead: a.cacheRead + (e.tokens?.cacheRead ?? 0) }), { input: 0, output: 0, cacheRead: 0 })
   return {
     days,
-    status: { ...askStatus(), embeddings: embedStatus(), draftModel: draftModel(), dailyLimit: envInt('ASK_DAILY_LIMIT', 2_000), usedToday: daily.day === day() ? daily.n : 0, remote: Object.entries(remote.sources ?? {}).map(([k, s]) => ({ key: k, label: s.label, ok: s.ok, chunks: s.chunks?.length ?? 0, lastGoodAt: s.lastGoodAt, error: s.error })), localChunks: local.chunks.length, features: [...new Map(local.chunks.filter((c) => c.feature).map((c) => [c.feature, { id: c.feature, name: c.section.replace(/ \((building|planned)\)$/, ''), status: c.status }])).values()] },
+    status: { ...askStatus(), embeddings: embedStatus(), draftModel: draftModel(), dailyLimit: dailyCap(), usedToday: usedToday(), remote: Object.entries(remote.sources ?? {}).map(([k, s]) => ({ key: k, label: s.label, ok: s.ok, chunks: s.chunks?.length ?? 0, lastGoodAt: s.lastGoodAt, error: s.error })), localChunks: local.chunks.length, features: [...new Map(local.chunks.filter((c) => c.feature).map((c) => [c.feature, { id: c.feature, name: c.section.replace(/ \((building|planned)\)$/, ''), status: c.status }])).values()] },
     totals: { questions: asks.length, errors: asks.length - ok.length, unanswered: ok.filter((e) => !e.answered).length, unansweredRate: ok.length ? Number((ok.filter((e) => !e.answered).length / ok.length).toFixed(3)) : null, drafts: entries.length - asks.length, avgLatencyMs: ok.length ? Math.round(ok.reduce((a, e) => a + (e.latencyMs ?? 0), 0) / ok.length) : null, tokens },
     perDay: [...perDay.values()].sort((a, b) => b.date.localeCompare(a.date)),
     top: [...top.values()].sort((a, b) => b.count - a.count).slice(0, 20),
@@ -1489,6 +1630,113 @@ function logView(days) {
       .map((e) => ({ at: e.at, channel: e.channel, question: e.question, answered: !!e.answered, error: e.error ?? null, citations: e.citations?.length ?? 0, usedTools: e.usedTools ?? [], latencyMs: e.latencyMs ?? null, model: e.model ?? null })),
   }
 }
+
+/* ------------------------------------------------------ knowledge console --- */
+
+const EVAL_FILE = () => path.join(dataDir(), 'ask-eval.jsonl')
+
+/** The providers that see data, what they see, and how long we keep what we log (public: /api/ask/knowledge, the docs, the privacy page). */
+export function dataFlow() {
+  return {
+    owned: false,
+    note: 'Gully AI is not a model we train or host. It is software we wrote around third-party model providers: they receive the text listed below, and nothing else.',
+    providers: [
+      { name: 'Anthropic (Claude)', purpose: 'writes the answer (and, for the team, content drafts)', model: askModel(), active: askConfigured(), sends: 'your question, the last few messages of that conversation (each trimmed), the matching passages of our public docs and, when a live tool is used, that tool\'s result. Only for a signed-in user, and only when they ask about their own store, usage or alerts, that read-only data of their own workspace. No wallet address or email is sent unless that tool result contains it.' },
+      { name: 'Voyage AI', purpose: 'semantic search: turns text into vectors to find the nearest passages', model: null, active: embedConfigured(), sends: 'the question text, and our public docs passages when the index is built. No account data.' },
+    ],
+    retention: { logDays: LOG_KEEP_DAYS, logHolds: 'the question, the length of the answer (not the answer), the sources and live tools used, whether you were signed in, latency and token counts, and a salted hash of your IP address or Telegram chat id', ratingsHold: 'the rating, the question and the same hash; a thumbs-down also keeps the answer text and its sources so we can fix the docs', rawIp: false },
+    deletion: { how: 'Send the contact form at https://gullylabs.xyz/services and say which question you want removed (the time you asked and the question text are enough); we delete it from the log and the ratings.', url: 'https://gullylabs.xyz/services' },
+    limits: { question: MAX_QUESTION, perVisitorPerMin: envInt('ASK_IP_PER_MIN', 6), perVisitorPerDay: envInt('ASK_IP_PER_DAY', 60), perChatPerMin: envInt('ASK_CHAT_PER_MIN', 5), perChatPerDay: envInt('ASK_CHAT_PER_DAY', 60), perDayService: dailyCap() },
+  }
+}
+
+/** Operator view: every source grouped by product, with the coverage matrix and the remote sources' state. */
+export function knowledgeConsole() {
+  return { ...knowledgeView({ chunks: index.chunks, remote }), updatedAt: indexUpdatedAt(), retrieval: askStatus().retrieval, embeddings: embedStatus() }
+}
+
+/** The public "What Gully AI knows" document. */
+export function knowledgePublic() {
+  const view = knowledgeView({ chunks: index.chunks, remote })
+  return { ...publicView(view, { updatedAt: indexUpdatedAt(), retrieval: askStatus().retrieval }), ...dataFlow() }
+}
+
+export const versionsView = () => ({ versions: versionStore().read().versions, now: { total: index.size, updatedAt: indexUpdatedAt() } })
+
+/** Questions that got no answer and answers rated down, with what the docs backlog needs. */
+export function queuesView(days = 30) {
+  const asks = readLog(days).filter((e) => e.channel !== 'draft')
+  const norm = (q) => String(q).toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim()
+  const groups = new Map()
+  for (const e of asks) {
+    if (e.error || e.degraded || e.answered) continue
+    const k = norm(e.question)
+    if (!k) continue
+    const g = groups.get(k) ?? { question: e.question, asked: 0, lastAt: e.at, nearest: new Map() }
+    g.asked++
+    if (e.at > g.lastAt) g.lastAt = e.at
+    for (const u of e.citations ?? []) g.nearest.set(u, (g.nearest.get(u) ?? 0) + 1)
+    groups.set(k, g)
+  }
+  const unanswered = [...groups.values()]
+    .sort((a, b) => b.asked - a.asked || b.lastAt.localeCompare(a.lastAt))
+    .slice(0, 50)
+    .map(({ nearest, ...g }) => ({ ...g, nearest: [...nearest.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([u]) => u) }))
+  const last = new Map()
+  for (const f of readLog(days, FEEDBACK_FILE())) last.set(f.id, f)
+  const thumbsDown = [...last.values()]
+    .filter((f) => f.rating === 'down')
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .slice(0, 50)
+    .map((f) => ({ id: f.id, at: f.at, question: f.question, channel: f.channel, answer: f.answer ?? null, sources: f.sources ?? [] }))
+  return { days, unanswered, thumbsDown, totals: { questions: asks.length, unanswered: unanswered.reduce((n, g) => n + g.asked, 0), thumbsDown: thumbsDown.length } }
+}
+
+/** The one-click export: the docs backlog as Markdown (questions with no answer, answers rated down, thin products). */
+export function backlogMarkdown(days = 30) {
+  const q = queuesView(days)
+  const k = knowledgeView({ chunks: index.chunks, remote })
+  const out = [`# Gully AI docs backlog (last ${days} days, ${new Date().toISOString().slice(0, 10)})`, '']
+  const weak = k.products.filter((p) => p.status !== 'Covered')
+  out.push('## Products with thin or missing coverage', '')
+  out.push(...(weak.length ? weak.map((p) => `- ${p.name}: ${p.status} (${p.passages} passages). Public page: ${p.page}`) : ['- none']), '')
+  out.push('## Questions Gully AI could not answer', '')
+  out.push(...(q.unanswered.length ? q.unanswered.map((g) => `- "${g.question}" asked ${g.asked}x, last ${g.lastAt.slice(0, 10)}${g.nearest.length ? `; nearest pages: ${g.nearest.join(', ')}` : ''}`) : ['- none']), '')
+  out.push('## Answers rated down', '')
+  if (!q.thumbsDown.length) out.push('- none')
+  for (const f of q.thumbsDown) out.push(`- "${f.question}" (${f.at.slice(0, 10)})`, ...(f.answer ? [`  - answer: ${f.answer.replace(/\s+/g, ' ').slice(0, 300)}`] : []), ...(f.sources.length ? [`  - sources: ${f.sources.join(', ')}`] : []))
+  return out.join('\n') + '\n'
+}
+
+/** Capacity, cost, latency and cap state for the admin tiles. */
+export function opsSummary(days = 30) {
+  const prices = pricesFromEnv()
+  return { ...opsView(readLog(days), { cap: dailyCap(), usedToday: usedToday(), prices, days, day: (iso) => dayLA(iso) }), provider: askProviderHealth().ok ? 'ok' : 'unavailable', queue: providerQueue(), fallbackModel: String(process.env.ASK_FALLBACK_MODEL ?? '').trim() || null, model: askModel(), alertsTo: 'the operators\' Telegram chat and the status page row (80 % and 100 % of the cap)' }
+}
+
+/* The eval: the retrieval layer is free; the answer layer calls the provider, so it runs only on purpose. */
+async function evalAnswer(q) {
+  const a = await answerQuestion({ question: q, channel: 'web' })
+  const urls = new Set(a.citations.map((c) => c.url))
+  const sourceText = index.chunks.filter((c) => urls.has(currentPageUrl(c.url)) || urls.has(c.url)).map((c) => c.text).join(' ') + ' ' + JSON.stringify(a.runs?.map((r) => r.out) ?? [])
+  return { ...a, sourceText }
+}
+const EVAL_ANSWER_LIMIT = 25
+
+export async function runEvalNow({ layer = 'retrieval', cases = EVAL_SET } = {}) {
+  const answerLayer = layer === 'answer'
+  if (answerLayer) {
+    if (!askConfigured()) return { ok: false, status: 503, error: 'Ask is not configured.' }
+    const n = Math.min(cases.length, EVAL_ANSWER_LIMIT)
+    if (dailyCap() - usedToday() < n + 5) return { ok: false, status: 429, error: `Not enough of today's cap left for ${n} answers.` }
+    cases = cases.slice(0, n)
+    daily.n += n
+  }
+  const run = await runEval({ cases, retrieveFn: (q) => retrieve(q, { k: 6 }), answerFn: answerLayer ? evalAnswer : null, hasPages: (re) => index.chunks.some((c) => re.test(c.url)) })
+  new EvalHistory(EVAL_FILE()).add({ ...run, results: run.results.map((r) => ({ ...r, question: r.question })) })
+  return { ok: true, run }
+}
+export const evalView = () => ({ history: new EvalHistory(EVAL_FILE()).list().map(({ results, ...h }) => ({ ...h, failedIds: results.filter((r) => r.status === 'fail').map((r) => r.id) })), last: new EvalHistory(EVAL_FILE()).list()[0] ?? null, set: EVAL_SET.map((c) => ({ id: c.id, question: c.q, checks: c.checks, needs: c.needs ?? null })) })
 
 /** /api/admin/ask/* — called by admin.mjs after the token check. */
 export async function handleAskAdmin(req, res, url) {
@@ -1506,6 +1754,24 @@ export async function handleAskAdmin(req, res, url) {
     const days = Math.min(90, Math.max(1, Number(url.searchParams.get('days')) || 30))
     return json(res, 200, logView(days)), true
   }
+  if (p === '/api/admin/ask/knowledge') return json(res, 200, knowledgeConsole()), true
+  if (p === '/api/admin/ask/versions') return json(res, 200, versionsView()), true
+  if (p === '/api/admin/ask/ops') return json(res, 200, opsSummary(Math.min(90, Math.max(1, Number(url.searchParams.get('days')) || 30)))), true
+  if (p === '/api/admin/ask/queues') return json(res, 200, queuesView(Math.min(90, Math.max(1, Number(url.searchParams.get('days')) || 30)))), true
+  if (p === '/api/admin/ask/backlog') {
+    const md = backlogMarkdown(Math.min(90, Math.max(1, Number(url.searchParams.get('days')) || 30)))
+    res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Disposition': 'attachment; filename="gully-ai-docs-backlog.md"' })
+    res.end(md)
+    return true
+  }
+  if (p === '/api/admin/ask/eval') {
+    if (req.method === 'GET') return json(res, 200, evalView()), true
+    if (req.method !== 'POST') return json(res, 405, { error: 'GET or POST only' }), true
+    const body = await readBody(req, 1_024)
+    const layer = body.value?.layer === 'answer' ? 'answer' : 'retrieval'
+    const r = await runEvalNow({ layer })
+    return json(res, r.ok ? 200 : r.status, r.ok ? r.run : { error: r.error }), true
+  }
   if (p === '/api/admin/ask/gaps') {
     if (req.method !== 'GET') return json(res, 405, { error: 'GET only' }), true
     const days = Math.min(90, Math.max(1, Number(url.searchParams.get('days')) || 30))
@@ -1522,6 +1788,8 @@ export function startAsk() {
   if (started) return
   started = true
   pruneLog()
+  recordVersions = true
+  versionStore().record(index.chunks, new Date().toISOString(), 'start')
   setInterval(pruneLog, 86_400_000).unref?.()
   if (askConfigured() && embedConfigured()) syncEmbeddings(index.chunks)
   // Retries a failed or partial sync without waiting for a question.
