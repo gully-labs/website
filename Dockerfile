@@ -24,6 +24,7 @@ COPY server/vendor ./vendor
 COPY server/security ./security
 # Gully AI modules (server/ai/*.mjs: model gateway, explain-tx, memory, rewrite; server.mjs imports ./ai/explain-tx.mjs).
 COPY server/ai ./ai
+COPY server/surfaces ./surfaces
 # Blog share images (og.mjs): the post banner's drawing code, the brand fonts it sets type in, and the
 # SVG rasteriser (resvg, WebAssembly, no dependencies of its own). Nothing else from node_modules.
 COPY ghost/theme/gully/assets/js/banner.js ./og/banner.cjs
