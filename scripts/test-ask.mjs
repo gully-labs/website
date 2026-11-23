@@ -97,6 +97,7 @@ Object.assign(process.env, {
   TRACKER_LOOP: 'off',
   TRACKER_SKIP_APIS: '1',
   ASK_REMOTE: 'off',
+  ASK_STARTUP_PROBE: '0',
   ANTHROPIC_API_URL: `http://127.0.0.1:${stub.address().port}`,
   ASK_INDEX_FILE: INDEX,
   ASK_EMBED_URL: `http://127.0.0.1:${embedStub.address().port}`,
@@ -733,6 +734,48 @@ try {
     const evH = await call('/api/admin/ask/eval', { auth: ADMIN })
     check('eval: the history keeps both runs, newest first, with the failed ids', evH.status === 200 && evH.data.history.length >= 2 && evH.data.history[0].layer === 'answer' && evH.data.set.length >= 15)
     check('eval: the history file is written in the data dir', fs.existsSync(path.join(tmp, 'ask-eval.jsonl')))
+  }
+
+  /* --------------------------------------- provider health across a restart --- */
+  {
+    const healthFile = path.join(tmp, 'ask-health.json')
+    // Path 1: the stored state. The key is refused, the server "restarts" (memory cleared), the state comes back from disk.
+    reply = () => ({ status: 401, json: { type: 'error', error: { type: 'authentication_error', message: `invalid x-api-key ${KEY}` } } })
+    await askPost({ question: 'How do Telegram alerts work?' })
+    const stored = JSON.parse(fs.readFileSync(healthFile, 'utf8'))
+    check('health: a provider account failure is written to DATA_DIR/ask-health.json, without the key', stored.ok === false && typeof stored.since === 'string' && !JSON.stringify(stored).includes(KEY), JSON.stringify(stored))
+    ask.resetAskProviderForTest()
+    check('health: a restart alone would forget it (memory says ok)', (await call('/api/ask/status')).data.provider === 'ok')
+    const r1 = await ask.restoreProviderHealth({ probe: false })
+    const st1 = (await call('/api/ask/status')).data
+    const row1 = (await import('../server/status.mjs')).checkAi()[0]
+    check('health restart path 1: the stored state is restored, the status row is degraded from the first minute, the original since is kept', r1.restored && st1.provider === 'unavailable' && st1.since === stored.since && row1.state === 'degraded', JSON.stringify({ r1, st1, row1 }))
+    // Path 2: no stored file, the startup probe. It is a GET with the key that costs no tokens and is not counted in the cap.
+    fs.rmSync(healthFile, { force: true })
+    ask.resetAskProviderForTest()
+    const used = ask.usedToday()
+    const probes = []
+    const refuse = async (u, o) => (probes.push({ u: String(u), method: o.method, key: o.headers['x-api-key'] }), { status: 401 })
+    const r2 = await ask.restoreProviderHealth({ probe: true, fetchImpl: refuse })
+    check('health restart path 2: with no stored state a refused key marks the provider unavailable; one GET /v1/models, no model call, the cap is untouched', !r2.restored && r2.probe === 'unavailable' && probes.length === 1 && probes[0].method === 'GET' && /\/v1\/models\?limit=1$/.test(probes[0].u) && probes[0].key === KEY && (await call('/api/ask/status')).data.provider === 'unavailable' && ask.usedToday() === used, JSON.stringify({ r2, probes: probes.length }))
+    const r3 = await ask.restoreProviderHealth({ probe: true, fetchImpl: async () => ({ status: 200 }) })
+    check('health: a working key at start clears a stored key problem', r3.probe === 'ok' && (await call('/api/ask/status')).data.provider === 'ok', JSON.stringify(r3))
+    // A stored billing problem is not cleared by the probe (the probe cannot see billing); a network error leaves the state alone.
+    reply = () => ({ status: 400, json: { type: 'error', error: { type: 'invalid_request_error', message: 'Your credit balance is too low to access the Anthropic API.' } } })
+    await askPost({ question: 'What does Pro cost?' })
+    ask.resetAskProviderForTest()
+    await ask.restoreProviderHealth({ probe: true, fetchImpl: async () => ({ status: 200 }) })
+    check('health: a stored billing problem stands after a 200 probe', (await call('/api/ask/status')).data.provider === 'unavailable')
+    await ask.restoreProviderHealth({
+      probe: true,
+      fetchImpl: async () => {
+        throw new Error('network')
+      },
+    })
+    check('health: a probe that cannot reach the provider changes nothing', (await call('/api/ask/status')).data.provider === 'unavailable')
+    reply = null
+    await askPost({ question: 'How do Telegram alerts work?' })
+    check('health: one good answer clears it and the file says ok', (await call('/api/ask/status')).data.provider === 'ok' && JSON.parse(fs.readFileSync(healthFile, 'utf8')).ok === true)
   }
 
   /* ------------------------------------------------------------ secrets --- */

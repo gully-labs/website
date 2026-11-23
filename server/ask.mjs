@@ -32,6 +32,7 @@
 //   ASK_DAILY_CAP      answers + drafts a UTC day, across every surface (default 2000): the spending cap. ASK_DAILY_LIMIT is the
 //                       old name and still read. At 80 % and at 100 % one alert goes to the operators' Telegram chat and the
 //                       status page shows a row; at 100 % answers fall back to docs passages only (degraded mode).
+//   ASK_STARTUP_PROBE=0  skip the free key probe at start (GET /v1/models; the stored state in DATA_DIR/ask-health.json is still restored)
 //   ASK_FALLBACK_MODEL  optional: a second model tried once when the first fails with a 429, 5xx or timeout
 //   ASK_MAX_CONCURRENT  provider calls in flight (default 6); ASK_QUEUE_MAX waiting (default 24), each waits at most 20 s
 //   ASK_RETRY_BASE_MS   first retry delay (default 800 ms, doubled with jitter, up to 3 tries); a Retry-After up to 5 s is honoured
@@ -72,6 +73,7 @@ import { holdersFacts } from './holders-intel.mjs'
 import { diffSnapshots, knowledgeView, publicView, VersionStore } from './ask-knowledge.mjs'
 import { CapAlerter, capLevel, Gate, opsView, pricesFromEnv } from './ask-ops.mjs'
 import { EvalHistory, EVAL_SET, runEval } from './ask-eval.mjs'
+import { KEY_ERROR, probeProvider, readHealth, writeHealth } from './ask-health.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 // ASK_INDEX_FILE (tests): another built index, e.g. npm run ask:index -- --out <file>.
@@ -711,9 +713,35 @@ const providerHealth = { ok: true, lastError: null, since: null }
    the status page says the answer service is failing; one success clears it. */
 const failing = { n: 0, since: null }
 const FAILING_AFTER = 3
+const HEALTH_FILE = () => path.join(dataDir(), 'ask-health.json')
+/** Writes the provider state for the next start (ask-health.mjs). */
+const saveHealth = () => writeHealth(HEALTH_FILE(), { ok: providerHealth.ok, lastError: providerHealth.lastError, since: providerHealth.since, failingN: failing.n, failingSince: failing.since })
 export const noteCallResult = (ok) => {
+  const before = failing.n
   if (ok) Object.assign(failing, { n: 0, since: null })
   else if (++failing.n === 1) failing.since = new Date().toISOString()
+  // Only when the public state can change: back to zero, or reaching the "failing" line.
+  if ((ok && before > 0) || (!ok && failing.n === FAILING_AFTER)) saveHealth()
+}
+/**
+ * At start: the last stored provider state, then one free probe of the key (ASK_STARTUP_PROBE=0 skips it), so the
+ * status row is right from the first minute. A refused key marks the provider unavailable; a working key clears a
+ * stored key problem (a stored billing problem stands until a real answer succeeds: the probe cannot see billing).
+ * Returns { restored, probe }.
+ */
+export async function restoreProviderHealth({ probe = process.env.ASK_STARTUP_PROBE !== '0', fetchImpl = fetch } = {}) {
+  const saved = readHealth(HEALTH_FILE())
+  if (saved) {
+    Object.assign(providerHealth, { ok: saved.ok, lastError: saved.ok ? null : (saved.lastError ?? 'stored'), since: saved.since })
+    Object.assign(failing, { n: saved.failingN, since: saved.failingSince })
+  }
+  let result = 'skipped'
+  if (probe && apiKey()) {
+    result = await probeProvider({ base: apiBase(), key: apiKey(), fetchImpl })
+    if (result === 'unavailable') markProvider(false, 'startup probe: the provider refused the key')
+    else if (result === 'ok' && !providerHealth.ok && KEY_ERROR.test(providerHealth.lastError ?? '')) markProvider(true)
+  }
+  return { restored: !!saved, probe: result }
 }
 const PROVIDER_ACCOUNT = /credit balance|billing|plan.*(upgrade|purchase)|disabled|deactivated|suspended|invalid (x-)?api[- ]?key|api[- ]?key.*(invalid|disabled|revoked)|authentication|permission/i
 const isProviderAccountError = (status, message) => status === 401 || ((status === 400 || status === 403) && PROVIDER_ACCOUNT.test(message))
@@ -727,11 +755,12 @@ function markProvider(ok, message = null) {
   if (ok !== providerHealth.ok) providerHealth.since = new Date().toISOString()
   providerHealth.ok = ok
   providerHealth.lastError = ok ? null : message
+  saveHealth()
 }
 /** The provider's state for the admin view and tests (lastError is the scrubbed provider message; never public). */
 export const askProviderHealth = () => ({ ...providerHealth })
-/** Tests: back to healthy. */
-export const resetAskProviderForTest = () => (Object.assign(providerHealth, { ok: true, lastError: null, since: null }), noteCallResult(true))
+/** Tests: back to healthy in memory only (the stored file is left alone, like a restart). */
+export const resetAskProviderForTest = () => (Object.assign(providerHealth, { ok: true, lastError: null, since: null }), Object.assign(failing, { n: 0, since: null }))
 
 const gate = new Gate({ max: envInt('ASK_MAX_CONCURRENT', 6), queue: envInt('ASK_QUEUE_MAX', 24), waitMs: 20_000 })
 export const providerQueue = () => gate.stats()
@@ -1796,6 +1825,7 @@ export function startAsk() {
   recordVersions = true
   versionStore().record(index.chunks, new Date().toISOString(), 'start')
   setInterval(pruneLog, 86_400_000).unref?.()
+  if (askConfigured()) restoreProviderHealth().catch(() => undefined)
   if (askConfigured() && embedConfigured()) syncEmbeddings(index.chunks)
   // Retries a failed or partial sync without waiting for a question.
   setInterval(() => askConfigured() && ensureEmbeddings(), 10 * 60_000).unref?.()
