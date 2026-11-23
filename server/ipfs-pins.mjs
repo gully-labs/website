@@ -462,6 +462,39 @@ function addRecord(owner, keyId, { cid, name, origins, meta }, extra = {}) {
   return r
 }
 
+/**
+ * A multiaddr the node may dial for a customer: public IPs and public-looking DNS names only. Private, loopback, link-local,
+ * carrier-grade NAT (100.64/10), benchmarking and IPv4-mapped IPv6 ranges are dropped, and so are single-label or internal
+ * DNS names (docker service names, localhost, .local, .internal, .lan, .home, .corp), which the box's resolver could point
+ * at its own network. (Hardening pass 2026-11-23: dialling is blind, but it still lets a customer probe the internal network.)
+ */
+export function publicOrigin(o) {
+  const m = /^\/(ip4|ip6|dns4|dns6|dns|dnsaddr)\/([^/]+)/i.exec(o)
+  if (!m) return false
+  const kind = m[1].toLowerCase()
+  const host = m[2].toLowerCase()
+  if (kind === 'ip4') {
+    const p = host.split('.').map(Number)
+    if (p.length !== 4 || p.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return false
+    const [a, b] = p
+    if (a === 0 || a === 10 || a === 127 || a >= 224) return false
+    if (a === 100 && b >= 64 && b <= 127) return false
+    if (a === 169 && b === 254) return false
+    if (a === 172 && b >= 16 && b <= 31) return false
+    if (a === 192 && (b === 168 || (b === 0 && p[2] === 0))) return false
+    if (a === 198 && (b === 18 || b === 19)) return false
+    return true
+  }
+  if (kind === 'ip6') {
+    if (host === '::' || host === '::1' || host.startsWith('::ffff:') || /^f[cd]/.test(host) || /^fe[89ab]/.test(host) || host.startsWith('64:ff9b')) return false
+    return true
+  }
+  if (!host.includes('.')) return false
+  if (/\.(local|localhost|internal|lan|home|corp|intranet|docker|svc|cluster\.local)$/.test(host)) return false
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) return false
+  return true
+}
+
 /** Validates a Pin object (spec): cid required, name <= 255, origins multiaddrs (<= 20), meta string map (<= 50). */
 function readPin(b) {
   if (!b || typeof b !== 'object') return { error: 'The body must be a JSON Pin object.' }
@@ -470,7 +503,7 @@ function readPin(b) {
   if (b.origins != null && (!Array.isArray(b.origins) || b.origins.length > 20 || b.origins.some((o) => typeof o !== 'string' || !/^\/(ip4|ip6|dns4|dns6|dns|dnsaddr)\//.test(o) || o.length > 300))) return { error: 'origins must be at most 20 multiaddrs.' }
   if (b.meta != null && (typeof b.meta !== 'object' || Array.isArray(b.meta) || Object.keys(b.meta).length > 50 || Object.entries(b.meta).some(([k, v]) => k.length > 255 || typeof v !== 'string' || v.length > 1000))) return { error: 'meta must be an object of at most 50 string values.' }
   // Origins on private or loopback addresses are dropped: the node never dials into a private network for a customer.
-  const origins = (b.origins ?? []).filter((o) => !/^\/ip4\/(10\.|127\.|0\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)|^\/ip6\/(::1|f[cd]|fe80)/i.test(o))
+  const origins = (b.origins ?? []).filter(publicOrigin)
   return { pin: { cid: b.cid, name: b.name ?? null, origins, meta: b.meta ?? null } }
 }
 
