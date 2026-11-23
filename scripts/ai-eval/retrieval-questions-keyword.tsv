@@ -1,0 +1,26 @@
+# Keyword / identifier questions (BM25's home turf): same format as retrieval-questions.tsv.
+api-keys#limits	X-RateLimit-Remaining header
+api#healthz	/api/healthz liveness
+plans-alerts#verify	whsec_ secret HMAC-SHA256 signature
+widget#options	data-gully-widget attribute
+news-gate#check	getChatMember
+holder-map-integrate#sdk	createHoldersClient getMap cardUrl
+holder-map-integrate#frame	embed.gullylabs.xyz/embed/holders iframe
+methodology#sessions	Chainlink 24/5 session Sunday Friday
+methodology#onchain	DexScreener GeckoTerminal 30 tokens per request
+solana#rpc	getLatestBlockhash proxy POST /api/solana/rpc
+ipfs#upload	application/vnd.ipld.car Content-Length
+analytics#privacy	data-web3-address hash default
+https://gullylabs.xyz/privacy#s9	__Host-gl_dev cookie
+https://gullylabs.xyz/terms#s4	OFAC sanctions
+gully-score#verified-source	Sourcify recompiles
+integrate#chain	chain 485590 viem wagmi
+gully-security#report	bytecode-only static-only ai-only
+ipfs#start	ipfs:pin key
+gully-score#what	/score/<chain>/<address>
+api#geo	GET /api/geo country header
+telegram#alerts	Mute 24h button
+teams#activity	key.rotated key.revoked
+changelog#2026-10-16	/api/tracker launch
+badges#family	badge.svg embed.gullylabs.xyz
+gully-ai#where	Ctrl+K launcher

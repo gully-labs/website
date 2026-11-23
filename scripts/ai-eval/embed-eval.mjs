@@ -22,7 +22,7 @@ const doc = JSON.parse(fs.readFileSync(path.join(root, 'server', 'data', 'ask-in
 const chunks = doc.chunks
 const index = makeIndex(chunks)
 const embedText = (c) => `${c.title ?? ''}${c.section ? ` — ${c.section}` : ''}\n${c.text}`
-const qs = fs.readFileSync(path.join(root, 'scripts', 'ai-eval', 'retrieval-questions.tsv'), 'utf8').split('\n').filter((l) => l && !l.startsWith('#')).map((l) => {
+const qs = fs.readFileSync(path.resolve(args.questions ?? path.join(root, 'scripts', 'ai-eval', 'retrieval-questions.tsv')), 'utf8').split('\n').filter((l) => l && !l.startsWith('#')).map((l) => {
   const [gold, q] = l.split('\t')
   const url = gold.startsWith('http') ? gold : `https://docs.gullylabs.xyz/${gold}`
   return { q, url, page: url.split('#')[0] }
@@ -96,6 +96,11 @@ for (const [id, pooling = 'mean', qp = '', dp = ''] of specs) {
     const a = Date.now()
     qv.push((await enc([qp + x.q]))[0])
     qlat.push(Date.now() - a)
+  }
+  if (args.cache) {
+    // Vector cache for fast retrieval tuning (scripts/ai-eval/tune-retrieve.mjs): {chunkIds, dv, qv} as number arrays.
+    fs.mkdirSync(args.cache, { recursive: true })
+    fs.writeFileSync(path.join(args.cache, `${id.replace(/[^a-z0-9]+/gi, '_')}.json`), JSON.stringify({ model: id, chunkIds: chunks.map((c) => c.id), questions: Q.map((x) => x.q), dv: dv.map((v) => Array.from(v, (n) => +n.toFixed(5))), qv: qv.map((v) => Array.from(v, (n) => +n.toFixed(5))) }))
   }
   const nearOf = (v) => chunks.map((c, i) => ({ chunk: c, score: cosine(v, dv[i]) })).sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
   const vecOnly = stats(qv.map((v) => nearOf(v).slice(0, 5)))
