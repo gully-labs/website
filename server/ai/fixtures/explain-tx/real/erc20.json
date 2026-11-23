@@ -1,0 +1,408 @@
+{
+ "case": "erc20",
+ "hash": "0xdf042d67ffefb18aa57b1eed1fcd8db29a9aa36223b87d3eaac14cc2984105cc",
+ "recordedAt": "2026-11-23T21:27:12.731Z",
+ "ok": true,
+ "code": null,
+ "indexerRows": [],
+ "rec": {
+  "rpc": [
+   {
+    "m": "eth_getTransactionReceipt",
+    "p": [
+     "0xdf042d67ffefb18aa57b1eed1fcd8db29a9aa36223b87d3eaac14cc2984105cc"
+    ],
+    "result": {
+     "blockHash": "0xc682f5a1cc433eec292fde56f9fd6e4c3acd5b46229f9174454cc70434023631",
+     "blockNumber": "0x3415",
+     "contractAddress": null,
+     "cumulativeGasUsed": "0xfacb",
+     "effectiveGasPrice": "0x5f5e100",
+     "from": "0x02d4a5f7b1ce0dc891525e38300e5b6198916b51",
+     "gasUsed": "0xfacb",
+     "gasUsedForL1": "0x7fc",
+     "l1BlockNumber": "0xba0427",
+     "logs": [
+      {
+       "address": "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76",
+       "topics": [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x00000000000000000000000002d4a5f7b1ce0dc891525e38300e5b6198916b51",
+        "0x000000000000000000000000defa1462cab1c5acc55fe5e7a66a20e5c25eda18"
+       ],
+       "data": "0x00000000000000000000000000000000000000000000000000000000001e8480",
+       "blockNumber": "0x3415",
+       "transactionHash": "0xdf042d67ffefb18aa57b1eed1fcd8db29a9aa36223b87d3eaac14cc2984105cc",
+       "transactionIndex": "0x1",
+       "blockHash": "0xc682f5a1cc433eec292fde56f9fd6e4c3acd5b46229f9174454cc70434023631",
+       "blockTimestamp": "0x6b034253",
+       "logIndex": "0x0",
+       "removed": false
+      }
+     ],
+     "logsBloom": "0x00000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000100000000000000000000000000000000000000000000000000000000000000000000000020000000000000000010000380000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008000000000000000000100000000000000000000000002000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000",
+     "status": "0x1",
+     "to": "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76",
+     "transactionHash": "0xdf042d67ffefb18aa57b1eed1fcd8db29a9aa36223b87d3eaac14cc2984105cc",
+     "transactionIndex": "0x1",
+     "type": "0x2"
+    }
+   },
+   {
+    "m": "eth_getTransactionByHash",
+    "p": [
+     "0xdf042d67ffefb18aa57b1eed1fcd8db29a9aa36223b87d3eaac14cc2984105cc"
+    ],
+    "result": {
+     "blockHash": "0xc682f5a1cc433eec292fde56f9fd6e4c3acd5b46229f9174454cc70434023631",
+     "blockNumber": "0x3415",
+     "blockTimestamp": "0x6b034253",
+     "from": "0x02d4a5f7b1ce0dc891525e38300e5b6198916b51",
+     "gas": "0x1005f",
+     "gasPrice": "0x5f5e100",
+     "maxFeePerGas": "0xe4e1c00",
+     "maxPriorityFeePerGas": "0x0",
+     "hash": "0xdf042d67ffefb18aa57b1eed1fcd8db29a9aa36223b87d3eaac14cc2984105cc",
+     "input": "0xa9059cbb000000000000000000000000defa1462cab1c5acc55fe5e7a66a20e5c25eda1800000000000000000000000000000000000000000000000000000000001e8480",
+     "nonce": "0xb",
+     "to": "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76",
+     "transactionIndex": "0x1",
+     "value": "0x0",
+     "type": "0x2",
+     "accessList": [],
+     "chainId": "0x768d6",
+     "v": "0x0",
+     "r": "0x6fba6d8cf7e4a11d06ea5d3b448a3935b022c4b4f8b6092ee9edf9960f8a644",
+     "s": "0x615efd18b504378fd08671ae85431519954d9ab1e6b0089ad7b4c13648ebe693",
+     "yParity": "0x0"
+    }
+   },
+   {
+    "m": "eth_call",
+    "p": [
+     {
+      "to": "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76",
+      "data": "0x95d89b41"
+     },
+     "latest"
+    ],
+    "result": "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000006555344432e650000000000000000000000000000000000000000000000000000"
+   },
+   {
+    "m": "eth_call",
+    "p": [
+     {
+      "to": "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76",
+      "data": "0x313ce567"
+     },
+     "latest"
+    ],
+    "result": "0x0000000000000000000000000000000000000000000000000000000000000006"
+   }
+  ],
+  "abi": {
+   "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76": [
+    {
+     "type": "constructor",
+     "inputs": [
+      {
+       "name": "implementationContract",
+       "type": "address",
+       "internalType": "address"
+      }
+     ],
+     "stateMutability": "nonpayable"
+    },
+    {
+     "name": "AdminChanged",
+     "type": "event",
+     "inputs": [
+      {
+       "name": "previousAdmin",
+       "type": "address",
+       "indexed": false,
+       "internalType": "address"
+      },
+      {
+       "name": "newAdmin",
+       "type": "address",
+       "indexed": false,
+       "internalType": "address"
+      }
+     ],
+     "anonymous": false
+    },
+    {
+     "name": "Upgraded",
+     "type": "event",
+     "inputs": [
+      {
+       "name": "implementation",
+       "type": "address",
+       "indexed": false,
+       "internalType": "address"
+      }
+     ],
+     "anonymous": false
+    },
+    {
+     "type": "fallback",
+     "stateMutability": "payable"
+    },
+    {
+     "name": "admin",
+     "type": "function",
+     "inputs": [],
+     "outputs": [
+      {
+       "name": "",
+       "type": "address",
+       "internalType": "address"
+      }
+     ],
+     "stateMutability": "view"
+    },
+    {
+     "name": "changeAdmin",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "newAdmin",
+       "type": "address",
+       "internalType": "address"
+      }
+     ],
+     "outputs": [],
+     "stateMutability": "nonpayable"
+    },
+    {
+     "name": "implementation",
+     "type": "function",
+     "inputs": [],
+     "outputs": [
+      {
+       "name": "",
+       "type": "address",
+       "internalType": "address"
+      }
+     ],
+     "stateMutability": "view"
+    },
+    {
+     "name": "upgradeTo",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "newImplementation",
+       "type": "address",
+       "internalType": "address"
+      }
+     ],
+     "outputs": [],
+     "stateMutability": "nonpayable"
+    },
+    {
+     "name": "upgradeToAndCall",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "newImplementation",
+       "type": "address",
+       "internalType": "address"
+      },
+      {
+       "name": "data",
+       "type": "bytes",
+       "internalType": "bytes"
+      }
+     ],
+     "outputs": [],
+     "stateMutability": "payable"
+    }
+   ]
+  },
+  "price": {
+   "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76": {
+    "usd": 1,
+    "liquidityUsd": 3875.11434929964,
+    "thin": false
+   }
+  },
+  "ethUsd": {
+   "usd": 1718.6997773533778,
+   "liquidityUsd": null,
+   "thin": null
+  }
+ },
+ "facts": {
+  "schema": 1,
+  "chain": {
+   "id": 485590,
+   "name": "Gully Chain Testnet",
+   "testnet": true,
+   "label": "Testnet: no real value"
+  },
+  "tx": {
+   "hash": "0xdf042d67ffefb18aa57b1eed1fcd8db29a9aa36223b87d3eaac14cc2984105cc",
+   "status": "success",
+   "block": 13333,
+   "from": "0x02d4a5f7b1ce0dc891525e38300e5b6198916b51",
+   "to": "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76",
+   "valueEth": null,
+   "valueUsd": null,
+   "revertReason": null
+  },
+  "method": {
+   "name": "transfer",
+   "signature": "transfer(address,uint256)",
+   "source": "known"
+  },
+  "actor": {
+   "address": "0x02d4a5f7b1ce0dc891525e38300e5b6198916b51",
+   "short": "0x02d4…6b51"
+  },
+  "aa": null,
+  "fee": {
+   "eth": "0.000006",
+   "usd": "$0.01",
+   "paidBy": "sender"
+  },
+  "transfers": [
+   {
+    "kind": "erc20",
+    "logIndex": 0,
+    "token": "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76",
+    "symbol": "USDC.e",
+    "from": "0x02d4a5f7b1ce0dc891525e38300e5b6198916b51",
+    "to": "0xdefa1462cab1c5acc55fe5e7a66a20e5c25eda18",
+    "amount": "2",
+    "usd": "$2.00"
+   }
+  ],
+  "approvals": [],
+  "contracts": [
+   {
+    "address": "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76",
+    "sourcePublished": true
+   }
+  ],
+  "counts": {
+   "transfers": 1,
+   "approvals": 0,
+   "logs": 1
+  },
+  "notes": [],
+  "graph": {
+   "complete": false,
+   "note": "Built from the receipt and its logs. Calls made inside the transaction need a trace and are not drawn.",
+   "nodes": [
+    {
+     "id": "0x02d4a5f7b1ce0dc891525e38300e5b6198916b51",
+     "kind": "wallet",
+     "label": "Sender",
+     "addr": "0x02d4a5f7b1ce0dc891525e38300e5b6198916b51",
+     "verified": null
+    },
+    {
+     "id": "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76",
+     "kind": "contract",
+     "label": "transfer",
+     "addr": "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76",
+     "verified": true
+    },
+    {
+     "id": "0xdefa1462cab1c5acc55fe5e7a66a20e5c25eda18",
+     "kind": "address",
+     "label": "0xdefa…da18",
+     "addr": "0xdefa1462cab1c5acc55fe5e7a66a20e5c25eda18",
+     "verified": null
+    },
+    {
+     "id": "network",
+     "kind": "address",
+     "label": "Network fee",
+     "addr": "network",
+     "verified": null
+    }
+   ],
+   "edges": [
+    {
+     "id": "e1",
+     "amountUsd": null,
+     "amountRaw": null,
+     "token": null,
+     "logIndex": null,
+     "trace": "tx.to",
+     "failed": false,
+     "from": "0x02d4a5f7b1ce0dc891525e38300e5b6198916b51",
+     "to": "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76",
+     "kind": "call",
+     "step": 1
+    },
+    {
+     "id": "e2",
+     "amountUsd": "$2.00",
+     "amountRaw": "2",
+     "token": "0x65ba03c6fa90ed549f465d4c8f2e784d6eeb7e76",
+     "logIndex": 0,
+     "trace": null,
+     "failed": false,
+     "from": "0x02d4a5f7b1ce0dc891525e38300e5b6198916b51",
+     "to": "0xdefa1462cab1c5acc55fe5e7a66a20e5c25eda18",
+     "kind": "transfer",
+     "step": 2
+    },
+    {
+     "id": "e3",
+     "amountUsd": "$0.01",
+     "amountRaw": "0.000006",
+     "token": null,
+     "logIndex": null,
+     "trace": "receipt",
+     "failed": false,
+     "from": "0x02d4a5f7b1ce0dc891525e38300e5b6198916b51",
+     "to": "network",
+     "kind": "fee",
+     "step": 3
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "0x02d4…6b51 called transfer on 0x65ba…7e76.",
+     "edgeIds": [
+      "e1"
+     ]
+    },
+    {
+     "n": 2,
+     "text": "2 USDC.e ($2.00) moved from the sender to 0xdefa…da18.",
+     "edgeIds": [
+      "e2"
+     ]
+    },
+    {
+     "n": 3,
+     "text": "Network fee 0.000006 ETH ($0.01).",
+     "edgeIds": [
+      "e3"
+     ]
+    }
+   ],
+   "revertPoint": null
+  },
+  "allowedNumbers": [
+   "0",
+   "0.000006",
+   "0.01",
+   "1",
+   "13333",
+   "2",
+   "2.00",
+   "20",
+   "256",
+   "3",
+   "485590"
+  ]
+ }
+}

@@ -1,0 +1,87 @@
+{
+ "recordedAt": "2026-11-23T21:27:12.731Z",
+ "head": 13958,
+ "scanned": 3000,
+ "cases": {
+  "native": {
+   "found": true,
+   "hash": "0x874d8976d4f832b20ff6024338ec768306a132813cf4b679b811b0923c45f17d",
+   "ok": true,
+   "status": "success",
+   "method": "plain transfer",
+   "aa": false,
+   "transfers": 0,
+   "revertReason": null
+  },
+  "erc20": {
+   "found": true,
+   "hash": "0xdf042d67ffefb18aa57b1eed1fcd8db29a9aa36223b87d3eaac14cc2984105cc",
+   "ok": true,
+   "status": "success",
+   "method": "transfer",
+   "aa": false,
+   "transfers": 1,
+   "revertReason": null
+  },
+  "failed": {
+   "found": true,
+   "hash": "0xbb2dd91fc122c753e4f79bf8a22d56b49af588e44a4e8e2d1196d9f15ba2bd4f",
+   "ok": true,
+   "status": "reverted",
+   "method": "createLaunch",
+   "aa": false,
+   "transfers": 0,
+   "revertReason": null
+  },
+  "aa_sponsored": {
+   "found": true,
+   "hash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02",
+   "ok": true,
+   "status": "success",
+   "method": "handleOps",
+   "aa": true,
+   "transfers": 1,
+   "revertReason": null
+  },
+  "multi_transfer": {
+   "found": true,
+   "hash": "0x1a6751f2ce4513fc5c31baf956bb7fed6c1eab7eae156e4497a1898da4b72604",
+   "ok": true,
+   "status": "success",
+   "method": "launchAndBuy",
+   "aa": false,
+   "transfers": 12,
+   "revertReason": null
+  },
+  "swap": {
+   "found": true,
+   "hash": "0x1a6751f2ce4513fc5c31baf956bb7fed6c1eab7eae156e4497a1898da4b72604",
+   "ok": true,
+   "status": "success",
+   "method": "launchAndBuy",
+   "aa": false,
+   "transfers": 12,
+   "revertReason": null
+  },
+  "aa_swap": {
+   "found": true,
+   "hash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02",
+   "ok": true,
+   "status": "success",
+   "method": "handleOps",
+   "aa": true,
+   "transfers": 1,
+   "revertReason": null
+  },
+  "launch": {
+   "found": true,
+   "hash": "0x0b5e4f9b74a51242db17c545266c87b7bd9511c6ffb6db30f3575552ff679a17",
+   "ok": true,
+   "status": "success",
+   "method": "handleOps",
+   "aa": true,
+   "transfers": 11,
+   "revertReason": null
+  }
+ }
+}

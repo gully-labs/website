@@ -1,0 +1,1461 @@
+{
+ "case": "aa_swap",
+ "hash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02",
+ "recordedAt": "2026-11-23T21:27:12.731Z",
+ "ok": true,
+ "code": null,
+ "indexerRows": [
+  {
+   "id": "179541270000000000004855900000000000013544000000000000000150000000000000004",
+   "token": "0x69d7c8a44b46100da9c6b204d8aabfbaf8fa75df",
+   "trader": "0x326777c52a8801c8887c12e9482ad0f0d481dd03",
+   "relayer": "0x2e9cacb0168037d4f4f125f6f7cc73605760768c",
+   "isBuy": true,
+   "ethAmount": "14155303260000000",
+   "tokenAmount": "6292949312151214164828877",
+   "price": 2.249390954519079e-9,
+   "source": "gully-core",
+   "pool": "0x65d309e7a779b1e3db2647bd4fdf9029fcce9525b90f6f224a48ce4d3840ce91",
+   "quote": "0x0000000000000000000000000000000000000000",
+   "quoteAmount": "14155303260000000",
+   "volumeUsd": 24.499998882408,
+   "priceUsd": 0.0000038932458640816216,
+   "blockNumber": "13544",
+   "logIndex": 4,
+   "timestamp": "1795412700",
+   "txHash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02"
+  }
+ ],
+ "rec": {
+  "rpc": [
+   {
+    "m": "eth_getTransactionReceipt",
+    "p": [
+     "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02"
+    ],
+    "result": {
+     "blockHash": "0x8a685bf640e4f85ff407c2b0e60ea73c5ff641081082f1669b8ec60813b1a9f2",
+     "blockNumber": "0x34e8",
+     "contractAddress": null,
+     "cumulativeGasUsed": "0x5a940",
+     "effectiveGasPrice": "0x5f5e100",
+     "from": "0x2e9cacb0168037d4f4f125f6f7cc73605760768c",
+     "gasUsed": "0x5a940",
+     "gasUsedForL1": "0x2dc1",
+     "l1BlockNumber": "0xba0fc5",
+     "logs": [
+      {
+       "address": "0x0000000071727de22e5e9d8baf0edac6f37da032",
+       "topics": [
+        "0xbb47ee3e183a558b1a2ff0874b079f3fc5478b7454eacf2bfc5af2ff5878f972"
+       ],
+       "data": "0x",
+       "blockNumber": "0x34e8",
+       "transactionHash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02",
+       "transactionIndex": "0x1",
+       "blockHash": "0x8a685bf640e4f85ff407c2b0e60ea73c5ff641081082f1669b8ec60813b1a9f2",
+       "blockTimestamp": "0x6b03d2dc",
+       "logIndex": "0x0",
+       "removed": false
+      },
+      {
+       "address": "0x0cf9a6a75f7c83ddb8b22b59757d7118931ae2a9",
+       "topics": [
+        "0xe83f94b91b46eb17747c6608add3c8c9783e7c9cbf816a535865cd3a9016ea4f",
+        "0x65d309e7a779b1e3db2647bd4fdf9029fcce9525b90f6f224a48ce4d3840ce91",
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+       ],
+       "data": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000835e7e5a1f80",
+       "blockNumber": "0x34e8",
+       "transactionHash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02",
+       "transactionIndex": "0x1",
+       "blockHash": "0x8a685bf640e4f85ff407c2b0e60ea73c5ff641081082f1669b8ec60813b1a9f2",
+       "blockTimestamp": "0x6b03d2dc",
+       "logIndex": "0x1",
+       "removed": false
+      },
+      {
+       "address": "0x0cf9a6a75f7c83ddb8b22b59757d7118931ae2a9",
+       "topics": [
+        "0x719572aaa46b45652de6b83e6388fa084b1fa9c89fc8cd73b885611d465c68cd",
+        "0x65d309e7a779b1e3db2647bd4fdf9029fcce9525b90f6f224a48ce4d3840ce91",
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+       ],
+       "data": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000835e7e5a1f80",
+       "blockNumber": "0x34e8",
+       "transactionHash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02",
+       "transactionIndex": "0x1",
+       "blockHash": "0x8a685bf640e4f85ff407c2b0e60ea73c5ff641081082f1669b8ec60813b1a9f2",
+       "blockTimestamp": "0x6b03d2dc",
+       "logIndex": "0x2",
+       "removed": false
+      },
+      {
+       "address": "0x90c882d9c307c2bf7e961bc279b0929f92997dd4",
+       "topics": [
+        "0x5b21a3c624a398df3917a0a930f91e3837519b8eab3302b834746433065f2959",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000cf9a6a75f7c83ddb8b22b59757d7118931ae2a9",
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+       ],
+       "data": "0x0000000000000000000000000cf9a6a75f7c83ddb8b22b59757d7118931ae2a9000000000000000000000000000000000000000000000000000106bcfcb43f00",
+       "blockNumber": "0x34e8",
+       "transactionHash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02",
+       "transactionIndex": "0x1",
+       "blockHash": "0x8a685bf640e4f85ff407c2b0e60ea73c5ff641081082f1669b8ec60813b1a9f2",
+       "blockTimestamp": "0x6b03d2dc",
+       "logIndex": "0x3",
+       "removed": false
+      },
+      {
+       "address": "0x6d0721230b6bed4bc9eeb65e200b6f90c2c9aee6",
+       "topics": [
+        "0x04206ad2b7c0f463bff3dd4f33c5735b0f2957a351e4f79763a4fa9e775dd237",
+        "0x65d309e7a779b1e3db2647bd4fdf9029fcce9525b90f6f224a48ce4d3840ce91",
+        "0x000000000000000000000000b6ab6f0d23c769329db4b3cfb947fde3a9e797a5"
+       ],
+       "data": "0xffffffffffffffffffffffffffffffffffffffffffffffffffcdb5d3a17ff100000000000000000000000000000000000000000000053495773d471f56b462cd000000000000000000000000000000000000521258e1f3702d34e4779bbc03330000000000000000000000000000000000000000000008f1de4a46cfcccb05df000000000000000000000000000000000000000000000000000000000003099900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+       "blockNumber": "0x34e8",
+       "transactionHash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02",
+       "transactionIndex": "0x1",
+       "blockHash": "0x8a685bf640e4f85ff407c2b0e60ea73c5ff641081082f1669b8ec60813b1a9f2",
+       "blockTimestamp": "0x6b03d2dc",
+       "logIndex": "0x4",
+       "removed": false
+      },
+      {
+       "address": "0x69d7c8a44b46100da9c6b204d8aabfbaf8fa75df",
+       "topics": [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+        "0x00000000000000000000000090c882d9c307c2bf7e961bc279b0929f92997dd4",
+        "0x000000000000000000000000326777c52a8801c8887c12e9482ad0f0d481dd03"
+       ],
+       "data": "0x000000000000000000000000000000000000000000053495773d471f56b462cd",
+       "blockNumber": "0x34e8",
+       "transactionHash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02",
+       "transactionIndex": "0x1",
+       "blockHash": "0x8a685bf640e4f85ff407c2b0e60ea73c5ff641081082f1669b8ec60813b1a9f2",
+       "blockTimestamp": "0x6b03d2dc",
+       "logIndex": "0x5",
+       "removed": false
+      },
+      {
+       "address": "0x0000000071727de22e5e9d8baf0edac6f37da032",
+       "topics": [
+        "0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f",
+        "0x9af7e91a3a2ecd94c23855b22106f49ad53b825ed91953eddd8933b072016b63",
+        "0x000000000000000000000000326777c52a8801c8887c12e9482ad0f0d481dd03",
+        "0x00000000000000000000000049bbfdd55776c851e3147a375b08e60e9d4a1178"
+       ],
+       "data": "0x00000000000000000000000000000000000000000000000000000000000000150000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000022ba220def40000000000000000000000000000000000000000000000000000000000005ca9f",
+       "blockNumber": "0x34e8",
+       "transactionHash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02",
+       "transactionIndex": "0x1",
+       "blockHash": "0x8a685bf640e4f85ff407c2b0e60ea73c5ff641081082f1669b8ec60813b1a9f2",
+       "blockTimestamp": "0x6b03d2dc",
+       "logIndex": "0x6",
+       "removed": false
+      }
+     ],
+     "logsBloom": "0x00000000000008000000000000000008240000200000000000000000000000000008000000000000000000014008000000000000000000800000020000010000004000000000000080000008000000000040004000000000004100003000000000100000020800040000000100000800100000800000000000000250000000000000000000000100000084000000000001080800000900000000001000880000100000000000021000600000000002000000000000000000000002000000002000000002000000400001000000000000000000000000000000000100000020000000000000004000000000000000000000800000008000000000000000002000",
+     "status": "0x1",
+     "to": "0x0000000071727de22e5e9d8baf0edac6f37da032",
+     "transactionHash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02",
+     "transactionIndex": "0x1",
+     "type": "0x2"
+    }
+   },
+   {
+    "m": "eth_getTransactionByHash",
+    "p": [
+     "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02"
+    ],
+    "result": {
+     "blockHash": "0x8a685bf640e4f85ff407c2b0e60ea73c5ff641081082f1669b8ec60813b1a9f2",
+     "blockNumber": "0x34e8",
+     "blockTimestamp": "0x6b03d2dc",
+     "from": "0x2e9cacb0168037d4f4f125f6f7cc73605760768c",
+     "gas": "0x812da",
+     "gasPrice": "0x8f0d180",
+     "maxFeePerGas": "0x8f0d180",
+     "maxPriorityFeePerGas": "0x8f0d180",
+     "hash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02",
+     "input": "0x765e827f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000002e9cacb0168037d4f4f125f6f7cc73605760768c00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000326777c52a8801c8887c12e9482ad0f0d481dd03000000000000000000000000000000000000000000000000000000000000001500000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000211340000000000000000000000000002989300000000000000000000000000000000000000000000000000000000000134e4000000000000000000000000000927c000000000000000000000000007270e000000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000076000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000504e9ae5c53000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000498b6ab6f0d23c769329db4b3cfb947fde3a9e797a5000000000000000000000000000000000000000000000000003350e95b344e003593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000006b03d78400000000000000000000000000000000000000000000000000000000000000011000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000003060c0f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000026000000000000000000000000000000000000000000000000000000000000001800000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000069d7c8a44b46100da9c6b204d8aabfbaf8fa75df0000000000000000000000000cf9a6a75f7c83ddb8b22b59757d7118931ae2a90000000000000000000000006d0721230b6bed4bc9eeb65e200b6f90c2c9aee600000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000c80cc10000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000003350e95b344e00000000000000000000000000000000000000000000052debc229c57c9f3b29fc0000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003350e95b344e00000000000000000000000000000000000000000000000000000000000000004000000000000000000000000069d7c8a44b46100da9c6b204d8aabfbaf8fa75df000000000000000000000000000000000000000000052debc229c57c9f3b29fc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b549bbfdd55776c851e3147a375b08e60e9d4a11780000000000000000000000000001d4c000000000000000000000000000000001000000000000000000000000000000000000000000000000000000006b03d52e000000000000000000000000000000000000000000000000000000006b03d2b8fae9fa9a007c971b70fe41d14135c488c5f57f0105752ba5767089b675e94af2018a23ece9f488740a5351e648aa9d560ee896a5d062b47a3525ad10bc213efc1c0000000000000000000000000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000000153ff50bd7aaf14f027baabeb642b8cf62d57809ca8e737379359e6f04adc7bee457c93333c3342cf6a42e3efb692050e0c0ff85fa43e148f0f3667a7a69afd6e00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000025165241045c6264693d648cab3f6a4d0b1226a77fffd2ae38615a446f5241f9ff1d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f67b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a226d766670476a6f757a5a54434f465779495162306d745537676c375a4756507433596b7a7348494261324d222c226f726967696e223a2268747470733a2f2f746573746e65742e6b7265382e66756e222c2263726f73734f726967696e223a66616c73652c226f746865725f6b6579735f63616e5f62655f61646465645f68657265223a22646f206e6f7420636f6d7061726520636c69656e74446174614a534f4e20616761696e737420612074656d706c6174652e205365652068747470733a2f2f676f6f2e676c2f796162506578227d00000000000000000000",
+     "nonce": "0x83",
+     "to": "0x0000000071727de22e5e9d8baf0edac6f37da032",
+     "transactionIndex": "0x1",
+     "value": "0x0",
+     "type": "0x2",
+     "accessList": [],
+     "chainId": "0x768d6",
+     "v": "0x1",
+     "r": "0xcc927c4bc252e438479160335641c4250ffef3af9085762967bc2419d3bc4d23",
+     "s": "0x493e5b1fc6fa533e7dc3289e958d0f4974fcdc2e17d068151af917929cb39187",
+     "yParity": "0x1"
+    }
+   },
+   {
+    "m": "eth_call",
+    "p": [
+     {
+      "to": "0x69d7c8a44b46100da9c6b204d8aabfbaf8fa75df",
+      "data": "0x95d89b41"
+     },
+     "latest"
+    ],
+    "result": "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000055741474d45000000000000000000000000000000000000000000000000000000"
+   },
+   {
+    "m": "eth_call",
+    "p": [
+     {
+      "to": "0x69d7c8a44b46100da9c6b204d8aabfbaf8fa75df",
+      "data": "0x313ce567"
+     },
+     "latest"
+    ],
+    "result": "0x0000000000000000000000000000000000000000000000000000000000000012"
+   }
+  ],
+  "abi": {
+   "0x0000000071727de22e5e9d8baf0edac6f37da032": [
+    {
+     "name": "DelegateAndRevert",
+     "type": "error",
+     "inputs": [
+      {
+       "name": "success",
+       "type": "bool",
+       "internalType": "bool"
+      },
+      {
+       "name": "ret",
+       "type": "bytes",
+       "internalType": "bytes"
+      }
+     ]
+    },
+    {
+     "name": "FailedOp",
+     "type": "error",
+     "inputs": [
+      {
+       "name": "opIndex",
+       "type": "uint256",
+       "internalType": "uint256"
+      },
+      {
+       "name": "reason",
+       "type": "string",
+       "internalType": "string"
+      }
+     ]
+    },
+    {
+     "name": "FailedOpWithRevert",
+     "type": "error",
+     "inputs": [
+      {
+       "name": "opIndex",
+       "type": "uint256",
+       "internalType": "uint256"
+      },
+      {
+       "name": "reason",
+       "type": "string",
+       "internalType": "string"
+      },
+      {
+       "name": "inner",
+       "type": "bytes",
+       "internalType": "bytes"
+      }
+     ]
+    },
+    {
+     "name": "PostOpReverted",
+     "type": "error",
+     "inputs": [
+      {
+       "name": "returnData",
+       "type": "bytes",
+       "internalType": "bytes"
+      }
+     ]
+    },
+    {
+     "name": "ReentrancyGuardReentrantCall",
+     "type": "error",
+     "inputs": []
+    },
+    {
+     "name": "SenderAddressResult",
+     "type": "error",
+     "inputs": [
+      {
+       "name": "sender",
+       "type": "address",
+       "internalType": "address"
+      }
+     ]
+    },
+    {
+     "name": "SignatureValidationFailed",
+     "type": "error",
+     "inputs": [
+      {
+       "name": "aggregator",
+       "type": "address",
+       "internalType": "address"
+      }
+     ]
+    },
+    {
+     "name": "AccountDeployed",
+     "type": "event",
+     "inputs": [
+      {
+       "name": "userOpHash",
+       "type": "bytes32",
+       "indexed": true,
+       "internalType": "bytes32"
+      },
+      {
+       "name": "sender",
+       "type": "address",
+       "indexed": true,
+       "internalType": "address"
+      },
+      {
+       "name": "factory",
+       "type": "address",
+       "indexed": false,
+       "internalType": "address"
+      },
+      {
+       "name": "paymaster",
+       "type": "address",
+       "indexed": false,
+       "internalType": "address"
+      }
+     ],
+     "anonymous": false
+    },
+    {
+     "name": "BeforeExecution",
+     "type": "event",
+     "inputs": [],
+     "anonymous": false
+    },
+    {
+     "name": "Deposited",
+     "type": "event",
+     "inputs": [
+      {
+       "name": "account",
+       "type": "address",
+       "indexed": true,
+       "internalType": "address"
+      },
+      {
+       "name": "totalDeposit",
+       "type": "uint256",
+       "indexed": false,
+       "internalType": "uint256"
+      }
+     ],
+     "anonymous": false
+    },
+    {
+     "name": "PostOpRevertReason",
+     "type": "event",
+     "inputs": [
+      {
+       "name": "userOpHash",
+       "type": "bytes32",
+       "indexed": true,
+       "internalType": "bytes32"
+      },
+      {
+       "name": "sender",
+       "type": "address",
+       "indexed": true,
+       "internalType": "address"
+      },
+      {
+       "name": "nonce",
+       "type": "uint256",
+       "indexed": false,
+       "internalType": "uint256"
+      },
+      {
+       "name": "revertReason",
+       "type": "bytes",
+       "indexed": false,
+       "internalType": "bytes"
+      }
+     ],
+     "anonymous": false
+    },
+    {
+     "name": "SignatureAggregatorChanged",
+     "type": "event",
+     "inputs": [
+      {
+       "name": "aggregator",
+       "type": "address",
+       "indexed": true,
+       "internalType": "address"
+      }
+     ],
+     "anonymous": false
+    },
+    {
+     "name": "StakeLocked",
+     "type": "event",
+     "inputs": [
+      {
+       "name": "account",
+       "type": "address",
+       "indexed": true,
+       "internalType": "address"
+      },
+      {
+       "name": "totalStaked",
+       "type": "uint256",
+       "indexed": false,
+       "internalType": "uint256"
+      },
+      {
+       "name": "unstakeDelaySec",
+       "type": "uint256",
+       "indexed": false,
+       "internalType": "uint256"
+      }
+     ],
+     "anonymous": false
+    },
+    {
+     "name": "StakeUnlocked",
+     "type": "event",
+     "inputs": [
+      {
+       "name": "account",
+       "type": "address",
+       "indexed": true,
+       "internalType": "address"
+      },
+      {
+       "name": "withdrawTime",
+       "type": "uint256",
+       "indexed": false,
+       "internalType": "uint256"
+      }
+     ],
+     "anonymous": false
+    },
+    {
+     "name": "StakeWithdrawn",
+     "type": "event",
+     "inputs": [
+      {
+       "name": "account",
+       "type": "address",
+       "indexed": true,
+       "internalType": "address"
+      },
+      {
+       "name": "withdrawAddress",
+       "type": "address",
+       "indexed": false,
+       "internalType": "address"
+      },
+      {
+       "name": "amount",
+       "type": "uint256",
+       "indexed": false,
+       "internalType": "uint256"
+      }
+     ],
+     "anonymous": false
+    },
+    {
+     "name": "UserOperationEvent",
+     "type": "event",
+     "inputs": [
+      {
+       "name": "userOpHash",
+       "type": "bytes32",
+       "indexed": true,
+       "internalType": "bytes32"
+      },
+      {
+       "name": "sender",
+       "type": "address",
+       "indexed": true,
+       "internalType": "address"
+      },
+      {
+       "name": "paymaster",
+       "type": "address",
+       "indexed": true,
+       "internalType": "address"
+      },
+      {
+       "name": "nonce",
+       "type": "uint256",
+       "indexed": false,
+       "internalType": "uint256"
+      },
+      {
+       "name": "success",
+       "type": "bool",
+       "indexed": false,
+       "internalType": "bool"
+      },
+      {
+       "name": "actualGasCost",
+       "type": "uint256",
+       "indexed": false,
+       "internalType": "uint256"
+      },
+      {
+       "name": "actualGasUsed",
+       "type": "uint256",
+       "indexed": false,
+       "internalType": "uint256"
+      }
+     ],
+     "anonymous": false
+    },
+    {
+     "name": "UserOperationPrefundTooLow",
+     "type": "event",
+     "inputs": [
+      {
+       "name": "userOpHash",
+       "type": "bytes32",
+       "indexed": true,
+       "internalType": "bytes32"
+      },
+      {
+       "name": "sender",
+       "type": "address",
+       "indexed": true,
+       "internalType": "address"
+      },
+      {
+       "name": "nonce",
+       "type": "uint256",
+       "indexed": false,
+       "internalType": "uint256"
+      }
+     ],
+     "anonymous": false
+    },
+    {
+     "name": "UserOperationRevertReason",
+     "type": "event",
+     "inputs": [
+      {
+       "name": "userOpHash",
+       "type": "bytes32",
+       "indexed": true,
+       "internalType": "bytes32"
+      },
+      {
+       "name": "sender",
+       "type": "address",
+       "indexed": true,
+       "internalType": "address"
+      },
+      {
+       "name": "nonce",
+       "type": "uint256",
+       "indexed": false,
+       "internalType": "uint256"
+      },
+      {
+       "name": "revertReason",
+       "type": "bytes",
+       "indexed": false,
+       "internalType": "bytes"
+      }
+     ],
+     "anonymous": false
+    },
+    {
+     "name": "Withdrawn",
+     "type": "event",
+     "inputs": [
+      {
+       "name": "account",
+       "type": "address",
+       "indexed": true,
+       "internalType": "address"
+      },
+      {
+       "name": "withdrawAddress",
+       "type": "address",
+       "indexed": false,
+       "internalType": "address"
+      },
+      {
+       "name": "amount",
+       "type": "uint256",
+       "indexed": false,
+       "internalType": "uint256"
+      }
+     ],
+     "anonymous": false
+    },
+    {
+     "name": "addStake",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "unstakeDelaySec",
+       "type": "uint32",
+       "internalType": "uint32"
+      }
+     ],
+     "outputs": [],
+     "stateMutability": "payable"
+    },
+    {
+     "name": "balanceOf",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "account",
+       "type": "address",
+       "internalType": "address"
+      }
+     ],
+     "outputs": [
+      {
+       "name": "",
+       "type": "uint256",
+       "internalType": "uint256"
+      }
+     ],
+     "stateMutability": "view"
+    },
+    {
+     "name": "delegateAndRevert",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "target",
+       "type": "address",
+       "internalType": "address"
+      },
+      {
+       "name": "data",
+       "type": "bytes",
+       "internalType": "bytes"
+      }
+     ],
+     "outputs": [],
+     "stateMutability": "nonpayable"
+    },
+    {
+     "name": "depositTo",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "account",
+       "type": "address",
+       "internalType": "address"
+      }
+     ],
+     "outputs": [],
+     "stateMutability": "payable"
+    },
+    {
+     "name": "deposits",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "",
+       "type": "address",
+       "internalType": "address"
+      }
+     ],
+     "outputs": [
+      {
+       "name": "deposit",
+       "type": "uint256",
+       "internalType": "uint256"
+      },
+      {
+       "name": "staked",
+       "type": "bool",
+       "internalType": "bool"
+      },
+      {
+       "name": "stake",
+       "type": "uint112",
+       "internalType": "uint112"
+      },
+      {
+       "name": "unstakeDelaySec",
+       "type": "uint32",
+       "internalType": "uint32"
+      },
+      {
+       "name": "withdrawTime",
+       "type": "uint48",
+       "internalType": "uint48"
+      }
+     ],
+     "stateMutability": "view"
+    },
+    {
+     "name": "getDepositInfo",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "account",
+       "type": "address",
+       "internalType": "address"
+      }
+     ],
+     "outputs": [
+      {
+       "name": "info",
+       "type": "tuple",
+       "components": [
+        {
+         "name": "deposit",
+         "type": "uint256",
+         "internalType": "uint256"
+        },
+        {
+         "name": "staked",
+         "type": "bool",
+         "internalType": "bool"
+        },
+        {
+         "name": "stake",
+         "type": "uint112",
+         "internalType": "uint112"
+        },
+        {
+         "name": "unstakeDelaySec",
+         "type": "uint32",
+         "internalType": "uint32"
+        },
+        {
+         "name": "withdrawTime",
+         "type": "uint48",
+         "internalType": "uint48"
+        }
+       ],
+       "internalType": "struct IStakeManager.DepositInfo"
+      }
+     ],
+     "stateMutability": "view"
+    },
+    {
+     "name": "getNonce",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "sender",
+       "type": "address",
+       "internalType": "address"
+      },
+      {
+       "name": "key",
+       "type": "uint192",
+       "internalType": "uint192"
+      }
+     ],
+     "outputs": [
+      {
+       "name": "nonce",
+       "type": "uint256",
+       "internalType": "uint256"
+      }
+     ],
+     "stateMutability": "view"
+    },
+    {
+     "name": "getSenderAddress",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "initCode",
+       "type": "bytes",
+       "internalType": "bytes"
+      }
+     ],
+     "outputs": [],
+     "stateMutability": "nonpayable"
+    },
+    {
+     "name": "getUserOpHash",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "userOp",
+       "type": "tuple",
+       "components": [
+        {
+         "name": "sender",
+         "type": "address",
+         "internalType": "address"
+        },
+        {
+         "name": "nonce",
+         "type": "uint256",
+         "internalType": "uint256"
+        },
+        {
+         "name": "initCode",
+         "type": "bytes",
+         "internalType": "bytes"
+        },
+        {
+         "name": "callData",
+         "type": "bytes",
+         "internalType": "bytes"
+        },
+        {
+         "name": "accountGasLimits",
+         "type": "bytes32",
+         "internalType": "bytes32"
+        },
+        {
+         "name": "preVerificationGas",
+         "type": "uint256",
+         "internalType": "uint256"
+        },
+        {
+         "name": "gasFees",
+         "type": "bytes32",
+         "internalType": "bytes32"
+        },
+        {
+         "name": "paymasterAndData",
+         "type": "bytes",
+         "internalType": "bytes"
+        },
+        {
+         "name": "signature",
+         "type": "bytes",
+         "internalType": "bytes"
+        }
+       ],
+       "internalType": "struct PackedUserOperation"
+      }
+     ],
+     "outputs": [
+      {
+       "name": "",
+       "type": "bytes32",
+       "internalType": "bytes32"
+      }
+     ],
+     "stateMutability": "view"
+    },
+    {
+     "name": "handleAggregatedOps",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "opsPerAggregator",
+       "type": "tuple[]",
+       "components": [
+        {
+         "name": "userOps",
+         "type": "tuple[]",
+         "components": [
+          {
+           "name": "sender",
+           "type": "address",
+           "internalType": "address"
+          },
+          {
+           "name": "nonce",
+           "type": "uint256",
+           "internalType": "uint256"
+          },
+          {
+           "name": "initCode",
+           "type": "bytes",
+           "internalType": "bytes"
+          },
+          {
+           "name": "callData",
+           "type": "bytes",
+           "internalType": "bytes"
+          },
+          {
+           "name": "accountGasLimits",
+           "type": "bytes32",
+           "internalType": "bytes32"
+          },
+          {
+           "name": "preVerificationGas",
+           "type": "uint256",
+           "internalType": "uint256"
+          },
+          {
+           "name": "gasFees",
+           "type": "bytes32",
+           "internalType": "bytes32"
+          },
+          {
+           "name": "paymasterAndData",
+           "type": "bytes",
+           "internalType": "bytes"
+          },
+          {
+           "name": "signature",
+           "type": "bytes",
+           "internalType": "bytes"
+          }
+         ],
+         "internalType": "struct PackedUserOperation[]"
+        },
+        {
+         "name": "aggregator",
+         "type": "address",
+         "internalType": "contract IAggregator"
+        },
+        {
+         "name": "signature",
+         "type": "bytes",
+         "internalType": "bytes"
+        }
+       ],
+       "internalType": "struct IEntryPoint.UserOpsPerAggregator[]"
+      },
+      {
+       "name": "beneficiary",
+       "type": "address",
+       "internalType": "address payable"
+      }
+     ],
+     "outputs": [],
+     "stateMutability": "nonpayable"
+    },
+    {
+     "name": "handleOps",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "ops",
+       "type": "tuple[]",
+       "components": [
+        {
+         "name": "sender",
+         "type": "address",
+         "internalType": "address"
+        },
+        {
+         "name": "nonce",
+         "type": "uint256",
+         "internalType": "uint256"
+        },
+        {
+         "name": "initCode",
+         "type": "bytes",
+         "internalType": "bytes"
+        },
+        {
+         "name": "callData",
+         "type": "bytes",
+         "internalType": "bytes"
+        },
+        {
+         "name": "accountGasLimits",
+         "type": "bytes32",
+         "internalType": "bytes32"
+        },
+        {
+         "name": "preVerificationGas",
+         "type": "uint256",
+         "internalType": "uint256"
+        },
+        {
+         "name": "gasFees",
+         "type": "bytes32",
+         "internalType": "bytes32"
+        },
+        {
+         "name": "paymasterAndData",
+         "type": "bytes",
+         "internalType": "bytes"
+        },
+        {
+         "name": "signature",
+         "type": "bytes",
+         "internalType": "bytes"
+        }
+       ],
+       "internalType": "struct PackedUserOperation[]"
+      },
+      {
+       "name": "beneficiary",
+       "type": "address",
+       "internalType": "address payable"
+      }
+     ],
+     "outputs": [],
+     "stateMutability": "nonpayable"
+    },
+    {
+     "name": "incrementNonce",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "key",
+       "type": "uint192",
+       "internalType": "uint192"
+      }
+     ],
+     "outputs": [],
+     "stateMutability": "nonpayable"
+    },
+    {
+     "name": "innerHandleOp",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "callData",
+       "type": "bytes",
+       "internalType": "bytes"
+      },
+      {
+       "name": "opInfo",
+       "type": "tuple",
+       "components": [
+        {
+         "name": "mUserOp",
+         "type": "tuple",
+         "components": [
+          {
+           "name": "sender",
+           "type": "address",
+           "internalType": "address"
+          },
+          {
+           "name": "nonce",
+           "type": "uint256",
+           "internalType": "uint256"
+          },
+          {
+           "name": "verificationGasLimit",
+           "type": "uint256",
+           "internalType": "uint256"
+          },
+          {
+           "name": "callGasLimit",
+           "type": "uint256",
+           "internalType": "uint256"
+          },
+          {
+           "name": "paymasterVerificationGasLimit",
+           "type": "uint256",
+           "internalType": "uint256"
+          },
+          {
+           "name": "paymasterPostOpGasLimit",
+           "type": "uint256",
+           "internalType": "uint256"
+          },
+          {
+           "name": "preVerificationGas",
+           "type": "uint256",
+           "internalType": "uint256"
+          },
+          {
+           "name": "paymaster",
+           "type": "address",
+           "internalType": "address"
+          },
+          {
+           "name": "maxFeePerGas",
+           "type": "uint256",
+           "internalType": "uint256"
+          },
+          {
+           "name": "maxPriorityFeePerGas",
+           "type": "uint256",
+           "internalType": "uint256"
+          }
+         ],
+         "internalType": "struct EntryPoint.MemoryUserOp"
+        },
+        {
+         "name": "userOpHash",
+         "type": "bytes32",
+         "internalType": "bytes32"
+        },
+        {
+         "name": "prefund",
+         "type": "uint256",
+         "internalType": "uint256"
+        },
+        {
+         "name": "contextOffset",
+         "type": "uint256",
+         "internalType": "uint256"
+        },
+        {
+         "name": "preOpGas",
+         "type": "uint256",
+         "internalType": "uint256"
+        }
+       ],
+       "internalType": "struct EntryPoint.UserOpInfo"
+      },
+      {
+       "name": "context",
+       "type": "bytes",
+       "internalType": "bytes"
+      }
+     ],
+     "outputs": [
+      {
+       "name": "actualGasCost",
+       "type": "uint256",
+       "internalType": "uint256"
+      }
+     ],
+     "stateMutability": "nonpayable"
+    },
+    {
+     "name": "nonceSequenceNumber",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "",
+       "type": "address",
+       "internalType": "address"
+      },
+      {
+       "name": "",
+       "type": "uint192",
+       "internalType": "uint192"
+      }
+     ],
+     "outputs": [
+      {
+       "name": "",
+       "type": "uint256",
+       "internalType": "uint256"
+      }
+     ],
+     "stateMutability": "view"
+    },
+    {
+     "name": "supportsInterface",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "interfaceId",
+       "type": "bytes4",
+       "internalType": "bytes4"
+      }
+     ],
+     "outputs": [
+      {
+       "name": "",
+       "type": "bool",
+       "internalType": "bool"
+      }
+     ],
+     "stateMutability": "view"
+    },
+    {
+     "name": "unlockStake",
+     "type": "function",
+     "inputs": [],
+     "outputs": [],
+     "stateMutability": "nonpayable"
+    },
+    {
+     "name": "withdrawStake",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "withdrawAddress",
+       "type": "address",
+       "internalType": "address payable"
+      }
+     ],
+     "outputs": [],
+     "stateMutability": "nonpayable"
+    },
+    {
+     "name": "withdrawTo",
+     "type": "function",
+     "inputs": [
+      {
+       "name": "withdrawAddress",
+       "type": "address",
+       "internalType": "address payable"
+      },
+      {
+       "name": "withdrawAmount",
+       "type": "uint256",
+       "internalType": "uint256"
+      }
+     ],
+     "outputs": [],
+     "stateMutability": "nonpayable"
+    },
+    {
+     "type": "receive",
+     "stateMutability": "payable"
+    }
+   ]
+  },
+  "price": {
+   "0x69d7c8a44b46100da9c6b204d8aabfbaf8fa75df": {
+    "usd": 0.00000389344118482146,
+    "liquidityUsd": 190.56515358681992,
+    "thin": true
+   }
+  },
+  "ethUsd": {
+   "usd": 1718.6997773533778,
+   "liquidityUsd": null,
+   "thin": null
+  }
+ },
+ "facts": {
+  "schema": 1,
+  "chain": {
+   "id": 485590,
+   "name": "Gully Chain Testnet",
+   "testnet": true,
+   "label": "Testnet: no real value"
+  },
+  "tx": {
+   "hash": "0x16573124351c5898f7065bb3b2f103192af7be2ba2fca7dc9de9dc55230f5b02",
+   "status": "success",
+   "block": 13544,
+   "from": "0x2e9cacb0168037d4f4f125f6f7cc73605760768c",
+   "to": "0x0000000071727de22e5e9d8baf0edac6f37da032",
+   "valueEth": null,
+   "valueUsd": null,
+   "revertReason": null
+  },
+  "method": {
+   "name": "handleOps",
+   "signature": "handleOps((address,uint256,bytes,bytes,bytes32,uint256,bytes32,bytes,bytes)[],address)",
+   "source": "sourcify"
+  },
+  "actor": {
+   "address": "0x326777c52a8801c8887c12e9482ad0f0d481dd03",
+   "short": "0x3267…dd03"
+  },
+  "aa": {
+   "isUserOp": true,
+   "bundler": "0x2e9cacb0168037d4f4f125f6f7cc73605760768c",
+   "userOps": 1,
+   "sender": "0x326777c52a8801c8887c12e9482ad0f0d481dd03",
+   "paymaster": "0x49bbfdd55776c851e3147a375b08e60e9d4a1178",
+   "sponsored": true,
+   "userOpSuccess": true
+  },
+  "fee": {
+   "eth": "0.000037",
+   "usd": "$0.06",
+   "paidBy": "sponsor (paymaster)"
+  },
+  "transfers": [
+   {
+    "kind": "erc20",
+    "logIndex": 5,
+    "token": "0x69d7c8a44b46100da9c6b204d8aabfbaf8fa75df",
+    "symbol": "WAGME",
+    "from": "0x90c882d9c307c2bf7e961bc279b0929f92997dd4",
+    "to": "0x326777c52a8801c8887c12e9482ad0f0d481dd03",
+    "amount": "6292949.312151",
+    "usd": "$24.50",
+    "thin": true
+   }
+  ],
+  "approvals": [],
+  "contracts": [
+   {
+    "address": "0x0000000071727de22e5e9d8baf0edac6f37da032",
+    "sourcePublished": true
+   },
+   {
+    "address": "0x69d7c8a44b46100da9c6b204d8aabfbaf8fa75df",
+    "sourcePublished": null
+   }
+  ],
+  "counts": {
+   "transfers": 1,
+   "approvals": 0,
+   "logs": 7
+  },
+  "notes": [],
+  "graph": {
+   "complete": false,
+   "note": "Built from the receipt and its logs. Calls made inside the transaction need a trace and are not drawn.",
+   "nodes": [
+    {
+     "id": "0x326777c52a8801c8887c12e9482ad0f0d481dd03",
+     "kind": "wallet",
+     "label": "Smart account",
+     "addr": "0x326777c52a8801c8887c12e9482ad0f0d481dd03",
+     "verified": null
+    },
+    {
+     "id": "0x2e9cacb0168037d4f4f125f6f7cc73605760768c",
+     "kind": "bundler",
+     "label": "Bundler",
+     "addr": "0x2e9cacb0168037d4f4f125f6f7cc73605760768c",
+     "verified": null
+    },
+    {
+     "id": "0x0000000071727de22e5e9d8baf0edac6f37da032",
+     "kind": "contract",
+     "label": "EntryPoint",
+     "addr": "0x0000000071727de22e5e9d8baf0edac6f37da032",
+     "verified": true
+    },
+    {
+     "id": "0x49bbfdd55776c851e3147a375b08e60e9d4a1178",
+     "kind": "paymaster",
+     "label": "Sponsor",
+     "addr": "0x49bbfdd55776c851e3147a375b08e60e9d4a1178",
+     "verified": null
+    },
+    {
+     "id": "0x69d7c8a44b46100da9c6b204d8aabfbaf8fa75df",
+     "kind": "token",
+     "label": "WAGME",
+     "addr": "0x69d7c8a44b46100da9c6b204d8aabfbaf8fa75df",
+     "verified": null
+    },
+    {
+     "id": "0x90c882d9c307c2bf7e961bc279b0929f92997dd4",
+     "kind": "address",
+     "label": "0x90c8…7dd4",
+     "addr": "0x90c882d9c307c2bf7e961bc279b0929f92997dd4",
+     "verified": null
+    },
+    {
+     "id": "network",
+     "kind": "address",
+     "label": "Network fee",
+     "addr": "network",
+     "verified": null
+    }
+   ],
+   "edges": [
+    {
+     "id": "e1",
+     "amountUsd": null,
+     "amountRaw": null,
+     "token": null,
+     "logIndex": null,
+     "trace": "tx.to",
+     "failed": false,
+     "from": "0x2e9cacb0168037d4f4f125f6f7cc73605760768c",
+     "to": "0x0000000071727de22e5e9d8baf0edac6f37da032",
+     "kind": "call",
+     "step": 1
+    },
+    {
+     "id": "e2",
+     "amountUsd": null,
+     "amountRaw": null,
+     "token": null,
+     "logIndex": null,
+     "trace": "UserOperationEvent",
+     "failed": false,
+     "from": "0x0000000071727de22e5e9d8baf0edac6f37da032",
+     "to": "0x326777c52a8801c8887c12e9482ad0f0d481dd03",
+     "kind": "call",
+     "step": 2
+    },
+    {
+     "id": "e3",
+     "amountUsd": "$24.50",
+     "amountRaw": "6292949.312151",
+     "token": "0x69d7c8a44b46100da9c6b204d8aabfbaf8fa75df",
+     "logIndex": 5,
+     "trace": null,
+     "failed": false,
+     "from": "0x90c882d9c307c2bf7e961bc279b0929f92997dd4",
+     "to": "0x326777c52a8801c8887c12e9482ad0f0d481dd03",
+     "kind": "transfer",
+     "step": 3
+    },
+    {
+     "id": "e4",
+     "amountUsd": "$0.06",
+     "amountRaw": "0.000037",
+     "token": null,
+     "logIndex": null,
+     "trace": "receipt",
+     "failed": false,
+     "from": "0x49bbfdd55776c851e3147a375b08e60e9d4a1178",
+     "to": "network",
+     "kind": "fee",
+     "step": 4
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "The bundler 0x2e9c…768c submitted the bundle to the EntryPoint.",
+     "edgeIds": [
+      "e1"
+     ]
+    },
+    {
+     "n": 2,
+     "text": "The EntryPoint ran the operation for the smart account 0x3267…dd03.",
+     "edgeIds": [
+      "e2"
+     ]
+    },
+    {
+     "n": 3,
+     "text": "6292949.312151 WAGME ($24.50) moved from 0x90c8…7dd4 to the sender.",
+     "edgeIds": [
+      "e3"
+     ]
+    },
+    {
+     "n": 4,
+     "text": "Network fee 0.000037 ETH ($0.06).",
+     "edgeIds": [
+      "e4"
+     ]
+    }
+   ],
+   "revertPoint": null
+  },
+  "allowedNumbers": [
+   "0",
+   "0.000037",
+   "0.06",
+   "1",
+   "13544",
+   "2",
+   "20",
+   "24.50",
+   "256",
+   "3",
+   "32",
+   "4",
+   "485590",
+   "5",
+   "6292949.312151",
+   "7"
+  ]
+ }
+}

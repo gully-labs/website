@@ -1,0 +1,27 @@
+{
+ "head": 13958,
+ "debug_traceTransaction": {
+  "error": {
+   "code": -32601,
+   "message": "method ignored by upstream: gave up retrying on network-level after 300.456753ms: 1 upstream method ignored",
+   "reason": null
+  }
+ },
+ "trace_transaction": {
+  "error": {
+   "code": -32005,
+   "message": "rate-limit exceeded",
+   "reason": "method:trace_transaction"
+  }
+ },
+ "eth_simulateV1": {
+  "ok": "[{\"baseFeePerGas\":\"0x0\",\"blobGasUsed\":\"0x0\",\"calls\":[{\"returnData\":\"0x\",\"logs\":[],\"gasUsed\":\"0x5208\",\"maxUsedGas\":\"0x5208\",\"status\":\"0x1\"}],\"difficulty\":\"0x1\",\""
+ },
+ "eth_getBlockReceipts": {
+  "ok": "[{\"blockHash\":\"0x4d0f208f528d5e238ad414df4b767cdf9ffe72888041d0dbda959348a6890bcd\",\"blockNumber\":\"0x3681\",\"contractAddress\":null,\"cumulativeGasUsed\":\"0x0\",\"effe"
+ },
+ "eth_call_state_override": {
+  "ok": "0x000000000000000000000000000000000000000000000000000000000000002a",
+  "supported": true
+ }
+}

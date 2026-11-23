@@ -77,6 +77,17 @@ delete process.env.AI_GATEWAY
   assert.equal(decodeRevert('0x4e487b71' + w(0x11)), 'panic code 0x11')
   ok('failed tx: revert reason decoded by replay, red revert point in the graph, template says fee still charged')
 }
+// 2b real gateway answer for a reverting eth_call (recorded 2026-11-23: USDC.e transfer of more than the balance)
+{
+  const real = '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002645524332303a207472616e7366657220616d6f756e7420657863656564732062616c616e63650000000000000000000000000000000000000000000000000000'
+  assert.equal(decodeRevert(real), 'ERC20: transfer amount exceeds balance')
+  const t = { [H('1')]: { tx: { from: USER, to: POOL, input: sel('foo()'), value: '0x0' }, rcpt: rcpt({ status: '0x0' }) } }
+  const d = deps({ txs: t, prices: PRICES })
+  const orig = d.rpc
+  d.rpc = async (m, p) => { if (m === 'eth_call' && p[0].from) { throw Object.assign(new Error('execution reverted: ERC20: transfer amount exceeds balance'), { data: { code: 'wrapped' } }) } return orig(m, p) }
+  assert.equal((await buildFacts(D(), d)).facts.tx.revertReason, 'ERC20: transfer amount exceeds balance')
+  ok('real revert bytes decode; a wrapped error without bytes falls back to the message text')
+}
 // 3 Gully-Core-style swap: verified ABI, tuple selector, two transfers, Thin chip on the low-liquidity token
 {
   const input = sel(swapSig) + '00'
