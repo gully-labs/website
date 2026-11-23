@@ -1,0 +1,109 @@
+# Gully Labs shared gitleaks config (gully-ops/.gitleaks.toml; copy into every repo root).
+# Owner order 2026-11-23: prevent secret leaks. Run: `gitleaks git . --config .gitleaks.toml --redact` (history)
+# or `gitleaks dir . --config .gitleaks.toml --redact` (working tree). Pre-commit runs `gitleaks git --staged`.
+# Tuned on 47 repos / full history: the stock rules produced about 2,900 raw hits, nearly all contract addresses,
+# tx hashes and test fixtures. The allowlists below remove those; every rule that remains should be a real find.
+title = "Gully Labs"
+
+[extend]
+useDefault = true
+
+# ---- Gully-specific shapes ---------------------------------------------------------------------------------
+[[rules]]
+id = "gully-telegram-bot-token"
+description = "Telegram bot token"
+regex = '''\b\d{8,10}:AA[A-Za-z0-9_-]{33}\b'''
+keywords = [":aa"]
+
+[[rules]]
+id = "gully-anthropic-key"
+description = "Anthropic API key"
+regex = '''sk-ant-[A-Za-z0-9_-]{20,}'''
+keywords = ["sk-ant-"]
+
+[[rules]]
+id = "gully-voyage-key"
+description = "Voyage AI key"
+regex = '''\bpa-[A-Za-z0-9_-]{40,}\b'''
+keywords = ["pa-"]
+
+[[rules]]
+id = "gully-rpc-url-with-key"
+description = "dRPC / Alchemy / Infura / QuickNode / Chainstack / Helius URL that embeds a key"
+regex = '''(?i)https?://[a-z0-9.\-]*(drpc\.org|alchemy\.com|infura\.io|quiknode\.pro|chainstack\.com|helius[a-z.\-]*)/[^\s"'`]*[A-Za-z0-9_\-]{24,}'''
+keywords = ["drpc", "alchemy", "infura", "quiknode", "chainstack", "helius"]
+
+[[rules]]
+id = "gully-postgres-url"
+description = "Postgres URL with an inline password"
+regex = '''postgres(?:ql)?://[^:\s/@"']+:[^@\s"']{8,}@[^\s"']+'''
+keywords = ["postgres"]
+
+[[rules]]
+id = "gully-hex-private-key"
+description = "64-hex value assigned to a private-key style name"
+regex = '''(?i)(priv(ate)?[_-]?key|deployer[_-]?key|signer[_-]?key|attester[_-]?key|owner[_-]?key)["']?\s*[:=]\s*["']?(0x)?[0-9a-f]{64}\b'''
+keywords = ["key"]
+
+[[rules]]
+id = "gully-mnemonic"
+description = "Seed phrase assigned to a mnemonic / seed-phrase name"
+regex = '''(?i)(mnemonic|seed[_ ]?phrase)["']?\s*[:=]\s*["'](?:[a-z]{3,8}\s){11,23}[a-z]{3,8}["']'''
+keywords = ["mnemonic", "seed"]
+
+[[rules]]
+id = "gully-cloudflare-token"
+description = "Cloudflare API token assigned"
+regex = '''(?i)(cloudflare|cf)[_-]?(api)?[_-]?(token|key)["']?\s*[:=]\s*["']?[A-Za-z0-9_-]{37,40}["']?'''
+keywords = ["cloudflare", "cf_"]
+
+[[rules]]
+id = "gully-secret-assign"
+description = "JWT / HMAC / session / webhook / admin secret assigned a long literal"
+regex = '''(?i)\b[a-z_]*(jwt|hmac|session|cookie|webhook|admin|api)[_-]?(secret|token|key)["']?\s*[:=]\s*["'][A-Za-z0-9+/=_\-]{32,}["']'''
+keywords = ["secret", "token", "key"]
+
+[[rules]]
+id = "gully-basic-auth-in-url"
+description = "user:password@ credentials inside an https URL"
+regex = '''https?://[A-Za-z0-9._~%-]{2,}:[A-Za-z0-9._~%!$&*+=-]{8,}@[A-Za-z0-9.-]+'''
+keywords = ["://"]
+
+# ---- Allowlists: known non-secrets -------------------------------------------------------------------------
+[[allowlists]]
+description = "Contract addresses, commit and tx hashes are not secrets (private-key shapes are caught by gully-hex-private-key)"
+targetRules = ["generic-api-key"]
+regexTarget = "secret"
+regexes = ['''^(0x)?[0-9a-fA-F]{40}$''', '''^(0x)?[0-9a-fA-F]{64}$''', '''^(0x)?[0-9a-fA-F]{66}$''']
+
+[[allowlists]]
+description = "Well-known public dev keys (Anvil / Hardhat accounts 0-2) and the public test mnemonic"
+stopwords = [
+  "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+  "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+  "5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
+  "test test test test test test test test test test test junk",
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+]
+
+[[allowlists]]
+description = "Obvious placeholders in docs and examples"
+regexTarget = "match"
+regexes = ['''(?i)(your[_-]?(api[_-]?)?key|<[a-z_ -]+>|\$\{[A-Z_]+\}|\{\{[^}]+\}\}|changeme|change-me|placeholder|xxxxxxxx|REDACTED|example\.com)''']
+
+[[allowlists]]
+description = "Generated or vendored files that hold no credentials"
+paths = [
+  '''(^|/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|Cargo\.lock|go\.sum|poetry\.lock)$''',
+  '''(^|/)\.yarn/releases/''',
+  '''(^|/)lib/(forge-std|openzeppelin-contracts)/''',
+  '''(^|/)node_modules/''',
+  '''(^|/)(dist|build|out|broadcast|forge-cache)/''',
+  '''(^|/)deployments?/[^/]*\.json$''',
+  '''\.min\.js$''',
+]
+
+[[allowlists]]
+description = "Fake tokens in unit-test fixtures (test dirs only; rules for keys that look like real vendor tokens)"
+targetRules = ["generic-api-key", "gully-anthropic-key", "gully-telegram-bot-token", "stripe-access-token", "discord-client-id", "gully-postgres-url", "curl-auth-header", "shopify-access-token", "gully-rpc-url-with-key", "gully-secret-assign"]
+paths = ['''(^|/)(test|tests|__tests__|fixtures|e2e|qa)/''', '''\.(test|spec)\.[cm]?[jt]sx?$''']
