@@ -64,6 +64,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { clientIp, DATA_DIR, json, rateKey } from './http.mjs'
 import { capPerPage, cosine, expandQuery, makeIndex, rerank, rrf } from './ask-index.mjs'
+import { fuseV2, PER_URL_V2, retrieveVersion } from './ai/retrieve-v2.mjs'
 import { embedConfigured, embedQuery, embedStatus, syncEmbeddings, vectorFor } from './ask-embed.mjs'
 import { readRemote, remoteChunks, startRemoteLoop } from './ask-remote.mjs'
 import { APP_URL, currentPageUrl, holderPageUrl, securityReportUrl, securityUrl } from './hosts.mjs'
@@ -145,6 +146,8 @@ export function addChunksForTest(chunks) {
 }
 export const searchIndex = (q, opts) => index.search(q, opts)
 export const indexSize = () => index.size
+/** Tests: the indexed chunks, in index order. */
+export const indexChunksForTest = () => index.chunks
 /** Embeds whatever has no vector yet (startAsk, tests). */
 export const syncEmbeddingsNow = () => syncEmbeddings(index.chunks)
 
@@ -175,8 +178,11 @@ const MIN_COSINE = 0.2
  * nearest chunks by embedding when vectors exist), fused by reciprocal-rank fusion, the top RERANK_TOP
  * re-ranked by question coverage, then at most `perUrl` per page. Returns { results, mode, lists }.
  * mode is 'hybrid' when the vector list took part, else 'bm25'.
+ * Fusion: v2 (ai/retrieve-v2.mjs: vectors weighted up, coverage only a tie-breaker, PER_URL_V2 per page) whenever
+ * vectors took part; ASK_RETRIEVE=v1 goes back to the v1 re-rank. With no vectors the v1 path runs as before.
+ * `version` in the answer says which ran.
  */
-export async function retrieve(question, { k = 6, perUrl = 2 } = {}) {
+export async function retrieve(question, { k = 6, perUrl } = {}) {
   ensureEmbeddings()
   const lists = [{ name: 'bm25', items: index.search(question, { k: CANDIDATES, perUrl: Infinity }) }]
   const ex = expandQuery(question)
@@ -195,8 +201,13 @@ export async function retrieve(question, { k = 6, perUrl = 2 } = {}) {
       mode = 'hybrid'
     }
   }
+  const counts = Object.fromEntries(lists.map((l) => [l.name, l.items.length]))
+  if (mode === 'hybrid' && retrieveVersion() === 'v2') {
+    const by = Object.fromEntries(lists.map((l) => [l.name, l.items]))
+    return { results: capPerPage(fuseV2(question, { bm25: by.bm25, expanded: by.expanded, vector: by.vector }), { k, perUrl: perUrl ?? PER_URL_V2 }), mode, lists: counts, version: 'v2' }
+  }
   const fused = rerank(question, rrf(lists).slice(0, RERANK_TOP))
-  return { results: capPerPage(fused, { k, perUrl }), mode, lists: Object.fromEntries(lists.map((l) => [l.name, l.items.length])) }
+  return { results: capPerPage(fused, { k, perUrl: perUrl ?? 2 }), mode, lists: counts, version: 'v1' }
 }
 
 function indexUpdatedAt() {
