@@ -258,4 +258,13 @@ ID admin session and a passkey confirmation (`/auth/gully/stepup`) in the last 5
   `node` (uid 1000) with that group and mode 0440. A server running as root instead chowns them to 1001:1001, mode 0400.
 - Every change and refusal is logged (`{"evt":"admin_integrations",...}`, sub as a 12-hex tag) and kept in
   `/data/admin-integrations-audit.json` (the last 500). No value is ever logged, stored elsewhere or sent back.
+- **Developer tools group** (owner, 2026-11-23): the same page also holds the publisher and App details for the Gully
+  developer tools (`server/admin-integrations-devtools.mjs`): VS Marketplace token + publisher id, Open VSX token +
+  namespace, the GitHub App (App ID, private key PEM, webhook secret, installation notes), optional Chrome / Edge /
+  Firefox store credentials for the Gully Lens extension, and guide-only rows (npm 2FA, Apple Developer, Tauri updater
+  key, Windows signing: nothing stored). Same storage folder, same step-up, same audit (names only). Ids and namespaces
+  are shown; every token, key and secret is write-only. A PEM is only accepted as a full RSA key with its BEGIN/END lines
+  (stored with LF line ends, one trailing newline, mode 0400/0440); wallet keys are still refused. A setup panel lists
+  which tool waits for which item. The Check button makes only safe reads (GitHub `GET /app` signed with the key, a public
+  Open VSX namespace read); nothing publishes anything: the release lane reads the files when the owner says publish.
 - Test: `npm run test:admin-integrations`.
