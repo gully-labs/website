@@ -5,18 +5,20 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { makeIndex, expandQuery, rrf, rerank, capPerPage, cosine } from '../../server/ask-index.mjs'
-import { fuseV2, DEFAULTS } from '../../server/ai/retrieve-v2.mjs'
+import { fuseV2, DEFAULTS, PER_URL_V2 } from '../../server/ai/retrieve-v2.mjs'
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const cache = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'))
-const chunks = JSON.parse(fs.readFileSync(path.join(root, 'server', 'data', 'ask-index.json'), 'utf8')).chunks
+const allChunks = JSON.parse(fs.readFileSync(path.join(root, 'server', 'data', 'ask-index.json'), 'utf8')).chunks
+// The cache is keyed by chunk id, so an index that changed since the cache was made still lines up (chunks without a vector are left out).
+const vecOf = new Map(cache.chunkIds.map((id, j) => [id, cache.dv[j]]).filter(([, v]) => v))
+const chunks = allChunks.filter((c) => vecOf.has(c.id))
 const index = makeIndex(chunks)
-const dv = cache.dv
 const gold = new Map(fs.readFileSync(process.argv[3] ?? path.join(root, 'scripts', 'ai-eval', 'retrieval-questions.tsv'), 'utf8').split('\n').filter((l) => l && !l.startsWith('#')).map((l) => l.split('\t')).map(([g, q]) => [q, g.startsWith('http') ? g : `https://docs.gullylabs.xyz/${g}`]))
-const Q = cache.questions.map((q, i) => ({ q, url: gold.get(q), v: cache.qv[i] }))
+const Q = cache.questions.map((q, i) => ({ q, url: gold.get(q), v: cache.qv[i] })).filter((x) => x.v && x.url)
 
 const lists = Q.map((x) => {
-  const near = chunks.map((c, i) => ({ chunk: c, score: cosine(x.v, dv[i]) })).sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id)).slice(0, 30)
+  const near = chunks.map((c) => ({ chunk: c, score: cosine(x.v, vecOf.get(c.id)) })).sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id)).slice(0, 30)
   const ex = expandQuery(x.q)
   return { bm25: index.search(x.q, { k: 30, perUrl: Infinity }), expanded: ex ? index.search(ex, { k: 30, perUrl: Infinity }) : [], vector: near }
 })
@@ -36,8 +38,8 @@ const odd = all.filter((i) => i % 2), even = all.filter((i) => !(i % 2))
 const cap = (l) => capPerPage(l, { k: 5, perUrl: 2 })
 const v1 = (q, L) => cap(rerank(q, rrf([{ name: 'bm25', items: L.bm25 }, ...(L.expanded.length ? [{ name: 'expanded', items: L.expanded, weight: 0.8 }] : []), { name: 'vector', items: L.vector.filter((r) => r.score >= 0.2) }]).slice(0, 20)))
 const vec = (q, L) => L.vector.slice(0, 5)
-const v2 = (o) => (q, L) => cap(fuseV2(q, L, o))
-console.log('model', cache.model, 'questions', Q.length)
+const v2 = (o) => (q, L) => capPerPage(fuseV2(q, L, o), { k: 5, perUrl: PER_URL_V2 })
+console.log('model', cache.model, 'questions', Q.length, 'chunks', chunks.length, 'of', allChunks.length)
 console.log('v1 current       ', JSON.stringify(score(v1, all)))
 console.log('vector only      ', JSON.stringify(score(vec, all)))
 console.log('v2 defaults      ', JSON.stringify(score(v2({}), all)))

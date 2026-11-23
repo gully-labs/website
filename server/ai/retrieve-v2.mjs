@@ -8,6 +8,8 @@ import { rrf, capPerPage, tokenize } from '../ask-index.mjs'
 
 export const DEFAULTS = { wBm25: 0.5, wExpanded: 0.6, wVector: 8, coverage: 0.04, head: 0.02, prior: 0.03, pool: 20, minCosine: 0.2 }
 const SOURCE_PRIOR = { Docs: 1, Legal: 1, Features: 1, Site: 0.5, 'Ops notes': -0.5, 'Gully Pay contracts': -0.5, 'Telegram bot': -1, 'Telegram Mini App': -1.5 }
+// v2 allows 3 passages of one page (v1: 2): measured better on both question sets (see EVAL-REPORT.md).
+export const PER_URL_V2 = 3
 export const v2On = () => String(process.env.ASK_RETRIEVE ?? '') === 'v2'
 
 /**
