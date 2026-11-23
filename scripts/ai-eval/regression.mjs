@@ -37,7 +37,7 @@ export function check(c, res) {
   if (e.cites && !(cited.length && cited.every((n) => res.sources.some((s) => s.n === n)))) f.push('does not cite an existing source')
   if (e.saysUnknown && !UNKNOWN.test(t)) f.push('does not say it does not know')
   if (e.noFigures && figures(t).length) f.push(`invented figures: ${figures(t).join(',')}`)
-  if (e.figuresFromSources) {
+  if (e.figuresFromSources && !res.noSourceText) {
     const hay = res.sources.map((s) => s.text).join(' ').replace(/,/g, '') + ' ' + c.q
     const bad = figures(t.replace(/\[\d+\]/g, '')).filter((x) => !hay.includes(x))
     if (bad.length) f.push(`figures not in sources: ${bad.join(',')}`)
@@ -51,7 +51,39 @@ export function check(c, res) {
 }
 
 const here = path.dirname(fileURLToPath(import.meta.url))
-const real = process.argv.includes('--real')
+const argv = process.argv.slice(2)
+const urlArg = argv.includes('--url') ? argv[argv.indexOf('--url') + 1] : null
+const real = argv.includes('--real')
+if (urlArg) {
+  // Live API mode (read-only questions). Spaced to stay inside the per-visitor limit (6/min, 60/day by default):
+  // --gap-ms 12000 (default), --retrieval N adds the first N paraphrased retrieval questions (pass if a cited page is the gold page).
+  const gap = Number(argv[argv.indexOf('--gap-ms') + 1]) || 12_000
+  const nRet = argv.includes('--retrieval') ? Number(argv[argv.indexOf('--retrieval') + 1]) || 0 : 0
+  const tsv = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'retrieval-questions.tsv'), 'utf8').split(String.fromCharCode(10)).filter((l) => l && !l.startsWith('#')).map((l) => l.split(String.fromCharCode(9)))
+  const items = [...CASES.map((c) => ({ c })), ...tsv.slice(0, nRet).map(([g, q], i) => ({ c: { id: `ret-${i + 1}`, q, expect: { cites: true } }, gold: (g.startsWith('http') ? g : `https://docs.gullylabs.xyz/${g}`).split('#')[0] }))]
+  let bad = 0, goldHit = 0, goldN = 0
+  const rows = []
+  for (const { c, gold } of items) {
+    let r
+    for (let a = 0; a < 3; a++) {
+      const resp = await fetch(urlArg, { method: 'POST', headers: { 'content-type': 'application/json', 'x-requested-with': 'gully' }, body: JSON.stringify({ question: c.q }) })
+      if (resp.status === 429) { await new Promise((x) => setTimeout(x, (Number(resp.headers.get('retry-after')) || 60) * 1000)); continue }
+      r = resp.ok ? await resp.json() : { error: `HTTP ${resp.status}` }
+      break
+    }
+    await new Promise((x) => setTimeout(x, gap))
+    if (!r || r.error) { bad++; rows.push({ id: c.id, ok: false, why: r?.error ?? 'rate limited' }); console.log(`FAIL ${c.id}: ${r?.error ?? 'rate limited'}`); continue }
+    const res = { text: r.answer, sources: (r.citations ?? []).map((x) => ({ n: x.n, text: x.title ?? '' })), tools: r.usedTools ?? r.tools ?? [], noSourceText: true }
+    const fails = check(c, res)
+    if (gold) { goldN++; if ((r.citations ?? []).some((x) => String(x.url).split('#')[0] === gold)) goldHit++; else fails.push('gold page not cited (informational)') }
+    const hard = fails.filter((x) => !/informational/.test(x))
+    if (hard.length) bad++
+    rows.push({ id: c.id, ok: !hard.length, fails })
+    console.log(`${hard.length ? 'FAIL' : 'ok  '} ${c.id}${fails.length ? ': ' + fails.join('; ') : ''}`)
+  }
+  console.log(JSON.stringify({ total: items.length, failed: bad, goldPageCited: goldN ? `${goldHit}/${goldN}` : null, at: new Date().toISOString() }))
+  process.exit(bad ? 1 : 0)
+}
 if (real) {
   const ask = await import('../../server/ask.mjs')
   let bad = 0
