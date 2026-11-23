@@ -9,7 +9,6 @@ import { chunkSection, clean, markdownSections } from './ask-index.mjs'
 
 /** `start` pages are read when the host has no sitemap.xml. */
 export const DOC_SITES = [
-  { key: 'docs:swoop', label: 'Swoop Ads docs', source: 'Swoop Ads docs', host: 'docs.swoopads.xyz', start: ['/'] },
   { key: 'docs:core', label: 'Gully Core docs', source: 'Gully Core docs', host: 'docs.gullycore.xyz', start: ['/'] },
   { key: 'docs:chain', label: 'Gully Chain docs', source: 'Gully Chain docs', host: 'docs.gullychain.xyz', start: ['/'] },
   { key: 'docs:kre8', label: 'kre8 docs', source: 'kre8 docs', host: 'docs.kre8.fun', start: ['/'] },

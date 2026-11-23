@@ -9,6 +9,7 @@ import { AskLauncher } from '../components/ask/AskLauncher'
 import { FollowBar } from '../components/FollowBar'
 import { track } from '../lib/track'
 import { apiOrigin, DOC_KEYWORDS, DOC_PAGES, DocsBase, SITE, useDocHref, type DocSlug } from './nav'
+import { GullySpot } from '../components/GullySpot'
 import { PoweredByBadge } from '../components/PoweredByBadge'
 
 type Health = 'checking' | 'live' | 'down'
@@ -314,6 +315,7 @@ export function DocsLayout() {
       <div className="mx-auto grid max-w-[1440px] grid-cols-[232px_minmax(0,1fr)] gap-12 px-6 max-[899px]:grid-cols-1 max-[600px]:px-4">
         <aside className="sticky top-[64px] h-[calc(100dvh-64px)] overflow-y-auto py-10 max-[899px]:hidden">
           <Sidebar onPick={() => undefined} />
+          <GullySpot unit="text" scope="docs" className="mt-6" />
         </aside>
         <main id="docs-main" className="min-w-0 py-12 pb-24 max-[600px]:py-8">
           <Outlet />

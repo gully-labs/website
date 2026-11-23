@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router'
 import { Seo } from '../components/Seo'
 import { DeepCheckCard } from '../components/holders/DeepCheck'
 import { BadgeBlock } from '../components/holders/BadgeBlock'
+import { GullySpot } from '../components/GullySpot'
 import { HolderMap } from '../components/holders/HolderMap'
 import { useHolderMap } from '../lib/holders'
 import { holderHref } from '../site-host'
@@ -81,6 +82,7 @@ export function HoldersPage() {
           </div>
         ))}
       </section>
+      {m?.state === 'ok' && <GullySpot unit="banner" delay={2500} className="mx-auto mt-4" />}
     </div>
   )
 }

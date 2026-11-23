@@ -1,0 +1,8 @@
+{
+  "name": "gully-ai-sidecar",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "CPU embeddings + reranker sidecar for Gully AI (ONNX via transformers.js). Models are downloaded at first start into MODEL_DIR, never committed.",
+  "dependencies": { "@huggingface/transformers": "^3.7.0" }
+}

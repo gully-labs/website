@@ -374,13 +374,20 @@ try {
   /* ---------------------------------------------------- remote refresh --- */
   const README = '<p align="center"><img src="x.png"></p>\n# Gully SDK\n\nA typed client for the platypus tracker.\n\n## Install\n\nRun the installer for platypus.\n'
   // Only the GitHub READMEs answer; the product docs sites (fixed hosts) are not reachable in this test.
-  const good = async (u) => (String(u).includes('raw.githubusercontent.com') ? { ok: true, status: 200, text: async () => README } : { ok: false, status: 404, text: async () => '' })
+  const swoopFetch = async (url) => {
+    const u = String(url)
+    if (u === 'https://docs.swoopads.xyz/') return { ok: true, status: 200, text: async () => '<div data-search="/assets/search-abc.json"></div>' }
+    if (u.endsWith('/assets/search-abc.json')) return { ok: true, status: 200, text: async () => JSON.stringify({ v: 1, entries: [{ page: 'The tag', group: 'Build', url: '/tag/#install', heading: 'Install', text: 'Add one script line from swoopads.xyz and mount a unit with your spot key.' }, { page: 'Evil', group: 'x', url: 'https://evil.example/x', heading: 'x', text: 'ignored' }] }) }
+    return { ok: true, status: 200, text: async () => README }
+  }
+  const good = async (u) => (String(u).startsWith('https://docs.swoopads.xyz') ? swoopFetch(u) : String(u).includes('raw.githubusercontent.com') ? { ok: true, status: 200, text: async () => README } : { ok: false, status: 404, text: async () => '' })
   const bad = async () => ({ ok: false, status: 503, text: async () => '' })
   const first = await remote.refreshRemote({ fetchImpl: good })
   const n1 = remote.remoteChunks(first).length
   check('remote: READMEs become chunks, and no DeepCore docs source exists any more', n1 > 5 && !('deepcore-docs' in first.sources) && first.sources['github:sdk'].chunks.some((c) => c.url === 'https://github.com/gully-labs/sdk/blob/main/README.md#install'))
   check('remote: the blog is skipped without GHOST_CONTENT_KEY', !('blog' in first.sources))
   check('remote: HTML is stripped from READMEs', !JSON.stringify(first).includes('<img'))
+  check('remote: the Swoop Ads docs become chunks with absolute docs.swoopads.xyz links, other origins are skipped', first.sources['swoop-docs']?.ok === true && first.sources['swoop-docs'].chunks.length === 1 && first.sources['swoop-docs'].chunks[0].url === 'https://docs.swoopads.xyz/tag/#install' && first.sources['swoop-docs'].chunks[0].source === 'Swoop Ads docs')
   const second = await remote.refreshRemote({ fetchImpl: bad })
   check('remote: a failed refresh keeps the last good copy of every source', remote.remoteChunks(second).length === n1 && Object.entries(second.sources).filter(([k]) => k.startsWith('github:')).map(([, v]) => v).every((s) => s.ok === false && /503/.test(s.error) && s.lastGoodAt === first.updatedAt))
   const stored = JSON.parse(fs.readFileSync(path.join(tmp, 'ask-remote.json'), 'utf8'))
