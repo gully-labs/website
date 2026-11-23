@@ -1,0 +1,194 @@
+{
+ "case": "native",
+ "hash": "0x874d8976d4f832b20ff6024338ec768306a132813cf4b679b811b0923c45f17d",
+ "recordedAt": "2026-11-23T21:27:12.731Z",
+ "ok": true,
+ "code": null,
+ "indexerRows": [],
+ "rec": {
+  "rpc": [
+   {
+    "m": "eth_getTransactionReceipt",
+    "p": [
+     "0x874d8976d4f832b20ff6024338ec768306a132813cf4b679b811b0923c45f17d"
+    ],
+    "result": {
+     "blockHash": "0x3b7a55e3c4a646a13a08af674f8df9afc513c48076118d0f0bf0b78feeab86e9",
+     "blockNumber": "0x3686",
+     "contractAddress": null,
+     "cumulativeGasUsed": "0x56d4",
+     "effectiveGasPrice": "0x5f5e100",
+     "from": "0x27b745fff6526cc10517e168226b915d7afd883f",
+     "gasUsed": "0x56d4",
+     "gasUsedForL1": "0x4cc",
+     "l1BlockNumber": "0xba216b",
+     "logs": [],
+     "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+     "status": "0x1",
+     "to": "0x6891fe35b6260ff278b608b5a4b5b7e6de226e81",
+     "transactionHash": "0x874d8976d4f832b20ff6024338ec768306a132813cf4b679b811b0923c45f17d",
+     "transactionIndex": "0x1",
+     "type": "0x0"
+    }
+   },
+   {
+    "m": "eth_getTransactionByHash",
+    "p": [
+     "0x874d8976d4f832b20ff6024338ec768306a132813cf4b679b811b0923c45f17d"
+    ],
+    "result": {
+     "blockHash": "0x3b7a55e3c4a646a13a08af674f8df9afc513c48076118d0f0bf0b78feeab86e9",
+     "blockNumber": "0x3686",
+     "blockTimestamp": "0x6b04aecb",
+     "from": "0x27b745fff6526cc10517e168226b915d7afd883f",
+     "gas": "0x61a8",
+     "gasPrice": "0x5f5e100",
+     "hash": "0x874d8976d4f832b20ff6024338ec768306a132813cf4b679b811b0923c45f17d",
+     "input": "0x",
+     "nonce": "0x7",
+     "to": "0x6891fe35b6260ff278b608b5a4b5b7e6de226e81",
+     "transactionIndex": "0x1",
+     "value": "0xa43cab37edb",
+     "type": "0x0",
+     "chainId": "0x768d6",
+     "v": "0xed1d0",
+     "r": "0x11de1ce06f4c3f91a7b42c90a8f3980ccc09c4717dcad20a00e971965eb6f1c2",
+     "s": "0xe3901aeca67902146749c8e57444c0d39d7a99dc37a7a4ac1ac053e426f1e55"
+    }
+   }
+  ],
+  "abi": {},
+  "price": {},
+  "ethUsd": {
+   "usd": 1718.6997773533778,
+   "liquidityUsd": null,
+   "thin": null
+  }
+ },
+ "facts": {
+  "schema": 1,
+  "chain": {
+   "id": 485590,
+   "name": "Gully Chain Testnet",
+   "testnet": true,
+   "label": "Testnet: no real value"
+  },
+  "tx": {
+   "hash": "0x874d8976d4f832b20ff6024338ec768306a132813cf4b679b811b0923c45f17d",
+   "status": "success",
+   "block": 13958,
+   "from": "0x27b745fff6526cc10517e168226b915d7afd883f",
+   "to": "0x6891fe35b6260ff278b608b5a4b5b7e6de226e81",
+   "valueEth": "0.000011",
+   "valueUsd": "$0.02",
+   "revertReason": null
+  },
+  "method": {
+   "name": "plain transfer",
+   "signature": null,
+   "source": "known"
+  },
+  "actor": {
+   "address": "0x27b745fff6526cc10517e168226b915d7afd883f",
+   "short": "0x27b7…883f"
+  },
+  "aa": null,
+  "fee": {
+   "eth": "0.000002",
+   "usd": "<$0.01",
+   "paidBy": "sender"
+  },
+  "transfers": [],
+  "approvals": [],
+  "contracts": [],
+  "counts": {
+   "transfers": 0,
+   "approvals": 0,
+   "logs": 0
+  },
+  "notes": [],
+  "graph": {
+   "complete": false,
+   "note": "Built from the receipt and its logs. Calls made inside the transaction need a trace and are not drawn.",
+   "nodes": [
+    {
+     "id": "0x27b745fff6526cc10517e168226b915d7afd883f",
+     "kind": "wallet",
+     "label": "Sender",
+     "addr": "0x27b745fff6526cc10517e168226b915d7afd883f",
+     "verified": null
+    },
+    {
+     "id": "0x6891fe35b6260ff278b608b5a4b5b7e6de226e81",
+     "kind": "contract",
+     "label": "plain transfer",
+     "addr": "0x6891fe35b6260ff278b608b5a4b5b7e6de226e81",
+     "verified": null
+    },
+    {
+     "id": "network",
+     "kind": "address",
+     "label": "Network fee",
+     "addr": "network",
+     "verified": null
+    }
+   ],
+   "edges": [
+    {
+     "id": "e1",
+     "amountUsd": null,
+     "amountRaw": null,
+     "token": null,
+     "logIndex": null,
+     "trace": "tx.to",
+     "failed": false,
+     "from": "0x27b745fff6526cc10517e168226b915d7afd883f",
+     "to": "0x6891fe35b6260ff278b608b5a4b5b7e6de226e81",
+     "kind": "call",
+     "step": 1
+    },
+    {
+     "id": "e2",
+     "amountUsd": "<$0.01",
+     "amountRaw": "0.000002",
+     "token": null,
+     "logIndex": null,
+     "trace": "receipt",
+     "failed": false,
+     "from": "0x27b745fff6526cc10517e168226b915d7afd883f",
+     "to": "network",
+     "kind": "fee",
+     "step": 2
+    }
+   ],
+   "steps": [
+    {
+     "n": 1,
+     "text": "0x27b7…883f called plain transfer on 0x6891…6e81 with 0.000011 ETH.",
+     "edgeIds": [
+      "e1"
+     ]
+    },
+    {
+     "n": 2,
+     "text": "Network fee 0.000002 ETH (<$0.01).",
+     "edgeIds": [
+      "e2"
+     ]
+    }
+   ],
+   "revertPoint": null
+  },
+  "allowedNumbers": [
+   "0",
+   "0.000002",
+   "0.000011",
+   "0.01",
+   "0.02",
+   "1",
+   "13958",
+   "2",
+   "485590"
+  ]
+ }
+}

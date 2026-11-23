@@ -122,7 +122,7 @@ export function realDeps(env = process.env) {
       if (!r.ok || !j) throw new Error(`rpc HTTP ${r.status}`)
       return j.result
     },
-    // Sourcify v2: GET /v2/contract/<chainId>/<address>?fields=abi (assumed shape; unverified against verify.gullychain.xyz)
+    // Sourcify v2, VERIFIED 2026-11-23: GET /v2/contract/<chainId>/<address>?fields=abi -> { abi: [...] }; an address with no match answers 200 { match: null } and no abi.
     async abi(address) {
       try {
         const j = await getJson(`${sourcify}/v2/contract/${CHAIN_ID}/${address}?fields=abi`)
@@ -131,12 +131,22 @@ export function realDeps(env = process.env) {
         return null
       }
     },
-    // Indexer token record: priceUsd + liquidityUsd (assumed `GET /tokens/<address>`; the shared price service kre8 and Core read).
+    // Indexer token record, VERIFIED 2026-11-23: GET /tokens/<address> -> { head, token: { priceUsd, liquidityUsd, thin, ... } }; unknown token = 404 {"error":"unknown token"}.
+    // ETH/USD: the indexer does not list the native coin or WETH as a token (404), so the rate is the ETH row of /stats/chain (usd / amount).
+    async ethUsd() {
+      try {
+        const j = await getJson(`${indexer}/stats/chain`)
+        const e = (j?.byAsset ?? []).find((a) => a.symbol === 'ETH' && a.priced && a.amount > 0)
+        return e ? { usd: e.usd / e.amount, liquidityUsd: null, thin: null } : null
+      } catch {
+        return null
+      }
+    },
     async price(token) {
       try {
         const j = await getJson(`${indexer}/tokens/${token}`)
         const t = j?.token ?? j
-        return typeof t?.priceUsd === 'number' && t.priceUsd > 0 ? { usd: t.priceUsd, liquidityUsd: typeof t.liquidityUsd === 'number' ? t.liquidityUsd : null } : null
+        return typeof t?.priceUsd === 'number' && t.priceUsd > 0 ? { usd: t.priceUsd, liquidityUsd: typeof t.liquidityUsd === 'number' ? t.liquidityUsd : null, thin: typeof t.thin === 'boolean' ? t.thin : null } : null
       } catch {
         return null
       }
@@ -184,10 +194,15 @@ export async function buildFacts({ chainId, txHash }, deps = realDeps()) {
   let revertReason = null
   if (!success && to) {
     try {
-      await deps.rpc('eth_call', [{ from: tx.from, to: tx.to, data: tx.input, value: tx.value }, '0x' + (big(rcpt.blockNumber) - 1n).toString(16)])
-      notes.push('The revert reason could not be reproduced.')
+      await deps.rpc('eth_call', [{ from: tx.from, to: tx.to, data: tx.input, value: tx.value, gas: tx.gas }, '0x' + (big(rcpt.blockNumber) - 1n).toString(16)])
+      // Real case 2026-11-23 (createLaunch): the call succeeds one block earlier, because earlier transactions in its own block changed the state it ran on. Without a trace the reason is unknown.
+      notes.push('The reason could not be reproduced: the same call succeeds on the state one block earlier.')
+      const limit = big(tx.gas)
+      const pct = limit > 0n ? Number((big(rcpt.gasUsed) * 100n) / limit) : null
+      if (pct !== null && pct >= 95) notes.push(`It used ${pct}% of its gas limit, so it may have run out of gas.`)
     } catch (e) {
-      revertReason = decodeRevert(e?.data) ?? null
+      // data is the raw revert bytes on the gateway (verified live 2026-11-23); an eRPC wrapper object or a node without data still has the text in the message
+      revertReason = decodeRevert(e?.data) ?? (/^execution reverted: (.{1,200})$/.exec(String(e?.message ?? ''))?.[1] ?? null)
       if (!revertReason) notes.push('The transaction reverted without a readable reason.')
     }
   }
@@ -243,7 +258,7 @@ export async function buildFacts({ chainId, txHash }, deps = realDeps()) {
     const dec = meta.decimals ?? 18
     if (meta.decimals === null) noDecimals.add(token)
     const usdVal = meta.price ? unitsToNum(raw, dec) * meta.price.usd : null
-    const thin = meta.price && meta.price.liquidityUsd !== null && meta.price.liquidityUsd < THIN_USD
+    const thin = meta.price && (meta.price.thin === true || (meta.price.thin == null && meta.price.liquidityUsd !== null && meta.price.liquidityUsd < THIN_USD))
     if (!contractsSeen.has(token)) contractsSeen.set(token, { verified: null })
     const row = { kind: 'erc20', logIndex: Number(big(l.logIndex)), token, symbol: meta.symbol, from: addrOfTopic(l.topics[1]), to: addrOfTopic(l.topics[2]), amount: fmtUnits(raw, dec), usd: fmtUsd(usdVal), ...(thin ? { thin: true } : {}) }
     if (t0 === T_TRANSFER) transfers.push(row)
@@ -254,11 +269,12 @@ export async function buildFacts({ chainId, txHash }, deps = realDeps()) {
 
   // fee
   const feeWei = big(rcpt.gasUsed) * big(rcpt.effectiveGasPrice || tx.gasPrice)
-  const ethPrice = await Promise.resolve(deps.price(WETH)).catch(() => null)
+  const ethPrice = await Promise.resolve(deps.ethUsd ? deps.ethUsd() : deps.price(WETH)).catch(() => null)
   const feeUsd = ethPrice ? unitsToNum(feeWei, 18) * ethPrice.usd : null
   const value = big(tx.value)
   const valueUsd = ethPrice && value > 0n ? unitsToNum(value, 18) * ethPrice.usd : null
   if (!ethPrice) notes.push('No USD price for ETH was available, so dollar figures are left out.')
+  else notes.push('Dollar figures use current prices, not the price at the time of the transaction.')
 
   const facts = {
     schema: 1,
@@ -376,7 +392,7 @@ export function templateExplanation(f) {
   else parts.push(`It called a function on ${short(f.tx.to)} that is not decoded, because the contract's source is not published.`)
   for (const t of f.transfers.filter((x) => x.kind === 'erc20').slice(0, 4)) parts.push(`${t.amount} ${t.symbol ?? 'tokens'}${t.usd ? ` (${t.usd}${t.thin ? ', thin liquidity' : ''})` : ''} moved from ${nm(t.from)} to ${nm(t.to)}.`)
   for (const a of f.approvals.slice(0, 2)) parts.push(`It gave ${short(a.spender)} permission to spend ${a.amount} ${a.symbol ?? 'tokens'}.`)
-  if (f.tx.status === 'reverted') parts.push(`The transaction failed${f.tx.revertReason ? `: ${f.tx.revertReason}` : ' and no reason was readable'}. Nothing moved, but the network fee was still charged.`)
+  if (f.tx.status === 'reverted') parts.push(`The transaction failed${f.tx.revertReason ? `: ${f.tx.revertReason}` : ' and no reason was readable'}. Nothing moved, but the network fee was still charged.${f.notes.find((x) => /gas limit/.test(x)) ? ' ' + f.notes.find((x) => /gas limit/.test(x)) : ''}`)
   else parts.push('It succeeded.')
   parts.push(`Network fee: ${f.fee.eth} ETH${f.fee.usd ? ` (${f.fee.usd})` : ''}.`)
   parts.push(`${TESTNET_LABEL}.`)

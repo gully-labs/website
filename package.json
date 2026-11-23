@@ -36,7 +36,7 @@
     "test:feeproxy": "node scripts/test-fee-proxy.mjs",
     "test:gas": "node scripts/test-gas.mjs",
     "test:ask": "node scripts/test-ask.mjs",
-    "test:explain-tx": "node scripts/test-explain-tx.mjs",
+    "test:explain-tx": "node scripts/test-explain-tx.mjs && node scripts/test-explain-tx-real.mjs",
     "test:ai-gateway": "node scripts/test-ai-gateway.mjs && node scripts/ai-eval/regression.mjs",
     "test:ask-coverage": "node scripts/test-ask-coverage.mjs",
     "test:workspaces": "node scripts/test-workspaces.mjs",
