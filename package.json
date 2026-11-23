@@ -42,6 +42,7 @@
     "test:ask-coverage": "node scripts/test-ask-coverage.mjs",
     "test:ask-knowledge": "node --test scripts/test-ask-knowledge.mjs",
     "test:ask-health": "node --test scripts/test-ask-health.mjs",
+    "test:ai-settings": "node --test scripts/test-ai-settings.mjs",
     "test:openapi": "node --test scripts/test-openapi.mjs",
     "load:ask-fake": "node scripts/load-ask-fake.mjs",
     "test:workspaces": "node scripts/test-workspaces.mjs",

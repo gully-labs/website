@@ -39,6 +39,7 @@ interface Group {
   guideOnly?: boolean
   canCheck?: boolean
   notes?: Note[]
+  status?: { state: string; label: string; search?: string; since?: string | null; lastCheck?: { at: string; result: string } | null }
 }
 interface Progress {
   tool: string
@@ -68,13 +69,15 @@ function FieldRow({ f, token, unlocked, onSaved }: { f: Field; token: string; un
   const plain = f.value !== undefined
   const inputCls = `${field44} min-w-0 flex-1 font-mono`
   const save = async (clear: boolean) => {
-    if (clear && !window.confirm(`Remove ${f.label}? The Chain Kit runner stops using it on its next run.`)) return
+    if (clear && !window.confirm(`Remove ${f.label}? Whatever reads it stops using it.`)) return
     setBusy(true)
     const r = await call(token, `/api/admin/integrations/${f.name}`, clear ? 'DELETE' : 'PUT', clear ? undefined : { value })
     setBusy(false)
     if (!r.ok) return toastError(clear ? 'Could not remove it' : 'Could not save it', { detail: r.error })
     setValue('')
-    toastSuccess(clear ? `${f.label} removed` : `${f.label} saved`)
+    const chk = r.data?.check as { ok?: boolean; detail?: string } | undefined
+    if (chk && !chk.ok) toastError(`${f.label} saved, but not accepted`, { detail: chk.detail })
+    else toastSuccess(clear ? `${f.label} removed` : `${f.label} saved`, chk?.detail ? { detail: chk.detail } : undefined)
     onSaved()
   }
   return (
@@ -159,7 +162,10 @@ function GroupCard({ g, token, unlocked, onSaved }: { g: Group; token: string; u
     setCheck({ busy: true })
     const r = await call(token, `/api/admin/integrations/check/${g.id}`, 'POST')
     setCheck(r.ok ? { busy: false, ok: !!r.data?.ok, detail: String(r.data?.detail ?? '') } : { busy: false, ok: false, detail: r.error })
+    if (g.status) onSaved()
   }
+  const st = g.status
+  const stTone = st?.state === 'configured' ? 'border-green/40 text-green' : st?.state === 'not_configured' ? 'border-line-strong text-faint' : 'border-error/50 text-error'
   return (
     <div className="flex min-w-0 flex-col gap-3" data-testid={`integrations-${g.id}`}>
       <h3 className="m-0 text-[16px] font-semibold text-ink">
@@ -167,6 +173,19 @@ function GroupCard({ g, token, unlocked, onSaved }: { g: Group; token: string; u
       </h3>
       <p className="m-0 text-[13px] text-muted">{g.body}</p>
       {g.usedIn && <p className="m-0 text-[12px] text-faint">Where this is used: {g.usedIn}</p>}
+      {st && (
+        <div className="flex min-w-0 flex-col gap-1 rounded-input border border-line px-3 py-3" role="status" data-testid={`status-${g.id}`} data-state={st.state}>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={pillCls(stTone)}>{st.state === 'configured' ? 'Configured' : st.state === 'not_configured' ? 'Not configured' : st.state === 'rejected' ? 'Rejected' : 'Account problem'}</span>
+            <span className="min-w-0 text-[13px] text-ink">{st.label}</span>
+          </div>
+          <span className="text-[12px] text-faint">
+            {st.lastCheck ? `Last check: ${st.lastCheck.result}, ${dateTimePT(st.lastCheck.at)}` : 'Not checked yet. Press Check after saving a key.'}
+            {st.since ? ` · not answering since ${dateTimePT(st.since)}` : ''}
+            {st.search ? ` · semantic search ${st.search}` : ''}
+          </span>
+        </div>
+      )}
       {g.guide && (
         <details className="rounded-input border border-line px-3 py-2 text-[13px] text-muted" data-testid={`guide-${g.id}`}>
           <summary className="cursor-pointer text-ink">How to get these</summary>
@@ -266,6 +285,13 @@ export default function IntegrationsAdmin({ token }: { token: string }) {
       {data?.groups.filter((g) => !g.section).map((g) => (
         <GroupCard key={g.id} g={g} token={token} unlocked={unlocked} onSaved={load} />
       ))}
+      {data?.groups
+        .filter((g) => g.section === 'ai')
+        .map((g) => (
+          <div key={g.id} className="flex min-w-0 flex-col gap-4 border-t border-line pt-5" data-testid="integrations-ai">
+            <GroupCard g={g} token={token} unlocked={unlocked} onSaved={load} />
+          </div>
+        ))}
       {data?.groups.some((g) => g.section === 'devtools') && (
         <div className="flex min-w-0 flex-col gap-4 border-t border-line pt-5" data-testid="integrations-devtools">
           <h3 className="m-0 font-display text-[18px] font-bold uppercase">Developer tools</h3>

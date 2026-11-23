@@ -1,4 +1,5 @@
-// Retrieval fusion v2 for Gully AI (flag ASK_RETRIEVE=v2; default stays the v1 path in ask.mjs retrieve()).
+// Retrieval fusion v2 for Gully AI. The DEFAULT in ask.mjs retrieve() whenever vectors took part (ASK_RETRIEVE=v1 is
+// the rollback switch; with no vectors the v1 BM25 path runs unchanged).
 // A pure function over candidate lists, so the same code runs in the eval/tuner (scripts/ai-eval/tune-retrieve.mjs)
 // and, once the hardening lane has merged, inside ask.mjs. v1 weakness measured on the 103-question set:
 // the coverage re-rank (+0.35 covered, +0.15 title, source prior) dominates the fused rank and pulls good
@@ -10,7 +11,9 @@ export const DEFAULTS = { wBm25: 0.5, wExpanded: 0.6, wVector: 8, coverage: 0.04
 const SOURCE_PRIOR = { Docs: 1, Legal: 1, Features: 1, Site: 0.5, 'Ops notes': -0.5, 'Gully Pay contracts': -0.5, 'Telegram bot': -1, 'Telegram Mini App': -1.5 }
 // v2 allows 3 passages of one page (v1: 2): measured better on both question sets (see EVAL-REPORT.md).
 export const PER_URL_V2 = 3
-export const v2On = () => String(process.env.ASK_RETRIEVE ?? '') === 'v2'
+/** 'v2' unless ASK_RETRIEVE=v1 (read on every call: the switch needs a restart of the env, not a build). */
+export const retrieveVersion = () => (String(process.env.ASK_RETRIEVE ?? '').trim().toLowerCase() === 'v1' ? 'v1' : 'v2')
+export const v2On = () => retrieveVersion() === 'v2'
 
 /**
  * lists: { bm25: [{chunk}], expanded?: [{chunk}], vector?: [{chunk, score}] } best first.

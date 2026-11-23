@@ -32,7 +32,10 @@ import path from 'node:path'
 import { adminSessionOf, stepUpUntil } from './admin-auth.mjs'
 import { subTag } from './admin-gully-id.mjs'
 import { DATA_DIR, json, readJson } from './http.mjs'
+import { AI_FIELD_NAMES, AI_GROUPS, aiProviderStatus, forgetAiCheck, runAiCheck } from './admin-integrations-ai.mjs'
 import { DEVTOOLS_GROUPS, pemShape, progressOf, runDevtoolsTest } from './admin-integrations-devtools.mjs'
+import { aiSettingsChanged, integrationsDir } from './ai-settings.mjs'
+import { askProviderHealth, checkProvider, providerRecheck, setProviderProbeFetch } from './ask.mjs'
 import { looksLikeWalletSecret, RateLimit, WALLET_REFUSED } from './integrations-guard.mjs'
 
 const OVH_ENDPOINTS = ['ovh-eu', 'ovh-ca', 'ovh-us', 'soyoustart-eu', 'soyoustart-ca', 'kimsufi-eu', 'kimsufi-ca']
@@ -58,10 +61,10 @@ export const INTEGRATION_GROUPS = [
     fields: [{ name: 'GULLYPAY_CHAINKIT_WEBHOOK_SECRET', label: 'Webhook signing key', hint: 'shown once by Gully Pay', format: /^[A-Za-z0-9_-]{16,128}$/, hexKeyOk: true }],
   },
 ]
-INTEGRATION_GROUPS.push(...DEVTOOLS_GROUPS)
+INTEGRATION_GROUPS.push(...DEVTOOLS_GROUPS, ...AI_GROUPS)
 const FIELDS = new Map(INTEGRATION_GROUPS.flatMap((g) => g.fields.map((f) => [f.name, f])))
 
-export const integrationsDir = () => process.env.CHAINKIT_INTEGRATIONS_DIR || '/srv/chainkit/integrations'
+export { integrationsDir }
 const auditFile = () => path.join(process.env.DATA_DIR ?? DATA_DIR, 'admin-integrations-audit.json')
 const writes = new RateLimit(20, 10 * 60_000)
 const checks = new RateLimit(10, 10 * 60_000)
@@ -69,7 +72,7 @@ const checks = new RateLimit(10, 10 * 60_000)
 export const resetLimits = () => { writes.hits.clear(); checks.hits.clear() }
 /** Tests swap the network out with setCheckFetch; production uses fetch. */
 let checkFetchImpl = null
-export const setCheckFetch = (fn) => { checkFetchImpl = fn }
+export const setCheckFetch = (fn) => { checkFetchImpl = fn; setProviderProbeFetch(fn) }
 const checkFetch = () => checkFetchImpl ?? fetch
 const idOf = (n) => (Number.isInteger(n) && n >= 0 ? n : null)
 
@@ -121,11 +124,13 @@ function removeFile(p) {
   fs.rmSync(p, { force: true })
 }
 
-function writeValue(name, value) {
+/* ownerOnly (the Gully AI fields): this process is the only reader, so the file stays its own, mode 0400, whatever
+   group the Chain Kit files are shared with. */
+function writeValue(name, value, ownerOnly = false) {
   const dir = integrationsDir()
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 })
   const tmp = path.join(dir, `.${name}.${crypto.randomBytes(6).toString('hex')}.tmp`)
-  const o = fileOwner()
+  const o = ownerOnly ? { uid: -1, gid: -1, mode: 0o400 } : fileOwner()
   try {
     fs.writeFileSync(tmp, value, { mode: 0o600, flag: 'wx' })
     if (o.uid !== -1 || o.gid !== -1) fs.chownSync(tmp, o.uid, o.gid)
@@ -156,6 +161,7 @@ function groupView(g, rows) {
   if (g.optionalGroup) out.optionalGroup = true
   if (g.guideOnly) out.guideOnly = true
   if (g.notes) out.notes = g.notes
+  if (g.section === 'ai') out.status = aiProviderStatus(askProviderHealth())
   if (g.test) out.canCheck = true
   else if (g.section === 'devtools' && !g.guideOnly) out.canCheck = true
   return out
@@ -203,11 +209,12 @@ export async function handleIntegrationsAdmin(req, res, url) {
     const rows = readAudit()
     return json(res, 200, { groups: INTEGRATION_GROUPS.map((g) => groupView(g, rows)), progress: progressOf((n) => readStored(n) !== null), stepUp: { via: s ? 'gully_id' : 'token', until: stepUpUntil(s) } }), true
   }
-  const chk = /^\/api\/admin\/integrations\/check\/(dt_[a-z0-9_]{2,40})$/.exec(p)?.[1]
+  const chk = /^\/api\/admin\/integrations\/check\/((?:dt|ai)_[a-z0-9_]{2,40})$/.exec(p)?.[1]
   if (chk) {
     if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }, { Allow: 'POST' }), true
     if (!checks.take(s?.sub ?? 'token')) return json(res, 429, { code: 'rate_limited', error: 'Too many checks. Wait a few minutes.' }), true
-    const r = await runDevtoolsTest(chk, readStored, checkFetch())
+    const ai = AI_GROUPS.some((g) => g.id === chk)
+    const r = ai ? await runAiCheck(() => checkProvider({ fetchImpl: checkFetch() })) : await runDevtoolsTest(chk, readStored, checkFetch())
     audit(s?.sub, chk, 'check', r.result)
     return json(res, r.status, { ok: r.ok, result: r.result, detail: r.detail }), true
   }
@@ -233,7 +240,7 @@ export async function handleIntegrationsAdmin(req, res, url) {
         audit(s.sub, name, action, 'refused', bad.why ?? bad.code)
         return json(res, bad.status, { code: bad.code, error: bad.message }), true
       }
-      writeValue(name, cleanValue(f, body.value))
+      writeValue(name, cleanValue(f, body.value), !!f.ownerOnly)
     }
   } catch (e) {
     audit(s.sub, name, action, 'error', String(e?.code ?? 'error').slice(0, 40))
@@ -241,5 +248,16 @@ export async function handleIntegrationsAdmin(req, res, url) {
     return json(res, 500, { code: 'write_failed', error: 'The setting could not be saved on the server. Check that the integrations folder is mounted and writable.' }), true
   }
   audit(s.sub, name, action, 'ok')
-  return json(res, 200, { field: fieldView(f, readAudit()) }), true
+  let check
+  if (AI_FIELD_NAMES.has(name)) {
+    // In use from the next request: no restart. A new provider key is probed once, now (free: no text, no tokens).
+    if (name === 'ANTHROPIC_API_KEY') forgetAiCheck()
+    aiSettingsChanged(name)
+    if (name === 'ANTHROPIC_API_KEY' && action === 'set') {
+      const r = await runAiCheck(providerRecheck)
+      audit(s.sub, 'ai_provider', 'check', r.result)
+      check = { ok: r.ok, result: r.result, detail: r.detail }
+    }
+  }
+  return json(res, 200, { field: fieldView(f, readAudit()), ...(check ? { check } : {}) }), true
 }

@@ -15,6 +15,8 @@
 //   AI_COST_JSON={"anthropic":{"in":x,"out":y}}   USD per 1M tokens, owner-entered, optional (cost tile only)
 // Tasks: answer, tools, classify, rewrite, moderate, summarize.
 
+import { aiSetting } from '../ai-settings.mjs'
+
 export class GatewayOff extends Error {}
 export class GatewayError extends Error {
   constructor(msg, { status = 0, retryable = true } = {}) {
@@ -43,7 +45,7 @@ const timeout = (ms) => AbortSignal.timeout(Number(process.env.AI_TIMEOUT_MS) ||
 
 export const anthropicProvider = {
   name: 'anthropic',
-  configured: () => String(process.env.ANTHROPIC_API_KEY ?? '').trim().length >= 16,
+  configured: () => aiSetting('ANTHROPIC_API_KEY').length >= 16,
   caching: true,
   async call(req, model) {
     const base = String(process.env.ANTHROPIC_API_URL ?? 'https://api.anthropic.com').replace(/\/+$/, '')
@@ -55,7 +57,7 @@ export const anthropicProvider = {
       messages: req.messages,
       ...(req.temperature != null ? { temperature: req.temperature } : {}),
     }
-    const r = await fetch(`${base}/v1/messages`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' }, body: JSON.stringify(body), redirect: 'manual', signal: timeout(30_000) })
+    const r = await fetch(`${base}/v1/messages`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-api-key': aiSetting('ANTHROPIC_API_KEY'), 'anthropic-version': '2023-06-01' }, body: JSON.stringify(body), redirect: 'manual', signal: timeout(30_000) })
     const j = await r.json().catch(() => null)
     if (!r.ok || !Array.isArray(j?.content)) throw new GatewayError(`anthropic HTTP ${r.status}`, { status: r.status, retryable: r.status >= 500 || r.status === 429 || r.status === 408 })
     const u = j.usage ?? {}

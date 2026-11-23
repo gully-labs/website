@@ -26,6 +26,9 @@
 //
 // Env
 //   ANTHROPIC_API_KEY   required; without it every surface says Ask is not available (503 / configured: false)
+//                       The owner saves it on admin Integrations ("Gully AI: model provider"): that saved value wins
+//                       over this variable and is used at once, no restart (ai-settings.mjs). Same for VOYAGE_API_KEY,
+//                       ASK_DAILY_CAP, ASK_PRICE_INPUT/OUTPUT_PER_MTOK and ASK_FALLBACK_MODEL.
 //   ANTHROPIC_API_URL   optional, tests: the API base (default https://api.anthropic.com)
 //   ASK_MODEL           answers (default claude-haiku-5-5)
 //   ASK_DRAFT_MODEL     admin drafts (default claude-sonnet-5-5)
@@ -61,6 +64,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { clientIp, DATA_DIR, json, rateKey } from './http.mjs'
 import { capPerPage, cosine, expandQuery, makeIndex, rerank, rrf } from './ask-index.mjs'
+import { fuseV2, PER_URL_V2, retrieveVersion } from './ai/retrieve-v2.mjs'
 import { embedConfigured, embedQuery, embedStatus, syncEmbeddings, vectorFor } from './ask-embed.mjs'
 import { readRemote, remoteChunks, startRemoteLoop } from './ask-remote.mjs'
 import { APP_URL, currentPageUrl, holderPageUrl, securityReportUrl, securityUrl } from './hosts.mjs'
@@ -73,7 +77,8 @@ import { holdersFacts } from './holders-intel.mjs'
 import { diffSnapshots, knowledgeView, publicView, VersionStore } from './ask-knowledge.mjs'
 import { CapAlerter, capLevel, Gate, opsView, pricesFromEnv } from './ask-ops.mjs'
 import { EvalHistory, EVAL_SET, runEval } from './ask-eval.mjs'
-import { KEY_ERROR, probeProvider, readHealth, writeHealth } from './ask-health.mjs'
+import { KEY_ERROR, probeProvider, probeStatus, readHealth, writeHealth } from './ask-health.mjs'
+import { aiSetting, aiSettingsEnv, onAiSettingsChanged } from './ai-settings.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 // ASK_INDEX_FILE (tests): another built index, e.g. npm run ask:index -- --out <file>.
@@ -92,13 +97,14 @@ const LOG_KEEP_DAYS = 90
 const TIMEOUT_MS = 60_000
 
 const envInt = (k, d) => {
-  const n = Number(process.env[k])
+  const n = Number(aiSetting(k) || undefined)
   return Number.isInteger(n) && n > 0 ? n : d
 }
 export const askModel = () => String(process.env.ASK_MODEL ?? '').trim() || 'claude-haiku-5-5'
 export const draftModel = () => String(process.env.ASK_DRAFT_MODEL ?? '').trim() || 'claude-sonnet-5-5'
+/* The key saved on the admin Integrations page when there is one, else the environment variable (ai-settings.mjs). */
 const apiKey = () => {
-  const k = String(process.env.ANTHROPIC_API_KEY ?? '').trim()
+  const k = aiSetting('ANTHROPIC_API_KEY')
   return k.length >= 20 ? k : null
 }
 export const askConfigured = () => !!apiKey()
@@ -140,6 +146,8 @@ export function addChunksForTest(chunks) {
 }
 export const searchIndex = (q, opts) => index.search(q, opts)
 export const indexSize = () => index.size
+/** Tests: the indexed chunks, in index order. */
+export const indexChunksForTest = () => index.chunks
 /** Embeds whatever has no vector yet (startAsk, tests). */
 export const syncEmbeddingsNow = () => syncEmbeddings(index.chunks)
 
@@ -170,8 +178,11 @@ const MIN_COSINE = 0.2
  * nearest chunks by embedding when vectors exist), fused by reciprocal-rank fusion, the top RERANK_TOP
  * re-ranked by question coverage, then at most `perUrl` per page. Returns { results, mode, lists }.
  * mode is 'hybrid' when the vector list took part, else 'bm25'.
+ * Fusion: v2 (ai/retrieve-v2.mjs: vectors weighted up, coverage only a tie-breaker, PER_URL_V2 per page) whenever
+ * vectors took part; ASK_RETRIEVE=v1 goes back to the v1 re-rank. With no vectors the v1 path runs as before.
+ * `version` in the answer says which ran.
  */
-export async function retrieve(question, { k = 6, perUrl = 2 } = {}) {
+export async function retrieve(question, { k = 6, perUrl } = {}) {
   ensureEmbeddings()
   const lists = [{ name: 'bm25', items: index.search(question, { k: CANDIDATES, perUrl: Infinity }) }]
   const ex = expandQuery(question)
@@ -190,8 +201,13 @@ export async function retrieve(question, { k = 6, perUrl = 2 } = {}) {
       mode = 'hybrid'
     }
   }
+  const counts = Object.fromEntries(lists.map((l) => [l.name, l.items.length]))
+  if (mode === 'hybrid' && retrieveVersion() === 'v2') {
+    const by = Object.fromEntries(lists.map((l) => [l.name, l.items]))
+    return { results: capPerPage(fuseV2(question, { bm25: by.bm25, expanded: by.expanded, vector: by.vector }), { k, perUrl: perUrl ?? PER_URL_V2 }), mode, lists: counts, version: 'v2' }
+  }
   const fused = rerank(question, rrf(lists).slice(0, RERANK_TOP))
-  return { results: capPerPage(fused, { k, perUrl }), mode, lists: Object.fromEntries(lists.map((l) => [l.name, l.items.length])) }
+  return { results: capPerPage(fused, { k, perUrl: perUrl ?? 2 }), mode, lists: counts, version: 'v1' }
 }
 
 function indexUpdatedAt() {
@@ -743,6 +759,42 @@ export async function restoreProviderHealth({ probe = process.env.ASK_STARTUP_PR
   }
   return { restored: !!saved, probe: result }
 }
+/**
+ * One free probe of the key in use, now (the admin Check button, and after a key change). A refused key marks the
+ * provider unavailable; an accepted key clears a stored key problem (not a billing one: the probe cannot see billing).
+ * Returns { result: 'ok' | 'unavailable' | 'unknown' | 'none', status }. Never throws, never returns the key.
+ */
+let probeFetch = null
+/** Tests swap the probe's network out; null = fetch. */
+export const setProviderProbeFetch = (fn) => (probeFetch = fn)
+export async function checkProvider({ fetchImpl = probeFetch ?? fetch } = {}) {
+  const key = apiKey()
+  if (!key) return { result: 'none', status: null }
+  const p = await probeStatus({ base: apiBase(), key, fetchImpl })
+  if (apiKey() !== key) return p // the key changed while we asked: that change runs its own check
+  if (p.result === 'unavailable') markProvider(false, 'probe: the provider refused the key')
+  else if (p.result === 'ok' && !providerHealth.ok && KEY_ERROR.test(providerHealth.lastError ?? '')) markProvider(true)
+  return p
+}
+/* A key saved (or removed) on the admin Integrations page: the old key's state says nothing about the new one, so the
+   stored 'unavailable' is cleared and the new key is probed at once. No restart, no deploy. */
+let lastRecheck = null
+async function providerKeyChanged() {
+  if (!providerHealth.ok || failing.n) {
+    Object.assign(failing, { n: 0, since: null })
+    if (providerHealth.ok) saveHealth()
+    else markProvider(true)
+  }
+  const p = await checkProvider()
+  if (started && askConfigured()) startBackground()
+  return p
+}
+onAiSettingsChanged((name) => {
+  if (name === 'ANTHROPIC_API_KEY') lastRecheck = providerKeyChanged().catch(() => ({ result: 'unknown', status: null }))
+  else if (name === 'VOYAGE_API_KEY') queueMicrotask(() => askConfigured() && ((embedTriedAt = 0), ensureEmbeddings()))
+})
+/** Resolves when the check started by the last key change is done (its result), at once when there was none. */
+export const providerRecheck = () => lastRecheck ?? Promise.resolve(null)
 const PROVIDER_ACCOUNT = /credit balance|billing|plan.*(upgrade|purchase)|disabled|deactivated|suspended|invalid (x-)?api[- ]?key|api[- ]?key.*(invalid|disabled|revoked)|authentication|permission/i
 const isProviderAccountError = (status, message) => status === 401 || ((status === 400 || status === 403) && PROVIDER_ACCOUNT.test(message))
 function scrub(text, key) {
@@ -777,7 +829,7 @@ export async function callClaude(body) {
     if (e?.busy) throw new AskError('Ask is busy just now. Try again in a minute.', 503, 'busy')
     first = e
   }
-  const fb = String(process.env.ASK_FALLBACK_MODEL ?? '').trim()
+  const fb = aiSetting('ASK_FALLBACK_MODEL')
   if (!fb || fb === body.model || first?.code === 'provider-unavailable' || !first?.retriable) {
     if (first?.retriable) noteCallResult(false)
     throw first
@@ -1744,8 +1796,8 @@ export function backlogMarkdown(days = 30) {
 
 /** Capacity, cost, latency and cap state for the admin tiles. */
 export function opsSummary(days = 30) {
-  const prices = pricesFromEnv()
-  return { ...opsView(readLog(days), { cap: dailyCap(), usedToday: usedToday(), prices, days, day: (iso) => dayLA(iso) }), provider: askProviderHealth().ok ? 'ok' : 'unavailable', queue: providerQueue(), fallbackModel: String(process.env.ASK_FALLBACK_MODEL ?? '').trim() || null, model: askModel(), alertsTo: 'the operators\' Telegram chat and the status page row (80 % and 100 % of the cap)' }
+  const prices = pricesFromEnv(aiSettingsEnv())
+  return { ...opsView(readLog(days), { cap: dailyCap(), usedToday: usedToday(), prices, days, day: (iso) => dayLA(iso) }), provider: askProviderHealth().ok ? 'ok' : 'unavailable', queue: providerQueue(), fallbackModel: aiSetting('ASK_FALLBACK_MODEL') || null, model: askModel(), alertsTo: 'the operators\' Telegram chat and the status page row (80 % and 100 % of the cap)' }
 }
 
 /* The eval: the retrieval layer is free; the answer layer calls the provider, so it runs only on purpose. */
@@ -1826,10 +1878,18 @@ export function startAsk() {
   versionStore().record(index.chunks, new Date().toISOString(), 'start')
   setInterval(pruneLog, 86_400_000).unref?.()
   if (askConfigured()) restoreProviderHealth().catch(() => undefined)
-  if (askConfigured() && embedConfigured()) syncEmbeddings(index.chunks)
   // Retries a failed or partial sync without waiting for a question.
   setInterval(() => askConfigured() && ensureEmbeddings(), 10 * 60_000).unref?.()
-  if (askConfigured() && process.env.ASK_REMOTE !== 'off') startRemoteLoop((doc) => rebuild(doc))
+  if (askConfigured()) startBackground()
+}
+/* What only runs with a key: the first embedding sync and the remote corpus loop. Also called when a key is saved on
+   the admin page after a start without one. */
+let background = false
+function startBackground() {
+  if (background) return
+  background = true
+  if (embedConfigured()) syncEmbeddings(index.chunks)
+  if (process.env.ASK_REMOTE !== 'off') startRemoteLoop((doc) => rebuild(doc))
 }
 /** Test hook: reloads the stored remote corpus into the index. */
 export const reloadRemoteForTest = () => rebuild()

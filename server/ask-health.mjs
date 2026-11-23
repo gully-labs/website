@@ -35,18 +35,20 @@ export function writeHealth(file, state, now = new Date().toISOString()) {
   }
 }
 
-/** One authenticated call that costs nothing. Returns 'ok' | 'unavailable' | 'unknown'. Never throws. */
-export async function probeProvider({ base, key, fetchImpl = fetch, timeoutMs = 8_000 }) {
-  if (!key) return 'unknown'
+/** One authenticated call that costs nothing. Returns { result: 'ok' | 'unavailable' | 'unknown', status } (status null = not reached). Never throws. */
+export async function probeStatus({ base, key, fetchImpl = fetch, timeoutMs = 8_000 }) {
+  if (!key) return { result: 'unknown', status: null }
   try {
     const r = await fetchImpl(`${base}/v1/models?limit=1`, { method: 'GET', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, redirect: 'manual', signal: AbortSignal.timeout(timeoutMs) })
-    if (r.status === 200) return 'ok'
-    if (r.status === 401 || r.status === 403) return 'unavailable'
-    return 'unknown'
+    const status = Number.isInteger(r?.status) ? r.status : null
+    return { result: status === 200 ? 'ok' : status === 401 || status === 403 ? 'unavailable' : 'unknown', status }
   } catch {
-    return 'unknown'
+    return { result: 'unknown', status: null }
   }
 }
+
+/** probeStatus, the result only: 'ok' | 'unavailable' | 'unknown'. */
+export const probeProvider = async (opts) => (await probeStatus(opts)).result
 
 /** A stored "unavailable" that a working key disproves (a key or sign-in problem; billing problems are not visible to the probe). */
 export const KEY_ERROR = /api[- ]?key|authentication|permission|HTTP 401|HTTP 403|probe/i

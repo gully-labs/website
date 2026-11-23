@@ -431,6 +431,38 @@ try {
   check('embeddings: the cache file holds vectors, never the key', !fs.readFileSync(path.join(tmp, 'ask-embeddings.json'), 'utf8').includes(process.env.VOYAGE_API_KEY))
   const h1 = await ask.retrieve('tiny smiling animal')
   check('hybrid: the query is embedded as a query and the semantic-only chunk ranks first', h1.mode === 'hybrid' && h1.results[0]?.chunk.id === 'quokka000001' && embedCalls.at(-1).inputType === 'query' && h1.lists.vector > 0, JSON.stringify({ lists: h1.lists, top: h1.results.map((r) => r.chunk.id) }))
+  {
+    // fusion v2 is the default once vectors exist; ASK_RETRIEVE=v1 is the old path, byte for byte
+    const { capPerPage, cosine, expandQuery, rerank, rrf } = await import('../server/ask-index.mjs')
+    const old = async (question, { k = 6, perUrl = 2 } = {}) => {
+      // the retrieve() of before this change, rebuilt from the same public parts
+      const lists = [{ name: 'bm25', items: ask.searchIndex(question, { k: 30, perUrl: Infinity }) }]
+      const ex = expandQuery(question)
+      if (ex) lists.push({ name: 'expanded', items: ask.searchIndex(ex, { k: 30, perUrl: Infinity }), weight: 0.8 })
+      const qv = await embed.embedQuery(question)
+      const near = ask.indexChunksForTest().map((c) => ({ chunk: c, v: embed.vectorFor(c) })).filter((x) => x.v && x.v.length === qv.length).map((x) => ({ chunk: x.chunk, score: cosine(qv, x.v) }))
+      near.sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
+      lists.push({ name: 'vector', items: near.slice(0, 30).filter((r) => r.score >= 0.2) })
+      return capPerPage(rerank(question, rrf(lists).slice(0, 20)), { k, perUrl })
+    }
+    const qs = ['tiny smiling animal', 'quokka marsupial Rottnest', 'how much do you charge', 'what is the L3', 'Gully Pay chains']
+    let same = true
+    let both = true
+    for (const q of qs) {
+      delete process.env.ASK_RETRIEVE
+      const v2 = await ask.retrieve(q)
+      process.env.ASK_RETRIEVE = 'v1'
+      const v1 = await ask.retrieve(q)
+      const want = await old(q)
+      same &&= v1.version === 'v1' && JSON.stringify(v1.results) === JSON.stringify(want)
+      both &&= v2.version === 'v2' && v2.mode === 'hybrid' && v2.results.length > 0 && v1.results.length > 0 && v2.results.every((r) => r.chunk?.id && typeof r.score === 'number')
+    }
+    delete process.env.ASK_RETRIEVE
+    check('retrieve: v2 is the default with vectors, and both paths return results', both)
+    check('retrieve: ASK_RETRIEVE=v1 is byte-identical to the retrieve() of before', same)
+    const perPage = (await ask.retrieve('Gully Pay chains', { k: 12 })).results.reduce((m, r) => m.set(r.chunk.url, (m.get(r.chunk.url) ?? 0) + 1), new Map())
+    check('retrieve v2: at most 3 passages of one page', Math.max(...perPage.values()) <= 3)
+  }
   const h2 = await ask.retrieve('quokka marsupial Rottnest')
   check('hybrid: a chunk found by both BM25 and vectors comes first', h2.results[0]?.chunk.id === 'quokka000001' && h2.lists.bm25 > 0 && h2.lists.vector > 0)
   check('status: retrieval hybrid once vectors exist', (await call('/api/ask/status')).data.retrieval === 'hybrid')

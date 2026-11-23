@@ -66,16 +66,20 @@ Object.assign(process.env, {
   ADMIN_TOKEN: ADMIN, TRACKER_LOOP: 'off', TRACKER_SKIP_APIS: '1', DEEPCORE_LOOP: 'off', ASK_REMOTE: 'off',
   IPFS_API: 'http://127.0.0.1:9', IPFS_GATEWAY: 'http://127.0.0.1:9', GULLYPAY_STATUS_URL: 'http://127.0.0.1:9', GULLYRPC_STATUS_URL: 'http://127.0.0.1:9',
   GULLY_ID_ISSUER: ISSUER, ADMIN_GULLY_SUBS: `${OWNER}, ${OTHER}`, ADMIN_PASSWORD_LOGIN: 'on', CHAINKIT_INTEGRATIONS_DIR: DIR,
+  ASK_STARTUP_PROBE: '0', ASK_EMBED_URL: 'http://127.0.0.1:9',
 })
-for (const k of ['TELEGRAM_BOT_TOKEN', 'GULLY_TREASURY_ADDRESS', 'ANTHROPIC_API_KEY', 'ADMIN_GULLY_ID', 'ADMIN_GULLY_ID_CLIENT_ID', 'CHAINKIT_INTEGRATIONS_GID', 'CHAINKIT_INTEGRATIONS_UID']) delete process.env[k]
+for (const k of ['TELEGRAM_BOT_TOKEN', 'GULLY_TREASURY_ADDRESS', 'ANTHROPIC_API_KEY', 'ANTHROPIC_API_URL', 'VOYAGE_API_KEY', 'ASK_DAILY_CAP', 'ASK_DAILY_LIMIT', 'ASK_FALLBACK_MODEL', 'ASK_PRICE_INPUT_PER_MTOK', 'ASK_PRICE_OUTPUT_PER_MTOK', 'ADMIN_GULLY_ID', 'ADMIN_GULLY_ID_CLIENT_ID', 'CHAINKIT_INTEGRATIONS_GID', 'CHAINKIT_INTEGRATIONS_UID']) delete process.env[k]
 
 const logs = []
 const realLog = console.log
+const realError = console.error
 console.log = (...a) => (logs.push(a.join(' ')), realLog(...a))
+console.error = (...a) => (logs.push(a.join(' ')), realError(...a))
 
 await import('../server/server.mjs')
 const auth = await import('../server/admin-auth.mjs')
 const ints = await import('../server/admin-integrations.mjs')
+const ask = await import('../server/ask.mjs')
 auth.configureAdminAuth({ now: () => clock })
 await new Promise((r) => setTimeout(r, 300))
 
@@ -272,6 +276,96 @@ try {
     check('devtools: every field name is on the allow-list and only those', noList.length === 16 && (await put(owner, 'GITHUB_TOKEN', 'ghp_' + 'a'.repeat(36))).status === 404)
   }
 
+  // ---------------------------------------------------------------- Gully AI: model provider
+  {
+    ints.resetLimits()
+    const tail = (s) => 'Qz7_'.repeat(23) + s
+    const ENVKEY = `sk-ant-api03-${tail('envEnvAA')}`
+    const FILEKEY = `sk-ant-api03-${tail('fileFiAA')}`
+    const FILEKEY2 = `sk-ant-api03-${tail('file2FAA')}`
+    const VOYAGE = 'pa-' + 'Vy9x'.repeat(10)
+    const wv = (n, v) => put(owner, n, v)
+    const list = async () => (await api('/api/admin/integrations', owner)).data.groups.find((g) => g.id === 'ai_provider')
+    const chk = () => api('/api/admin/integrations/check/ai_provider', { ...owner, method: 'POST', body: {} })
+    const seen = []
+    let accept = new Set()
+    let offline = false
+    ints.setCheckFetch(async (url, init) => {
+      seen.push({ url: String(url), method: init?.method, key: init?.headers?.['x-api-key'], body: init?.body })
+      if (offline) throw new Error('offline')
+      return { status: accept.has(init?.headers?.['x-api-key']) ? 200 : 401, json: async () => ({}) }
+    })
+
+    const g0 = await list()
+    check('ai: the group is on the page with its guide (Console, spend limit first) and six fields', g0.title === 'Gully AI: model provider' && g0.section === 'ai' && g0.canCheck === true && g0.fields.map((f) => f.name).join() === 'ANTHROPIC_API_KEY,VOYAGE_API_KEY,ASK_DAILY_CAP,ASK_PRICE_INPUT_PER_MTOK,ASK_PRICE_OUTPUT_PER_MTOK,ASK_FALLBACK_MODEL' && g0.guide.links.some((x) => x.url.startsWith('https://console.anthropic.com/')) && /spend limit/i.test(g0.guide.steps.join(' ')) && g0.guide.steps.findIndex((x) => /spend limit/i.test(x)) < g0.guide.steps.findIndex((x) => /Paste it below/.test(x)))
+    check('ai: nothing set = "not configured", Gully AI off, no last check', g0.status.state === 'not_configured' && g0.status.lastCheck === null && ask.askConfigured() === false)
+    check('ai: the keys are write-only fields, the settings are plain', g0.fields.find((f) => f.name === 'ANTHROPIC_API_KEY').value === undefined && g0.fields.find((f) => f.name === 'VOYAGE_API_KEY').value === undefined && g0.fields.find((f) => f.name === 'VOYAGE_API_KEY').optional && g0.fields.find((f) => f.name === 'ASK_DAILY_CAP').value === null)
+    check('ai: Check with no key says so and makes no call', (await chk()).data.result === 'incomplete' && seen.length === 0)
+
+    const bad = [['no prefix', 'api03-' + tail('x')], ['too short', 'sk-ant-abc'], ['a space inside', FILEKEY.slice(0, 40) + ' ' + FILEKEY.slice(40)], ['quotes around it', `"${FILEKEY}"`], ['a line break inside', FILEKEY.slice(0, 40) + '\n' + FILEKEY.slice(40)], ['far too long', 'sk-ant-' + 'a9Zq'.repeat(80)]]
+    for (const [why, v] of bad) check(`ai shape: ${why} is 400`, (await wv('ANTHROPIC_API_KEY', v)).status === 400 && !fs.existsSync(fileOf('ANTHROPIC_API_KEY')))
+    check('ai shape: a wallet key is refused on the key fields', (await wv('ANTHROPIC_API_KEY', '0x' + 'ab'.repeat(32))).status === 422 && (await wv('VOYAGE_API_KEY', 'cd'.repeat(32))).status === 422)
+
+    ints.resetLimits()
+    // the server's own (environment) key: used while nothing is saved, and it is the one the provider refuses
+    process.env.ANTHROPIC_API_KEY = ENVKEY
+    const c1 = await chk()
+    check('ai check: one GET /v1/models?limit=1 with the key in use, no body', c1.status === 200 && c1.data.result === 'rejected' && seen.length === 1 && seen[0].url === 'https://api.anthropic.com/v1/models?limit=1' && seen[0].method === 'GET' && seen[0].body === undefined && seen[0].key === ENVKEY)
+    check('ai check: the answer has no key in it', !c1.text.includes(ENVKEY) && !c1.text.includes('sk-ant-'))
+    const g1 = await list()
+    check('ai: a refused key shows "rejected", from the server settings, with the check time; Gully AI reads unavailable', g1.status.state === 'rejected' && g1.status.source === 'server' && g1.status.lastCheck?.result === 'rejected' && !!g1.status.lastCheck.at && ask.askStatus().provider === 'unavailable')
+
+    // the owner saves a new key: used at once, no restart
+    accept = new Set([FILEKEY])
+    const w = await wv('ANTHROPIC_API_KEY', `  ${FILEKEY}\n`)
+    check('ai save: 200, write-only answer, probed once with the NEW key (saved value wins over the server setting)', w.status === 200 && w.data.field.set === true && w.data.field.value === undefined && !w.text.includes(FILEKEY) && !w.text.includes('Qz7_') && w.data.check?.result === 'accepted' && seen.length === 2 && seen[1].key === FILEKEY)
+    check('ai save: the file holds the bare key, this process only (0400)', fs.readFileSync(fileOf('ANTHROPIC_API_KEY'), 'utf8') === FILEKEY && (posix ? (fs.statSync(fileOf('ANTHROPIC_API_KEY')).mode & 0o777) === 0o400 : (fs.statSync(fileOf('ANTHROPIC_API_KEY')).mode & 0o222) === 0))
+    check('ai save: no restart: the unavailable state is cleared and Gully AI is configured', ask.askStatus().provider === 'ok' && ask.askStatus().configured === true && ask.askProviderHealth().lastError === null)
+    const g2 = await list()
+    check('ai: status "configured", saved on this page, last check accepted', g2.status.state === 'configured' && g2.status.source === 'saved' && g2.status.lastCheck?.result === 'accepted' && /saved on this page/.test(g2.status.label))
+    check('ai: the stored health file says ok again (survives a restart)', JSON.parse(fs.readFileSync(path.join(tmp, 'ask-health.json'), 'utf8')).ok === true)
+
+    offline = true
+    const c2 = await chk()
+    check('ai check: an unreachable provider is "could not reach", and the key is not judged', c2.data.result === 'unreachable' && /Could not reach/.test(c2.data.detail) && ask.askStatus().provider === 'ok' && (await list()).status.state === 'configured')
+    offline = false
+
+    // a replacement key the provider refuses
+    const w2 = await wv('ANTHROPIC_API_KEY', FILEKEY2)
+    check('ai save: a saved key the provider refuses is kept but reported (rejected), Gully AI unavailable', w2.status === 200 && w2.data.check?.result === 'rejected' && seen.at(-1).key === FILEKEY2 && ask.askStatus().provider === 'unavailable' && (await list()).status.state === 'rejected')
+    accept = new Set([FILEKEY2])
+    check('ai check: once the provider accepts it, Check clears the state', (await chk()).data.result === 'accepted' && ask.askStatus().provider === 'ok')
+
+    // settings: plain values, in use at once
+    check('ai settings: the daily cap is a whole number, in use at once', (await wv('ASK_DAILY_CAP', 'lots')).status === 400 && (await wv('ASK_DAILY_CAP', '0')).status === 400 && (await wv('ASK_DAILY_CAP', '1.5')).status === 400 && (await wv('ASK_DAILY_CAP', '750')).data.field.value === '750' && ask.dailyCap() === 750)
+    check('ai settings: prices are positive numbers', (await wv('ASK_PRICE_INPUT_PER_MTOK', '-1')).status === 400 && (await wv('ASK_PRICE_INPUT_PER_MTOK', 'cheap')).status === 400 && (await wv('ASK_PRICE_INPUT_PER_MTOK', '1.25')).status === 200 && (await wv('ASK_PRICE_OUTPUT_PER_MTOK', '6')).status === 200)
+    check('ai settings: the fallback model is a model id', (await wv('ASK_FALLBACK_MODEL', 'gpt 4')).status === 400 && (await wv('ASK_FALLBACK_MODEL', 'claude-haiku-5-5')).data.field.value === 'claude-haiku-5-5' && ask.opsSummary(1).fallbackModel === 'claude-haiku-5-5')
+    check('ai settings: the Voyage key saves write-only', (await wv('VOYAGE_API_KEY', VOYAGE)).data.field.value === undefined && fs.readFileSync(fileOf('VOYAGE_API_KEY'), 'utf8') === VOYAGE)
+    ints.resetLimits()
+    const dc = await del(owner, 'ASK_DAILY_CAP')
+    check('ai settings: removing the cap goes back to the default', dc.status === 200 && ask.dailyCap() === 2000)
+
+    // remove the saved key: the server setting is used again (and it is still refused)
+    accept = new Set()
+    const dk = await del(owner, 'ANTHROPIC_API_KEY')
+    await ask.providerRecheck()
+    const g3 = await list()
+    check('ai clear: the file is gone, the server setting is in use again and probed', dk.status === 200 && !fs.existsSync(fileOf('ANTHROPIC_API_KEY')) && seen.at(-1).key === ENVKEY && g3.status.source === 'server' && g3.status.state === 'rejected')
+    delete process.env.ANTHROPIC_API_KEY
+    check('ai: signed out cannot read, check or write', (await api('/api/admin/integrations/check/ai_provider', { method: 'POST', body: {} })).status === 401 && (await api('/api/admin/integrations/ANTHROPIC_API_KEY', { method: 'PUT', body: { value: FILEKEY } })).status === 401)
+    check('ai: the break-glass token cannot save a key', (await put({ bearer: ADMIN }, 'ANTHROPIC_API_KEY', FILEKEY)).status === 403 && !fs.existsSync(fileOf('ANTHROPIC_API_KEY')))
+
+    const rows = JSON.parse(fs.readFileSync(path.join(tmp, 'admin-integrations-audit.json'), 'utf8'))
+    const every = [JSON.stringify(rows), logs.join('\n'), ...fs.readdirSync(tmp).filter((x) => /\.json$/.test(x)).map((x) => fs.readFileSync(path.join(tmp, x), 'utf8'))].join('\n')
+    check('ai audit: names only; no key, no part of one, in the audit file, the log or any data file', ![ENVKEY, FILEKEY, FILEKEY2, VOYAGE, 'sk-ant-', 'Qz7_Qz7_', 'Vy9xVy9x'].some((v) => every.includes(v)))
+    check('ai: the list never carries a key or a part of one', !['Qz7_', 'Vy9x'].some((v) => JSON.stringify(g3).includes(v)) && !(await api('/api/admin/integrations', owner)).text.includes('Qz7_'))
+    check('ai audit: set, clear, refused and check rows are there', rows.some((r) => r.name === 'ANTHROPIC_API_KEY' && r.action === 'set' && r.result === 'ok' && r.sub === OWNER) && rows.some((r) => r.name === 'ANTHROPIC_API_KEY' && r.action === 'clear') && rows.some((r) => r.name === 'ANTHROPIC_API_KEY' && r.result === 'refused') && rows.some((r) => r.name === 'ai_provider' && r.action === 'check' && r.result === 'rejected') && rows.some((r) => r.name === 'ai_provider' && r.result === 'accepted'))
+    check('ai: no model call is ever made by this page (GET /v1/models only)', seen.every((x) => x.method === 'GET' && x.url.endsWith('/v1/models?limit=1')))
+    ints.setCheckFetch(null)
+    ask.resetAskProviderForTest()
+    ints.resetLimits()
+  }
+
   {
     const rows = JSON.parse(fs.readFileSync(path.join(tmp, 'admin-integrations-audit.json'), 'utf8'))
     const values = [KEY, SECRET, 'a1'.repeat(32), 'ab'.repeat(32), 'abandon ability']
@@ -308,6 +402,7 @@ try {
   }
 } finally {
   console.log = realLog
+  console.error = realError
   mock.close()
   try {
     for (const f of fs.existsSync(DIR) ? fs.readdirSync(DIR) : []) fs.chmodSync(path.join(DIR, f), 0o600)

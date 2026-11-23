@@ -26,6 +26,7 @@
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
+import { aiSetting } from './ai-settings.mjs'
 import { DATA_DIR } from './http.mjs'
 
 const FILE = () => path.join(process.env.DATA_DIR ?? DATA_DIR, 'ask-embeddings.json')
@@ -41,7 +42,7 @@ const BACKOFF_MS = 60_000
 const QUERY_CACHE = 200
 
 const key = () => {
-  const k = String(process.env.VOYAGE_API_KEY ?? '').trim()
+  const k = aiSetting('VOYAGE_API_KEY')
   return k.length >= 16 ? k : null
 }
 export const embedModel = () => String(process.env.ASK_EMBED_MODEL ?? '').trim() || 'voyage-3.5-lite'
