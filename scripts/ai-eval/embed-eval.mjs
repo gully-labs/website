@@ -67,7 +67,7 @@ if (args.rerank) {
     const s = []
     for (let i = 0; i < docs.length; i += 8) {
       const part = docs.slice(i, i + 8)
-      const { logits } = await model(tok(new Array(part.length).fill(q), { text_pair: part, padding: true, truncation: true, max_length: 512 }))
+      const { logits } = await model(tok(new Array(part.length).fill(q), { text_pair: part, padding: true, truncation: true, max_length: Number(args.rerankLen) || 512 }))
       for (let r = 0; r < part.length; r++) s.push(logits.data[r * (logits.dims[1] ?? 1)])
     }
     return s
@@ -105,7 +105,7 @@ for (const [id, pooling = 'mean', qp = '', dp = ''] of specs) {
     const ranked = []
     const lat = []
     for (let i = 0; i < Q.length; i++) {
-      const top = hybridPipe(Q[i].q, nearOf(qv[i])).slice(0, 20)
+      const top = hybridPipe(Q[i].q, nearOf(qv[i])).slice(0, Number(args.rerankN) || 20)
       const a = Date.now()
       const sc = await reranker(Q[i].q, top.map((r) => embedText(r.chunk).slice(0, 1800)))
       lat.push(Date.now() - a)
