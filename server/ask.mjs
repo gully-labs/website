@@ -1428,7 +1428,7 @@ export async function handleAsk(req, res, url) {
     const body = await readBody(req, 2_048)
     if (body.tooLarge) return json(res, 413, { error: 'Too large.' }), true
     if (body.bad || !body.value || typeof body.value !== 'object') return json(res, 400, { error: 'Send { id, rating }.' }), true
-    const r = recordFeedback({ id: body.value.id, rating: body.value.rating, key: clientIp(req) })
+    const r = recordFeedback({ id: body.value.id, rating: body.value.rating, key: rateKey(clientIp(req)) })
     return json(res, r.ok ? 200 : r.status, r.ok ? { ok: true } : { error: r.error }), true
   }
   if (p !== '/api/ask') return false
