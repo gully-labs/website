@@ -232,6 +232,10 @@ export function checkAi() {
     if (!s.indexSize) return [r('ai', 'ai', 'Gully AI', 'degraded', 'Configured, but its search index is empty.')]
     // The model provider's account is failing (billing or key): every question fails until the owner fixes it.
     if (s.provider === 'unavailable') return [r('ai', 'ai', 'Gully AI', 'degraded', `Answers are unavailable right now${s.since ? ` (since ${s.since.slice(0, 16).replace('T', ' ')} UTC)` : ''}; we're on it. The docs still work.`)]
+    // The answer service keeps failing (outage, rate limit): users get docs passages instead of written answers.
+    if (s.provider === 'degraded') return [r('ai', 'ai', 'Gully AI', 'degraded', `The answer service is failing${s.since ? ` (since ${s.since.slice(0, 16).replace('T', ' ')} UTC)` : ''}: Gully AI shows the closest docs passages instead of written answers.`)]
+    // The service-wide daily cap is used up: answers are docs passages only until the day turns over.
+    if (s.cap === 'full') return [r('ai', 'ai', 'Gully AI', 'degraded', 'The daily answer cap is reached: Gully AI shows the closest docs passages instead of written answers until the day turns over.')]
     return [r('ai', 'ai', 'Gully AI', 'up', `${s.indexSize} indexed passages; ${s.retrieval === 'hybrid' ? 'hybrid (keyword + semantic)' : 'keyword'} search.`)]
   } catch {
     return [r('ai', 'ai', 'Gully AI', 'unknown', 'Its status could not be read.')]

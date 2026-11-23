@@ -9,7 +9,7 @@ export interface AskStatus {
   /** 'hybrid' when semantic search is on, 'bm25' for keyword search with expansion. */
   retrieval?: 'hybrid' | 'bm25'
   /** 'unavailable' while the AI provider refuses our account (billing or key): answers fail until it is fixed. */
-  provider?: 'ok' | 'unavailable'
+  provider?: 'ok' | 'degraded' | 'unavailable'
   since?: string | null
 }
 
@@ -68,6 +68,8 @@ export interface AskAnswer {
   usedTools: string[]
   model: string
   signedIn?: boolean
+  /** Set when the answer is the closest docs passages, not written text: the answer service is down or busy, or today's cap is used up. */
+  degraded?: 'provider' | 'busy' | 'cap'
 }
 
 export interface Turn {

@@ -249,7 +249,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
     const text = question.replace(/\s+/g, ' ').trim()
     if (!text || busy || text.length > MAX) return
     const history: Turn[] = log
-      .filter((e) => e.a)
+      .filter((e) => e.a && !e.a.degraded)
       .slice(-2)
       .flatMap((e) => [
         { role: 'user' as const, content: e.q },
@@ -342,6 +342,11 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
               <p className="m-0 self-end rounded-card rounded-br-btn border border-line-strong bg-surface-hover px-4 py-2 text-[15px] text-ink">{e.q}</p>
               {e.a ? (
                 <div className="flex flex-col gap-4 rounded-card border border-line bg-surface p-5">
+                  {e.a.degraded && (
+                    <p role="note" data-testid="ask-degraded" className="m-0 rounded-input border border-gold-line px-3 py-2 text-[13px] text-gold">
+                      Not a written answer: {e.a.degraded === 'cap' ? 'Gully AI has reached its limit for today' : e.a.degraded === 'busy' ? 'Gully AI is very busy' : 'the writing service is not answering'}, so these are the closest passages from our docs.
+                    </p>
+                  )}
                   <AnswerText text={e.a.answer} cites={e.a.citations} live={e.a.live ?? []} />
                   {(e.a.cards ?? []).map((c) => (
                     <LiveCard key={`${c.tool}-${c.cite}`} card={c} />

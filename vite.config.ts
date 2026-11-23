@@ -163,7 +163,7 @@ function serverModules(): Plugin {
           handleSolana(req, res, url, geoFor(req, true)).then((done: boolean) => done || next(), next)
           return
         }
-        const handler = url.pathname === '/api/ask' || url.pathname === '/api/ask/status' ? handleAsk : url.pathname === '/api/deepcore/launches' ? handleDeepcoreLaunches : url.pathname === '/api/ecosystem' || url.pathname.startsWith('/api/ecosystem/') ? handleEcosystem : url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : url.pathname.startsWith('/api/security/') ? handleSecurityPublic : url.pathname.startsWith('/api/chains/') ? handleChains : null
+        const handler = url.pathname === '/api/ask' || url.pathname === '/api/ask/status' || url.pathname === '/api/ask/knowledge' || url.pathname === '/api/ask/feedback' ? handleAsk : url.pathname === '/api/deepcore/launches' ? handleDeepcoreLaunches : url.pathname === '/api/ecosystem' || url.pathname.startsWith('/api/ecosystem/') ? handleEcosystem : url.pathname.startsWith('/api/admin/') ? handleAdmin : url.pathname.startsWith('/api/developer/') ? handleDeveloper : url.pathname.startsWith('/api/pay/') ? handlePay : url.pathname.startsWith('/api/security/') ? handleSecurityPublic : url.pathname.startsWith('/api/chains/') ? handleChains : null
         if (!handler) return next()
         handler(req, res, url).then((done) => {
           if (done) return

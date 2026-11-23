@@ -300,7 +300,7 @@ try {
   /* ------------------------------------------------------------- errors --- */
   reply = () => ({ status: 400, json: { type: 'error', error: { type: 'invalid_request_error', message: `bad ${KEY}` } } })
   const e1 = await askPost({ question: 'What is Chain Kit?' })
-  check('an API error answers 502 without leaking the key or upstream text', e1.status === 502 && !e1.text.includes(KEY) && !e1.text.includes('invalid_request'))
+  check('an API error answers with docs passages (degraded) without leaking the key or upstream text', e1.status === 200 && e1.data.degraded === 'provider' && e1.data.citations.length > 0 && !e1.text.includes(KEY) && !e1.text.includes('invalid_request'))
   reply = null
 
   /* -------------------------------------------------------------- limits --- */
@@ -322,7 +322,7 @@ try {
   process.env.ASK_DAILY_LIMIT = String(logged + used + 1)
   const g1 = await askPost({ question: 'Global one?' })
   const g2 = await askPost({ question: 'Global two?' })
-  check('global: ASK_DAILY_LIMIT caps answers across every visitor (429, Retry-After)', g1.status === 200 && g2.status === 429 && /today/.test(g2.data.error) && Number(g2.headers.get('retry-after')) > 0, `${g1.status} ${g2.status}`)
+  check('global: ASK_DAILY_LIMIT caps model answers across every visitor; past it, docs passages only (degraded: cap)', g1.status === 200 && !g1.data.degraded && g2.status === 200 && g2.data.degraded === 'cap' && /today/.test(g2.data.answer) && g2.data.citations.length > 0, `${g1.status} ${g2.status}`)
   const callsBefore = calls.length
   await askPost({ question: 'Global three?' })
   check('global: a capped request never reaches the Claude API', calls.length === callsBefore)
@@ -333,7 +333,7 @@ try {
   const rawLog = fs.readFileSync(path.join(tmp, 'ask-log.jsonl'), 'utf8')
   check('log: one line per answered or failed question', lines.length >= 15, `${lines.length} lines`)
   check('log: no raw IP anywhere', !/203\.0\.113\.|198\.51\.100\.|127\.0\.0\.1|::1|::ffff/.test(rawLog))
-  check('log: a salted 16-hex hash, the question, answer length, citations, latency, tokens, model', lines.every((l) => /^[0-9a-f]{16}$/.test(l.who) && typeof l.question === 'string' && typeof l.answerChars === 'number' && Array.isArray(l.citations) && typeof l.latencyMs === 'number' && l.model) && lines.some((l) => l.tokens?.input > 0 && l.tokens?.cacheRead > 0))
+  check('log: a salted 16-hex hash, the question, answer length, citations, latency, tokens, model', lines.every((l) => /^[0-9a-f]{16}$/.test(l.who) && typeof l.question === 'string' && typeof l.answerChars === 'number' && Array.isArray(l.citations) && typeof l.latencyMs === 'number' && (l.model || l.degraded)) && lines.some((l) => l.tokens?.input > 0 && l.tokens?.cacheRead > 0))
   check('log: the same IP hashes the same; the hash is not a plain sha256 of the IP', lines.filter((l) => l.question.startsWith('Limit test')).every((l, _, a) => l.who === a[0].who) && lines[0].who !== crypto.createHash('sha256').update('203.0.113.1').digest('hex').slice(0, 16))
   check('log: "don\'t know" answers are marked unanswered', lines.some((l) => l.question === 'zebrafish quokka?' && l.answered === false))
   fs.appendFileSync(path.join(tmp, 'ask-log.jsonl'), JSON.stringify({ at: '2020-01-01T00:00:00.000Z', channel: 'web', who: 'x', question: 'old' }) + '\n')
@@ -373,13 +373,14 @@ try {
 
   /* ---------------------------------------------------- remote refresh --- */
   const README = '<p align="center"><img src="x.png"></p>\n# Gully SDK\n\nA typed client for the platypus tracker.\n\n## Install\n\nRun the installer for platypus.\n'
+  // Only the GitHub READMEs answer; the product docs sites (fixed hosts) are not reachable in this test.
   const swoopFetch = async (url) => {
     const u = String(url)
     if (u === 'https://docs.swoopads.xyz/') return { ok: true, status: 200, text: async () => '<div data-search="/assets/search-abc.json"></div>' }
     if (u.endsWith('/assets/search-abc.json')) return { ok: true, status: 200, text: async () => JSON.stringify({ v: 1, entries: [{ page: 'The tag', group: 'Build', url: '/tag/#install', heading: 'Install', text: 'Add one script line from swoopads.xyz and mount a unit with your spot key.' }, { page: 'Evil', group: 'x', url: 'https://evil.example/x', heading: 'x', text: 'ignored' }] }) }
     return { ok: true, status: 200, text: async () => README }
   }
-  const good = async (url) => (String(url).startsWith('https://docs.swoopads.xyz') ? swoopFetch(url) : { ok: true, status: 200, text: async () => README })
+  const good = async (u) => (String(u).startsWith('https://docs.swoopads.xyz') ? swoopFetch(u) : String(u).includes('raw.githubusercontent.com') ? { ok: true, status: 200, text: async () => README } : { ok: false, status: 404, text: async () => '' })
   const bad = async () => ({ ok: false, status: 503, text: async () => '' })
   const first = await remote.refreshRemote({ fetchImpl: good })
   const n1 = remote.remoteChunks(first).length
@@ -388,7 +389,7 @@ try {
   check('remote: HTML is stripped from READMEs', !JSON.stringify(first).includes('<img'))
   check('remote: the Swoop Ads docs become chunks with absolute docs.swoopads.xyz links, other origins are skipped', first.sources['swoop-docs']?.ok === true && first.sources['swoop-docs'].chunks.length === 1 && first.sources['swoop-docs'].chunks[0].url === 'https://docs.swoopads.xyz/tag/#install' && first.sources['swoop-docs'].chunks[0].source === 'Swoop Ads docs')
   const second = await remote.refreshRemote({ fetchImpl: bad })
-  check('remote: a failed refresh keeps the last good copy of every source', remote.remoteChunks(second).length === n1 && Object.values(second.sources).every((s) => s.ok === false && /503/.test(s.error) && s.lastGoodAt === first.updatedAt))
+  check('remote: a failed refresh keeps the last good copy of every source', remote.remoteChunks(second).length === n1 && Object.entries(second.sources).filter(([k]) => k.startsWith('github:')).map(([, v]) => v).every((s) => s.ok === false && /503/.test(s.error) && s.lastGoodAt === first.updatedAt))
   const stored = JSON.parse(fs.readFileSync(path.join(tmp, 'ask-remote.json'), 'utf8'))
   check('remote: the stored file keeps the good chunks', remote.remoteChunks(stored).length === n1)
   ask.reloadRemoteForTest()
@@ -588,7 +589,7 @@ try {
       reply = () => ({ status: 400, json: { type: 'error', error: { type: 'invalid_request_error', message: `Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits. (key ${KEY})` } } })
       const before = calls.length
       const down = await askPost({ question: 'How do gap alerts work?' })
-      check('provider down: 503 with code provider-unavailable and the plain copy', down.status === 503 && down.data?.code === 'provider-unavailable' && down.data?.error === ask.PROVIDER_UNAVAILABLE, JSON.stringify(down.data))
+      check('provider down: 200 degraded answer (docs passages with links, no generated text) instead of a bare 503', down.status === 200 && down.data?.degraded === 'provider' && down.data?.citations?.length > 0 && /not a written answer/.test(down.data.answer) && down.data.model === null, JSON.stringify(down.data).slice(0, 300))
       check('provider down: no provider internals reach the user', !/credit|billing|anthropic|invalid_request/i.test(down.text))
       check('provider down: the provider is called once, not retried', calls.length - before === 1, `${calls.length - before} calls`)
       const st = await call('/api/ask/status')
@@ -600,12 +601,12 @@ try {
       check('provider down: the server log says why (the provider message, at most 200 characters) without the key', /credit balance is too low/.test(line) && !line.includes(KEY) && line.length < 320, line)
       const sse = await fetch(`${BASE}/api/ask`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-requested-with': 'gully', accept: 'text/event-stream', 'cf-connecting-ip': freshIp() }, body: JSON.stringify({ question: 'Do I need an API key?' }) })
       const sseText = await sse.text()
-      check('provider down: the stream ends with the same coded error', /provider-unavailable/.test(sseText) && !/credit/i.test(sseText), sseText.slice(0, 200))
+      check('provider down: the stream ends with the same degraded answer', /"degraded":"provider"/.test(sseText) && !/credit/i.test(sseText), sseText.slice(0, 200))
       const st401 = (reply = () => ({ status: 401, json: { type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } } }), await askPost({ question: 'What does Pro cost?' }))
-      check('provider down: a 401 is the same state', st401.status === 503 && st401.data?.code === 'provider-unavailable')
+      check('provider down: a 401 is the same state', st401.status === 200 && st401.data?.degraded === 'provider')
       reply = () => ({ status: 400, json: { type: 'error', error: { type: 'invalid_request_error', message: 'messages: text content blocks must be non-empty' } } })
       const plain400 = await askPost({ question: 'What does Pro cost?' })
-      check('an ordinary 400 is not mistaken for a provider outage', plain400.status === 502 && !plain400.data?.code, JSON.stringify(plain400.data))
+      check('an ordinary 400 is not mistaken for a provider account outage (still degraded for the user, status flag unchanged)', plain400.status === 200 && plain400.data?.degraded === 'provider' && (await call('/api/ask/status')).data.provider === 'unavailable', JSON.stringify(plain400.data).slice(0, 200))
       reply = null
       const back = await askPost({ question: 'How do Telegram alerts work?' })
       const st2 = await call('/api/ask/status')
@@ -614,6 +615,124 @@ try {
       console.error = origError
       reply = null
     }
+  }
+
+  /* ------------------------------------------------ hardening (2026-11-23) --- */
+  {
+    process.env.ASK_RETRY_BASE_MS = '5'
+    // The README stub of the remote tests above is not part of this run's corpus.
+    fs.writeFileSync(path.join(tmp, 'ask-remote.json'), JSON.stringify({ updatedAt: null, sources: {} }))
+    ask.reloadRemoteForTest()
+    // Retry with backoff: one 429, then a good answer: not degraded, two provider calls.
+    let n429 = 0
+    reply = () => (n429++ === 0 ? { status: 429, json: { type: 'error', error: { type: 'rate_limit_error', message: 'slow down' } } } : textReply('Gap alerts can go to a linked Telegram chat [1].'))
+    const before = calls.length
+    const rt = await askPost({ question: 'How do Telegram gap alerts reach me?' })
+    check('retry: a provider 429 is retried with backoff and the answer is a normal one', rt.status === 200 && !rt.data.degraded && calls.length - before === 2, `${rt.status} ${calls.length - before} calls`)
+    // Fallback model: the first model fails with 500 three times, the fallback answers.
+    process.env.ASK_FALLBACK_MODEL = 'claude-test-fallback'
+    reply = (b) => (b.model === 'claude-test-fallback' ? textReply('Gap alerts can go to a linked Telegram chat [1].') : { status: 500, json: { type: 'error', error: { type: 'api_error', message: 'boom' } } })
+    const b2 = calls.length
+    const fb = await askPost({ question: 'Which chats can receive gap alerts?' })
+    check('fallback: ASK_FALLBACK_MODEL answers once the first model has failed its tries', fb.status === 200 && !fb.data.degraded && calls.slice(b2).some((c) => c.body.model === 'claude-test-fallback') && calls.slice(b2).filter((c) => c.body.model !== 'claude-test-fallback').length === 3, `${fb.status} ${calls.slice(b2).map((c) => c.body.model).join(',')}`)
+    delete process.env.ASK_FALLBACK_MODEL
+    reply = null
+
+    // The daily cap: one alert at 80 %, one at 100 %, then docs passages only.
+    const sent = []
+    ask.setCapAlertSendForTest(async (text) => sent.push(text))
+    ask.resetCapAlertsForTest()
+    const used0 = ask.usedToday()
+    const cap = Math.floor((used0 + 2) / 0.8)
+    process.env.ASK_DAILY_CAP = String(cap)
+    await askPost({ question: 'Cap probe one?' })
+    check('cap: no alert below 80 %', sent.length === 0, JSON.stringify(sent))
+    await askPost({ question: 'Cap probe two?' })
+    check('cap: one alert at 80 %', sent.length === 1 && /80 %/.test(sent[0]), JSON.stringify(sent))
+    while (ask.usedToday() < cap) await askPost({ question: `Cap filler ${ask.usedToday()}?` })
+    check('cap: one more alert at 100 %, never repeated', sent.length === 2 && /daily cap/.test(sent[1]), JSON.stringify(sent))
+    const over = await askPost({ question: 'How do Telegram alerts work?' })
+    check('cap: at 100 % the answer is docs passages only (degraded: cap), still 200', over.status === 200 && over.data.degraded === 'cap' && over.data.citations.length > 0 && over.data.model === null, over.text.slice(0, 200))
+    check('cap: /api/ask/status shows the cap level, no counts', (await call('/api/ask/status')).data.cap === 'full')
+    const aiRow = (await import('../server/status.mjs')).checkAi()[0]
+    check('cap: the status row for Gully AI says answers are docs-only', aiRow.state === 'degraded' && /cap/i.test(aiRow.detail), JSON.stringify(aiRow))
+    const opsCap = await call('/api/admin/ask/ops', { auth: ADMIN })
+    check('cap: the admin tiles show 100 % of the cap and the level', opsCap.data.capLevel === 'full' && opsCap.data.capPct >= 100, opsCap.text.slice(0, 200))
+    delete process.env.ASK_DAILY_CAP
+
+    // Consumers of the degraded answer (200 + `degraded`), not just the API.
+    {
+      reply = () => ({ status: 500, json: { type: 'error', error: { type: 'api_error', message: 'boom' } } })
+      ask.resetCapAlertsForTest()
+      const ip = freshIp()
+      const d1 = await askPost({ question: 'How do Telegram alerts work?' }, { ip })
+      check('degraded: the API sets the X-Ask-Degraded header and the JSON field', d1.status === 200 && d1.data.degraded === 'provider' && d1.headers.get('x-ask-degraded') === 'provider', JSON.stringify(d1.data).slice(0, 120))
+      // Telegram /ask: the view says plainly it is not a written answer and keeps the passages as links.
+      const view = tgui.aiAnswerView({ ok: true, ...d1.data })
+      check('telegram /ask: says "not a written answer" and lists the passages with link buttons', /not a written answer/.test(view.text) && /Sources/.test(view.text) && view.keyboard.flat().some((b) => b.url && /^https:\/\//.test(b.url)), view.text.slice(0, 200))
+      const live = await ask.askForChat('tg-test-chat', 'How do Telegram alerts work?')
+      check('telegram /ask: a provider outage through askForChat gives the same degraded view', live.degraded === 'provider' && /not a written answer/.test(tgui.aiAnswerView(live).text))
+      check('status: one failed call is not an outage yet', (await call('/api/ask/status')).data.provider === 'ok')
+      await askPost({ question: 'Second failing question?' })
+      await askPost({ question: 'Third failing question?' })
+      const st = await call('/api/ask/status')
+      const row = (await import('../server/status.mjs')).checkAi()[0]
+      check('status: three failed calls in a row turn the Gully AI row degraded (the API still answers 200)', st.data.provider === 'degraded' && row.state === 'degraded' && /docs passages/.test(row.detail), JSON.stringify(row))
+      reply = null
+      await askPost({ question: 'And now it works again?' })
+      check('status: one good answer clears it', (await call('/api/ask/status')).data.provider === 'ok')
+      // The browser consumers read the field: the shared panel (/ask page, the launcher, the docs and app panels) and the Holder Map button.
+      const src = (f) => fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')
+      check('web: AskPanel shows a "Not a written answer" note and keeps degraded answers out of the history', /data-testid="ask-degraded"/.test(src('src/components/ask/AskPanel.tsx')) && /!e\.a\.degraded/.test(src('src/components/ask/AskPanel.tsx')) && /degraded\?:/.test(src('src/components/ask/askApi.ts')))
+      check('web: the Holder Map "Explain this map" says it is not a written answer', /Not a written answer/.test(src('src/components/holders/parts.tsx')))
+      // generate(): another lane's own tools.
+      const seen = []
+      reply = (b) => (b.messages.length === 1 ? { status: 200, json: { id: 'm', type: 'message', role: 'assistant', model: 's', content: [{ type: 'tool_use', id: 'tu1', name: 'copilot_x', input: { a: 1 } }], stop_reason: 'tool_use', usage: { input_tokens: 5, output_tokens: 5 } } } : textReply('Done with the tool.'))
+      const g = await ask.generate({ model: 'm', system: 'S', userText: 'u', results: [], maxTokens: 50, tools: [{ name: 'copilot_x', description: 'x', input_schema: { type: 'object', properties: {} } }], runToolFn: async (name, input) => (seen.push([name, input]), { ok: 1 }) })
+      const last = calls.at(-1).body
+      check('generate: a lane passes its own tools and runner', g.text === 'Done with the tool.' && seen[0][0] === 'copilot_x' && calls.at(-2).body.tools.length === 1 && calls.at(-2).body.tools[0].name === 'copilot_x' && g.usedTools[0] === 'copilot_x' && g.runs[0].out.ok === 1, JSON.stringify({ seen, last: last.tools?.length }))
+      reply = null
+    }
+
+    // Admin console endpoints.
+    check('admin knowledge: 401 without the token', (await call('/api/admin/ask/knowledge')).status === 401)
+    const kn = await call('/api/admin/ask/knowledge', { auth: ADMIN })
+    const byId = Object.fromEntries((kn.data?.products ?? []).map((p) => [p.id, p]))
+    check('admin knowledge: every product has passages, a status Covered/Thin/Missing, pages and a last indexed time', kn.status === 200 && ['tracker', 'swoop', 'kre8', 'gully-id', 'gully-rpc', 'multisig', 'gully-core', 'gully-chain', 'ipfs', 'security', 'holder-map', 'pay', 'analytics', 'studio'].every((id) => byId[id] && ['Covered', 'Thin', 'Missing'].includes(byId[id].status) && Array.isArray(byId[id].pages)), Object.keys(byId).join(','))
+    check('admin knowledge: Tracker is Covered, a product with no passages is Missing', byId.tracker?.status === 'Covered' && Object.values(byId).some((p) => p.passages === 0 && p.status === 'Missing'))
+    check('admin knowledge: totals add up', kn.data.totals.passages === kn.data.products.reduce((n, p) => n + p.passages, 0) + kn.data.general.passages)
+    const pk = await call('/api/ask/knowledge')
+    check('public knowledge: sources by product with links and dates, the providers, what is sent, retention and the deletion path, no operator state', pk.status === 200 && pk.data.products.length > 10 && pk.data.providers?.some((p) => /Anthropic/.test(p.name) && p.sends) && pk.data.owned === false && pk.data.retention?.logDays === 90 && /services/.test(pk.data.deletion?.url) && !/rejected|lastGoodAt|embeddings/.test(pk.text), pk.text.slice(0, 200))
+    const vs = await call('/api/admin/ask/versions', { auth: ADMIN })
+    check('admin versions: the baseline is recorded at start', vs.status === 200 && vs.data.versions.length >= 1 && vs.data.versions.at(-1).reason === 'baseline', vs.text.slice(0, 200))
+    const ops = await call('/api/admin/ask/ops', { auth: ADMIN })
+    check('admin ops: answers, tokens, p50/p95 latency, error rate, cap use; cost is null until a price is set', ops.status === 200 && ops.data.answers > 10 && ops.data.latencyMs.p95 !== null && typeof ops.data.errorRate === 'number' && ops.data.tokens.input > 0 && ops.data.costUsd === null && ops.data.priced === false && ops.data.perDay.length >= 1, ops.text.slice(0, 300))
+    process.env.ASK_PRICE_INPUT_PER_MTOK = '1'
+    process.env.ASK_PRICE_OUTPUT_PER_MTOK = '5'
+    const ops2 = await call('/api/admin/ask/ops', { auth: ADMIN })
+    check("admin ops: with the owner's prices the cost is an estimate from the logged tokens", ops2.data.priced === true && ops2.data.costUsd > 0, String(ops2.data.costUsd))
+    delete process.env.ASK_PRICE_INPUT_PER_MTOK
+    delete process.env.ASK_PRICE_OUTPUT_PER_MTOK
+    const qs = await call('/api/admin/ask/queues', { auth: ADMIN })
+    check('admin queues: unanswered questions and thumbs-down answers with the answer text and sources', qs.status === 200 && Array.isArray(qs.data.unanswered) && qs.data.thumbsDown.some((f) => f.answer && f.question), qs.text.slice(0, 300))
+    const bl = await call('/api/admin/ask/backlog', { auth: ADMIN })
+    check('admin backlog: Markdown with the thin products, the unanswered questions and the rated-down answers', bl.status === 200 && /^# Gully AI docs backlog/.test(bl.text) && /## Products with thin or missing coverage/.test(bl.text) && /## Answers rated down/.test(bl.text) && !/203\.0\.113\./.test(bl.text))
+    const ev = await call('/api/admin/ask/eval', { method: 'POST', body: { layer: 'retrieval' }, auth: ADMIN })
+    check('eval: the retrieval layer runs free (no provider call), skips cases whose source group is not indexed, and passes the rest', ev.status === 200 && ev.data.layer === 'retrieval' && ev.data.total >= 15 && ev.data.skipped > 0 && ev.data.failed === 0, JSON.stringify({ ...ev.data, results: ev.data.results?.filter((r) => r.status === 'fail') }).slice(0, 500))
+    // The answer layer against a fake provider that answers from source 1 and says it does not know for the unknown cases.
+    reply = (b) => {
+      const text = userTextOf(b)
+      const q = text.split('Question: ').pop()
+      if (/GLLY|home address|SLA percentage/.test(q)) return textReply("I don't know. The docs are at https://docs.gullylabs.xyz.")
+      const m = text.match(/<src-[A-Za-z0-9]+ n="1"[^>]*>\n([\s\S]*?)\n<\/src-/)
+      return textReply(`${(m?.[1] ?? 'Not covered.').split('. ')[0]} [1].`)
+    }
+    const evA = await call('/api/admin/ask/eval', { method: 'POST', body: { layer: 'answer' }, auth: ADMIN })
+    reply = null
+    check('eval: the answer layer runs the cases through the real answer path and the unknown cases pass', evA.status === 200 && evA.data.layer === 'answer' && evA.data.results.filter((r) => /^unknown-/.test(r.id)).every((r) => r.status === 'pass'), JSON.stringify(evA.data.results?.filter((r) => r.status === 'fail').map((r) => [r.id, r.checks.filter((c) => !c.pass)])).slice(0, 600))
+    const evH = await call('/api/admin/ask/eval', { auth: ADMIN })
+    check('eval: the history keeps both runs, newest first, with the failed ids', evH.status === 200 && evH.data.history.length >= 2 && evH.data.history[0].layer === 'answer' && evH.data.set.length >= 15)
+    check('eval: the history file is written in the data dir', fs.existsSync(path.join(tmp, 'ask-eval.jsonl')))
   }
 
   /* ------------------------------------------------------------ secrets --- */

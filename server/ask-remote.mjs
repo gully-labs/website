@@ -1,6 +1,10 @@
 // Gully Ask: the remote part of the corpus, refreshed at runtime every 6 hours into DATA_DIR/ask-remote.json.
 //
 //   - README of each public gully-labs repo (raw.githubusercontent.com), HTML and badges stripped;
+//   - the PUBLIC docs sites of our other products (Swoop Ads, Gully Core, Gully Chain, kre8, Gully ID, Gully RPC, Gully Multisig:
+//     ask-docs-sites.mjs), same-host https pages from a fixed allow-list;
+//   - every chunk of every source passes ask-public-guard.mjs: a chunk that looks like internal data (admin consoles, box
+//     addresses, server paths, keys, private repos, internal notes) is dropped and counted in the source's `rejected`;
 //   - (the former partner launchpad's docs corpus was retired on 2026-11-08);
 //   - the Ghost blog, only when GHOST_CONTENT_KEY is set (Content API, published posts).
 //
@@ -12,6 +16,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from './http.mjs'
 import { chunkSection, clean, githubAnchor, markdownSections } from './ask-index.mjs'
+import { DOC_SITES, docSource } from './ask-docs-sites.mjs'
+import { guardChunks } from './ask-public-guard.mjs'
 
 export const REMOTE_FILE = () => path.join(process.env.DATA_DIR ?? DATA_DIR, 'ask-remote.json')
 export const REFRESH_MS = 6 * 3_600_000
@@ -25,6 +31,7 @@ const REPOS = [
   { repo: 'umami', branch: 'gully/analytics' },
   ...['arbitrum-orbit-deployment-ui', 'orbit-setup-script', 'orbit-monitoring-tools', 'arbitrum-token-bridge', 'arbitrum-token-lists', 'stylus-sdk-rs', 'stylus-hello-world'].map((repo) => ({ repo, branch: 'gully/main' })),
   { repo: '.github', branch: 'main', file: 'profile/README.md', title: 'Gully Labs on GitHub' },
+  { repo: 'gully-core-sdk', branch: 'main' },
 ]
 
 /** The list of remote sources: { key, label, fetch(fetchImpl) -> chunks }. */
@@ -43,6 +50,7 @@ export function remoteSources() {
       return secs.flatMap((s) => chunkSection({ source: 'GitHub', title, url: s.heading ? `${page}#${githubAnchor(s.heading)}` : page, section: s.heading, paragraphs: s.paras }))
     },
   }))
+  list.push(...DOC_SITES.map((site) => docSource(site, getText)))
   // Swoop Ads docs (docs.swoopads.xyz), read from the docs site's own search JSON, so Gully AI and the Swoop Copilot know the same pages.
   if (process.env.ASK_SWOOP_DOCS !== '0') {
     const base = String(process.env.ASK_SWOOP_DOCS_URL ?? 'https://docs.swoopads.xyz').replace(/\/$/, '')
@@ -121,9 +129,11 @@ export async function refreshRemote({ fetchImpl = fetch, sources = remoteSources
     sources.map(async (s) => {
       const old = prev.sources[s.key]
       try {
-        const chunks = (await s.load(fetchImpl)).map((c) => ({ ...c, updatedAt: c.updatedAt ?? now }))
+        const { kept, rejected } = guardChunks(await s.load(fetchImpl))
+        const chunks = kept.map((c) => ({ ...c, updatedAt: c.updatedAt ?? now }))
         if (!chunks.length) throw new Error('no text')
-        next.sources[s.key] = { label: s.label, ok: true, at: now, lastGoodAt: now, error: null, chunks }
+        if (rejected.length) console.error(`ask remote: ${s.key}: ${rejected.length} chunk(s) refused by the public-text guard (${[...new Set(rejected.map((x) => x.reason))].join(', ')})`)
+        next.sources[s.key] = { label: s.label, ok: true, at: now, lastGoodAt: now, error: null, rejected: rejected.length, chunks }
       } catch (e) {
         next.sources[s.key] = { label: s.label, ok: false, at: now, lastGoodAt: old?.lastGoodAt ?? null, error: String(e?.message ?? e).slice(0, 200), chunks: old?.chunks ?? [] }
       }
