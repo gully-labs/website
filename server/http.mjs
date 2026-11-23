@@ -33,6 +33,27 @@ export function clientIp(req) {
 }
 
 /**
+ * The key a per-visitor rate limit buckets on: IPv4 as is, IPv6 reduced to its /64 (one household or one rented /64 can rotate
+ * through 2^64 addresses, so the full address is not a visitor). IPv4-mapped IPv6 reads as the IPv4 address.
+ */
+export function rateKey(ip) {
+  const s = String(ip ?? 'unknown').trim().toLowerCase()
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(s)
+  if (mapped) return mapped[1]
+  if (!s.includes(':')) return s
+  let head = s.split('%')[0]
+  if (head.includes('::')) {
+    const [l, r] = head.split('::')
+    const lp = l ? l.split(':') : []
+    const rp = r ? r.split(':') : []
+    head = [...lp, ...Array(Math.max(0, 8 - lp.length - rp.length)).fill('0'), ...rp].join(':')
+  }
+  const g = head.split(':')
+  if (g.length !== 8 || g.some((x) => !/^[0-9a-f]{1,4}$/.test(x))) return s
+  return g.slice(0, 4).map((x) => x.padStart(4, '0')).join(':') + '::/64'
+}
+
+/**
  * An upstream error, safe to send to a browser. RPC and fetch errors carry the upstream URL (viem prints
  * "URL: https://host/<api key>"), hosts, IPs and file paths; none of that leaves the server. The full error is
  * logged here instead. Leak sweep 2026-11-02.

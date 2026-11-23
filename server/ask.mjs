@@ -58,7 +58,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { clientIp, DATA_DIR, json } from './http.mjs'
+import { clientIp, DATA_DIR, json, rateKey } from './http.mjs'
 import { capPerPage, cosine, expandQuery, makeIndex, rerank, rrf } from './ask-index.mjs'
 import { embedConfigured, embedQuery, embedStatus, syncEmbeddings, vectorFor } from './ask-embed.mjs'
 import { readRemote, remoteChunks, startRemoteLoop } from './ask-remote.mjs'
@@ -1442,7 +1442,7 @@ export async function handleAsk(req, res, url) {
   const { isAppHost } = await import('./hosts.mjs')
   const ctx = sessionContext(req)
   const channel = isAppHost(String(req.headers.host ?? '').toLowerCase()) ? 'app' : 'web'
-  const who = { channel, key: clientIp(req), perMin: envInt('ASK_IP_PER_MIN', 6), perDay: envInt('ASK_IP_PER_DAY', 60) }
+  const who = { channel, key: rateKey(clientIp(req)), perMin: envInt('ASK_IP_PER_MIN', 6), perDay: envInt('ASK_IP_PER_DAY', 60) }
   const stream = String(req.headers.accept ?? '').includes('text/event-stream')
   if (!stream) {
     const r = await ask({ question: body.value.question, history: body.value.history, who, ctx, holders: body.value.holders ?? null })
