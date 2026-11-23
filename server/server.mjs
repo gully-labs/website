@@ -61,6 +61,7 @@ import { treasury } from './plans.mjs'
 import { startTreasuryWatch } from './treasury-chains.mjs'
 import { geoFor } from './geo.mjs'
 import { handleAsk, startAsk } from './ask.mjs'
+import { handleExplainTx } from './ai/explain-tx.mjs'
 import { handleSolana } from './solana-routes.mjs'
 import { GUARD_PUBLIC_ERROR, PaymentGuardError } from './pay-guard.mjs'
 import { startFeeProxyMonitor } from './fee-proxy-monitor.mjs'
@@ -455,6 +456,8 @@ async function handleRequest(req, res) {
   // Its status is public and read-only: the docs host reads it cross-origin.
   if (url.pathname === '/api/ask/status') res.setHeader('Access-Control-Allow-Origin', '*')
   if (url.pathname === '/api/ask' || url.pathname === '/api/ask/status' || url.pathname === '/api/ask/feedback') return void (await handleAsk(req, res, url))
+  // Gully AI Explain this transaction (ai/explain-tx.mjs): 404 unless AI_EXPLAIN_TX=1.
+  if (url.pathname === '/api/ai/explain-tx') return void (await handleExplainTx(req, res, url))
   // Gully Pay gas costs per chain, cached (gas.mjs): the app's Merchant tab reads it. Public.
   if (url.pathname === '/api/pay/gas') {
     // Public and read-only: the docs host reads it cross-origin (writeHead keeps headers set here).
