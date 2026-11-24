@@ -40,7 +40,7 @@ export function registryKindOf({ name, category }) {
   if (category === 'Unidentified' || !n) return null
   if (category === 'Safe') return /SafeProxy \(|governance Safe/i.test(n) ? 'known' : 'gully'
   if (/Treasury/i.test(n)) return 'gully'
-  if (category === 'Tokens' || /^(LaunchToken\b|WETH9?\b|USDC\.e\b|glUSD\b|Bridged WETH|aeWETH|HypERC20$|Token \()/.test(n)) return 'token'
+  if (category === 'Tokens' || /^(LaunchToken\b|WETH9?\b|USDC\.e\b|Bridged WETH|aeWETH|HypERC20$|Token \()/.test(n)) return 'token'
   if (/Locker|Lock\b|Vesting/.test(n)) return 'lock'
   if (/LaunchpadKit|Factory|Owner$|Descriptor|Quoter|Lens|Registry|Registrar|Resolver|Controller|Verifier|Policy|Signer|Validator|Implementation|impl\)|Proxy|Module|Handler|Hook\b|Hook$/i.test(n)) return 'gully'
   if (/Vault\b|PoolManager$|PositionManager|UniswapV3Pool|Launchpad|FairLaunch|Staker|RangeOrders|\bDCA\b|LaunchLegs/.test(n)) return 'pool'

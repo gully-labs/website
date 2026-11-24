@@ -561,7 +561,7 @@ export const GULLY_CHAIN_LABELS = {
     [GULLY_CHAIN.v3Router, 'router', 'Gully Swap (v3 router)'],
     [GULLY_CHAIN.positionManager, 'pool', 'Gully Swap positions'],
     [GULLY_CHAIN.weth, 'token', 'Wrapped ETH'],
-    [GULLY_CHAIN.glusdPsm, 'gully', 'glUSD PSM (retired, redeem only)'],
+    [GULLY_CHAIN.retiredReserve, 'gully', 'Retired stable reserve'],
   ],
 }
 /** The v3 factory whose pools are labelled as pools on Gully Chain (factory() of a holder contract). */

@@ -115,7 +115,8 @@ export function readRemote() {
 }
 
 /** All chunks of the stored remote corpus. */
-export const remoteChunks = (doc = readRemote()) => Object.values(doc.sources).flatMap((s) => (Array.isArray(s.chunks) ? s.chunks : []))
+// guarded on read too: a source that fails keeps its last copy, which may predate a guard rule
+export const remoteChunks = (doc = readRemote()) => guardChunks(Object.values(doc.sources).flatMap((s) => (Array.isArray(s.chunks) ? s.chunks : []))).kept
 
 /**
  * Fetches every remote source once. A source that fails keeps its last good chunks and records the

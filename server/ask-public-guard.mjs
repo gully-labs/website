@@ -20,6 +20,9 @@ const PATTERNS = [
   ['private repo', /github\.com\/gully-labs\/(?:gully-ops|gully-street|gully-offerwall|gully-id|gull-pay|gully-rpc|gully-core-app|gully-bots|gully-solver)\b/i],
   ['internal note', /\b(?:internal only|not for public|owner decision pending|TODO:\s*owner)\b/i],
   ['stack trace', /\bat\s+[\w.$<>]+\s+\((?:file:|\/|[A-Z]:[\\/])[^)]*:\d+:\d+\)/],
+  // the retired first testnet stable (its vault share matches too): withdrawn from every public surface, so Gully AI
+  // never learns it, also not from a dated changelog line on a docs site
+  ['retired asset', new RegExp(['gl', 'usd'].join(''), 'i')],
 ]
 
 /** The reason a text must not be indexed, or null. */
