@@ -107,6 +107,13 @@ export function ConsoleHeader() {
         </nav>
         <div className="navr">
           <LivePill />
+          {/* The shared Gully ID entry. Sign-in runs in the app (the only host with the SDK and the session), so this is a link. */}
+          <a className="gid-chip" href={APP_URL} target="_blank" rel="noopener noreferrer" aria-label="Gully ID: sign in" data-testid="gully-id-chip" onClick={() => track('gully-id-chip', { from: 'header' })}>
+            <img src="/brand/gullyid/gullyid-mark.svg" width={17} height={20} alt="" />
+            <span className="gid-t">Gully ID</span>
+            <span className="gid-sep" aria-hidden="true" />
+            <span className="gid-a">Sign in</span>
+          </a>
           <a className="btn sec sm" href={APP_URL} target="_blank" rel="noopener noreferrer" aria-label="Launch app" onClick={() => track('launch-app', { from: 'header' })}>
             {ic(Zap)}
             <span className="lbl">Launch app</span>
