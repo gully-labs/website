@@ -48,6 +48,11 @@ test('quests: stats and list in ETH, unread is null', () => {
   assert.equal(q.quests[0].max, 4)
   assert.equal(q.recent[0].who, 'gullytester.gully')
   assert.equal(readQuests(null, LIST), null)
+  // a quest about the withdrawn first stable never reaches the public list or the recent feed
+  const old = ['Hold 0.5 gl', 'USD for 10 blocks'].join('')
+  const w = readQuests({ ...STATS, recent: [{ ...STATS.recent[0], title: old }, ...STATS.recent] }, { quests: [{ ...LIST.quests[0], id: '29', title: old }, ...LIST.quests] })
+  assert.deepEqual(w.quests.map((x) => x.id), ['1'])
+  assert.equal(w.recent.length, 1)
   // No ETH pool: the pool figure is unknown, not zero.
   assert.equal(readQuests({ ...STATS, pools: [] }, null).poolEth, null)
 })

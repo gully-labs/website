@@ -33,6 +33,7 @@
     "test:launch-radar": "node scripts/test-launch-radar.mjs",
     "test:tracker-venues": "node --test scripts/test-tracker-venues.mjs",
     "test:deepcore-retired": "node scripts/test-deepcore-retired.mjs",
+    "test:retired-stable": "node --test scripts/test-retired-stable.mjs",
     "test:tracker-trust": "node --test scripts/test-tracker-trust.mjs",
     "test:paylinks": "node scripts/test-paylinks.mjs",
     "test:feeproxy": "node scripts/test-fee-proxy.mjs",

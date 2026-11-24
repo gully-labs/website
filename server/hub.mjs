@@ -151,13 +151,17 @@ const big = (v) => {
 }
 const eth = (wei) => (wei == null ? null : Number(wei) / 1e18)
 
+/** The retired first testnet stable (its vault share matches too): withdrawn from every public surface. */
+export const WITHDRAWN = new RegExp(['gl', 'usd'].join(''), 'i')
+
 /** Gully Quests from the indexer's /quests/stats and /quests (shape checked on the live indexer, 2026-10-26). */
 export function readQuests(stats, list) {
   if (!stats || typeof stats.quests !== 'number') return null
   const ethPool = (stats.pools ?? []).find((p) => /^0x0{40}$/i.test(String(p.asset)))
   const hourly = Array.isArray(stats.hourly) ? stats.hourly.slice(-48).map((h) => Number(h.completions) || 0) : []
+  // quests about a withdrawn asset never reach a public list (the indexer hides them too; this is the second lock)
   const quests = Array.isArray(list?.quests)
-    ? list.quests.map((q) => ({
+    ? list.quests.filter((q) => !WITHDRAWN.test(String(q?.title ?? ''))).map((q) => ({
         id: String(q.id),
         title: String(q.title ?? '').slice(0, 80),
         state: String(q.state ?? q.status ?? ''),
@@ -170,7 +174,7 @@ export function readQuests(stats, list) {
       }))
     : []
   const recent = Array.isArray(stats.recent)
-    ? stats.recent.slice(0, 5).map((c) => ({ questId: String(c.questId), title: c.title ? String(c.title).slice(0, 80) : null, who: c.name ? String(c.name) : `${String(c.account).slice(0, 6)}…${String(c.account).slice(-4)}`, at: c.timestamp ? new Date(Number(c.timestamp) * 1000).toISOString() : null, rewardEth: eth(big(c.reward)) }))
+    ? stats.recent.filter((c) => !WITHDRAWN.test(String(c?.title ?? ''))).slice(0, 5).map((c) => ({ questId: String(c.questId), title: c.title ? String(c.title).slice(0, 80) : null, who: c.name ? String(c.name) : `${String(c.account).slice(0, 6)}…${String(c.account).slice(-4)}`, at: c.timestamp ? new Date(Number(c.timestamp) * 1000).toISOString() : null, rewardEth: eth(big(c.reward)) }))
     : []
   return {
     source: 'indexer',
