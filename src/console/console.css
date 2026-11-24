@@ -46,6 +46,9 @@
 .lc .navr{display:flex;align-items:center;gap:10px;flex:none}
 @media (max-width:1199px){.lc .navr .btn.ter{display:none}}
 @media (max-width:639px){.lc .navr .btn.sec{display:none}.lc .pill span:last-child{display:none}.lc .pill{padding:0 10px;gap:0}.lc .navr .btn.pri .lbl,.lc .navr .btn.pri .ar{display:none}.lc .navr .btn.pri{padding:0 12px}.lc .brand img:last-child{width:130px;height:13px}}
+.lc .gid-chip{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:44px;min-height:44px;padding:0 14px 0 10px;border:1px solid rgba(255,255,255,.22);border-radius:999px;color:#fff;font-size:14px;font-weight:600;white-space:nowrap;text-decoration:none;flex:none}
+.lc .gid-chip:hover{border-color:#00F7FC}.lc .gid-chip:focus-visible{outline:2px solid #00F7FC;outline-offset:2px}.lc .gid-chip img{display:block;flex:none}.lc .gid-sep{width:1px;height:16px;background:rgba(255,255,255,.28)}.lc .gid-a{font-weight:500;opacity:.8}
+@media (max-width:1439px){.lc .gid-chip{padding:0;width:44px}.lc .gid-t,.lc .gid-sep,.lc .gid-a{display:none}}
 .lc .menu-btn{display:inline-flex}
 @media (min-width:1024px){.lc .menu-btn{display:none}}
 
