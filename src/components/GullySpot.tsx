@@ -43,7 +43,8 @@ function boot(): Promise<Cfg | null> {
   return loading
 }
 
-export function GullySpot({ unit = 'banner', scope = 'site', delay = 0, className }: { unit?: 'banner' | 'text' | 'native'; scope?: 'site' | 'docs'; delay?: number; className?: string }) {
+/** `sizes` (banner units): exact banner sizes, widest first; the kit reserves the first that fits the column, else nothing. */
+export function GullySpot({ unit = 'banner', scope = 'site', delay = 0, sizes, className }: { unit?: 'banner' | 'text' | 'native'; scope?: 'site' | 'docs'; delay?: number; sizes?: string; className?: string }) {
   const [on, setOn] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -62,5 +63,5 @@ export function GullySpot({ unit = 'banner', scope = 'site', delay = 0, classNam
     if (on && ref.current && c) window.GullySpots?.init({ ...c, allow: scope === 'docs' ? c.docsAllow : c.siteAllow })
   }, [on, scope])
   if (!on) return null
-  return <div ref={ref} data-gully-spot="" data-unit={unit} data-h={unit === 'banner' ? 90 : 96} aria-label="Sponsored" className={className} />
+  return <div ref={ref} data-gully-spot="" data-unit={unit} data-h={unit === 'banner' ? 90 : 96} data-sizes={sizes} aria-label="Sponsored" className={className} />
 }
