@@ -75,11 +75,11 @@ export const BOT_GROUPS = [
     id: 'bot_telegram',
     section: 'bots',
     title: 'Gully Labs Telegram bot (gap tracker and Gully AI)',
-    body: 'The website\'s own Telegram bot: the gap tracker, alerts and Gully AI in chats and the Mini App. It is OFF today (no token on the server). It must be its own BotFather bot: a token used by another service (the Gully Chain bots poll theirs) cannot also run here.',
+    body: 'The website\'s own Telegram bot, @GullyLabsBot: the gap tracker, alerts and Gully AI in chats and the Mini App. It runs today with the token in the server file ("set on the server"); save one here only to rotate it, and the saved one wins. It must stay its own bot: a token another service polls (the Gully Chain bots) cannot also run here.',
     usedIn: 'server/telegram.mjs: a saved token is used at once and the webhook, commands and menu button are registered again for it.',
     guide: {
       steps: [
-        'In Telegram open @BotFather and send /newbot (or /mybots and pick the bot, if it already exists).',
+        'In Telegram open @BotFather, send /mybots and pick @GullyLabsBot (or /newbot for a new one). Revoke the token only if it may have leaked: the old one stops at once.',
         'Name it (for example Gully Labs) and pick a username ending in bot. Copy the token BotFather sends (123456789:AA...).',
         'Paste it below and save. The server registers its webhook at once: you do not set a webhook by hand.',
         'Press Check: it should answer with the bot\'s @username.',
