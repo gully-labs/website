@@ -20,6 +20,7 @@ interface Field {
   updatedBy: string | null
   value?: string | null
   multiline?: boolean
+  onServer?: boolean
 }
 interface Note {
   id: string
@@ -88,7 +89,7 @@ function FieldRow({ f, token, unlocked, onSaved }: { f: Field; token: string; un
         <label htmlFor={id} className="text-[14px] font-medium text-ink">
           {f.label} {f.optional && <span className="text-[12px] font-normal text-faint">optional{f.dflt ? `, default ${f.dflt}` : ''}</span>}
         </label>
-        <span className={pillCls(f.set ? 'border-green/40 text-green' : 'border-line-strong text-faint')}>{f.set ? 'Set' : 'Not set'}</span>
+        <span className={pillCls(f.set || f.onServer ? 'border-green/40 text-green' : 'border-line-strong text-faint')}>{f.set ? 'Set' : f.onServer ? 'Set on the server' : 'Not set'}</span>
       </div>
       {plain && f.value && (
         <span className="font-mono text-[13px] break-all text-ink" data-testid={`${id}-value`}>

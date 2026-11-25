@@ -159,3 +159,16 @@ test('the Discord card shows the endpoint and an install link built from the sav
   assert.match(info[1].value, /permissions=/)
   assert.equal(g.info(() => null)[1].value, null)
 })
+
+test('a bot key set only in the server environment shows as "on the server", never with its value', async () => {
+  const { handleIntegrationsAdmin } = await import('../server/admin-integrations.mjs')
+  process.env.TELEGRAM_BOT_TOKEN = TG
+  const res = { status: 0, body: '', writeHead(s) { this.status = s }, setHeader() {}, end(b) { this.body = String(b) } }
+  await handleIntegrationsAdmin({ method: 'GET', headers: {} }, res, new URL('https://admin.gullylabs.xyz/api/admin/integrations'))
+  delete process.env.TELEGRAM_BOT_TOKEN
+  assert.equal(res.status, 200)
+  assert.ok(!res.body.includes(TG))
+  const f = JSON.parse(res.body).groups.find((g) => g.id === 'bot_telegram').fields.find((x) => x.name === 'TELEGRAM_BOT_TOKEN')
+  assert.equal(f.set, false)
+  assert.equal(f.onServer, true)
+})
