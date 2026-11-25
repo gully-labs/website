@@ -16,8 +16,8 @@ export const LEGAL = {
   place: 'Oregon, USA',
   law: 'the State of Oregon, USA',
   email: 'team@gullylabs.xyz',
-  updated: 'November 3, 2026',
-  updatedIso: '2026-11-03',
+  updated: 'November 25, 2026',
+  updatedIso: '2026-11-25',
 } as const
 
 /** The canonical addresses of Gully Labs' own policies (gullylabs.xyz). */

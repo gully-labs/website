@@ -128,7 +128,7 @@ try {
     check(`${f}: no draft marker, no old contact address`, !DRAFT.test(s) && !/hello@gullylabs\.xyz|labsgully@gmail\.com/.test(s))
   }
   const kit = read('src/pages/legal/kit.tsx')
-  check('kit: Gully Labs LLC, Oregon, USA, team@gullylabs.xyz, the State of Oregon, last updated November 3, 2026', kit.includes("entity: 'Gully Labs LLC'") && kit.includes("place: 'Oregon, USA'") && kit.includes("email: 'team@gullylabs.xyz'") && kit.includes("law: 'the State of Oregon, USA'") && kit.includes("updated: 'November 3, 2026'"))
+  check('kit: Gully Labs LLC, Oregon, USA, team@gullylabs.xyz, the State of Oregon, last updated November 25, 2026', kit.includes("entity: 'Gully Labs LLC'") && kit.includes("place: 'Oregon, USA'") && kit.includes("email: 'team@gullylabs.xyz'") && kit.includes("law: 'the State of Oregon, USA'") && kit.includes("updated: 'November 25, 2026'"))
   check('kit: the CC BY note in the exact words, both URLs linked in a new tab', kit.includes('Adapted from the Basecamp open-source policies (') && kit.includes("BASECAMP_URL = 'https://github.com/basecamp/policies'") && kit.includes("CC_BY_URL = 'https://creativecommons.org/licenses/by/4.0/'") && kit.includes('). Changed by {LEGAL.entity} for {product}. This page is also available under CC BY 4.0.') && kit.includes("rel: 'noopener noreferrer'") && kit.includes("target: '_blank'"))
   check('kit: a table of contents (sticky beside the text, collapsible on phones), Last updated, a ~70ch measure', kit.includes('data-testid="legal-toc"') && kit.includes('sticky top-24') && kit.includes('<details') && kit.includes('Last updated') && kit.includes('70ch'))
   for (const f of ['src/pages/legal/Terms.tsx', 'src/pages/legal/Privacy.tsx', 'src/pages/legal/ScanTerms.tsx', 'src/pages/legal/MerchantTerms.tsx']) {
@@ -139,7 +139,7 @@ try {
   const terms = read('src/pages/legal/Terms.tsx')
   check('Terms: liability capped at the fees paid in the prior 12 months, never money already owed (owner, 2026-11-03)', terms.includes('limited to the fees you paid Gully Labs for the service concerned in the prior 12 months') && terms.includes('never limits money Gully Labs already owes you') && !terms.includes('100 US dollars'))
   const n = (s) => [...s.matchAll(/<S n=\{(\d+)\}/g)].map((m) => Number(m[1]))
-  check('Terms: sections s1…s20 in order (Gully AI cites them), 18+', n(terms).join() === Array.from({ length: 20 }, (_, i) => i + 1).join() && terms.includes('at least 18 years old'))
+  check('Terms: sections s1…s21 in order (Gully AI cites them), 18+', n(terms).join() === Array.from({ length: 21 }, (_, i) => i + 1).join() && terms.includes('at least 18 years old'))
   check('Privacy: sections s1…s15 in order, the retention table in s11', n(read('src/pages/legal/Privacy.tsx')).join() === Array.from({ length: 15 }, (_, i) => i + 1).join() && /<S n=\{11\} title="How long we keep it">[^]*RETENTION\.map/.test(read('src/pages/legal/Privacy.tsx')))
   const NAMES = { US: 'the United States', CU: 'Cuba', IR: 'Iran', KP: 'North Korea', SY: 'Syria' }
   const blocked = [...read('server/geo.mjs').match(/SWAP_BLOCKED = new Set\(\[([^\]]*)\]\)/)[1].matchAll(/'([A-Z]{2})'/g)].map((m) => m[1])
@@ -169,7 +169,7 @@ try {
   const out = path.join(tmp, 'ask-index.json')
   execFileSync(process.execPath, [path.join(ROOT, 'scripts/build-ask-index.mjs'), '--out', out, '--features', path.join(ROOT, 'scripts/fixtures/features.sample.ts')], { stdio: 'pipe' })
   const chunks = JSON.parse(fs.readFileSync(out, 'utf8')).chunks.filter((c) => c.source === 'Legal')
-  check('Gully AI index: the legal pages are cited at their canonical URLs (/terms#s1…s20, /privacy#s1…s15), never /legal/terms', Array.from({ length: 20 }, (_, i) => `https://${MAIN}/terms#s${i + 1}`).every((u) => chunks.some((c) => c.url === u)) && Array.from({ length: 15 }, (_, i) => `https://${MAIN}/privacy#s${i + 1}`).every((u) => chunks.some((c) => c.url === u)) && !chunks.some((c) => /\/legal\/(terms|privacy)/.test(c.url)) && !chunks.some((c) => DRAFT.test(c.text)), `${chunks.length} legal chunks`)
+  check('Gully AI index: the legal pages are cited at their canonical URLs (/terms#s1…s21, /privacy#s1…s15), never /legal/terms', Array.from({ length: 21 }, (_, i) => `https://${MAIN}/terms#s${i + 1}`).every((u) => chunks.some((c) => c.url === u)) && Array.from({ length: 15 }, (_, i) => `https://${MAIN}/privacy#s${i + 1}`).every((u) => chunks.some((c) => c.url === u)) && !chunks.some((c) => /\/legal\/(terms|privacy)/.test(c.url)) && !chunks.some((c) => DRAFT.test(c.text)), `${chunks.length} legal chunks`)
 } catch (e) {
   // A throw (a missing module or export on an older tree) is a failure, never a silent pass.
   check(`the test ran to the end (threw: ${e?.message ?? e})`, false)
