@@ -144,7 +144,7 @@ test('the app cards match the app: the sidebar pages are covered, each card open
     assert.ok(/^https:\/\/app\.gullylabs\.xyz\//.test(t.href), `${t.key} opens the app`)
   }
   assert.ok(html.includes('Free ') || html.includes('Free</'), 'the plan prices chart names the free plan')
-  assert.ok(/\$49/.test(html) && /\$199/.test(html), 'USD prices from server/plans.mjs')
+  assert.ok(/\$30/.test(html) && /\$110/.test(html), 'USD prices from server/plans.mjs')
   assert.ok(html.includes('href="/projects"') && html.includes('>Projects<'), 'the header links /projects')
 })
 

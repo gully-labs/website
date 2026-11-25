@@ -16,10 +16,13 @@ import { confirmationsFor, FEE_PROXIES, feeSplitOn, publicAssets, publicChains }
 import { solanaTreasury } from './solana-pay.mjs'
 import { getAccount } from './store.mjs'
 
+// Prices (owner rule 2026-11-25): 10-20% below the closest competitor, monthly and yearly each; the competitor pages,
+// dates and math are in gully-protocol design/pricing-2026-11-25/PRICES.md. `priceUsdcYear` is shown on the pages
+// with "yearly billing opens soon": checkout sells PERIOD_DAYS periods only until yearly billing is built.
 export const PLANS = {
-  free: { id: 'free', name: 'Free', priceUsdc: 0, perMin: 600, alerts: 1, historyDays: 7, maxKeys: 5, monitors: 1 },
-  pro: { id: 'pro', name: 'Pro', priceUsdc: 49, perMin: 3_000, alerts: 10, historyDays: 90, maxKeys: 5, monitors: 10 },
-  business: { id: 'business', name: 'Business', priceUsdc: 199, perMin: 10_000, alerts: 100, historyDays: 365, maxKeys: 5, monitors: 50 },
+  free: { id: 'free', name: 'Free', priceUsdc: 0, priceUsdcYear: 0, perMin: 600, alerts: 1, historyDays: 7, maxKeys: 5, monitors: 1 },
+  pro: { id: 'pro', name: 'Pro', priceUsdc: 30, priceUsdcYear: 296, perMin: 3_000, alerts: 10, historyDays: 90, maxKeys: 5, monitors: 10 },
+  business: { id: 'business', name: 'Business', priceUsdc: 110, priceUsdcYear: 1_052, perMin: 10_000, alerts: 100, historyDays: 365, maxKeys: 5, monitors: 50 },
 }
 
 /* ---------------------------------------------------------- Gully IPFS --- */
@@ -34,7 +37,7 @@ export const PLANS = {
 const envNum = (k, d) => (Number.isFinite(Number(process.env[k])) && Number(process.env[k]) > 0 ? Number(process.env[k]) : d)
 export function ipfsPlans() {
   return {
-    free: { id: 'free', name: 'Early access', priceUsdPerGbMonth: null, storageBytes: Math.round(envNum('IPFS_FREE_STORAGE_GB', 1) * 1024 ** 3), maxFileBytes: Math.round(envNum('IPFS_FREE_MAX_FILE_MB', 100) * 1024 ** 2), maxPins: envNum('IPFS_FREE_MAX_PINS', 500), copies: 2, transferBytesMonth: Math.round(envNum('IPFS_FREE_TRANSFER_GB', 5) * 1024 ** 3), egressBytesMonth: null },
+    free: { id: 'free', name: 'Early access', priceUsdPerGbMonth: null, storageBytes: Math.round(envNum('IPFS_FREE_STORAGE_GB', 1) * 1024 ** 3), maxFileBytes: Math.round(envNum('IPFS_FREE_MAX_FILE_MB', 100) * 1024 ** 2), maxPins: envNum('IPFS_FREE_MAX_PINS', 500), copies: 2, transferBytesMonth: Math.round(envNum('IPFS_FREE_TRANSFER_GB', 10) * 1024 ** 3), egressBytesMonth: null },
   }
 }
 /** Paid tiers from IPFS_PAID_PLANS_JSON, validated; a malformed entry or a missing price is dropped (never a default price). */
@@ -88,13 +91,13 @@ export const ipfsPaidState = () => ({ enabled: ipfsPaidEnabled(), plans: ipfsPai
 // OWNER-EDITABLE: Gully Analytics plans (self-serve sign-up in the app dashboard, enforced by the
 // proxy in analytics.mjs). `sites` is how many websites an account may track; `eventsPerMonth` is how
 // many tracker calls (page views and custom events, counted per UTC calendar month across all of the
-// account's sites) are accepted before the proxy refuses more. THE PRICES ARE PLACEHOLDERS until the
-// owner sets them. Pages read all of this through GET /api/plans (field `analytics`); nothing is typed
+// account's sites) are accepted before the proxy refuses more. Prices 2026-11-25: 15% below Umami Cloud (Pro $20, 1M events,
+// 20 sites; Business $200, 10M events), yearly = 10 x monthly (Umami shows no yearly price; Plausible: 2 months free). Pages read all of this through GET /api/plans (field `analytics`); nothing is typed
 // into a page.
 export const ANALYTICS_PLANS = {
-  trial: { id: 'trial', name: 'Free trial', priceUsdc: 0, sites: 1, eventsPerMonth: 10_000 },
-  starter: { id: 'starter', name: 'Starter', priceUsdc: 19, sites: 3, eventsPerMonth: 100_000 },
-  growth: { id: 'growth', name: 'Growth', priceUsdc: 79, sites: 10, eventsPerMonth: 1_000_000 },
+  trial: { id: 'trial', name: 'Free trial', priceUsdc: 0, priceUsdcYear: 0, sites: 1, eventsPerMonth: 100_000 },
+  starter: { id: 'starter', name: 'Starter', priceUsdc: 17, priceUsdcYear: 170, sites: 20, eventsPerMonth: 1_000_000 },
+  growth: { id: 'growth', name: 'Growth', priceUsdc: 170, priceUsdcYear: 1_700, sites: 100, eventsPerMonth: 10_000_000 },
 }
 /** Length of the free trial, once per wallet. */
 export const ANALYTICS_TRIAL_DAYS = 14
@@ -114,7 +117,7 @@ export const ANALYTICS_PAID_IDS = Object.values(ANALYTICS_PLANS)
 //   review  "Security Review": people read the code; quoted per project after a request (no list price).
 //   audit   "Audit": the premium tier, not offered yet (`available: false`); requests are still taken.
 export const SECURITY = {
-  scan: { id: 'scan', name: 'AI Security Scan', priceUsd: 99, freePerMonth: { free: 1, pro: 3, business: 10 }, maxActive: 2, maxUploadBytes: 2_000_000 },
+  scan: { id: 'scan', name: 'AI Security Scan', priceUsd: 85, freePerMonth: { free: 1, pro: 3, business: 10 }, maxActive: 2, maxUploadBytes: 2_000_000 },
   review: { id: 'review', name: 'Security Review', quoted: true, available: true },
   audit: { id: 'audit', name: 'Audit', quoted: true, available: false },
 }
