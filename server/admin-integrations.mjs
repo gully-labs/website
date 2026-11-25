@@ -35,6 +35,8 @@ import { DATA_DIR, json, readJson } from './http.mjs'
 import { AI_FIELD_NAMES, AI_GROUPS, aiProviderStatus, forgetAiCheck, runAiCheck } from './admin-integrations-ai.mjs'
 import { DEVTOOLS_GROUPS, pemShape, progressOf, runDevtoolsTest } from './admin-integrations-devtools.mjs'
 import { aiSettingsChanged, integrationsDir } from './ai-settings.mjs'
+import { BOT_FIELD_NAMES, BOT_GROUPS, runBotAction, runBotCheck } from './admin-integrations-bots.mjs'
+import { botSetting, botSettingsChanged } from './bot-settings.mjs'
 import { askProviderHealth, checkProvider, providerRecheck, setProviderProbeFetch } from './ask.mjs'
 import { looksLikeWalletSecret, RateLimit, WALLET_REFUSED } from './integrations-guard.mjs'
 
@@ -61,7 +63,7 @@ export const INTEGRATION_GROUPS = [
     fields: [{ name: 'GULLYPAY_CHAINKIT_WEBHOOK_SECRET', label: 'Webhook signing key', hint: 'shown once by Gully Pay', format: /^[A-Za-z0-9_-]{16,128}$/, hexKeyOk: true }],
   },
 ]
-INTEGRATION_GROUPS.push(...DEVTOOLS_GROUPS, ...AI_GROUPS)
+INTEGRATION_GROUPS.push(...DEVTOOLS_GROUPS, ...AI_GROUPS, ...BOT_GROUPS)
 const FIELDS = new Map(INTEGRATION_GROUPS.flatMap((g) => g.fields.map((f) => [f.name, f])))
 
 export { integrationsDir }
@@ -162,6 +164,8 @@ function groupView(g, rows) {
   if (g.guideOnly) out.guideOnly = true
   if (g.notes) out.notes = g.notes
   if (g.section === 'ai') out.status = aiProviderStatus(askProviderHealth())
+  if (g.info) out.info = g.info((n) => botSetting(n) || null).map(({ label, value, empty, url }) => ({ label, value: value ?? null, empty: empty ?? null, url: !!url }))
+  if (g.actions) out.actions = g.actions
   if (g.test) out.canCheck = true
   else if (g.section === 'devtools' && !g.guideOnly) out.canCheck = true
   return out
@@ -209,12 +213,24 @@ export async function handleIntegrationsAdmin(req, res, url) {
     const rows = readAudit()
     return json(res, 200, { groups: INTEGRATION_GROUPS.map((g) => groupView(g, rows)), progress: progressOf((n) => readStored(n) !== null), stepUp: { via: s ? 'gully_id' : 'token', until: stepUpUntil(s) } }), true
   }
-  const chk = /^\/api\/admin\/integrations\/check\/((?:dt|ai)_[a-z0-9_]{2,40})$/.exec(p)?.[1]
+  const act = /^\/api\/admin\/integrations\/action\/(bot_[a-z0-9_]{2,40})$/.exec(p)?.[1]
+  if (act) {
+    if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }, { Allow: 'POST' }), true
+    if (!BOT_GROUPS.some((g) => g.actions?.some((a) => a.id === act))) return json(res, 404, { error: 'not found' }), true
+    if (!s) return json(res, 403, { code: 'gully_id_required', error: 'Sign in with Gully ID first. The admin token cannot.' }), true
+    if (!stepUpUntil(s)) return json(res, 401, { code: 'step_up_required', error: 'Confirm with your passkey first (valid 5 minutes).', stepup: '/auth/gully/stepup' }), true
+    if (!writes.take(s.sub)) return json(res, 429, { code: 'rate_limited', error: 'Too many changes. Wait a few minutes.' }), true
+    const r = await runBotAction(act, (n) => botSetting(n), checkFetch())
+    audit(s.sub, act, 'action', r.result)
+    return json(res, r.status, { ok: r.ok, result: r.result, detail: r.detail }), true
+  }
+  const chk = /^\/api\/admin\/integrations\/check\/((?:dt|ai|bot)_[a-z0-9_]{2,40})$/.exec(p)?.[1]
   if (chk) {
     if (req.method !== 'POST') return json(res, 405, { error: 'POST only' }, { Allow: 'POST' }), true
     if (!checks.take(s?.sub ?? 'token')) return json(res, 429, { code: 'rate_limited', error: 'Too many checks. Wait a few minutes.' }), true
     const ai = AI_GROUPS.some((g) => g.id === chk)
-    const r = ai ? await runAiCheck(() => checkProvider({ fetchImpl: checkFetch() })) : await runDevtoolsTest(chk, readStored, checkFetch())
+    const bot = BOT_GROUPS.some((g) => g.id === chk)
+    const r = ai ? await runAiCheck(() => checkProvider({ fetchImpl: checkFetch() })) : bot ? await runBotCheck(chk, (n) => botSetting(n), checkFetch()) : await runDevtoolsTest(chk, readStored, checkFetch())
     audit(s?.sub, chk, 'check', r.result)
     return json(res, r.status, { ok: r.ok, result: r.result, detail: r.detail }), true
   }
@@ -249,6 +265,18 @@ export async function handleIntegrationsAdmin(req, res, url) {
   }
   audit(s.sub, name, action, 'ok')
   let check
+  if (BOT_FIELD_NAMES.has(name)) {
+    botSettingsChanged(name)
+    // A new Telegram token: register its webhook, commands and menu button now (never throws; off when cleared).
+    if (name === 'TELEGRAM_BOT_TOKEN' && action === 'set') {
+      try {
+        const tg = await import('./telegram.mjs')
+        void tg.startTelegram().catch(() => {})
+      } catch {
+        /* the bot starts on the next restart */
+      }
+    }
+  }
   if (AI_FIELD_NAMES.has(name)) {
     // In use from the next request: no restart. A new provider key is probed once, now (free: no text, no tokens).
     if (name === 'ANTHROPIC_API_KEY') forgetAiCheck()

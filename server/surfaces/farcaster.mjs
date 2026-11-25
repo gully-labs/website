@@ -17,9 +17,10 @@
 // already cites, no wallet data (place is always public).
 
 import crypto from 'node:crypto'
+import { botSetting } from '../bot-settings.mjs'
 import { answerForSurface, surfaceEnabled } from './surface.mjs'
 
-const env = (k) => String(process.env[k] ?? '').trim()
+const env = (k) => botSetting(k) // a key saved on admin Integrations first, then the environment (bot-settings.mjs)
 const NEYNAR = () => (env('NEYNAR_API') || 'https://api.neynar.com').replace(/\/$/, '')
 
 /** HMAC-SHA512 hex of the raw body with the webhook secret (the provider signs this way; compared in constant time). */

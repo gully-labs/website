@@ -58,6 +58,7 @@
 //
 // Stored in DATA_DIR/telegram.json: { links: [...], codes: [...], banner: { fileId, sha } }.
 
+import { botSetting } from './bot-settings.mjs'
 import { chainKeyOf, findStock, holdersAvailable, holdersButtonVisible } from './holders.mjs'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -140,7 +141,8 @@ export function linkForTelegramUser(userId) {
 
 /** The bot token when it is set and well formed, else null (and the bot is off). */
 export function telegramToken() {
-  const t = String(process.env.TELEGRAM_BOT_TOKEN ?? '').trim()
+  // A token saved on admin.gullylabs.xyz > Integrations wins over the environment (bot-settings.mjs).
+  const t = botSetting('TELEGRAM_BOT_TOKEN')
   return /^\d+:[\w-]{20,}$/.test(t) ? t : null
 }
 export const telegramEnabled = () => !!telegramToken()
@@ -395,7 +397,7 @@ let startTimer = null
 export async function startTelegram({ attempt = 0 } = {}) {
   const token = telegramToken()
   if (!token) {
-    if (process.env.TELEGRAM_BOT_TOKEN) console.error('telegram: TELEGRAM_BOT_TOKEN is malformed; the bot is off')
+    if (botSetting('TELEGRAM_BOT_TOKEN')) console.error('telegram: TELEGRAM_BOT_TOKEN is malformed; the bot is off')
     return { ok: false, enabled: false }
   }
   const url = `${SITE}/api/telegram/${webhookPathFor(token)}`
@@ -438,7 +440,7 @@ ${esc(String(text ?? ''))}`, kb ? { reply_markup: { inline_keyboard: kb } } : {}
 
 /** The operators' chat for admin alerts (TELEGRAM_ADMIN_CHAT_ID: a numeric chat id, groups negative), or null. */
 export function adminChatId() {
-  const v = String(process.env.TELEGRAM_ADMIN_CHAT_ID ?? '').trim()
+  const v = botSetting('TELEGRAM_ADMIN_CHAT_ID')
   return /^-?\d{1,20}$/.test(v) ? v : null
 }
 
