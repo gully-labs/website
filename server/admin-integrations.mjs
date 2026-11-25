@@ -36,7 +36,7 @@ import { AI_FIELD_NAMES, AI_GROUPS, aiProviderStatus, forgetAiCheck, runAiCheck 
 import { DEVTOOLS_GROUPS, pemShape, progressOf, runDevtoolsTest } from './admin-integrations-devtools.mjs'
 import { aiSettingsChanged, integrationsDir } from './ai-settings.mjs'
 import { BOT_FIELD_NAMES, BOT_GROUPS, runBotAction, runBotCheck } from './admin-integrations-bots.mjs'
-import { botSetting, botSettingsChanged } from './bot-settings.mjs'
+import { botSetting, botSettingSource, botSettingsChanged } from './bot-settings.mjs'
 import { askProviderHealth, checkProvider, providerRecheck, setProviderProbeFetch } from './ask.mjs'
 import { looksLikeWalletSecret, RateLimit, WALLET_REFUSED } from './integrations-guard.mjs'
 
@@ -183,6 +183,8 @@ function fieldView(f, rows) {
   }
   const last = [...rows].reverse().find((r) => r.name === f.name && r.result === 'ok')
   const view = { name: f.name, label: f.label, hint: f.hint, optional: !!f.optional, dflt: f.dflt ?? null, set, updatedAt: last?.at ?? mtime, updatedBy: last ? (last.sub ?? 'unknown') : null }
+  // A bot key not saved here may still be set in the server's environment (the bot runs on it): say so, never the value.
+  if (!set && BOT_FIELD_NAMES.has(f.name) && botSettingSource(f.name) === 'server') view.onServer = true
   // Only the fields marked plain (an id, a namespace: not secret) come back with their value; everything else is write-only.
   if (f.plain) view.value = set ? readStored(f.name) : null
   if (f.multiline) view.multiline = true
