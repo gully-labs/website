@@ -1,13 +1,15 @@
 /*
  * <gl-chart kind="area|line|bars" title="Volume, 24 h" unit="usd" height="180"></gl-chart>
- * el.data = { series:[[t,v],...], sampled:[[t,v],...], activity:[[t,v],...], loading:bool, activityLabel:'…' }
+ * el.data = { series:[[t,v],...], sampled:[[t,v],...], activity:[[t,v],...], loading:bool, activityLabel:'…', unavailable:bool, staleAt:ms }
+ * (1.1.0) `unavailable` with no series → a skeleton and one plain line; `staleAt` with a series → the last known chart with a
+ * small "Updated N min ago" note. Never a hostname, a timer or an error text.
  * el.push([t,v])  appends a live tick (animated, keeps the last `max` points, default 240).
  * Never renders an empty frame (fallback ladder, gl-core pickRung): series → sampled quotes (labelled) → chain activity
  * (labelled) → shimmer only while loading → one honest line. Canvas, 60 fps, one axis, 2 px line, 10 % area wash,
  * bars ≤ 24 px with 4 px rounded data-ends and a 2 px surface gap, hairline grid, crosshair + tooltip, table view for
  * screen readers. Colours come from --gl-accent / --gl-line / --gl-muted / --gl-surface (tokens.css).
  */
-import { define, fmtValue, pickRung, reducedMotion, token, esc, axisScale } from './gl-core.js';
+import { define, fmtValue, pickRung, reducedMotion, token, esc, axisScale, UNAVAILABLE_LINE, staleChip } from './gl-core.js';
 
 const CSS = `:host{display:block;position:relative;font:var(--gl-font);color:var(--gl-ink);min-width:0}
 .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px}
@@ -18,6 +20,7 @@ const CSS = `:host{display:block;position:relative;font:var(--gl-font);color:var
 .sk{border-radius:10px;background:linear-gradient(90deg,var(--gl-surface-2),var(--gl-line),var(--gl-surface-2));background-size:200% 100%;animation:s 1.4s linear infinite}
 @keyframes s{from{background-position:200% 0}to{background-position:-200% 0}}
 .empty{display:flex;align-items:center;justify-content:center;color:var(--gl-muted);border:1px dashed var(--gl-line);border-radius:10px;font-size:.9em;padding:0 16px;text-align:center}
+.un{margin-top:8px;color:var(--gl-muted);font-size:.9em;text-align:center}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (prefers-reduced-motion:reduce){.sk{animation:none}}`;
 
@@ -43,9 +46,10 @@ export class GlChart extends HTMLElement {
     const h = Number(this.getAttribute('height') || 180), title = this.getAttribute('title') || '';
     const rung = pickRung(this._d); this._rung = rung;
     const pts = rung === 'series' ? this._d.series : rung === 'sampled' ? this._d.sampled : rung === 'activity' ? this._d.activity : [];
-    const note = rung === 'activity' ? (this._d.activityLabel || LABEL.activity) : LABEL[rung] || '';
+    const note = rung === 'activity' ? (this._d.activityLabel || LABEL.activity) : rung === 'series' && this._d.staleAt ? staleChip(this._d.staleAt) : LABEL[rung] || '';
     let body;
     if (rung === 'shimmer') body = `<div class="sk" style="height:${h}px" part="skeleton" aria-busy="true"></div>`;
+    else if (rung === 'unavailable') body = `<div class="sk" style="height:${Math.min(h, 120)}px" part="skeleton" aria-busy="true"></div><div class="un" part="unavailable">${esc(UNAVAILABLE_LINE)}</div>`;
     else if (rung === 'empty') body = `<div class="empty" style="height:${Math.min(h, 96)}px" part="empty">${esc(this.getAttribute('empty') || 'No activity yet. It shows here the moment the first trade lands.')}</div>`;
     else body = `<div class="wrap"><canvas part="canvas" style="height:${h}px" role="img" aria-label="${esc(title || 'chart')}"></canvas><div class="tip"></div></div>${this.table(pts)}`;
     this._r.innerHTML = `<style>${CSS}</style>${title || note ? `<div class="hd"><span class="t">${esc(title)}</span><span class="n">${esc(note)}</span></div>` : ''}${body}`;
