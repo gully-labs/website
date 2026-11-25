@@ -19,9 +19,10 @@
 // call has ctx = null, in a server and in a DM alike. (Linking is a later step; see SPEC.md.)
 
 import crypto from 'node:crypto'
+import { botSetting } from '../bot-settings.mjs'
 import { answerForSurface, surfaceEnabled } from './surface.mjs'
 
-const env = (k) => String(process.env[k] ?? '').trim()
+const env = (k) => botSetting(k) // a key saved on admin Integrations first, then the environment (bot-settings.mjs)
 const API = () => (env('DISCORD_API') || 'https://discord.com/api/v10').replace(/\/$/, '')
 const SKEW_S = 300
 const EPHEMERAL = 64

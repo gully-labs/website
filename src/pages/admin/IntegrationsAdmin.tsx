@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleDashed, ExternalLink, KeyRound, Loader2, ShieldCheck, Trash2 } from 'lucide-react'
+import { CheckCircle2, CircleDashed, Copy, ExternalLink, KeyRound, Loader2, Send, ShieldCheck, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { toastError, toastSuccess } from '../../components/ui/toast'
 import { dateTimePT } from '../../lib/time'
@@ -39,6 +39,8 @@ interface Group {
   guideOnly?: boolean
   canCheck?: boolean
   notes?: Note[]
+  info?: { label: string; value: string | null; empty: string | null; url: boolean }[]
+  actions?: { id: string; label: string; detail: string }[]
   status?: { state: string; label: string; search?: string; since?: string | null; lastCheck?: { at: string; result: string } | null }
 }
 interface Progress {
@@ -156,6 +158,65 @@ function ProgressPanel({ rows }: { rows: Progress[] }) {
   )
 }
 
+function InfoRows({ rows }: { rows: NonNullable<Group['info']> }) {
+  const copy = (v: string) => {
+    navigator.clipboard?.writeText(v).then(
+      () => toastSuccess('Copied'),
+      () => toastError('Could not copy', { detail: 'Select the text and copy it by hand.' }),
+    )
+  }
+  return (
+    <ul className="m-0 flex list-none flex-col gap-2 p-0">
+      {rows.map((r) => (
+        <li key={r.label} className="flex min-w-0 flex-col gap-1 rounded-input border border-line px-3 py-3" data-testid="integrations-info">
+          <span className="text-[13px] font-medium text-ink">{r.label}</span>
+          {r.value ? (
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              {r.url ? (
+                <a href={r.value} target="_blank" rel="noopener noreferrer" className="min-w-0 font-mono text-[12px] break-all text-ink underline">
+                  {r.value}
+                </a>
+              ) : (
+                <code className="min-w-0 font-mono text-[12px] break-all text-ink">{r.value}</code>
+              )}
+              <button type="button" className={ctl} onClick={() => copy(r.value as string)} aria-label={`Copy ${r.label}`}>
+                <Copy size={16} aria-hidden /> Copy
+              </button>
+            </div>
+          ) : (
+            <span className="text-[12px] text-faint">{r.empty}</span>
+          )}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function ActionButton({ a, token, unlocked }: { a: NonNullable<Group['actions']>[number]; token: string; unlocked: boolean }) {
+  const [busy, setBusy] = useState(false)
+  const [detail, setDetail] = useState<{ ok: boolean; text: string } | null>(null)
+  const run = async () => {
+    setBusy(true)
+    const r = await call(token, `/api/admin/integrations/action/${a.id}`, 'POST')
+    setBusy(false)
+    const ok = r.ok && !!r.data?.ok
+    const text = r.ok ? String(r.data?.detail ?? '') : r.error
+    setDetail({ ok, text })
+    ;(ok ? toastSuccess : toastError)(ok ? a.label : `${a.label}: not done`, { detail: text })
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button type="button" className={ctl} disabled={!unlocked || busy} onClick={() => void run()} data-testid={`action-${a.id}`}>
+        {busy ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <Send size={16} aria-hidden />}
+        {a.label}
+      </button>
+      <span className={`text-[13px] ${detail ? (detail.ok ? 'text-green' : 'text-muted') : 'text-faint'}`} role="status">
+        {detail ? detail.text : a.detail}
+      </span>
+    </div>
+  )
+}
+
 function GroupCard({ g, token, unlocked, onSaved }: { g: Group; token: string; unlocked: boolean; onSaved: () => void }) {
   const [check, setCheck] = useState<{ busy: boolean; ok?: boolean; detail?: string }>({ busy: false })
   const run = async () => {
@@ -215,6 +276,7 @@ function GroupCard({ g, token, unlocked, onSaved }: { g: Group; token: string; u
           ))}
         </div>
       ))}
+      {g.info && g.info.length > 0 && <InfoRows rows={g.info} />}
       {g.fields.length > 0 && (
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {g.fields.map((f) => (
@@ -235,6 +297,9 @@ function GroupCard({ g, token, unlocked, onSaved }: { g: Group; token: string; u
           )}
         </div>
       )}
+      {g.actions?.map((a) => (
+        <ActionButton key={a.id} a={a} token={token} unlocked={unlocked} />
+      ))}
     </div>
   )
 }
@@ -292,6 +357,19 @@ export default function IntegrationsAdmin({ token }: { token: string }) {
             <GroupCard g={g} token={token} unlocked={unlocked} onSaved={load} />
           </div>
         ))}
+      {data?.groups.some((g) => g.section === 'bots') && (
+        <div className="flex min-w-0 flex-col gap-4 border-t border-line pt-5" data-testid="integrations-bots">
+          <h3 className="m-0 font-display text-[18px] font-bold uppercase">Bots and apps</h3>
+          <p className="m-0 text-[13px] text-muted">
+            The few bots and apps Gully Labs runs. Paste each token here before or right after you create the bot: never in chat. Each card has the steps, the URLs to paste into the platform and a Check that only reads.
+          </p>
+          {data.groups
+            .filter((g) => g.section === 'bots')
+            .map((g) => (
+              <GroupCard key={g.id} g={g} token={token} unlocked={unlocked} onSaved={load} />
+            ))}
+        </div>
+      )}
       {data?.groups.some((g) => g.section === 'devtools') && (
         <div className="flex min-w-0 flex-col gap-4 border-t border-line pt-5" data-testid="integrations-devtools">
           <h3 className="m-0 font-display text-[18px] font-bold uppercase">Developer tools</h3>

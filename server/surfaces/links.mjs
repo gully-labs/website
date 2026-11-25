@@ -14,9 +14,10 @@
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
+import { botSetting } from '../bot-settings.mjs'
 import { DATA_DIR, json, readJson } from '../http.mjs'
 
-const env = (k) => String(process.env[k] ?? '').trim()
+const env = (k) => botSetting(k) // a key saved on admin Integrations first, then the environment (bot-settings.mjs)
 export const linkingEnabled = () => env('AI_LINKING') === '1'
 const FILE = () => path.join(process.env.DATA_DIR ?? DATA_DIR, 'surface-links.json')
 const PLATFORMS = ['telegram', 'discord', 'farcaster']
