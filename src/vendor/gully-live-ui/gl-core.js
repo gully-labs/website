@@ -2,7 +2,7 @@
  * Gully Live UI: shared helpers (gl-core.js). Canonical source: gully-labs/gully-ops sites/_shared/gully-live-ui/.
  * Copy files byte-identical; theme with CSS custom properties (tokens.css), never by editing a component.
  */
-export const GULLY_LIVE_UI_VERSION = '1.0.4';
+export const GULLY_LIVE_UI_VERSION = '1.1.0';
 
 /** true when the visitor asked for less motion (and in environments without matchMedia). */
 export const reducedMotion = () => typeof matchMedia !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -63,13 +63,15 @@ export function tween(a, b, ms, step) {
  *   a series with ≥ 2 points   → 'series'
  *   else sampled quotes ≥ 2    → 'sampled' (labelled)
  *   else chain activity ≥ 2    → 'activity' (labelled: "No pool yet, showing … activity")
+ *   else the source failed     → 'unavailable' (1.1.0: a skeleton and one plain line, never a hostname or a timer)
  *   else                       → 'empty' (an honest one-line state, never an empty frame)
  */
-export function pickRung({ loading = false, series = [], sampled = [], activity = [] } = {}) {
+export function pickRung({ loading = false, series = [], sampled = [], activity = [], unavailable = false } = {}) {
   if (loading) return 'shimmer';
   if (series?.length >= 2) return 'series';
   if (sampled?.length >= 2) return 'sampled';
   if (activity?.length >= 2) return 'activity';
+  if (unavailable) return 'unavailable';
   return 'empty';
 }
 
@@ -133,3 +135,28 @@ export function axisScale(vs, kind, fmt) {
 
 /** Escape text for innerHTML. */
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ---------------------------------------------------------------- the quiet "unavailable" state (1.1.0)
+// A stat or chart whose source did not answer shows the last known value with a small "Updated N min ago" chip (short local
+// cache), else a skeleton with ONE plain line. Never a hostname, a retry timer, an env name or the same sentence twice in a
+// card: the detail goes to console.debug (and the status page), nowhere on the page.
+
+/** The one plain line a card shows when it has no value and no cached one. */
+export const UNAVAILABLE_LINE = 'Stats are updating';
+const LAST_PREFIX = 'gl-last:', LAST_MAX_MS = 24 * 3600 * 1000;
+const store = () => { try { return typeof localStorage === 'undefined' ? null : localStorage; } catch { return null; } };
+
+/** Keep the last good answer of a stat (any JSON-able payload) for the quiet state. Never throws (private mode, quota). */
+export function rememberStat(key, payload, now = Date.now()) {
+  const st = store(); if (!st || payload == null) return false;
+  try { st.setItem(LAST_PREFIX + key, JSON.stringify({ at: now, v: payload })); return true; } catch { return false; }
+}
+/** The last good answer, or null when there is none or it is older than maxMs (default 24 h). → { at, v } */
+export function recallStat(key, maxMs = LAST_MAX_MS, now = Date.now()) {
+  const st = store(); if (!st) return null;
+  try { const o = JSON.parse(st.getItem(LAST_PREFIX + key) || 'null'); return o && Number.isFinite(o.at) && now - o.at <= maxMs && now >= o.at - 60_000 ? o : null; } catch { return null; }
+}
+/** The chip text: "Updated just now", "Updated 4 min ago", "Updated 3 h ago". */
+export function staleChip(at, now = Date.now()) { return now - at < 45_000 ? 'Updated just now' : `Updated ${ago(at, now)}`; }
+/** Where the detail of a failed read goes: the console (debug level) and nothing on the page. */
+export function quiet(scope, err) { try { console.debug(`[gully-live-ui] ${scope}`, err); } catch { /* no console */ } }
