@@ -44,6 +44,7 @@ export function AnalyticsPlanCards({ state, retry, delay = 0 }: { state: PlansSt
                   <span className={`font-display text-[64px] leading-[.9] font-extrabold ${featured ? 'text-gold' : 'text-ink'}`}>${p.priceUsdc}</span>
                   <span className="font-mono text-[13px] text-muted">{trial ? `free for ${a.trialDays} days, once per wallet` : `/ ${a.periodDays} days`}</span>
                 </span>
+                {!trial && p.priceUsdcYear ? <span className="font-mono text-[12px] text-faint">or ${p.priceUsdcYear.toLocaleString('en-US')} a year, yearly billing opens soon</span> : null}
               </div>
               <ul className="relative m-0 flex list-none flex-col gap-3 p-0 text-[15px] text-ink-2">
                 <li className="flex items-start gap-3">

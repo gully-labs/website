@@ -65,6 +65,8 @@ export interface Plan {
   id: PlanId
   name: string
   priceUsdc: number
+  /** shown only; yearly billing opens soon */
+  priceUsdcYear?: number
   perMin: number
   alerts: number
   historyDays: number
@@ -117,6 +119,7 @@ export interface AnalyticsPlan {
   id: AnalyticsPlanId
   name: string
   priceUsdc: number
+  priceUsdcYear?: number
   sites: number
   eventsPerMonth: number
 }

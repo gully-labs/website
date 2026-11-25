@@ -270,6 +270,7 @@ export function Pricing() {
                         <AnimatedNumber className={`font-display text-[64px] leading-[.9] font-extrabold ${featured ? 'text-gold' : 'text-ink'}`} value={p.priceUsdc} format={USD0} countUp />
                         <span className="font-mono text-[13px] text-muted">{p.priceUsdc ? `/ ${offer.periodDays} days` : 'free, no time limit'}</span>
                       </span>
+                      {p.priceUsdc > 0 && p.priceUsdcYear ? <span className="font-mono text-[12px] text-faint">or ${p.priceUsdcYear.toLocaleString('en-US')} a year, yearly billing opens soon</span> : null}
                     </div>
                     <ul className="relative m-0 flex list-none flex-col gap-3 p-0 text-[15px] text-ink-2">
                       <li className="flex items-start gap-3">

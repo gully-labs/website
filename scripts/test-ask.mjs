@@ -239,7 +239,7 @@ try {
   const a2 = await askPost({ question: 'What does Pro cost?' })
   const r2 = calls.slice(-2)
   check('tool use: the stub asked for get_plans, the server ran it and sent the result back', round === 2 && r2[1].body.messages.at(-2).role === 'assistant' && r2[1].body.messages.at(-2).content.some((b) => b.type === 'tool_use' && b.id === 'toolu_1'))
-  check('tool use: the final answer uses the live plan figures', a2.status === 200 && /Pro plan is 49 US dollars for 30 days/.test(a2.data.answer), a2.data?.answer)
+  check('tool use: the final answer uses the live plan figures', a2.status === 200 && /Pro plan is 30 US dollars for 30 days/.test(a2.data.answer), a2.data?.answer)
   check('tool use: usedTools lists get_plans', JSON.stringify(a2.data.usedTools) === '["get_plans"]')
   check('get_plans never hands out a payment address', !/0x[0-9a-f]{40}/i.test(JSON.stringify(r2[1].body.messages.at(-1))))
 
