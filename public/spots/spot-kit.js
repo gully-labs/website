@@ -40,7 +40,7 @@
     var a = mk('a', 'gspot-card'); a.href = cfg.testnet && p.hrefTestnet ? p.hrefTestnet : p.href; a.rel = 'noopener'; a.target = '_blank';
     if (cfg.assetBase && p.logo) { var im = mk('img', 'gspot-logo'); im.src = cfg.assetBase + p.logo + '.svg'; im.alt = ''; im.width = 28; im.height = 28; im.onerror = function () { im.remove(); }; a.appendChild(im); }
     var t = mk('span', 'gspot-text'); t.appendChild(mk('strong', '', p.title)); t.appendChild(mk('span', '', ' ' + p.line)); a.appendChild(t);
-    el.appendChild(chrome(el, 'From Gully Labs', cfg)); el.appendChild(a);
+    el.appendChild(chrome(el, cfg.testnet ? 'From Gully Labs · Demo' : 'From Gully Labs', cfg)); // testnet/house mode = Demo label (SPOT-RULES 1.10) el.appendChild(a);
     if (cfg.banners) banner(el, cfg, a);
   }
   function bannerSize(unit, w) { return unit === 'banner' ? (w >= 728 ? '728x90' : '320x100') : 'native'; }
