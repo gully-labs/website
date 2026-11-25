@@ -7,3 +7,6 @@
 .gspot-logo{flex:none}
 [data-gully-spot]:not([data-ready]){display:none}
 .gspot-card:has(.gspot-banner){padding:0;display:block;border:0;background:none}.gspot-banner{display:block;margin:0 auto}
+[data-gully-spot][data-sizes]{border:0;border-radius:0;background:none;margin:24px auto}
+[data-gully-spot][data-sizes] .gspot-bar{height:24px;padding:0 2px;box-sizing:border-box;line-height:24px}
+.gspot-bn{display:block;padding:0;min-height:0;line-height:0}.gspot-bn img{display:block}

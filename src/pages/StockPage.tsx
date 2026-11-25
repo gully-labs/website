@@ -285,7 +285,7 @@ function Body({ data, row }: { data: Tracker; row: TrackerRow }) {
           {STOCK_COPY.disclaimer}
         </p>
       </section>
-      <GullySpot unit="banner" className="mx-auto mt-8 mb-12" />
+      <GullySpot unit="banner" sizes="728x90,320x100" className="mx-auto mt-8 mb-12" />
     </>
   )
 }
