@@ -274,7 +274,7 @@ try {
   const ap = plans?.analytics
   check('GET /api/plans has the analytics plans: trial, starter, growth', ap?.plans.map((p) => p.id).join() === 'trial,starter,growth' && ap.trialDays === 14 && ap.graceDays === 30, JSON.stringify(ap?.plans.map((p) => [p.id, p.sites, p.eventsPerMonth])))
   check('the API plans are unchanged', plans.plans.map((p) => p.id).join() === 'free,pro,business')
-  check('the analytics trial is 1 site and 10k events; Starter 3 / 100k; Growth 10 / 1M', ap.plans[0].sites === 1 && ap.plans[0].eventsPerMonth === 10_000 && ap.plans[1].sites === 3 && ap.plans[1].eventsPerMonth === 100_000 && ap.plans[2].sites === 10 && ap.plans[2].eventsPerMonth === 1_000_000)
+  check('the analytics trial is 1 site and 100k events; Starter 20 / 1M; Growth 100 / 10M (2026-11-25, 15% below Umami Cloud)', ap.plans[0].sites === 1 && ap.plans[0].eventsPerMonth === 100_000 && ap.plans[1].sites === 20 && ap.plans[1].eventsPerMonth === 1_000_000 && ap.plans[2].sites === 100 && ap.plans[2].eventsPerMonth === 10_000_000 && ap.plans[1].priceUsdc === 17 && ap.plans[2].priceUsdc === 170)
 
   /* ------------------------------------------------------------ sign-up --- */
   check('the analytics API needs a session', (await anon.call('/api/developer/analytics')).status === 401)
@@ -288,7 +288,7 @@ try {
   const userA = [...umami.users.values()].find((u) => u.username === `w_${A.slice(2, 12)}`)
   check('"Start free trial" creates a Umami user w_<first 10 hex> with role user', r.status === 201 && !!userA && userA.role === 'user', JSON.stringify(r.data))
   check('its strong random password is shown once and works on Umami', typeof pwd1 === 'string' && pwd1.length >= 20 && userA?.password === pwd1)
-  check('the trial runs 14 days with 1 site and 10k events', r.data?.account?.state === 'trial' && r.data.account.plan.id === 'trial' && Math.abs(Date.parse(r.data.account.expiresAt) - Date.now() - 14 * DAY) < 60_000)
+  check('the trial runs 14 days with 1 site and 100k events', r.data?.account?.state === 'trial' && r.data.account.plan.id === 'trial' && Math.abs(Date.parse(r.data.account.expiresAt) - Date.now() - 14 * DAY) < 60_000)
   const stored = fs.readFileSync(path.join(tmp, 'analytics.json'), 'utf8')
   check('the Umami password is not stored on our side', !stored.includes(pwd1) && stored.includes(userA.id))
   check('a second start is refused', (await ca.post('/api/developer/analytics/start')).status === 409)
@@ -409,7 +409,7 @@ try {
   check('accepted events are counted per website', r.data.account.eventsThisMonth === 1 && r.data.account.sites[0].eventsThisMonth === 1)
 
   // Fill the trial's month up to 3 events short of its quota.
-  accounts.recordEvents(new Map([[siteA.id, 10_000 - 4]]))
+  accounts.recordEvents(new Map([[siteA.id, 100_000 - 4]]))
   r = await sendEvent(siteA.id)
   check('under the quota events still pass', r.status === 200)
   const before = umami.received.length
@@ -424,7 +424,7 @@ try {
   r = await sendEvent(GULLY_SITE)
   check('the Gully Labs site is never blocked', r.status === 200)
   r = await ca.call('/api/developer/analytics')
-  check('the account shows 10,000 events and the site as over quota', r.data.account.eventsThisMonth === 10_000 && r.data.account.sites[0].blocked === 'gully-quota-exceeded')
+  check('the account shows 100,000 events and the site as over quota', r.data.account.eventsThisMonth === 100_000 && r.data.account.sites[0].blocked === 'gully-quota-exceeded')
   r = await ca.call('/api/developer/analytics/usage')
   check('usage reads Umami’s own figures for this month', r.status === 200 && r.data.sites[0].ok && r.data.sites[0].stats.pageviews === umami.received.filter((x) => x === siteA.id).length && r.data.sites[0].stats.customEvents === 0, JSON.stringify(r.data))
   r = await ca.call('/api/developer/analytics/series?range=7d')
@@ -435,7 +435,7 @@ try {
   check('the series needs a session and an account', (await anon.call('/api/developer/analytics/series')).status === 401)
   accounts.flushAnalyticsUsage()
   const persisted = JSON.parse(fs.readFileSync(path.join(tmp, 'analytics-usage.json'), 'utf8'))
-  check('the counts are persisted in DATA_DIR', Object.values(persisted.months)[0]?.[siteA.id] === 10_000)
+  check('the counts are persisted in DATA_DIR', Object.values(persisted.months)[0]?.[siteA.id] === 100_000)
 
   /* ------------------------------------------------------------ pay for Starter --- */
   r = await ca.post('/api/developer/analytics/checkout', { plan: 'trial' })
@@ -514,7 +514,7 @@ try {
   r = await admin('/api/admin/analytics')
   const rowA = r.data?.accounts.find((x) => x.address === A)
   const rowB = r.data?.accounts.find((x) => x.address === B)
-  check('the admin lists accounts with plan, sites and events this month', r.status === 200 && rowA?.plan === 'starter' && rowA.sites === 2 && rowA.eventsThisMonth === 10_001 && rowB?.state === 'lapsed', JSON.stringify(r.data?.accounts))
+  check('the admin lists accounts with plan, sites and events this month', r.status === 200 && rowA?.plan === 'starter' && rowA.sites === 2 && rowA.eventsThisMonth === 100_001 && rowB?.state === 'lapsed', JSON.stringify(r.data?.accounts))
   check('the admin list carries no password', !JSON.stringify(r.data).includes(UMAMI_ADMIN_PASSWORD))
   r = await admin(`/api/admin/analytics/${B}/plan`, 'POST', { plan: 'growth', days: 30 })
   check('the admin grants Growth', r.status === 200 && r.data.account.plan === 'growth' && r.data.account.source === 'admin')

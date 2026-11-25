@@ -4,8 +4,11 @@
  * plain share or fee rate with no sign (0.3%, 12.5%), for fee tiers, splits and vault shares (1.0.4).
  * Live stat tile: the value counts up when it changes, the delta chip flashes up/down, an optional sparkline draws in.
  * No value yet → skeleton (while `loading`) or "No data yet" (never a fake 0). Set .value / .spark from script for live data.
+ * 1.1.0: `unavailable` (the source failed) → a skeleton and one plain line "Stats are updating" (add `compact` to drop the line
+ * when a neighbour card already says it); `stale-at="<ms>"` with a value → the value stays and a small "Updated N min ago" chip
+ * shows under it. Never a hostname, a retry timer or an error text.
  */
-import { define, fmtValue, tween, reducedMotion, esc } from './gl-core.js';
+import { define, fmtValue, tween, reducedMotion, esc, UNAVAILABLE_LINE, staleChip } from './gl-core.js';
 
 const CSS = `:host{display:block;font:var(--gl-font);color:var(--gl-ink);background:var(--gl-surface);border:1px solid var(--gl-line);border-radius:var(--gl-radius);padding:14px 16px;min-width:0}
 .l{display:flex;align-items:center;gap:6px;color:var(--gl-muted);font-size:.82em;letter-spacing:.02em}
@@ -17,6 +20,7 @@ const CSS = `:host{display:block;font:var(--gl-font);color:var(--gl-ink);backgro
 .d.up{color:var(--gl-up);border-color:currentColor}.d.down{color:var(--gl-down);border-color:currentColor}
 .d.flash{animation:f .9s ease-out}@keyframes f{from{background:color-mix(in srgb,currentColor 22%,transparent)}to{background:transparent}}
 .none{color:var(--gl-muted);font-size:.9em;margin-top:8px}
+.stale{margin-top:6px;color:var(--gl-muted);font-size:.74em;letter-spacing:.02em}
 .sk{height:28px;width:60%;margin-top:8px;border-radius:8px;background:linear-gradient(90deg,var(--gl-surface-2),var(--gl-line),var(--gl-surface-2));background-size:200% 100%;animation:gl-sh 1.4s linear infinite}
 @keyframes gl-sh{from{background-position:200% 0}to{background-position:-200% 0}}
 svg{display:block;width:100%;height:32px;overflow:visible}
@@ -26,7 +30,7 @@ path.ar{fill:var(--gl-series-1,var(--gl-accent));opacity:.1}
 @media (prefers-reduced-motion:reduce){.live,.d.flash,.sk{animation:none}}`;
 
 export class GlStat extends HTMLElement {
-  static observedAttributes = ['label', 'value', 'unit', 'delta', 'spark', 'live', 'loading', 'full'];
+  static observedAttributes = ['label', 'value', 'unit', 'delta', 'spark', 'live', 'loading', 'full', 'unavailable', 'compact', 'stale-at'];
   constructor() { super(); this._r = this.attachShadow({ mode: 'open' }); this._shown = null; this._stop = () => {}; }
   connectedCallback() { this.render(); }
   attributeChangedCallback() { if (this.isConnected) this.render(); }
@@ -41,8 +45,9 @@ export class GlStat extends HTMLElement {
     const sp = this.spark;
     let body;
     if (loading) body = `<div class="sk" part="skeleton"></div>`;
+    else if (v === null && this.hasAttribute('unavailable')) body = `<div class="sk" part="skeleton" aria-busy="true"${this.hasAttribute('compact') ? ` role="img" aria-label="${esc(UNAVAILABLE_LINE)}"` : ''}></div>${this.hasAttribute('compact') ? '' : `<div class="none" part="unavailable">${esc(UNAVAILABLE_LINE)}</div>`}`;
     else if (v === null) body = `<div class="none">No data yet</div>`;
-    else body = `<div class="row"><span class="v" part="value" aria-live="polite"></span>${d === null || !Number.isFinite(d) ? '' : `<span class="d ${d > 0 ? 'up' : d < 0 ? 'down' : ''}" part="delta">${d > 0 ? '▲' : d < 0 ? '▼' : ''} ${esc(fmtValue(d, 'pct'))}</span>`}</div>${sp.length >= 2 ? `<div class="sp">${this.sparkSvg(sp)}</div>` : ''}`;
+    else body = `<div class="row"><span class="v" part="value" aria-live="polite"></span>${d === null || !Number.isFinite(d) ? '' : `<span class="d ${d > 0 ? 'up' : d < 0 ? 'down' : ''}" part="delta">${d > 0 ? '▲' : d < 0 ? '▼' : ''} ${esc(fmtValue(d, 'pct'))}</span>`}</div>${sp.length >= 2 ? `<div class="sp">${this.sparkSvg(sp)}</div>` : ''}${Number.isFinite(Number(this.getAttribute('stale-at'))) && this.getAttribute('stale-at') ? `<div class="stale" part="stale">${esc(staleChip(Number(this.getAttribute('stale-at'))))}</div>` : ''}`;
     const prevDelta = this._lastDelta; this._lastDelta = d;
     this._r.innerHTML = `<style>${CSS}</style><div class="l" part="label">${this.hasAttribute('live') ? '<i class="live" aria-hidden="true"></i>' : ''}<span>${esc(label)}</span></div>${body}`;
     const el = this._r.querySelector('.v');

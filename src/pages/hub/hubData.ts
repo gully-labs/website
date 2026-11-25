@@ -82,7 +82,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
     icon: I('rpc'),
     line: 'One API key for Gully Chain, Ethereum, Base and more.',
     about: 'Multi-chain RPC with failover, live usage per key and a free tier. Gully Chain is served from Gully nodes; other chains through a partner network while Gully nodes are built.',
-    live: ['API keys (open sign-up, free tier)', 'Plans per 30 days: Free 5M, Developer $49 50M, Business $199 300M weighted requests', 'Usage metering (beta)', 'Gully Chain on the gateway, keyless endpoint too'],
+    live: ['API keys (open sign-up, free tier)', 'Plans per 30 days: Free 5M, Developer $42 50M, Business $169 270M weighted requests', 'Usage metering (beta)', 'Gully Chain on the gateway, keyless endpoint too'],
     next: ['Archive and trace', 'HyperEVM, X Layer, Ink, Unichain'],
     links: [['Portal', 'https://app.gullyrpc.xyz'], ['Status', 'https://gullyrpc.xyz/status']],
   },

@@ -161,7 +161,7 @@ try {
   const verify = (quoteId, txHash, c = dev) => c.post('/api/developer/checkout/verify', { quoteId, txHash })
   const q1r = await checkout('pro', 'eth-eth')
   const q1 = q1r.data?.intent
-  const need = (4900n * 10n ** 26n + 2_500_00000000n * 100n - 1n) / (2_500_00000000n * 100n) // 49 USD at 2500 USD/ETH, rounded up
+  const need = (3000n * 10n ** 26n + 2_500_00000000n * 100n - 1n) / (2_500_00000000n * 100n) // 30 USD at 2500 USD/ETH, rounded up
   check('an ETH quote on Ethereum is priced by the feed, rounded up, with a unique tail', q1r.status === 200 && BigInt(q1.amountRaw) > need && BigInt(q1.amountRaw) - need < 10n ** 13n + 10n ** 9n && BigInt(q1.amountRaw) % 10n ** 9n === 0n, `${q1?.amount} ETH; ${q1r.data?.error ?? ''}`)
   check('the quote records its price source', q1.price?.feed === FEEDS[1] && q1.price.roundId === '777' && q1.price.answer === '2500' && !!q1.price.updatedAt && q1.price.description === 'ETH / USD')
   check('the quote is valid for 20 minutes', Math.abs(Date.parse(q1.expiresAt) - Date.parse(q1.createdAt) - 20 * 60_000) < 1000)
@@ -228,12 +228,12 @@ try {
 
   /* ------------------------------------------------ token verification --- */
   const qt = (await checkout('pro', 'bnb-usdt')).data.intent
-  check('a USDT quote on BNB Chain uses 18 decimals and a sub-cent tag', /^49\.00\d{1,4}$/.test(qt.amount) && BigInt(qt.amountRaw) > 49n * 10n ** 18n && BigInt(qt.amountRaw) < 49n * 10n ** 18n + 10n ** 16n, qt.amount)
+  check('a USDT quote on BNB Chain uses 18 decimals and a sub-cent tag', /^30\.00\d{1,4}$/.test(qt.amount) && BigInt(qt.amountRaw) > 30n * 10n ** 18n && BigInt(qt.amountRaw) < 30n * 10n ** 18n + 10n ** 16n, qt.amount)
   r = await verify(qt.id, bnb.add({ from: stranger, value: BigInt(qt.amountRaw), token: TOKENS.bnbUsdt }))
   check('USDT on BNB Chain from another wallet, exact amount, is matched', r.status === 200 && r.data.payment.amount === qt.amount && r.data.payment.symbol === 'USDT', r.data?.error)
   const qu = (await checkout('pro', 'eth-usdt')).data.intent
-  r = await verify(qu.id, eth.add({ from: me, value: 48_990_000n, token: TOKENS.ethUsdt }))
-  check('refused: USDT underpayment on Ethereum', r.status === 422 && /costs 49 USDT/.test(r.data?.error), r.data?.error)
+  r = await verify(qu.id, eth.add({ from: me, value: 29_990_000n, token: TOKENS.ethUsdt }))
+  check('refused: USDT underpayment on Ethereum', r.status === 422 && /costs 30 USDT/.test(r.data?.error), r.data?.error)
   r = await verify(qu.id, eth.add({ from: me, value: 49_000_000n, token: TOKENS.arbUsdc }))
   check('refused: the wrong token to the treasury', r.status === 422 && /other than USDT/.test(r.data?.error), r.data?.error)
   r = await verify(qu.id, eth.add({ from: me, value: 50_000_000n, token: TOKENS.ethUsdt }))
@@ -247,7 +247,7 @@ try {
 
   /* -------------------------------------------- new chains: quotes and payments --- */
   const qpol = (await checkout('pro', 'polygon-pol')).data?.intent
-  const needPol = (4900n * 10n ** 26n + 9_000000n * 100n - 1n) / (9_000000n * 100n)
+  const needPol = (3000n * 10n ** 26n + 9_000000n * 100n - 1n) / (9_000000n * 100n)
   check('a POL quote on Polygon is priced by the MATIC / USD feed (POL = MATIC 1:1), rounded up', !!qpol && qpol.price?.description === 'MATIC / USD' && BigInt(qpol.amountRaw) > needPol && qpol.confirmations === 64 && qpol.asset.symbol === 'POL', JSON.stringify(qpol?.price))
   r = await verify(qpol.id, polygon.add({ from: me, value: BigInt(qpol.amountRaw), block: polygon.head - 40 }))
   check('pending: 41 of 64 confirmations on Polygon (202)', r.status === 202 && r.data?.needed === 64 && r.data?.confirmations === 41, r.data?.error)

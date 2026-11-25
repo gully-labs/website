@@ -172,8 +172,8 @@ export const features: Feature[] = [
     summary: "Paid tiers of the tracker API that raise the per-key rate limit, add alerts and monitors, and lengthen history. Paid by crypto, with no custody.",
     facts: [
       "Free: $0, 600 requests a minute, 1 alert, 7 days of history, 1 contract monitor (PLANS.free).",
-      "Pro: $49 per 30 days, 3,000 requests a minute, 10 alerts, 90 days of history, 10 monitors (PLANS.pro).",
-      "Business: $199 per 30 days, 10,000 requests a minute, 100 alerts, 365 days of history, 50 monitors (PLANS.business).",
+      "Pro: $30 per 30 days ($296 a year, yearly billing opens soon), 3,000 requests a minute, 10 alerts, 90 days of history, 10 monitors (PLANS.pro).",
+      "Business: $110 per 30 days ($1,052 a year, yearly billing opens soon), 10,000 requests a minute, 100 alerts, 365 days of history, 50 monitors (PLANS.business).",
       "Each wallet may hold up to 5 keys on every plan; one payment buys PERIOD_DAYS (30) days.",
       "All prices and limits are read from server/plans.mjs and served at GET /api/plans."
     ],
@@ -457,7 +457,7 @@ export const features: Feature[] = [
     facts: [
       "Inputs: deployed address, GitHub repo and commit, uploaded file, or web2 repo (checklist mode).",
       "Chains: Ethereum, Base, Arbitrum, OP Mainnet, BNB Chain, Polygon, Avalanche, Sepolia and Base Sepolia (server/security/chains.mjs).",
-      "Price $99 per scan beyond the monthly allowance (SECURITY.scan.priceUsd); free scans a month: Free 1, Pro 3, Business 10; up to 2 active scans; uploads up to 2,000,000 bytes (server/plans.mjs).",
+      "Price $85 per scan beyond the monthly allowance (SECURITY.scan.priceUsd); free scans a month: Free 1, Pro 3, Business 10; up to 2 active scans; uploads up to 2,000,000 bytes (server/plans.mjs).",
       "Every report is labelled \"AI review only — static tools unavailable\" and every finding has verifiedByHuman false.",
       "No refunds: a paid scan that fails gives the workspace a re-run credit, spent after the free quota and before the price; terms at https://gullylabs.xyz/legal/scan-terms.",
       "Live scanner status (AI review, static tools, queue) at GET /api/security/engine, shown at checkout and on /security; a sample report on a fictional contract at https://gullylabs.xyz/security/sample."
@@ -652,7 +652,7 @@ export const features: Feature[] = [
     summary: "Privacy-friendly web analytics with Web3 events, a fork of Umami, that a wallet signs up for in the app and pays for with Gully Pay.",
     facts: [
       "Free trial of ANALYTICS_TRIAL_DAYS (14) days with 1 site and 10,000 events a month.",
-      "Starter: $19, 3 sites, 100,000 events a month. Growth: $79, 10 sites, 1,000,000 events a month (ANALYTICS_PLANS; the prices are placeholders until the owner sets them).",
+      "Free trial: 1 site, 100,000 events a month for 14 days. Starter: $17, 20 sites, 1,000,000 events a month. Growth: $170, 100 sites, 10,000,000 events a month (ANALYTICS_PLANS, 15% below Umami Cloud, 2026-11-25).",
       "After a lapse, events are refused but the dashboard stays readable for ANALYTICS_GRACE_DAYS (30) days.",
       "Events over quota are answered 402 by the proxy at analytics.gullylabs.xyz."
     ],

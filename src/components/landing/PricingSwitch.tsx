@@ -14,7 +14,7 @@ import { eyebrow, h2, PORTAL_BILLING } from './links'
    step one card at a time and the rail itself stays focusable, so arrow keys still scroll it. */
 
 type Product = 'api' | 'analytics' | 'services'
-type Card = { name: string; price: string; per?: string; feats: string[] }
+type Card = { name: string; price: string; per?: string; year?: string; feats: string[] }
 
 const n = (v: number) => v.toLocaleString('en-US')
 const listOr = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} or ${xs[xs.length - 1]}` : (xs[0] ?? ''))
@@ -72,6 +72,7 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
       name: p.name,
       price: `$${n(p.priceUsdc)}`,
       per: p.priceUsdc ? `/ ${offer.periodDays} days` : undefined,
+      year: p.priceUsdc && p.priceUsdcYear ? `or $${n(p.priceUsdcYear)} a year, yearly billing opens soon` : undefined,
       feats: [`${n(p.perMin)} calls a minute`, `${p.alerts} alert${p.alerts === 1 ? '' : 's'}`, `${p.historyDays} days of history`, `${p.maxKeys} key${p.maxKeys === 1 ? '' : 's'}`],
     }))
   else if (offer && product === 'analytics')
@@ -79,6 +80,7 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
       name: p.priceUsdc ? p.name : 'Trial',
       price: p.priceUsdc ? `$${n(p.priceUsdc)}` : 'Free',
       per: p.priceUsdc ? `/ ${offer.analytics.periodDays} days` : `${offer.analytics.trialDays} days`,
+      year: p.priceUsdc && p.priceUsdcYear ? `or $${n(p.priceUsdcYear)} a year, yearly billing opens soon` : undefined,
       feats: [`${p.sites} website${p.sites === 1 ? '' : 's'}`, `${n(p.eventsPerMonth)} events a month`, 'Wallet, chain and transaction events'],
     }))
 
@@ -166,6 +168,7 @@ export function PricingSwitch({ plans }: { plans: PlansState }) {
                         {c.per && <span className="font-mono text-[11px] text-dim">{c.per}</span>}
                       </div>
                       <span className="font-display text-[34px] leading-none font-extrabold text-gold">{c.price}</span>
+                      {c.year && <span className="font-mono text-[11px] text-dim">{c.year}</span>}
                       <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[13px] text-muted">
                         {c.feats.map((f) => (
                           <li key={f} className="flex gap-2">
