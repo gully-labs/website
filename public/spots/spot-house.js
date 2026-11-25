@@ -26,12 +26,15 @@
     try { root.fetch(url, { method: 'POST', body: s, keepalive: true, credentials: 'omit', headers: { 'content-type': 'text/plain' } }).catch(function () {}); } catch (e) { /* nothing */ }
   }
   function motion(img, b) {
-    var timer = 0, on = false, runs = 0;
+    // at most CYCLES cycles of motion on screen in all (time off screen does not count), then the static twin for good
+    var timer = 0, left = CYCLES * CYCLE_MS, since = 0;
     function show(a) { var u = a ? b.animated : b.static; if (img.getAttribute('src') !== u) img.setAttribute('src', u); img.setAttribute('data-motion', a ? 'on' : 'off'); }
     show(false);
     if (still() || !('IntersectionObserver' in root)) return;
-    function run() { if (!on || runs >= 1) return show(false); runs++; show(true); clearTimeout(timer); timer = setTimeout(function () { show(false); }, CYCLES * CYCLE_MS); }
-    new root.IntersectionObserver(function (es) { on = es[0].isIntersecting; if (on) run(); else { clearTimeout(timer); show(false); } }, { threshold: 0.4 }).observe(img);
+    new root.IntersectionObserver(function (es) {
+      if (es[0].isIntersecting && left > 0 && !since) { since = Date.now(); show(true); timer = setTimeout(function () { left = 0; since = 0; show(false); }, left); }
+      else if (!es[0].isIntersecting && since) { clearTimeout(timer); left -= Date.now() - since; since = 0; show(false); }
+    }, { threshold: 0.4 }).observe(img);
   }
   function seen(el, b) {
     if (!('IntersectionObserver' in root)) return;
