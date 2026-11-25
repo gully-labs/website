@@ -1,0 +1,3 @@
+{ "repo": "website", "product": "gully-labs", "checks": [
+  { "type": "kit", "kit": "gully-live-ui", "dir": "src/vendor/gully-live-ui" }
+] }
