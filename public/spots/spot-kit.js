@@ -4,7 +4,7 @@
   var DENY = [/checkout|payment|\/pay(\/|$)/i, /\/(buy|sell|swap|trade|launch|lock|claim|stake|mint|confirm|deposit|withdraw|send)(\/|$)/i,
     /connect|sign-?in|sign-?up|login|consent|recover|wallet|approve|signing|\/queue|settings|onboard|welcome/i, /^\/admin/i,
     /\/(tx|address|token|block)\//i, /\/(legal|terms|privacy|404|error)(\/|\.html|$)|404\.html$/i, /security|scan|\/check/i];
-  var TAG = { src: 'https://swoopads.xyz/t/1.0.0.js', integrity: 'sha384-1c+WdhA/CC8Hl5vVsFiPu8fKsStd5F8jLQmHKh1O96tV25X44pKM9bfEpb0300eX' };
+  var TAG = { src: 'https://swoopads.xyz/t/1.1.0.js', integrity: 'sha384-QV0xsPT+TidyLD86h4lmXwiBT5mT5+PTAW+7xtcTM+JPEqZAeu57o9PiF9mYebW9' };
   var HEIGHTS = { banner: 90, text: 96, native: 120 }, BAR = 24, PHONE = 768;
   var REPORT = 'mailto:team@gullylabs.xyz?subject=Report%20a%20spot';
 
