@@ -53,9 +53,9 @@ export const HUB_PRODUCTS: HubProduct[] = [
     key: 'id', name: 'Gully ID', domain: 'gullyid.xyz', url: 'https://gullyid.xyz', page: 'gully-id', layer: 'identity', status: 'live', color: '#00D2FF',
     icon: I('id'),
     line: 'Passwordless sign-in for any app.',
-    about: 'Passkeys, wallets (SIWE) and email codes over standard OpenID Connect, with per-app consent and slow, visible recovery. Free up to 1,000 monthly active users.',
-    live: ['Passkey, wallet and email sign-in', 'Sign in with Gully SDK for any site', 'Developer console (gullyid.xyz/developers/console)', 'Optional sign-in on the Gully Chain faucet'],
-    next: ['Google and X sign-in (keys pending)', 'Sign in with Gully on Gully Pay and Gully RPC (built, flagged off)'],
+    about: 'One account for kre8, Swoop, Gully Pay and more: sign in with an email code, a wallet, Solana or a passkey over standard OpenID Connect, with per-app consent, slow visible recovery and a wallet with one address on every Gully Core EVM chain. Free up to 1,000 monthly active users.',
+    live: ['Email code, wallet, Sign in with Solana and passkey sign-in', 'Gully ID wallet: one address on Base, BNB Chain, Robinhood Chain, Kinetiq Elysium and Gully Chain', 'Send, receive, swap, earn and bridge in the wallet', 'Connected apps page with one-tap revoke', 'TV sign-in with a code', 'Sign in with Gully SDK and developer console'],
+    next: ['Continue with Google, Apple, X and Telegram (shown as Coming soon until their keys are set)', 'Browser extension'],
     links: [['Developers', 'https://gullyid.xyz/developers'], ['Console', 'https://gullyid.xyz/developers/console']],
   },
   {
@@ -82,7 +82,7 @@ export const HUB_PRODUCTS: HubProduct[] = [
     icon: I('rpc'),
     line: 'One API key for Gully Chain, Ethereum, Base and more.',
     about: 'Multi-chain RPC with failover, live usage per key and a free tier. Gully Chain is served from Gully nodes; other chains through a partner network while Gully nodes are built.',
-    live: ['API keys (open sign-up, free tier)', 'Plans per 30 days: Free 5M, Developer $42 50M, Business $169 270M weighted requests', 'Usage metering (beta)', 'Gully Chain on the gateway, keyless endpoint too'],
+    live: ['API keys (open sign-up, free tier)', 'Gully Chain API: Etherscan-compatible, on the same key and plan', 'Plans per 30 days: Free 5M, Developer $42 50M, Business $169 270M weighted requests', 'Usage metering (beta)', 'Gully Chain on the gateway, keyless endpoint too'],
     next: ['Archive and trace', 'HyperEVM, X Layer, Ink, Unichain'],
     links: [['Portal', 'https://app.gullyrpc.xyz'], ['Status', 'https://gullyrpc.xyz/status']],
   },
@@ -114,12 +114,12 @@ export const HUB_PRODUCTS: HubProduct[] = [
     links: [['Dev portal', 'https://dev.gullystudio.xyz'], ['Docs', 'https://docs.gullystudio.xyz']],
   },
   {
-    key: 'ai', name: 'Gully AI', domain: 'gullyai.xyz', url: 'https://gullyai.xyz', page: 'ai', layer: 'play', status: 'soon', color: '#00F0F2',
+    key: 'ai', name: 'Gully AI', domain: 'gullyai.xyz', url: 'https://gullyai.xyz', page: 'ai', layer: 'play', status: 'beta', color: '#00F0F2',
     icon: I('ai'),
-    line: 'Open-weight LLM API, coming online.',
-    about: 'Qwen3.6-27B open weights served by vLLM behind an OpenAI-compatible API, with per-product keys, rate limits and token metering. The site is up; the API comes online when its GPU box does.',
-    live: ['Site and docs'],
-    next: ['OpenAI-compatible API (GPU box pending)', '131K context, tool calling, reasoning'],
+    line: 'Zayden, the Gully AI assistant, and an open-weight model API.',
+    about: 'Zayden answers questions about every Gully product from their public docs, on gullyai.xyz, in the docs and in Telegram. Behind it: open-weight models with an OpenAI-compatible API, per-product keys and metering.',
+    live: ['Zayden on gullyai.xyz and in the docs', 'Mission Control app with chain context', 'Telegram Mini App chat'],
+    next: ['OpenAI-compatible API on its own GPU box', 'Gully MCP server and Dev Copilot', 'Gully Credits billing'],
     links: [['Docs', 'https://gullyai.xyz/docs/']],
   },
 ]
@@ -158,8 +158,30 @@ export function curve(a: [number, number], b: [number, number], c: [number, numb
   return `M${a[0]} ${a[1]} Q${(mx + (dx / d) * k).toFixed(1)} ${(my + (dy / d) * k).toFixed(1)} ${b[0]} ${b[1]}`
 }
 
+/** What is new across Gully Labs (owner, 2026-11-26: every surface lists the newest features and projects), each with
+ *  its state today as the stack registry and the live checks read it. 'In build' = built or building, not open yet. */
+export type LatestState = 'Live' | 'Testnet' | 'Devnet' | 'In build' | 'Planned'
+export const LATEST: { key: string; name: string; line: string; state: LatestState; href: string; icon: string }[] = [
+  { key: 'swoop', name: 'Swoop Ads', line: 'Ads that pay creators: spots, offers, boosts and a public market for coins, creators and briefs.', state: 'Live', href: 'https://swoopads.xyz', icon: '/brand/products/swoop-app-icon.svg' },
+  { key: 'zayden', name: 'Zayden', line: 'The Gully AI assistant: answers about every Gully product, with sources.', state: 'Live', href: 'https://gullyai.xyz', icon: I('ai') },
+  { key: 'gid', name: 'Gully ID sign-in and wallet', line: 'Email, wallet, Solana or passkey today; Google, Apple, X and Telegram as their keys arrive. One wallet address on five chains.', state: 'Live', href: 'https://gullyid.xyz', icon: I('id') },
+  { key: 'chain-api', name: 'Gully Chain API', line: 'Etherscan-compatible calls on your Gully RPC key, with the same plans.', state: 'Live', href: 'https://gullyrpc.xyz/docs', icon: I('rpc') },
+  { key: 'pay', name: 'Gully Pay at 0.85%', line: 'Stablecoin and x402 payments now cost 0.85% per payment.', state: 'Live', href: 'https://gullypay.xyz/pricing', icon: I('pay') },
+  { key: 'core-solana', name: 'Gully Core on Solana', line: 'The same Gully Core features and fees on Solana: CP-Swap and launches on devnet, router quotes live.', state: 'Devnet', href: 'https://docs.gullycore.xyz/solana/', icon: I('core') },
+  { key: 'mirrors', name: 'kre8 coin mirrors', line: 'Each kre8 coin mirrored to other chains at one address; automatic mirrors are being switched on.', state: 'Testnet', href: 'https://kre8.fun', icon: I('kre8') },
+  { key: 'portal', name: 'Gully Chain Portal', line: 'Your Gully ID pass on Gully Chain: wallet, swap, apps, rewards and connected-app controls.', state: 'In build', href: 'https://gullychain.xyz', icon: I('chain') },
+  { key: 'kre8-apps', name: 'kre8, kre8 Radio and kre8 Films apps', line: 'Phone apps for kre8, creator radio and premieres; the kre8 web app runs on testnet today.', state: 'In build', href: 'https://kre8.fun', icon: I('kre8') },
+  { key: 'studio', name: 'Gully Studio Animation', line: 'Our own AI-made shows, beside the games.', state: 'In build', href: 'https://gullystudio.xyz', icon: I('studio') },
+  { key: 'multichain', name: 'Multichain launches', line: 'One kre8 coin on Gully Chain, Base, BNB Chain and Robinhood Chain at one price, rehearsed on mainnet copies first.', state: 'Planned', href: 'https://kre8.fun', icon: I('kre8') },
+]
 export type NewsState = 'live' | 'new' | 'testnet' | 'beta' | 'rolling out' | 'coming soon'
 export const NEWS: { d: string; p: ProductKey; t: string; s: NewsState; href: string }[] = [
+  { d: '2026-11-25', p: 'pay', t: 'Gully Pay stablecoin and x402 fee down from 1.0% to 0.85%', s: 'live', href: 'https://gullypay.xyz/pricing' },
+  { d: '2026-11-25', p: 'id', t: 'Gully ID sign-in options: email, wallet, Solana and passkey, with Google, Apple, X and Telegram coming as their keys are set', s: 'live', href: 'https://gullyid.xyz' },
+  { d: '2026-11-25', p: 'chain', t: 'Gully Core on Solana devnet in the shared manifest, with router quotes and wallet balances', s: 'testnet', href: 'https://docs.gullycore.xyz/solana/' },
+  { d: '2026-11-25', p: 'ai', t: 'Zayden, the Gully AI assistant, answers from the docs of every Gully product', s: 'live', href: 'https://gullyai.xyz' },
+  { d: '2026-11-23', p: 'rpc', t: 'Gully Chain API: Etherscan-compatible calls on your Gully RPC key', s: 'live', href: 'https://gullyrpc.xyz/docs' },
+  { d: '2026-11-22', p: 'chain', t: 'Swoop Ads opens at swoopads.xyz: ads that pay creators', s: 'live', href: 'https://swoopads.xyz' },
   { d: '2026-11-09', p: 'chain', t: 'Gully Core live on five mainnets: Anubis Network, Robinhood Chain, Base, BNB Chain and Kinetiq Elysium, beside the Gully Chain testnet', s: 'live', href: 'https://gullycore.xyz' },
   { d: '2026-11-09', p: 'chain', t: 'Gully Multisig on Kinetiq Elysium, at its own address gullymultisig.xyz, with Gully ID passkeys as signers', s: 'live', href: 'https://gullymultisig.xyz' },
   { d: '2026-11-08', p: 'chain', t: 'Gully Explorer moves to gullyscan.xyz; the testnet explorer is testnet.gullyscan.xyz', s: 'live', href: 'https://testnet.gullyscan.xyz' },
