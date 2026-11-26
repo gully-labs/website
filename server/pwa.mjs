@@ -39,7 +39,7 @@ export const SITE_MANIFEST = {
   theme_color: KIT_NAVY,
   icons: ICONS,
   // Long-press / right-click launcher entry: Gully AI is the first thing people install the site for.
-  shortcuts: [{ name: 'Ask Gully AI', short_name: 'Ask', url: '/ask?source=pwa', icons: [{ src: '/brand/kit/icon/icon-192.png', sizes: '192x192', type: 'image/png' }] }],
+  shortcuts: [{ name: 'Ask Zayden', short_name: 'Ask', url: '/ask?source=pwa', icons: [{ src: '/brand/kit/icon/icon-192.png', sizes: '192x192', type: 'image/png' }] }],
 }
 
 export const APP_MANIFEST = {

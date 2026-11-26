@@ -41,9 +41,9 @@ export function AskPage() {
           <div className="flex min-w-0 flex-col gap-8">
             <header className="flex flex-col gap-4">
               <GullyAiLogo height={56} className="-ml-2" />
-              <span className={eyebrow}>GULLY AI · BY GULLY LABS</span>
+              <span className={eyebrow}>ZAYDEN · GULLY AI · BY GULLY LABS</span>
               <h1 className={h1}>
-                Ask about <span className="text-gold">Gully Labs</span>
+                Ask Zayden about <span className="text-gold">Gully Labs</span>
               </h1>
               <p className="m-0 max-w-[620px] text-[17px] leading-[1.6] text-muted">The tracker, its API and widget, plans and alerts, Gully Analytics, Gully Pay, Chain Kit, Gully Chain, Gully Core, kre8, Gully ID, Gully RPC, Gully IPFS, Swoop Ads and our other projects. Answers come from our public docs and site, with the sources linked, and live figures where they matter.</p>
             </header>

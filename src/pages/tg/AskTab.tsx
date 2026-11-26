@@ -40,7 +40,7 @@ export function AskTab({ initData, chip }: { initData: string; chip: AskChip | n
         {err && <p role="alert" className="text-[13px] text-red-400">{err}</p>}
       </div>
       <form onSubmit={(e) => (e.preventDefault(), void send())} className="flex gap-2">
-        <input value={q} onChange={(e) => setQ(e.target.value)} maxLength={500} placeholder="Ask Gully AI" aria-label="Your question" className="min-h-11 flex-1 rounded-lg border border-line bg-transparent px-3 text-[14px]" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} maxLength={500} placeholder="Ask Zayden" aria-label="Your question" className="min-h-11 flex-1 rounded-lg border border-line bg-transparent px-3 text-[14px]" />
         <button type="submit" disabled={busy || !q.trim()} className="min-h-11 min-w-11 rounded-lg bg-gold px-4 text-[14px] text-[var(--tg-btn-text,var(--color-bg))] disabled:opacity-50">Send</button>
       </form>
       <p className="text-[11px] text-muted">AI answers can be wrong. Information only, not financial advice.</p>

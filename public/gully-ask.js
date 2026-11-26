@@ -36,7 +36,7 @@
       var theme = this.getAttribute('theme') || 'auto'
       this.setAttribute('data-theme', theme === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
       this.history = []
-      root.innerHTML += '<button class="fab" type="button" aria-expanded="false">Ask</button><section class="panel" role="dialog" aria-label="Ask this project" hidden><div class="log" aria-live="polite"></div><div class="n">AI answers can be wrong. Information only.</div><form><input name="q" maxlength="500" placeholder="Ask a question" aria-label="Your question" autocomplete="off"><button class="s" type="submit">Send</button></form></section>'
+      root.innerHTML += '<button class="fab" type="button" aria-expanded="false">Ask</button><section class="panel" role="dialog" aria-label="Ask Zayden about this project" hidden><div class="log" aria-live="polite"></div><div class="n">AI answers can be wrong. Information only.</div><form><input name="q" maxlength="500" placeholder="Ask a question" aria-label="Your question" autocomplete="off"><button class="s" type="submit">Send</button></form></section>'
       var fab = root.querySelector('.fab'), panel = root.querySelector('.panel'), log = root.querySelector('.log'), form = root.querySelector('form'), input = root.querySelector('input')
       var page = this.getAttribute('mode') === 'page'
       var toggle = function (open) { panel.hidden = !open; fab.setAttribute('aria-expanded', String(open)); if (open) input.focus() }

@@ -71,7 +71,7 @@ export function TelegramDocs() {
             ['/movers', 'private', 'Biggest gap moves in 24 hours'],
             ['/launches', 'private, groups', 'Newest tokens launched on the launchpad'],
             ['/alerts', 'private', 'Your alerts: pause, mute, test or delete'],
-            ['/ask', 'private', 'Ask Gully AI a question'],
+            ['/ask', 'private', 'Ask Zayden (Gully AI) a question'],
             ['/help', 'private, groups', 'What the bot does'],
             ['/stop', 'private', 'Stop announcements, or unlink this chat'],
           ]}

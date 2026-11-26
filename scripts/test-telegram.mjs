@@ -396,7 +396,7 @@ try {
   await say(ada, '/ask what are the plans?')
   check('/ask works in a linked chat too', /Alerts can go to Telegram/.test(lastText(111)))
   await say(privateChat(602), '/ask')
-  check('/ask with no question asks for one (force_reply)', lastText(602).startsWith('🤖 Ask Gully AI:') && sent(602).at(-1).body.reply_markup?.force_reply === true)
+  check('/ask with no question asks for one (force_reply)', lastText(602).startsWith('🤖 Ask Zayden:') && sent(602).at(-1).body.reply_markup?.force_reply === true)
   await say(privateChat(602), `/ask ${'x'.repeat(501)}`)
   check('/ask with a question over 500 characters is refused', /at most 500 characters/.test(lastText(602)))
   const before602 = claudeCalls.length
@@ -696,7 +696,7 @@ try {
   })
   const c850 = privateChat(850)
   await press(c850, 'ai', { msgId: null })
-  check('🤖 Gully AI: an intro screen and a force_reply prompt', calls.some((c) => c.method === 'sendMessage' && c.body.chat_id === '850' && c.body.reply_markup?.force_reply === true && /^🤖 Ask Gully AI:/.test(c.body.text)) && /Gully AI<\/b>\nAnswers from the Gully Labs docs/.test(view(850).text) && data(view(850).kb).includes('aiq:0'))
+  check('🤖 Gully AI: an intro screen and a force_reply prompt', calls.some((c) => c.method === 'sendMessage' && c.body.chat_id === '850' && c.body.reply_markup?.force_reply === true && /^🤖 Ask Zayden:/.test(c.body.text)) && /Gully AI<\/b>\nAnswers from the Gully Labs docs/.test(view(850).text) && data(view(850).kb).includes('aiq:0'))
   await say(c850, 'What do the plans include?')
   const ai = view(850)
   check('Gully AI: the answer, escaped, with at most 3 source url buttons', askedQ.at(-1)?.[1] === 'What do the plans include?' && ai.text.includes('Plans &lt;b&gt;x&lt;/b&gt; and bold.') && flat(ai.kb).filter((b) => b.url).length === 3 && flat(ai.kb).filter((b) => b.url).every((b) => /^https:\/\/docs\.gullylabs\.xyz\/p[123]$/.test(b.url)))
@@ -818,7 +818,7 @@ try {
   // Plain words for everyone (owner, 2026-10-18): no source names, no technical terms, no raw timestamps on any
   // screen, alert or button. Gully AI's answers come from the docs and may name the API, so they are left out.
   const JARGON = /api\.|\bAPI\b|(?<!Gully )\bRPC\b|\bfeeds?\b|\bUTC\b|endpoint|indexer|\bpool\b|not reported|unreadable|on[- ]chain|fair price|\d{4}-\d{2}-\d{2} \d{2}:\d{2}/i
-  const shownTexts = calls.filter((c) => VIEW.has(c.method) || c.method === 'answerCallbackQuery').map((c) => c.body.text ?? c.body.caption ?? '').filter((x) => !/^<b>🤖 Gully AI<\/b>/.test(x))
+  const shownTexts = calls.filter((c) => VIEW.has(c.method) || c.method === 'answerCallbackQuery').map((c) => c.body.text ?? c.body.caption ?? '').filter((x) => !/^<b>🤖 (Zayden · )?Gully AI<\/b>/.test(x))
   const buttonTexts = calls.flatMap((c) => flat(c.body?.reply_markup?.inline_keyboard).map((b) => b.text)).filter((x) => !/^📄 \[\d\] /.test(x)) // Gully AI's source buttons carry doc titles
   const descriptions = cmdList.map((c) => c.description)
   const jargon = [...shownTexts, ...buttonTexts, ...descriptions].filter((x) => JARGON.test(x))

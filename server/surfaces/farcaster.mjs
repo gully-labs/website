@@ -106,12 +106,12 @@ export function miniappManifest() {
   if (!assoc?.header || !assoc?.payload || !assoc?.signature) return null
   return {
     accountAssociation: assoc,
-    miniapp: { version: '1', name: 'Gully AI', homeUrl: 'https://gullylabs.xyz/ask?surface=farcaster', iconUrl: 'https://gullylabs.xyz/brand/icon/app-icon-1024.png', subtitle: 'Ask about Gully and your chain', description: 'Gully AI answers questions about Gully Chain, Gully Core and the projects built on them. Information only.', primaryCategory: 'utility' },
+    miniapp: { version: '1', name: 'Gully AI', homeUrl: 'https://gullylabs.xyz/ask?surface=farcaster', iconUrl: 'https://gullylabs.xyz/brand/icon/app-icon-1024.png', subtitle: 'Ask about Gully and your chain', description: 'Zayden, the Gully AI assistant, answers questions about Gully Chain, Gully Core and the projects built on them. Information only.', primaryCategory: 'utility' },
   }
 }
 
 /** The share-embed meta tag value (fc:miniapp) for the /ask page. */
-export const miniappEmbed = () => JSON.stringify({ version: '1', imageUrl: 'https://gullylabs.xyz/brand/kit/og-default-1200x630.png', button: { title: 'Ask Gully AI', action: { type: 'launch_frame', name: 'Gully AI', url: 'https://gullylabs.xyz/ask?surface=farcaster' } } })
+export const miniappEmbed = () => JSON.stringify({ version: '1', imageUrl: 'https://gullylabs.xyz/brand/kit/og-default-1200x630.png', button: { title: 'Ask Zayden', action: { type: 'launch_frame', name: 'Gully AI', url: 'https://gullylabs.xyz/ask?surface=farcaster' } } })
 
 export async function handleFarcaster(req, res, url, deps = {}) {
   const send = (status, body, h = {}) => (res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...h }), res.end(JSON.stringify(body)), true)

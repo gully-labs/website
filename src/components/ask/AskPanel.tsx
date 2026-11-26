@@ -322,6 +322,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
       <div className={`flex min-h-0 flex-col gap-6 ${page ? '' : 'flex-1 overflow-y-auto pr-1'}`} aria-busy={busy}>
         {!log.length && (
           <div className="flex flex-col gap-3">
+            <p className="m-0 text-[15px] leading-[1.5] text-ink-2">Hi, I'm Zayden, Gully AI's assistant. I answer from the Gully Labs docs and live data, with sources. I'm an AI, so check anything important.</p>
             <span id={`${ids}-starters`} className="font-mono text-[11px] tracking-[1px] text-faint">
               TRY ONE OF THESE
             </span>
@@ -342,6 +343,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
               <p className="m-0 self-end rounded-card rounded-br-btn border border-line-strong bg-surface-hover px-4 py-2 text-[15px] text-ink">{e.q}</p>
               {e.a ? (
                 <div className="flex flex-col gap-4 rounded-card border border-line bg-surface p-5">
+                  <span className="font-mono text-[11px] tracking-[1px] text-faint">ZAYDEN · GULLY AI</span>
                   {e.a.degraded && (
                     <p role="note" data-testid="ask-degraded" className="m-0 rounded-input border border-gold-line px-3 py-2 text-[13px] text-gold">
                       Not a written answer: {e.a.degraded === 'cap' ? 'Gully AI has reached its limit for today' : e.a.degraded === 'busy' ? 'Gully AI is very busy' : 'the writing service is not answering'}, so these are the closest passages from our docs.
@@ -414,7 +416,7 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
         }}
       >
         <label htmlFor={`${ids}-q`} className="font-mono text-[11px] tracking-[1px] text-faint">
-          {log.length ? 'ASK A FOLLOW-UP' : 'YOUR QUESTION'}
+          {log.length ? 'ASK ZAYDEN A FOLLOW-UP' : 'ASK ZAYDEN'}
         </label>
         <div className={`flex items-end gap-2 rounded-card border bg-surface-deep p-2 transition-colors focus-within:border-gold ${tooLong ? 'border-error' : 'border-line-strong'}`}>
           <textarea
