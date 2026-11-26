@@ -29,7 +29,7 @@ export const PLACES = ['dm', 'private', 'public']
 
 export const DEGRADED_NOTE = 'This is not a written answer: the closest passages from our docs.'
 const RISK_LINE = 'Information only, not financial advice. Check on-chain facts yourself.'
-const AI_LINE = 'AI answer from Gully AI.'
+const AI_LINE = 'AI answer from Zayden, Gully AI.'
 
 /** The safety footer: short on tight surfaces, always present. */
 export function footerFor(surfaceId, { topic = 'general' } = {}) {

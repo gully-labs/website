@@ -97,7 +97,7 @@ export function decideGroupMessage(msg, bot, now = Date.now()) {
 
 /** setMyCommands payloads per scope (all, private chats, group chats, group admins). Telegram does not tell us the scope of a typed command: authorise server-side anyway. */
 export function commandScopes() {
-  const base = [{ command: 'ask', description: 'Ask Gully AI' }, { command: 'help', description: 'What Gully AI can do' }]
+  const base = [{ command: 'ask', description: 'Ask Zayden (Gully AI)' }, { command: 'help', description: 'What Zayden can do' }]
   return [
     { scope: { type: 'default' }, commands: base },
     { scope: { type: 'all_private_chats' }, commands: [...base, { command: 'link', description: 'Link your Gully ID' }, { command: 'credits', description: 'Your Gully AI credits' }, { command: 'memory', description: 'Turn chat memory on or off' }, { command: 'menu', description: 'Main menu' }] },
@@ -109,7 +109,7 @@ export function commandScopes() {
 /** One inline result: a short answer (<= 500 chars, no wallet data) with an "Open in Gully AI" button. */
 export function inlineResult(id, question, shortAnswer, openUrl) {
   const text = String(shortAnswer ?? '').slice(0, 500)
-  return { type: 'article', id: String(id).slice(0, 64), title: String(question).slice(0, 60), description: text.slice(0, 100), input_message_content: { message_text: `${text}\n\nAI answer from Gully AI.` }, reply_markup: { inline_keyboard: [[{ text: 'Open in Gully AI', url: openUrl }]] } }
+  return { type: 'article', id: String(id).slice(0, 64), title: String(question).slice(0, 60), description: text.slice(0, 100), input_message_content: { message_text: `${text}\n\nAI answer from Zayden, Gully AI.` }, reply_markup: { inline_keyboard: [[{ text: 'Open Zayden in Gully AI', url: openUrl }]] } }
 }
 
 /** A scheduled channel digest is post-only: it carries facts the caller already read, a footer and no question UI. */

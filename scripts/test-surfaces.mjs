@@ -37,7 +37,7 @@ test('adapter: flags off answers nothing; on chunks to the limit with footer', a
   const r = await S.answerForSurface({ surface: 'discord', userKey: 'u', question: 'what are fees?', place: 'public', askFn: fakeAsk() })
   assert.ok(r.ok)
   assert.ok(r.chunks.every((c) => c.length <= 2000))
-  assert.match(r.chunks.at(-1), /AI answer from Gully AI\.$/)
+  assert.match(r.chunks.at(-1), /AI answer from Zayden, Gully AI\.$/)
   assert.match(r.chunks[0], /https:\/\/docs\.gullylabs\.xyz\/fees/)
 })
 

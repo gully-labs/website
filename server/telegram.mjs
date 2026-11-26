@@ -345,7 +345,7 @@ const COMMANDS = {
   alerts: '🔔 Your alerts: pause, mute, test or delete',
   security: '🛡 Contract scans, Gully Score and monitors',
   score: '🏅 A contract’s Gully Score, e.g. /score 0x…',
-  ask: '🤖 Ask Gully AI a question',
+  ask: '🤖 Ask Zayden (Gully AI) a question',
   contact: '💬 Write to the Gully Labs team',
   help: '❓ What this bot does',
   stop: '🔕 Stop announcements, or unlink this chat',
@@ -761,10 +761,10 @@ async function settingsScreen(link, fromId, chatId) {
 
 /** Gully AI: the answer screen for one question (Ask's own per-chat and daily limits apply). */
 async function aiAnswer(chatId, question) {
-  if (!askReady()) return { text: '<b>🤖 Gully AI</b>\nGully AI is not available yet. The docs: <a href="https://docs.gullylabs.xyz">docs.gullylabs.xyz</a>', keyboard: [[ubtn('📄 Docs ↗', 'https://docs.gullylabs.xyz'), btn('🏠 Menu', 'm!')]] }
+  if (!askReady()) return { text: '<b>🤖 Zayden · Gully AI</b>\nGully AI is not available yet. The docs: <a href="https://docs.gullylabs.xyz">docs.gullylabs.xyz</a>', keyboard: [[ubtn('📄 Docs ↗', 'https://docs.gullylabs.xyz'), btn('🏠 Menu', 'm!')]] }
   const q = String(question).replace(/\s+/g, ' ').trim()
-  if (!q) return { text: '<b>🤖 Gully AI</b>\nType a question after the command: <code>/ask how do gap alerts work?</code>', keyboard: [[btn('💬 Ask', 'ai!'), btn('🏠 Menu', 'm!')]] }
-  if (q.length > MAX_QUESTION) return { text: `<b>🤖 Gully AI</b>\nA question can be at most ${MAX_QUESTION} characters.`, keyboard: [[btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]] }
+  if (!q) return { text: '<b>🤖 Zayden · Gully AI</b>\nType a question after the command: <code>/ask how do gap alerts work?</code>', keyboard: [[btn('💬 Ask', 'ai!'), btn('🏠 Menu', 'm!')]] }
+  if (q.length > MAX_QUESTION) return { text: `<b>🤖 Zayden · Gully AI</b>\nA question can be at most ${MAX_QUESTION} characters.`, keyboard: [[btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]] }
   tg('sendChatAction', { chat_id: String(chatId), action: 'typing' }).catch(() => undefined)
   let r
   try {
@@ -1110,7 +1110,7 @@ async function routeView(route, c) {
     return c.forceNew ? NO_CHANGE : ui.aiIntroView()
   }
   if ((m = route.match(/^aiq:(\d)$/)) && ui.AI_EXAMPLES[Number(m[1])]) {
-    c.answer('Asking Gully AI…')
+    c.answer('Asking Zayden…')
     await showNew(chatId, await aiAnswer(chatId, ui.AI_EXAMPLES[Number(m[1])]))
     return NO_CHANGE
   }

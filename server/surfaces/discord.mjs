@@ -48,7 +48,7 @@ export function verifyDiscordSignature({ publicKeyHex, signatureHex, timestamp, 
 /* ------------------------------------------------------------ commands --- */
 
 export const COMMANDS = [
-  { name: 'ask', description: 'Ask Gully AI about Gully Labs, Gully Chain, Gully Core or a project', type: 1, dm_permission: true, options: [{ type: 3, name: 'question', description: 'Your question', required: true, max_length: 500 }, { type: 5, name: 'share', description: 'Post the answer for everyone here (default: only you see it)', required: false }] },
+  { name: 'ask', description: 'Ask Zayden (Gully AI) about Gully Labs, Gully Chain, Gully Core or a project', type: 1, dm_permission: true, options: [{ type: 3, name: 'question', description: 'Your question', required: true, max_length: 500 }, { type: 5, name: 'share', description: 'Post the answer for everyone here (default: only you see it)', required: false }] },
   { name: 'explain', description: 'Explain a transaction or a contract in plain words', type: 1, dm_permission: true, options: [{ type: 3, name: 'target', description: 'A transaction hash (0x + 64 hex) or an address (0x + 40 hex)', required: true, max_length: 66 }, { type: 5, name: 'share', description: 'Post the answer for everyone here', required: false }] },
   { name: 'token', description: 'What Gully knows about a token (holders, Gully Score, checks)', type: 1, dm_permission: true, options: [{ type: 3, name: 'address', description: 'Token contract address (0x + 40 hex)', required: true, max_length: 42 }, { type: 5, name: 'share', description: 'Post the answer for everyone here', required: false }] },
 ]
@@ -143,7 +143,7 @@ export function handleInteraction(it, deps = {}) {
       try {
         const msg = await first.json()
         if (msg?.id && env('DISCORD_BOT_TOKEN')) {
-          await doFetch(`${API()}/channels/${encodeURIComponent(it.channel_id)}/messages/${encodeURIComponent(msg.id)}/threads`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bot ${env('DISCORD_BOT_TOKEN')}` }, body: JSON.stringify({ name: 'Gully AI follow-ups', auto_archive_duration: 1440 }) })
+          await doFetch(`${API()}/channels/${encodeURIComponent(it.channel_id)}/messages/${encodeURIComponent(msg.id)}/threads`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bot ${env('DISCORD_BOT_TOKEN')}` }, body: JSON.stringify({ name: 'Zayden follow-ups', auto_archive_duration: 1440 }) })
         }
       } catch {
         /* no permission: the follow-up button still works in the channel */

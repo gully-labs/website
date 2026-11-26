@@ -199,7 +199,7 @@ export function helpView(linked) {
     '/holders · 👥 Holder Map: who holds a token, and which wallets belong together',
     '/security · 🛡 Gully Security: contract scans, Gully Score and monitors',
     '/score 0x… · the Gully Score of a contract (add <code>base</code>, <code>ethereum</code>…)',
-    '/ask · ask Gully AI a question',
+    '/ask · ask Zayden (Gully AI) a question',
     '/more · every Gully product: Gully Pay, Gully RPC, Gully Chain, HolderMaps, Gully Security, Gully AI, Gully Studio',
     '/contact · 💬 write to the Gully Labs team (we reply here)',
     '/app · open the Gully app inside Telegram',
@@ -682,13 +682,13 @@ export const deleteConfirmView = (a, chains) => ({
 
 /* ------------------------------------------------------------ Gully AI --- */
 
-export const AI_PROMPT = '🤖 Ask Gully AI: type your question about Gully Labs, stock tokens, alerts or plans.'
-export const AI_PROMPT_RE = /^🤖 Ask Gully AI:/
+export const AI_PROMPT = '🤖 Ask Zayden: type your question about Gully Labs, stock tokens, alerts or plans.'
+export const AI_PROMPT_RE = /^🤖 Ask (Gully AI|Zayden):/
 export const AI_EXAMPLES = ['How do gap alerts work?', 'What does the gap measure?', 'What do the plans include?']
 
 export function aiIntroView() {
   return {
-    text: ['<b>🤖 Gully AI</b>', 'Answers from the Gully Labs docs, with sources. Type your question in the reply box below, or tap an example.', '', '<i>Information only, not investment advice.</i>'].join('\n'),
+    text: ['<b>🤖 Zayden · Gully AI</b>', 'Answers from the Gully Labs docs, with sources. Type your question in the reply box below, or tap an example.', '', '<i>Information only, not investment advice.</i>'].join('\n'),
     keyboard: [...AI_EXAMPLES.map((q, i) => [btn(`❓ ${q}`, `aiq:${i}`)]), nav('m')],
   }
 }
@@ -714,7 +714,7 @@ function cardChart(ch) {
 
 /** Gully AI's answer: the text with its [n] / [Ln] labels, the live cards as short lines, then sources and the one-tap actions as buttons. */
 export function aiAnswerView(r) {
-  if (!r.ok) return { text: `<b>🤖 Gully AI</b>\n${esc(friendlyError(r.error, 'Gully AI could not answer just now. Try again in a minute.'))}`, keyboard: [[btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]] }
+  if (!r.ok) return { text: `<b>🤖 Zayden · Gully AI</b>\n${esc(friendlyError(r.error, 'Gully AI could not answer just now. Try again in a minute.'))}`, keyboard: [[btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]] }
   const note = r.degraded ? '<i>This is not a written answer: the closest passages from our docs.</i>' + String.fromCharCode(10) : ''
   const body = note + esc(String(r.answer).replace(/\*\*([^*]+)\*\*/g, '$1'))
   const sources = (r.citations ?? []).filter((c) => /^https:\/\//.test(String(c.url))).slice(0, 3)
@@ -727,7 +727,7 @@ export function aiAnswerView(r) {
   const actions = (r.actions ?? []).filter((a) => /^https:\/\//.test(String(a.url))).slice(0, 3)
   const refs = [...sources.map((c) => `[${c.n}] ${esc(c.title)}`), ...live.map((l) => `[${esc(l.n)}] ${esc(l.label)}${asOfText(l.asOf) ? `, as of ${esc(asOfText(l.asOf))}` : ''}`)]
   return {
-    text: `<b>🤖 Gully AI</b>\n${body}${cards.length ? `\n\n${cards.join('\n\n')}` : ''}${refs.length ? `\n\n<b>Sources</b>\n${refs.join('\n')}` : ''}\n\n<i>Information only, not investment advice.</i>`,
+    text: `<b>🤖 Zayden · Gully AI</b>\n${body}${cards.length ? `\n\n${cards.join('\n\n')}` : ''}${refs.length ? `\n\n<b>Sources</b>\n${refs.join('\n')}` : ''}\n\n<i>Information only, not investment advice.</i>`,
     keyboard: [...actions.map((a) => [ubtn(`👉 ${String(a.label).slice(0, 56)} ↗`, a.url)]), ...sources.map((c) => [ubtn(`📄 [${c.n}] ${String(c.title).slice(0, 48)} ↗`, c.url)]), [btn('💬 Ask another', 'ai!'), btn('🏠 Menu', 'm!')]],
   }
 }

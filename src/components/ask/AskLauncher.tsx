@@ -97,14 +97,14 @@ export function AskLauncher({ variant = 'header', hideButton = false }: { varian
             aria-haspopup="dialog"
             aria-expanded={open}
             aria-keyshortcuts="Meta+K Control+K"
-            aria-label={`Ask Gully AI (${shortcut})`}
-            title={`Ask Gully AI · ${shortcut}`}
+            aria-label={`Ask Zayden, Gully AI's assistant (${shortcut})`}
+            title={`Ask Zayden · Gully AI · ${shortcut}`}
             data-testid="ask-fab"
             data-product-brand="gullyai"
             className="pointer-events-auto inline-flex h-11 animate-[gl-fade_.3s_.2s_ease_both] items-center gap-2 rounded-full border border-gold-line bg-surface-deep pr-4 pl-[5px] text-[14px] font-medium text-gold shadow-[0_10px_28px_rgba(0,0,0,.45)] transition-colors hover:border-gold max-[600px]:w-11 max-[600px]:justify-center max-[600px]:px-0 print:hidden"
           >
             <ProductMark product="gullyai" size={32} decorative className="rounded-full" />
-            <span className="max-[600px]:hidden">Gully AI</span>
+            <span className="max-[600px]:hidden">Ask Zayden</span>
             <kbd className="rounded-[4px] border border-line-strong px-[5px] font-mono text-[11px] leading-[18px] text-faint max-[600px]:hidden">{shortcut}</kbd>
           </button>
         ) : (
@@ -115,7 +115,8 @@ export function AskLauncher({ variant = 'header', hideButton = false }: { varian
             aria-haspopup="dialog"
             aria-expanded={open}
             aria-keyshortcuts="Meta+K Control+K"
-            title={`Gully AI · ${shortcut}`}
+            title={`Ask Zayden · Gully AI · ${shortcut}`}
+            aria-label={`Ask Zayden, Gully AI's assistant (${shortcut})`}
             data-testid="ask-launcher"
             data-product-brand="gullyai"
             className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-btn border border-gold-line bg-gold/8 px-3 text-[14px] text-gold transition-colors hover:border-gold hover:bg-gold/14"
@@ -143,12 +144,12 @@ export function AskLauncher({ variant = 'header', hideButton = false }: { varian
                   <GullyAiLogo height={40} className="-ml-2" />
                   <kbd className="ml-1 rounded-[4px] border border-line-strong px-[5px] font-mono text-[11px] leading-[18px] font-normal text-faint normal-case max-[699px]:hidden">{shortcut}</kbd>
                 </h2>
-                <button type="button" onClick={() => setOpen(false)} aria-label="Close Gully AI" className="grid size-11 place-items-center rounded-btn border border-line text-ink-2 transition-colors hover:border-line-hover">
+                <button type="button" onClick={() => setOpen(false)} aria-label="Close Zayden" className="grid size-11 place-items-center rounded-btn border border-line text-ink-2 transition-colors hover:border-line-hover">
                   <X size={18} aria-hidden />
                 </button>
               </div>
               <div className="min-h-0 flex-1">
-                <Suspense fallback={<p className="m-0 font-mono text-[13px] text-faint">Loading Gully AI…</p>}>
+                <Suspense fallback={<p className="m-0 font-mono text-[13px] text-faint">Loading Zayden…</p>}>
                   <AskPanel variant="panel" autoFocus />
                 </Suspense>
               </div>
