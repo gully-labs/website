@@ -223,7 +223,7 @@ export async function build() {
   // The landing (server/landing.mjs): the same words and marks the current landing uses.
   const statusWord = (p) => H.STATUS_LABEL[p.status]
   // `fact`: the card's fixed line when no live figure is worth showing.
-  const FACT = { id: 'Passkeys, wallets, email', pay: 'Checkout and x402', chain: 'Arbitrum Orbit L3', rpc: 'One key, every network', holdermaps: 'Six chains', security: 'Scan, score, monitor', studio: 'Web and phone', ai: 'API coming online' }
+  const FACT = { id: 'Passkeys, wallets, email', pay: 'Checkout and x402', chain: 'Arbitrum Orbit L3', rpc: 'One key, every network', holdermaps: 'Six chains', security: 'Scan, score, monitor', studio: 'Web and phone', ai: 'Zayden assistant' }
   const productCard = (p) => ({ key: p.key, name: p.name, line: p.line, icon: p.icon, label: statusWord(p), fact: FACT[p.key], href: `/products/${p.page}` })
   const chainProduct = (slug, key, label, fact) => {
     const p = C.productBySlug(slug)
@@ -232,6 +232,7 @@ export async function build() {
   const landing = {
     headline: H.LANDING_HEADLINE,
     lede: H.LANDING_LEDE,
+    latest: H.LATEST,
     appServices: A.APP_SERVICES,
     // Gully Multisig and Gully Core: state and chains from the Gully Core manifest reading (src/content/gullyCore.generated.ts).
     products: [...H.HUB_PRODUCTS.map(productCard), chainProduct('safe', 'multisig', 'Live', GC.GULLY_CORE.multisigChains.map((n) => n.replace(/ (Network|Chain)$/, '').replace(/^Gully Chain testnet$/, 'Gully Chain')).join(' · ')), chainProduct('gully-core', 'core', GC.GULLY_CORE.liveMainnets.length ? 'Live' : 'Testnet', `${GC.GULLY_CORE.liveMainnets.length} mainnets · ${GC.GULLY_CORE.builderFeePct}% for builders`)],

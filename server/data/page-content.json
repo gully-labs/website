@@ -2956,6 +2956,96 @@
    "in one app."
   ],
   "lede": "The Gully Labs app is where you order your own chain, pin files to IPFS, track your sites and hire the team that runs Gully Chain in production.",
+  "latest": [
+   {
+    "key": "swoop",
+    "name": "Swoop Ads",
+    "line": "Ads that pay creators: spots, offers, boosts and a public market for coins, creators and briefs.",
+    "state": "Live",
+    "href": "https://swoopads.xyz",
+    "icon": "/brand/products/swoop-app-icon.svg"
+   },
+   {
+    "key": "zayden",
+    "name": "Zayden",
+    "line": "The Gully AI assistant: answers about every Gully product, with sources.",
+    "state": "Live",
+    "href": "https://gullyai.xyz",
+    "icon": "/brand/hub/icons/ai.png"
+   },
+   {
+    "key": "gid",
+    "name": "Gully ID sign-in and wallet",
+    "line": "Email, wallet, Solana or passkey today; Google, Apple, X and Telegram as their keys arrive. One wallet address on five chains.",
+    "state": "Live",
+    "href": "https://gullyid.xyz",
+    "icon": "/brand/hub/icons/gully-id.svg"
+   },
+   {
+    "key": "chain-api",
+    "name": "Gully Chain API",
+    "line": "Etherscan-compatible calls on your Gully RPC key, with the same plans.",
+    "state": "Live",
+    "href": "https://gullyrpc.xyz/docs",
+    "icon": "/brand/hub/icons/rpc.png"
+   },
+   {
+    "key": "pay",
+    "name": "Gully Pay at 0.85%",
+    "line": "Stablecoin and x402 payments now cost 0.85% per payment.",
+    "state": "Live",
+    "href": "https://gullypay.xyz/pricing",
+    "icon": "/brand/hub/icons/pay.png"
+   },
+   {
+    "key": "core-solana",
+    "name": "Gully Core on Solana",
+    "line": "The same Gully Core features and fees on Solana: CP-Swap and launches on devnet, router quotes live.",
+    "state": "Devnet",
+    "href": "https://docs.gullycore.xyz/solana/",
+    "icon": "/brand/products/gully-core-icon-ink.svg"
+   },
+   {
+    "key": "mirrors",
+    "name": "kre8 coin mirrors",
+    "line": "Each kre8 coin mirrored to other chains at one address; automatic mirrors are being switched on.",
+    "state": "Testnet",
+    "href": "https://kre8.fun",
+    "icon": "/brand/products/kre8-icon-192.png"
+   },
+   {
+    "key": "portal",
+    "name": "Gully Chain Portal",
+    "line": "Your Gully ID pass on Gully Chain: wallet, swap, apps, rewards and connected-app controls.",
+    "state": "In build",
+    "href": "https://gullychain.xyz",
+    "icon": "/brand/web/logos/gc-icon.svg"
+   },
+   {
+    "key": "kre8-apps",
+    "name": "kre8, kre8 Radio and kre8 Films apps",
+    "line": "Phone apps for kre8, creator radio and premieres; the kre8 web app runs on testnet today.",
+    "state": "In build",
+    "href": "https://kre8.fun",
+    "icon": "/brand/products/kre8-icon-192.png"
+   },
+   {
+    "key": "studio",
+    "name": "Gully Studio Animation",
+    "line": "Our own AI-made shows, beside the games.",
+    "state": "In build",
+    "href": "https://gullystudio.xyz",
+    "icon": "/brand/hub/icons/studio.png"
+   },
+   {
+    "key": "multichain",
+    "name": "Multichain launches",
+    "line": "One kre8 coin on Gully Chain, Base, BNB Chain and Robinhood Chain at one price, rehearsed on mainnet copies first.",
+    "state": "Planned",
+    "href": "https://kre8.fun",
+    "icon": "/brand/products/kre8-icon-192.png"
+   }
+  ],
   "appServices": [
    {
     "key": "chains",
@@ -3165,10 +3255,10 @@
    {
     "key": "ai",
     "name": "Gully AI",
-    "line": "Open-weight LLM API, coming online.",
+    "line": "Zayden, the Gully AI assistant, and an open-weight model API.",
     "icon": "/brand/hub/icons/ai.png",
-    "label": "Coming online",
-    "fact": "API coming online",
+    "label": "Open beta",
+    "fact": "Zayden assistant",
     "href": "/products/ai"
    },
    {
@@ -3360,7 +3450,7 @@
    ]
   },
   "/ask": {
-   "h1": "Ask about Gully Labs",
+   "h1": "Ask Zayden about Gully Labs",
    "sections": [
     {
      "h": null,
@@ -4641,6 +4731,19 @@
      "list": [],
      "links": [],
      "qa": []
+    },
+    {
+     "h": "Gully IPFS pinning and content policy",
+     "level": 2,
+     "p": [
+      "21.1 What you pin. Gully IPFS lets you pin content to IPFS with your API keys and upload it in the app. You keep the rights to what you pin and you give Gully Labs the permission it needs to store, copy (each pin is held on two of our servers) and serve it through ipfs.gullylabs.xyz and the IPFS network. Content on IPFS is public: anyone with its CID can fetch it, from us or from any other node that holds it.",
+      "21.2 Content policy. You will not pin or upload: anything illegal where you or we are; sexual content involving minors, which we report to the authorities; non-consensual intimate images; malware, phishing pages or content made to deceive people into giving up keys, funds or data; other people’s private or personal data without their consent; content that infringes copyright, trademarks or other rights, including licensed assets you may not redistribute; content that incites violence or harasses a person.",
+      "21.3 Review and takedowns. Uploaded and pinned images and video are queued for review. When content breaks this policy or the law, or a valid notice says it infringes, we take it down: it is unpinned from every Gully node, the gateway refuses its CID, and we may suspend the key or the account (Section 6). Removing a CID from Gully IPFS cannot remove copies other IPFS nodes hold. To report content or send a copyright notice, write to team@gullylabs.xyz with the CID and the reason; we answer valid notices promptly and may tell the account holder.",
+      "21.4 Limits. Each plan has a storage size, a pin count and a file size (shown in the app and the docs). At a limit, new pins and uploads are refused; nothing you pinned is deleted to make room. We do not guarantee that a pin is kept forever: if your account ends (Section 6), its pins are removed. Keep your own copy of anything you cannot lose."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
     }
    ]
   },
@@ -4694,8 +4797,8 @@
      "h": "Gully AI",
      "level": 2,
      "p": [
-      "When you ask Gully AI a question (on the site, in the app or with /ask in Telegram), we log the question, how long the answer was (not the answer itself), which sources and live tools it used, whether you were signed in, and a salted hash of your IP address, or of your Telegram chat id. If you rate an answer with a thumbs up or down, we keep the rating with the question and the same hash, so we know which docs to write. We keep questions and ratings for 90 days.",
-      "To write the answer, the question, your last few messages in that conversation and the matching passages of our docs are sent to Anthropic (Claude). When semantic search is switched on, the question is also sent to Voyage AI to compare it with our docs. When you are signed in to the app (or ask in a private Telegram chat linked to your wallet), Gully AI can read your own workspace’s store, API usage and alerts to answer, read-only; it never sees another workspace. The app also remembers your recent questions in your own browser."
+      "When you ask Gully AI a question (on the site, in the app or with /ask in Telegram), we log the question, how long the answer was (not the answer itself), which sources and live tools it used, whether you were signed in, and a salted hash of your IP address, or of your Telegram chat id. If you rate an answer with a thumbs up or down, we keep the rating with the question and the same hash, so we know which docs to write. If you rate an answer down we also keep the text of that answer and the pages it cited, so we can fix the docs. We keep questions and ratings for 90 days, then delete them. To have a question deleted earlier, send the contact form at gullylabs.xyz/services with the question text and roughly when you asked it. When the answer service is busy, down or over its daily limit, Gully AI shows the closest passages of our docs instead of a written answer. What it reads and how a question travels is listed at docs.gullylabs.xyz/gully-ai#knows.",
+      "Gully AI is not a model that we train or host: it is software we wrote around third-party providers. To write the answer, the question, your last few messages in that conversation (each trimmed), the matching passages of our public docs and, when a live tool is used, that tool’s result are sent to Anthropic (Claude). When semantic search is switched on, the question is also sent to Voyage AI to compare it with our docs. No wallet address or email is sent unless the tool result you asked for contains it. When you are signed in to the app (or ask in a private Telegram chat linked to your wallet), Gully AI can read your own workspace’s store, API usage and alerts to answer, read-only; it never sees another workspace. The app also remembers your recent questions in your own browser."
      ],
      "list": [],
      "links": [],
