@@ -159,6 +159,20 @@ export async function build() {
     ],
   }
 
+  // /downloads, /explain, /ai-tools (server/extra-pages.mjs): what crawlers read when the page is not drawn by the server.
+  const DLM = JSON.parse(fs.readFileSync(new URL('../server/data/gully-downloads.json', import.meta.url), 'utf8'))
+  body['/downloads'] = {
+    h1: 'Every Gully download in one place.',
+    sections: DLM.groups.map((g) => sec(g.title, { level: 2, list: g.items.map((i) => `${i.name}: ${i.state === 'soon' ? 'coming soon. ' + i.willDo : (i.summary ?? '') + (i.version ? ' Version ' + i.version + '.' : '')}`) })),
+  }
+  body['/explain'] = {
+    h1: 'Explain a transaction in plain words.',
+    sections: [sec(null, { p: ['Paste a Gully Chain testnet transaction hash. The receipt, logs, method and token moves are read from the chain and priced in USD; Zayden, the Gully AI assistant, writes them up, and every figure must come from the transaction. When Zayden is not answering, a fixed template writes the explanation from the same facts and the page says so.'] }), sec(null, { links: [['/ai-tools', 'Use Gully with AI tools'], ['https://testnet.gullyscan.xyz', 'Gully Chain testnet explorer']] })],
+  }
+  body['/ai-tools'] = {
+    h1: 'Use Gully with AI tools.',
+    sections: [sec(null, { p: ['Zayden answers questions about every Gully product from the public docs today, on gullyai.xyz, in the docs and in Telegram. The Gully MCP server (read-only, for Claude, Cursor and other assistants), the Gully CLI and the Gully Dev Copilot editor extension are built and open as they are published. None of these tools can sign or send a transaction.'] }), sec(null, { links: [['https://gullyai.xyz', 'Ask Zayden'], ['/explain', 'Explain a transaction'], ['/downloads', 'All downloads']] })],
+  }
   // /services: every service with its deliverables and timeline.
   body['/services'].sections.push(...C.SERVICES.map((s) => sec(s.title, { level: 3, p: [s.desc, `Typical timeline: ${s.timeline}.`], list: s.deliverables, links: [[`/products/${s.proof}`, `Our own product that proves it: ${C.productBySlug(s.proof)?.name ?? s.proof}`]] })))
 

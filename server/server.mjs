@@ -32,6 +32,7 @@ import { handleEcosystem } from './ecosystem.mjs'
 import { handleDiscovery } from './discovery.mjs'
 import { headTags, pageMeta, renderHead, robotsFor, sitemapFor } from './seo.mjs'
 import { landingAsset, renderLanding, renderProjects } from './landing.mjs'
+import { renderAiTools, renderDownloads, renderExplain } from './extra-pages.mjs'
 import { productMeta, renderProduct } from './product-pages.mjs'
 import { brandsJson } from './brand-registry.mjs'
 import { handleBlog } from './blog.mjs'
@@ -378,6 +379,13 @@ async function handleRequest(req, res) {
   if (url.pathname.replace(/(.)\/+$/, '$1') === '/projects' && (req.method === 'GET' || req.method === 'HEAD') && !isAppHost(host) && !isHolderMapsHost(host) && !isSecurityHost(host) && !host.startsWith('docs.') && !host.startsWith('admin.')) {
     const meta = pageMeta(host, '/projects')
     if (meta.found) return send(res, 200, await renderProjects(headTags(meta), null, { preview: false }), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' })
+  }
+  // /downloads, /explain, /ai-tools (2026-11-27, design lane): server-drawn on the same frame (server/extra-pages.mjs).
+  const extraPath = url.pathname.replace(/(.)\/+$/, '$1')
+  const extra = { '/downloads': renderDownloads, '/explain': renderExplain, '/ai-tools': renderAiTools }[extraPath]
+  if (extra && (req.method === 'GET' || req.method === 'HEAD') && !isAppHost(host) && !isHolderMapsHost(host) && !isSecurityHost(host) && !host.startsWith('docs.') && !host.startsWith('admin.')) {
+    const meta = pageMeta(host, extraPath)
+    if (meta.found) return send(res, 200, extra(headTags(meta)), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' })
   }
   // One page per product and per Gully Core build, on the shared template: preview only, noindex, until the owner flips them.
   const preview = /^\/preview\/(products|build)\/([a-z0-9-]+)$/.exec(url.pathname)

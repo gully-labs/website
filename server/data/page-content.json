@@ -514,6 +514,18 @@
    "Projects: everything else we build · Gully Labs",
    "Every Gully Labs project, read live: Gully Core, Gully Chain, kre8, Gully Pay, Gully ID, Gully RPC, HolderMaps, Gully Security, Gully Studio and Peddle."
   ],
+  "/downloads": [
+   "Downloads: every Gully app, plugin and package · Gully Labs",
+   "Packages, plugins and apps for Gully Core, Gully Chain, Gully ID, Gully Pay, Swoop Ads, kre8 and Gully AI, with versions, checksums and what is coming soon."
+  ],
+  "/explain": [
+   "Explain a transaction in plain words · Gully Labs",
+   "Paste a Gully Chain testnet transaction: Zayden, the Gully AI assistant, explains what it did, who paid and what moved, every figure read from the chain."
+  ],
+  "/ai-tools": [
+   "Use Gully with AI tools · Gully Labs",
+   "Zayden the Gully AI assistant, the read-only Gully MCP server for Claude and Cursor, the Gully CLI and the editor extension: what works today and what is next."
+  ],
   "/tracker": [
    "Stock token tracker: price vs fair price · Gully Labs",
    "Every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price, with the gap, pool depth and feed time, read live."
@@ -5689,6 +5701,154 @@
       [
        "/projects/peddlequest",
        "PeddleQuest (Quests): Verified on-chain quests with XP, badges and reward pools escrowed first."
+      ]
+     ],
+     "qa": []
+    }
+   ]
+  },
+  "/downloads": {
+   "h1": "Every Gully download in one place.",
+   "sections": [
+    {
+     "h": "Gully Core",
+     "level": 2,
+     "p": [],
+     "list": [
+      "@gullylabs/core-sdk: Typed client for Gully Core pools, vaults, locks and fees on every Gully Core chain. Version 0.3.1.",
+      "@gullylabs/core-cli: Swap, pool, liquidity and fee commands from your terminal. Version 0.3.1.",
+      "@gullylabs/create-core-app: Scaffold a launchpad or DEX site on Gully Core. Version 0.3.1."
+     ],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Gully Chain and bridge",
+     "level": 2,
+     "p": [],
+     "list": [
+      "@gullylabs/chain: Chain definitions and helpers for Gully Chain. Version 0.3.1."
+     ],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Gully ID and Gully Pay",
+     "level": 2,
+     "p": [],
+     "list": [
+      "@gullylabs/id: Sign in with Gully ID. Version 0.1.0.",
+      "@gullylabs/pay: Accept payments through Gully Pay. Version 0.1.1.",
+      "Gully Lens for Chrome: coming soon. Explain a transaction, contract or signature in plain words before you sign. Read-only."
+     ],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Swoop Ads",
+     "level": 2,
+     "p": [],
+     "list": [
+      "Swoop Ads for WordPress: Swoop Spots and Swoop Check (a free human check) on your WordPress site. Install from the zip. Version 0.2.0.",
+      "Swoop Ads for Shopify: Theme extension for Shopify stores. Install from the zip. Version 0.2.0.",
+      "Tag Manager template and recipes: Google Tag Manager template plus Zapier and Make recipes. Version 0.1.0.",
+      "Postback verifiers: Check Swoop postback signatures in PHP, Node and Python. Version 0.1.0.",
+      "WordPress plugin directory: coming soon. One-click install and updates from the WordPress.org plugin directory."
+     ],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "kre8, kre8 Radio and kre8 Films",
+     "level": 2,
+     "p": [],
+     "list": [
+      "kre8 for iPhone: coming soon. The kre8 app on your phone: watch, listen, tip and collect.",
+      "kre8 for Android: coming soon. The kre8 app on your phone: watch, listen, tip and collect.",
+      "kre8 Radio for iPhone: coming soon. Creator radio stations and live shows, with background play and CarPlay.",
+      "kre8 Radio for Android: coming soon. Creator radio stations and live shows, with background play and Android Auto.",
+      "kre8 Films for iPhone: coming soon. Creator premieres, members-only films and watch parties, with downloads to watch offline.",
+      "kre8 Films for Android and Android TV: coming soon. Creator premieres, members-only films and watch parties, on phones and TVs."
+     ],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": "Gully AI and developer tools",
+     "level": 2,
+     "p": [],
+     "list": [
+      "Gully MCP server: coming soon. Read-only Gully Chain, Gully Core and docs tools for AI assistants such as Claude and Cursor.",
+      "Gully CLI: coming soon. One command line for Gully AI, Gully Core, chain reads and docs.",
+      "Gully Dev Copilot for VS Code: coming soon. Explain code and contracts, draft tests and check an integration, inside your editor."
+     ],
+     "links": [],
+     "qa": []
+    }
+   ]
+  },
+  "/explain": {
+   "h1": "Explain a transaction in plain words.",
+   "sections": [
+    {
+     "h": null,
+     "level": 2,
+     "p": [
+      "Paste a Gully Chain testnet transaction hash. The receipt, logs, method and token moves are read from the chain and priced in USD; Zayden, the Gully AI assistant, writes them up, and every figure must come from the transaction. When Zayden is not answering, a fixed template writes the explanation from the same facts and the page says so."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": null,
+     "level": 2,
+     "p": [],
+     "list": [],
+     "links": [
+      [
+       "/ai-tools",
+       "Use Gully with AI tools"
+      ],
+      [
+       "https://testnet.gullyscan.xyz",
+       "Gully Chain testnet explorer"
+      ]
+     ],
+     "qa": []
+    }
+   ]
+  },
+  "/ai-tools": {
+   "h1": "Use Gully with AI tools.",
+   "sections": [
+    {
+     "h": null,
+     "level": 2,
+     "p": [
+      "Zayden answers questions about every Gully product from the public docs today, on gullyai.xyz, in the docs and in Telegram. The Gully MCP server (read-only, for Claude, Cursor and other assistants), the Gully CLI and the Gully Dev Copilot editor extension are built and open as they are published. None of these tools can sign or send a transaction."
+     ],
+     "list": [],
+     "links": [],
+     "qa": []
+    },
+    {
+     "h": null,
+     "level": 2,
+     "p": [],
+     "list": [],
+     "links": [
+      [
+       "https://gullyai.xyz",
+       "Ask Zayden"
+      ],
+      [
+       "/explain",
+       "Explain a transaction"
+      ],
+      [
+       "/downloads",
+       "All downloads"
       ]
      ],
      "qa": []

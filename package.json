@@ -110,7 +110,8 @@
     "test:hub-live": "node --test scripts/test-hub-live.mjs",
     "test:swap-math": "node --test scripts/test-swap-math.mjs",
     "test:gl-tokens": "node --test scripts/test-gl-tokens.mjs",
-    "design:gate": "node scripts/design/gl-gate.mjs"
+    "design:gate": "node scripts/design/gl-gate.mjs",
+    "test:extra-pages": "node --test scripts/test-extra-pages.mjs"
   },
   "dependencies": {
     "@arbitrum/chain-sdk": "0.28.0",
