@@ -221,12 +221,12 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
             className={`flex items-center gap-2 rounded-btn px-1 text-[13px] transition-colors ${hover === s.id ? 'bg-surface-hover' : ''}`}
           >
             <i className="size-[9px] flex-none rounded-bar" style={{ background: s.color }} />
-            <span className="truncate text-ink-2">
+            <span className="min-w-0 flex-1 truncate text-ink-2">
               {s.label}
               {s.chain && <ChainLogo chain={s.chain} size={12} named className="ml-1.5 align-[-2px]" />}
             </span>
-            <span className="ml-auto font-mono text-[12px] text-muted">{fmtCompactUsd(s.v)}</span>
-            <span className="w-11 text-right font-mono text-[12px] text-ink-2">{((s.v / total) * 100).toFixed(1)}%</span>
+            <span className="ml-auto flex-none font-mono text-[12px] text-muted">{fmtCompactUsd(s.v)}</span>
+            <span className="w-11 flex-none text-right font-mono text-[12px] text-ink-2">{((s.v / total) * 100).toFixed(1)}%</span>
           </li>
         ))}
       </ul>

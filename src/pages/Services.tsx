@@ -37,7 +37,7 @@ export function Services() {
           <aside className="gt-hero-aside rise" aria-label="Practices and timelines">
             <span className="gt-k"><b>practices</b> · typical timelines</span>
             <ul>
-              {SERVICES.map((s) => (
+              {SERVICES.slice(0, 6).map((s) => (
                 <li key={s.key}>
                   <a href={`?service=${s.key}#contact`}>
                     <b>{s.title}</b>
@@ -46,6 +46,7 @@ export function Services() {
                 </li>
               ))}
             </ul>
+            {SERVICES.length > 6 && <a className="gt-more" href="#services-h">All {SERVICES.length} practices</a>}
           </aside>
         </div>
       </section>
@@ -73,6 +74,12 @@ export function Services() {
             <SecHead n="04" label="Contact" title="Tell us what you are building" id="contact-h">
               A short brief is enough. We answer with questions or a first scope.
             </SecHead>
+            <ol className="gt-next">
+              <li><b>Within two working days</b><span>A reply from the team that would build it, with questions or a first scope.</span></li>
+              <li><b>A short call if it helps</b><span>Thirty minutes on goals, chains, timeline and budget.</span></li>
+              <li><b>A written proposal</b><span>Deliverables, timeline and price, before any work starts.</span></li>
+            </ol>
+            <p className="gt-next-mail">Rather write? <a href="mailto:team@gullylabs.xyz">team@gullylabs.xyz</a></p>
           </div>
           <div className="rv">
             <ContactForm />

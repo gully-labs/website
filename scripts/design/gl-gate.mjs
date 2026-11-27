@@ -142,7 +142,7 @@ function checkLayout({ phone }) {
   if (clipped.length) out.push({ rule: 'clipped', note: `${clipped.length} cut text boxes: ${clipped.slice(0, 3).join('; ')}` })
   // Blank regions inside the content column: sample the page every 32 px; a point is blank when it lands on a plain
   // layout box (no own words, no media, no border, no fill). 9 x 9 blank cells (288 px) in one rectangle fails.
-  const inner = [...document.querySelectorAll('main .w')]
+  const inner = [...document.querySelectorAll('main .w, main .gt-wrap')]
   const cols = (inner.length ? inner : [...document.querySelectorAll('main')]).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 200)
   const left = Math.max(0, Math.min(...cols.map((r) => r.left), W))
   const right = Math.min(W, Math.max(...cols.map((r) => r.right), 0))

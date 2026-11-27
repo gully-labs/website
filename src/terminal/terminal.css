@@ -1647,3 +1647,12 @@
 .gt-hero-aside a:hover b { color: var(--gt-accent); }
 .gt-hero-aside b { font-weight: 600; font-size: 15px; }
 .gt-hero-aside span { font-size: 13px; color: var(--gt-muted); }
+.gt-hero-aside .gt-more { display: inline-flex; align-items: center; min-height: 44px; color: var(--gt-accent); font-weight: 600; font-size: 14px; }
+/* /services contact column: what happens after a brief, so the copy column is as tall as the form (layout gate). */
+.gt-next { list-style: none; margin: var(--gt-4, 16px) 0 0; padding: 0; display: grid; gap: var(--gt-3); counter-reset: gtn; }
+.gt-next li { display: grid; gap: 2px; padding-left: 36px; position: relative; counter-increment: gtn; }
+.gt-next li::before { content: counter(gtn); position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--gt-rule-2); display: grid; place-items: center; font-size: 13px; color: var(--gt-accent); }
+.gt-next b { font-weight: 600; }
+.gt-next span { color: var(--gt-muted); font-size: 14px; }
+.gt-next-mail { margin-top: var(--gt-4, 16px); color: var(--gt-muted); font-size: 14px; }
+.gt-next-mail a { color: var(--gt-accent); display: inline-flex; min-height: 44px; align-items: center; }
