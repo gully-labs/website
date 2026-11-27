@@ -111,7 +111,8 @@ export function Tracker() {
       <Seo page="/tracker" />
 
       <section className="flex flex-col gap-4 px-page pt-10 pb-5">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="grid items-start gap-6 min-[1180px]:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]">
+          <div className="flex min-w-0 flex-col gap-3">
           <div className="flex min-w-0 flex-col gap-2">
             <span className={eyebrow} style={rise(0)}>
               TRACKER · TOKENISED STOCKS · LIVE
@@ -136,6 +137,26 @@ export function Tracker() {
               Share
             </a>
           </div>
+          </div>
+          {/* The hero's second column (design round 5): the widest gaps right now, each opening its stock. */}
+          <aside aria-label="Widest gaps right now" className="flex min-w-0 flex-col gap-1 rounded-card border border-line bg-surface p-4 max-[1179px]:hidden" style={rise(3)}>
+            <span className="font-mono text-[11px] tracking-[0.08em] text-faint">WIDEST GAPS RIGHT NOW</span>
+            {byAbs.length ? (
+              <ul className="m-0 list-none p-0">
+                {byAbs.slice(0, 5).map((r) => (
+                  <li key={idOf(r)} className="border-b border-line last:border-b-0">
+                    <a href={`/tracker/${r.chain}/${r.ticker}`} className="flex min-h-11 items-center gap-2 text-[14px] text-ink hover:text-gold">
+                      <ChainLogo chain={r.chain} size={14} />
+                      <b className="font-semibold">{r.ticker}</b>
+                      <span className={`ml-auto font-mono text-[13px] ${(r.gapPct ?? 0) >= 0 ? 'text-green' : 'text-error'}`}>{(r.gapPct ?? 0) >= 0 ? '+' : ''}{(r.gapPct ?? 0).toFixed(2)}%</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="m-0 py-3 text-[14px] text-muted">{data ? 'Every trusted pool is in line right now.' : 'Reading the pools…'}</p>
+            )}
+          </aside>
         </div>
 
         <div role="tablist" aria-label="Chain" className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-input border border-line bg-surface p-1" style={rise(4)}>

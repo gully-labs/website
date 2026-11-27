@@ -1,6 +1,6 @@
 import { dateTimePT, timePT } from '../../lib/time'
 import { Activity, Bot, CircleCheck, CircleDollarSign, Network, ScanSearch, ShieldCheck, Sparkles, TriangleAlert, type LucideIcon } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import { ChainLogo } from '../logos/ChainLogo'
 import { AnimatedNumber } from '../charts/AnimatedNumber'
 import { EChart } from '../charts/EChart'
@@ -211,32 +211,69 @@ function Skeleton({ error, onRetry }: { error: string | null; onRetry: () => voi
 }
 
 /** The whole board. `compact` drops the detail lines, the latency chart and the incidents. */
+/** STATUS_GROUPS split into columns of near-equal height (rows + a card header each); one column when compact. */
+function balanceGroups(data: StatusBody, compact: boolean, n = 2): (typeof STATUS_GROUPS)[] {
+  const groups = STATUS_GROUPS.filter((g) => data.components.some((c) => c.group === g.id))
+  if (compact) return [groups]
+  const cols: (typeof STATUS_GROUPS)[] = Array.from({ length: n }, () => [])
+  const h = Array.from({ length: n }, () => 0)
+  const size = (g: (typeof STATUS_GROUPS)[number]) => 1.2 + data.components.filter((c) => c.group === g.id).length
+  for (const g of [...groups].sort((x, y) => size(y) - size(x))) {
+    const i = h.indexOf(Math.min(...h))
+    cols[i].push(g)
+    h[i] += size(g)
+  }
+  // keep the catalogue order inside each column
+  return cols.map((c) => STATUS_GROUPS.filter((g) => c.includes(g)))
+}
+
+const WIDE = '(min-width: 1800px)'
+/** True at 1800 px and wider, where the board is one column of full-width cards with rows three across. */
+function useWide(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      if (typeof window === 'undefined') return () => {}
+      const m = window.matchMedia(WIDE)
+      m.addEventListener('change', cb)
+      return () => m.removeEventListener('change', cb)
+    },
+    () => window.matchMedia(WIDE).matches,
+    () => false,
+  )
+}
+
 export function StatusBoard({ compact = false }: { compact?: boolean }) {
   const { data, error, refresh } = useStatus(30_000)
+  const wide = useWide() && !compact
   if (!data) return <Skeleton error={error} onRetry={refresh} />
   return (
     <div className="flex flex-col gap-6">
       <Overall data={data} />
       {error && <p className="m-0 font-mono text-[12px] text-error">{error} Showing the last answer.</p>}
-      {/* Columns, not a grid: each card is as tall as its own rows, so nothing is stretched over empty space. */}
-      <div className={`gap-4 ${compact ? 'columns-[320px]' : 'columns-[440px]'}`}>
-        {STATUS_GROUPS.map((g) => {
-          const list = data.components.filter((c) => c.group === g.id)
-          if (!list.length) return null
-          const Icon = GROUP_ICON[g.id]
-          return (
-            <section key={g.id} aria-label={g.label} className="mb-4 flex min-w-0 break-inside-avoid flex-col rounded-card border border-line bg-card-token p-card">
-              <h3 className="m-0 mb-1 inline-flex items-center gap-2 font-display text-h4 font-bold uppercase">
-                <Icon aria-hidden size={16} strokeWidth={1.75} className="text-gold" /> {g.label}
-              </h3>
-              <ul className="m-0 list-none p-0">
-                {list.map((c) => (
-                  <ComponentRow key={c.id} c={c} compact={compact} />
-                ))}
-              </ul>
-            </section>
-          )
-        })}
+      {/* Two balanced columns (design round 5): groups go to the shorter column by row count, so neither column ends far
+          above the other (the CSS columns this replaces left a blank region at 1440). One column under 960 px; at 1800 px+ full-width cards with their rows three across. */}
+      <div className={compact ? 'gap-4 columns-[320px]' : 'grid items-start gap-4 min-[960px]:grid-cols-2 min-[1800px]:grid-cols-1'}>
+        {(wide ? [STATUS_GROUPS.filter((g) => data.components.some((c) => c.group === g.id))] : balanceGroups(data, compact)).map((col, ci) => (
+          <div key={ci} className={compact ? 'contents' : 'flex min-w-0 flex-col gap-4'}>
+            {col.map((g) => {
+              const list = data.components.filter((c) => c.group === g.id)
+              if (!list.length) return null
+              const Icon = GROUP_ICON[g.id]
+              return (
+                <section key={g.id} aria-label={g.label} className={`${compact ? 'mb-4 ' : ''}flex min-w-0 break-inside-avoid flex-col rounded-card border border-line bg-card-token p-card`}>
+                  <h3 className="m-0 mb-1 inline-flex items-center gap-2 font-display text-h4 font-bold uppercase">
+                    <Icon aria-hidden size={16} strokeWidth={1.75} className="text-gold" /> {g.label}
+                  </h3>
+                  <ul className={`m-0 list-none p-0 ${wide ? 'grid grid-cols-3 gap-x-8' : ''}`}>
+                    {list.map((c) => (
+                      <ComponentRow key={c.id} c={c} compact={compact} />
+                    ))}
+                  </ul>
+                </section>
+              )
+            })}
+          </div>
+        ))}
       </div>
       {!compact && <PayLatency data={data} />}
       {!compact && (

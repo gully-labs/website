@@ -70,7 +70,7 @@ export function ServicesList({ compact = false }: { compact?: boolean }) {
                 <div>
                   <dt>Proof</dt>
                   <dd>
-                    <A href={productHref(proof)}>{proof.name}</A>
+                    <A href={productHref(proof)} className="gt-proof">{proof.name}</A>
                   </dd>
                 </div>
               )}

@@ -312,6 +312,24 @@ export function AskPanel({ variant = 'page', autoFocus = false }: { variant?: 'p
           Until it is, the answers are in the <a href="https://docs.gullylabs.xyz" {...newTab} className="text-gold underline decoration-gold-line underline-offset-2">docs<span className="sr-only"> (opens in a new tab)</span></a>, and the team is one message away through the{' '}
           <a href="https://gullylabs.xyz/services?contact=1" {...linkProps('https://gullylabs.xyz/services?contact=1')} className="text-gold underline decoration-gold-line underline-offset-2">contact form</a>.
         </p>
+        {/* Where the answers are meanwhile (design round 5): the places people ask about most, each a 44 px row. */}
+        <ul className="m-0 grid list-none gap-2 p-0 min-[640px]:grid-cols-2">
+          {[
+            ['Gully Labs docs', 'Every product, how it works', 'https://docs.gullylabs.xyz'],
+            ['Gully Chain docs', 'Build on the chain, RPC, bridge', 'https://docs.gullychain.xyz'],
+            ['Prices', 'What each plan costs', '/pricing'],
+            ['System status', 'What is up right now', '/status'],
+            ['Stock tracker', 'Live gaps to fair price', '/tracker'],
+            ['Explain a transaction', 'Plain words for any tx', '/explain'],
+          ].map(([t, d, href]) => (
+            <li key={href}>
+              <a href={href} {...(href.startsWith('http') ? newTab : {})} className="flex min-h-11 flex-col justify-center rounded-input border border-line px-3 py-2 text-ink hover:border-gold">
+                <span className="text-[14px] font-semibold">{t}{href.startsWith('http') && <span className="sr-only"> (opens in a new tab)</span>}</span>
+                <span className="text-[13px] text-muted">{d}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
       </div>
     )
 
