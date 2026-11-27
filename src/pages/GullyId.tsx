@@ -49,7 +49,7 @@ export function GullyId() {
   return (
     <div className="flex flex-col gap-12 px-page pt-[72px] pb-24">
       <Seo page="/gully-id" />
-      <section className="grid items-start gap-8 min-[1180px]:grid-cols-[minmax(0,1fr)_minmax(340px,460px)]">
+      <section className="grid items-start gap-8 min-[1180px]:grid-cols-[minmax(0,760px)_minmax(340px,1fr)]">
         <div className="flex max-w-[760px] flex-col gap-5">
         <span className={eyebrow}>GULLY LABS · SIGN-IN SERVICE</span>
         <img src={PRODUCT_BRANDS.id.logo!.src} width={176} height={52} alt="Gully ID" className="h-[52px] w-auto self-start" />

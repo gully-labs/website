@@ -191,7 +191,7 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
   const cur = slices.find((s) => s.id === hover)
   const point = (sid: string | null, on: boolean) => sid && chart.current?.dispatchAction({ type: on ? 'highlight' : 'downplay', seriesIndex: 0, name: sid })
   return (
-    <div className="flex items-center gap-5 max-[480px]:flex-col">
+    <div className="flex flex-wrap items-center justify-center gap-5">
       <div className="relative size-[150px] flex-none">
         <EChart
           option={option}
@@ -212,7 +212,7 @@ export function LiquidityRing({ rows }: { rows: TrackerRow[] }) {
           </span>
         </EChart>
       </div>
-      <ul className="m-0 flex w-full min-w-0 flex-1 list-none flex-col gap-[5px] p-0">
+      <ul className="m-0 flex w-full min-w-[230px] flex-1 basis-[230px] list-none flex-col gap-[5px] p-0">
         {slices.map((s) => (
           <li
             key={s.id}

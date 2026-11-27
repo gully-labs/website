@@ -98,7 +98,7 @@ function OnRequest() {
   ]
   return (
     <div id="on-request">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] gap-4">
+      <div className="flex flex-wrap gap-4 [&>*]:min-w-0 [&>*]:flex-[1_1_320px]">
         {items.map((it) => (
           <div key={it.name} className="flex flex-col gap-4 rounded-card border border-line bg-surface p-7">
             <span className="flex items-center gap-3">
@@ -250,7 +250,7 @@ export function Pricing() {
                 {offer.checkout.reason} The limits below are what each plan will include; Free works today.
               </p>
             )}
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-4">
+            <div className="flex flex-wrap gap-4 [&>*]:min-w-0 [&>*]:flex-[1_1_300px]">
               {offer.plans.map((p, i) => {
                 const featured = p.id === 'pro'
                 return (

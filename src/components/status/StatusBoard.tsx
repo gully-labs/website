@@ -211,6 +211,22 @@ function Skeleton({ error, onRetry }: { error: string | null; onRetry: () => voi
 }
 
 /** The whole board. `compact` drops the detail lines, the latency chart and the incidents. */
+/** STATUS_GROUPS split into columns of near-equal height (rows + a card header each); one column when compact. */
+function balanceGroups(data: StatusBody, compact: boolean): (typeof STATUS_GROUPS)[] {
+  const groups = STATUS_GROUPS.filter((g) => data.components.some((c) => c.group === g.id))
+  if (compact) return [groups]
+  const cols: (typeof STATUS_GROUPS)[] = [[], []]
+  const h = [0, 0]
+  const size = (g: (typeof STATUS_GROUPS)[number]) => 1.2 + data.components.filter((c) => c.group === g.id).length
+  for (const g of [...groups].sort((x, y) => size(y) - size(x))) {
+    const i = h[0] <= h[1] ? 0 : 1
+    cols[i].push(g)
+    h[i] += size(g)
+  }
+  // keep the catalogue order inside each column
+  return cols.map((c) => STATUS_GROUPS.filter((g) => c.includes(g)))
+}
+
 export function StatusBoard({ compact = false }: { compact?: boolean }) {
   const { data, error, refresh } = useStatus(30_000)
   if (!data) return <Skeleton error={error} onRetry={refresh} />
@@ -218,25 +234,30 @@ export function StatusBoard({ compact = false }: { compact?: boolean }) {
     <div className="flex flex-col gap-6">
       <Overall data={data} />
       {error && <p className="m-0 font-mono text-[12px] text-error">{error} Showing the last answer.</p>}
-      {/* Columns, not a grid: each card is as tall as its own rows, so nothing is stretched over empty space. */}
-      <div className={`gap-4 ${compact ? 'columns-[320px]' : 'columns-[440px]'}`}>
-        {STATUS_GROUPS.map((g) => {
-          const list = data.components.filter((c) => c.group === g.id)
-          if (!list.length) return null
-          const Icon = GROUP_ICON[g.id]
-          return (
-            <section key={g.id} aria-label={g.label} className="mb-4 flex min-w-0 break-inside-avoid flex-col rounded-card border border-line bg-card-token p-card">
-              <h3 className="m-0 mb-1 inline-flex items-center gap-2 font-display text-h4 font-bold uppercase">
-                <Icon aria-hidden size={16} strokeWidth={1.75} className="text-gold" /> {g.label}
-              </h3>
-              <ul className="m-0 list-none p-0">
-                {list.map((c) => (
-                  <ComponentRow key={c.id} c={c} compact={compact} />
-                ))}
-              </ul>
-            </section>
-          )
-        })}
+      {/* Two balanced columns (design round 5): groups go to the shorter column by row count, so neither column ends far
+          above the other (the CSS columns this replaces left a blank region at 1440). One column under 960 px. */}
+      <div className={compact ? 'gap-4 columns-[320px]' : 'grid items-start gap-4 min-[960px]:grid-cols-2'}>
+        {balanceGroups(data, compact).map((col, ci) => (
+          <div key={ci} className={compact ? 'contents' : 'flex min-w-0 flex-col gap-4'}>
+            {col.map((g) => {
+              const list = data.components.filter((c) => c.group === g.id)
+              if (!list.length) return null
+              const Icon = GROUP_ICON[g.id]
+              return (
+                <section key={g.id} aria-label={g.label} className={`${compact ? 'mb-4 ' : ''}flex min-w-0 break-inside-avoid flex-col rounded-card border border-line bg-card-token p-card`}>
+                  <h3 className="m-0 mb-1 inline-flex items-center gap-2 font-display text-h4 font-bold uppercase">
+                    <Icon aria-hidden size={16} strokeWidth={1.75} className="text-gold" /> {g.label}
+                  </h3>
+                  <ul className="m-0 list-none p-0">
+                    {list.map((c) => (
+                      <ComponentRow key={c.id} c={c} compact={compact} />
+                    ))}
+                  </ul>
+                </section>
+              )
+            })}
+          </div>
+        ))}
       </div>
       {!compact && <PayLatency data={data} />}
       {!compact && (

@@ -31,7 +31,7 @@ export function AnalyticsPlanCards({ state, retry, delay = 0 }: { state: PlansSt
           {offer.checkout.reason} The free trial does not need a payment.
         </p>
       )}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-4">
+      <div className="flex flex-wrap gap-4 [&>*]:min-w-0 [&>*]:flex-[1_1_300px]">
         {a.plans.map((p, i) => {
           const trial = p.priceUsdc === 0
           const featured = p.id === 'starter'

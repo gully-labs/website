@@ -1656,3 +1656,5 @@
 .gt-next span { color: var(--gt-muted); font-size: 14px; }
 .gt-next-mail { margin-top: var(--gt-4, 16px); color: var(--gt-muted); font-size: 14px; }
 .gt-next-mail a { color: var(--gt-accent); display: inline-flex; min-height: 44px; align-items: center; }
+/* The proof link under each service (design round 5): a 44 px target on phones. */
+.gt-proof { display: inline-flex; align-items: center; min-height: 44px; }

@@ -213,7 +213,8 @@ export function Ecosystem() {
   return (
     <div className="flex flex-col gap-14 px-page pt-10 pb-24">
       <Seo page="/ecosystem" />
-      <section className="flex flex-col gap-4">
+      <section className="grid items-start gap-8 min-[1180px]:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
+      <div className="flex min-w-0 flex-col gap-4">
         <span className={eyebrow}>ECOSYSTEM · GULLY LABS</span>
         <h1 className="heading-1">What we build, what we use</h1>
         <p className="m-0 max-w-[720px] text-[18px] leading-[1.6] text-muted">
@@ -233,6 +234,21 @@ export function Ecosystem() {
             Build with us →
           </Link>
         </nav>
+      </div>
+        {/* The hero's second column (design round 5): what this page lists, counted from the same lists below. */}
+        <aside aria-label="On this page, counted" className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-line bg-line max-[1179px]:hidden">
+          {[
+            ['Our projects', projects.length, '#projects'],
+            ['Services we call', integrations.length, '#integrates'],
+            ['Kinds of service', integrationKinds.length, '#integrates'],
+            ['Launchpads mapped', pads?.length ?? null, '#launchpads'],
+          ].map(([label, n, href]) => (
+            <a key={label as string} href={href as string} className="flex min-h-[104px] flex-col justify-between gap-2 bg-surface p-4 text-ink hover:bg-surface-hover">
+              <span className="font-mono text-[11px] tracking-[0.08em] text-faint uppercase">{label}</span>
+              <b className="font-display text-[34px] leading-none font-extrabold">{n ?? '–'}</b>
+            </a>
+          ))}
+        </aside>
       </section>
 
       <section id="projects" aria-labelledby="eco-projects" className="flex scroll-mt-24 flex-col gap-5">
@@ -291,7 +307,7 @@ export function Ecosystem() {
                 <span className="rounded-full border border-line px-2 py-px text-[11px] text-muted">{g.items.length}</span>
                 <span aria-hidden className="h-px flex-1 bg-line" />
               </h3>
-              <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0 md:grid-cols-3 xl:grid-cols-5">
+              <ul className="m-0 flex list-none flex-wrap gap-3 p-0 [&>li]:min-w-0 [&>li]:flex-[1_1_calc(50%-12px)] md:[&>li]:flex-[1_1_220px]">
                 {g.items.map((i, n) => (
                   <IntegrationTile key={i.id} i={i} n={n} />
                 ))}
@@ -312,7 +328,7 @@ export function Ecosystem() {
               {pads.length} {pads.length === 1 ? 'launchpad' : 'launchpads'} live on {padChains} {padChains === 1 ? 'chain' : 'chains'}
             </p>
           </div>
-          <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="m-0 flex list-none flex-wrap gap-3 p-0 [&>li]:min-w-0 [&>li]:flex-[1_1_100%] sm:[&>li]:flex-[1_1_300px]">
             {pads.map((l, n) => (
               <motion.li
                 key={l.id ?? l.name}
