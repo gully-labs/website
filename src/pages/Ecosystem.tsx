@@ -213,7 +213,7 @@ export function Ecosystem() {
   return (
     <div className="flex flex-col gap-14 px-page pt-10 pb-24">
       <Seo page="/ecosystem" />
-      <section className="grid items-start gap-8 min-[1180px]:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
+      <section className="grid items-start gap-8 min-[1180px]:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] min-[1800px]:grid-cols-[minmax(0,820px)_minmax(0,1fr)]">
       <div className="flex min-w-0 flex-col gap-4">
         <span className={eyebrow}>ECOSYSTEM · GULLY LABS</span>
         <h1 className="heading-1">What we build, what we use</h1>
@@ -236,14 +236,14 @@ export function Ecosystem() {
         </nav>
       </div>
         {/* The hero's second column (design round 5): what this page lists, counted from the same lists below. */}
-        <aside aria-label="On this page, counted" className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-line bg-line max-[1179px]:hidden">
+        <aside aria-label="On this page, counted" className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-line bg-line max-[1179px]:hidden min-[1800px]:grid-cols-4">
           {[
             ['Our projects', projects.length, '#projects'],
             ['Services we call', integrations.length, '#integrates'],
             ['Kinds of service', integrationKinds.length, '#integrates'],
             ['Launchpads mapped', pads?.length ?? null, '#launchpads'],
           ].map(([label, n, href]) => (
-            <a key={label as string} href={href as string} className="flex min-h-[104px] flex-col justify-between gap-2 bg-surface p-4 text-ink hover:bg-surface-hover">
+            <a key={label as string} href={href as string} className="flex min-h-[104px] flex-col justify-between gap-2 bg-surface p-4 min-[1800px]:min-h-[220px] text-ink hover:bg-surface-hover">
               <span className="font-mono text-[11px] tracking-[0.08em] text-faint uppercase">{label}</span>
               <b className="font-display text-[34px] leading-none font-extrabold">{n ?? '–'}</b>
             </a>

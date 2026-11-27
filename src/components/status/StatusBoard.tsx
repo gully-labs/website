@@ -1,6 +1,6 @@
 import { dateTimePT, timePT } from '../../lib/time'
 import { Activity, Bot, CircleCheck, CircleDollarSign, Network, ScanSearch, ShieldCheck, Sparkles, TriangleAlert, type LucideIcon } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import { ChainLogo } from '../logos/ChainLogo'
 import { AnimatedNumber } from '../charts/AnimatedNumber'
 import { EChart } from '../charts/EChart'
@@ -212,14 +212,14 @@ function Skeleton({ error, onRetry }: { error: string | null; onRetry: () => voi
 
 /** The whole board. `compact` drops the detail lines, the latency chart and the incidents. */
 /** STATUS_GROUPS split into columns of near-equal height (rows + a card header each); one column when compact. */
-function balanceGroups(data: StatusBody, compact: boolean): (typeof STATUS_GROUPS)[] {
+function balanceGroups(data: StatusBody, compact: boolean, n = 2): (typeof STATUS_GROUPS)[] {
   const groups = STATUS_GROUPS.filter((g) => data.components.some((c) => c.group === g.id))
   if (compact) return [groups]
-  const cols: (typeof STATUS_GROUPS)[] = [[], []]
-  const h = [0, 0]
+  const cols: (typeof STATUS_GROUPS)[] = Array.from({ length: n }, () => [])
+  const h = Array.from({ length: n }, () => 0)
   const size = (g: (typeof STATUS_GROUPS)[number]) => 1.2 + data.components.filter((c) => c.group === g.id).length
   for (const g of [...groups].sort((x, y) => size(y) - size(x))) {
-    const i = h[0] <= h[1] ? 0 : 1
+    const i = h.indexOf(Math.min(...h))
     cols[i].push(g)
     h[i] += size(g)
   }
@@ -227,8 +227,24 @@ function balanceGroups(data: StatusBody, compact: boolean): (typeof STATUS_GROUP
   return cols.map((c) => STATUS_GROUPS.filter((g) => c.includes(g)))
 }
 
+const WIDE = '(min-width: 1800px)'
+/** True at 1800 px and wider, where the board takes three columns. */
+function useWide(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      if (typeof window === 'undefined') return () => {}
+      const m = window.matchMedia(WIDE)
+      m.addEventListener('change', cb)
+      return () => m.removeEventListener('change', cb)
+    },
+    () => window.matchMedia(WIDE).matches,
+    () => false,
+  )
+}
+
 export function StatusBoard({ compact = false }: { compact?: boolean }) {
   const { data, error, refresh } = useStatus(30_000)
+  const wide = useWide()
   if (!data) return <Skeleton error={error} onRetry={refresh} />
   return (
     <div className="flex flex-col gap-6">
@@ -236,8 +252,8 @@ export function StatusBoard({ compact = false }: { compact?: boolean }) {
       {error && <p className="m-0 font-mono text-[12px] text-error">{error} Showing the last answer.</p>}
       {/* Two balanced columns (design round 5): groups go to the shorter column by row count, so neither column ends far
           above the other (the CSS columns this replaces left a blank region at 1440). One column under 960 px. */}
-      <div className={compact ? 'gap-4 columns-[320px]' : 'grid items-start gap-4 min-[960px]:grid-cols-2'}>
-        {balanceGroups(data, compact).map((col, ci) => (
+      <div className={compact ? 'gap-4 columns-[320px]' : 'grid items-start gap-4 min-[960px]:grid-cols-2 min-[1800px]:grid-cols-3'}>
+        {balanceGroups(data, compact, wide ? 3 : 2).map((col, ci) => (
           <div key={ci} className={compact ? 'contents' : 'flex min-w-0 flex-col gap-4'}>
             {col.map((g) => {
               const list = data.components.filter((c) => c.group === g.id)
