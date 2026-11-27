@@ -3,8 +3,13 @@ import type { KitTheme } from './kit.generated'
 /* The Gully Labs compact nav logo: the 2026-11 kit's logotype (`kit/logo/logotype-reversed.svg` on navy,
    `logotype-color.svg` on light, 533 x 97), byte-identical in public/brand/kit/, never redrawn or typed.
    `height` is its height in CSS px. Marked data-brand="kit". */
-export function Wordmark({ height = 28, theme = 'dark', className = '', label = 'Gully Labs', decorative = false }: { height?: number; theme?: KitTheme; className?: string; label?: string; decorative?: boolean }) {
+export function Wordmark({ height = 28, theme = 'dark', className = '', label = 'Gully Labs', decorative = false }: { height?: number; theme?: KitTheme | 'auto'; className?: string; label?: string; decorative?: boolean }) {
   const width = Math.round(((height * 533) / 97) * 100) / 100
+  // 'auto': both kit files, the page theme shows one (html.gl-main .gl-on-dark / .gl-on-light in index.css).
+  if (theme === 'auto') return (<>
+    <Wordmark height={height} theme="dark" className={`gl-on-dark ${className}`} label={label} decorative={decorative} />
+    <Wordmark height={height} theme="light" className={`gl-on-light ${className}`} label={label} decorative />
+  </>)
   return (
     <img
       src={theme === 'light' ? '/brand/kit/logotype-color.svg' : '/brand/kit/logotype-reversed.svg'}
