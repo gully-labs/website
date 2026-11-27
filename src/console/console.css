@@ -491,3 +491,5 @@
 .lcp footer .legal{width:100%;padding-top:10px;border-top:1px solid var(--gl-line)}
 .lcp footer .legal ul{gap:0 18px;font-size:13px}
 .lcp footer .legal ul a{min-height:44px}
+/* The theme toggle in the console header (design round 4): icon only until the bar has room for its word. */
+@media (max-width:1679px){.lc .navr [data-theme-toggle]{padding:0;width:44px}.lc .navr [data-theme-toggle] .gid-t{display:none}}
