@@ -30,6 +30,18 @@ const USED_BY: [string, string][] = [
   ['Gully Studio', 'https://gullystudio.xyz/'],
 ]
 
+/** Sign-in options on gullyid.xyz today (GET /v1/auth/methods, 2026-11-25): social options open as their keys are set. */
+const METHODS: [string, boolean][] = [
+  ['Email code', true],
+  ['Wallet', true],
+  ['Sign in with Solana', true],
+  ['Passkey', true],
+  ['Google', false],
+  ['Apple', false],
+  ['X', false],
+  ['Telegram', false],
+]
+
 const card = 'flex flex-col gap-3 rounded-card border border-line bg-surface p-6'
 const extLink = 'inline-flex min-h-11 items-center gap-1 text-[14px] text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:text-gold'
 
@@ -37,7 +49,8 @@ export function GullyId() {
   return (
     <div className="flex flex-col gap-12 px-page pt-[72px] pb-24">
       <Seo page="/gully-id" />
-      <section className="flex max-w-[760px] flex-col gap-5">
+      <section className="grid items-start gap-8 min-[1180px]:grid-cols-[minmax(0,1fr)_minmax(340px,460px)]">
+        <div className="flex max-w-[760px] flex-col gap-5">
         <span className={eyebrow}>GULLY LABS · SIGN-IN SERVICE</span>
         <img src={PRODUCT_BRANDS.id.logo!.src} width={176} height={52} alt="Gully ID" className="h-[52px] w-auto self-start" />
         <h1 className="m-0 font-display text-h1 font-extrabold">
@@ -45,7 +58,7 @@ export function GullyId() {
         </h1>
         <p className="m-0 text-[17px] leading-[1.6] text-dim">
           Gully ID runs at <b className="font-mono text-ink">gullyid.xyz</b>. It is built and operated by Gully Labs, the company behind this site. Every Gully product sends you
-          there to sign in with a passkey, email, Telegram, Farcaster or a wallet, then brings you back. It is the only official Gully ID address.
+          there to sign in with an email code, a wallet, Sign in with Solana or a passkey, then brings you back. It is the only official Gully ID address.
         </p>
         <div className="flex flex-wrap gap-3">
           <a href={GULLY_ID_HOME} {...newTab} className={`${btnOutline} inline-flex min-h-11 items-center gap-1 px-5 text-[14px]`}>
@@ -53,6 +66,20 @@ export function GullyId() {
             <ArrowUpRight aria-hidden size={16} />
           </a>
         </div>
+        </div>
+        {/* The hero's second column (design round 4): the sign-in options as they stand, and where Gully ID is used. */}
+        <aside className={card} aria-label="Sign-in options">
+          <span className={eyebrow}>SIGN IN WITH</span>
+          <ul className="m-0 grid list-none gap-0 p-0">
+            {METHODS.map(([name, live]) => (
+              <li key={name} className="flex min-h-11 items-center justify-between gap-3 border-b border-line last:border-b-0">
+                <span className="text-[15px] text-ink">{name}</span>
+                <span className={`rounded-full border px-2.5 py-0.5 text-[12px] font-semibold ${live ? 'border-gold text-ink' : 'border-line-strong text-dim'}`}>{live ? 'Live' : 'Coming soon'}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="m-0 text-[13px] leading-[1.5] text-dim">Money actions always ask for your passkey or wallet. No phone-number sign-in.</p>
+        </aside>
       </section>
 
       <section className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] gap-5">
@@ -71,8 +98,8 @@ export function GullyId() {
           <p className="m-0 text-[15px] leading-[1.6] text-dim">
             <b className="text-ink">Gully ID never asks for your seed phrase, recovery phrase or private key.</b> Anyone who does is not Gully ID. Sign in only when the
             address bar shows <span className="font-mono text-ink">gullyid.xyz</span>. Report a fake site or a vulnerability to{' '}
-            <a href="mailto:hello@gullylabs.xyz" className="text-ink underline underline-offset-4 hover:text-gold">
-              hello@gullylabs.xyz
+            <a href="mailto:team@gullylabs.xyz" className="text-ink underline underline-offset-4 hover:text-gold">
+              team@gullylabs.xyz
             </a>
             .
           </p>

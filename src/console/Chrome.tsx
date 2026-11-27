@@ -8,6 +8,7 @@ import type { ComponentType } from 'react'
 import { APP_URL } from '../site-host'
 import { FOOTER_COPY, FOOTER_LEGAL, FOOTER_LINKS, FOOTER_MORE, FOOTER_TAGLINE, headerNav, PAGES_NAV, type NavLinkDef } from '../content/nav'
 import { ic, LivePill } from './ui'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { PRODUCTS } from '../terminal/catalog'
 import { PRODUCT_ICON } from './productIcons'
 import { PEDDLE_FAMILY, type PeddleKey } from '../pages/hub/hubData'
@@ -94,7 +95,8 @@ export function ConsoleHeader() {
     <header className="nav">
       <div className="wrap">
         <Link className="brand" to="/" aria-label="Gully Labs home" data-brand="kit">
-          <img src="/brand/kit/logotype-reversed.svg" width={176} height={32} alt="Gully Labs" />
+          <img className="gl-on-dark" src="/brand/kit/logotype-reversed.svg" width={176} height={32} alt="Gully Labs" />
+          <img className="gl-on-light" src="/brand/kit/logotype-color.svg" width={176} height={32} alt="" aria-hidden="true" />
         </Link>
         <nav aria-label="Main">
           <ul>
@@ -107,6 +109,7 @@ export function ConsoleHeader() {
         </nav>
         <div className="navr">
           <LivePill />
+          <ThemeToggle className="gid-chip" />
           {/* The shared Gully ID entry. Sign-in runs in the app (the only host with the SDK and the session), so this is a link. */}
           <a className="gid-chip" href={APP_URL} target="_blank" rel="noopener noreferrer" aria-label="Gully ID: sign in" data-testid="gully-id-chip" onClick={() => track('gully-id-chip', { from: 'header' })}>
             <img src="/brand/gullyid/gullyid-mark.svg" width={17} height={20} alt="" />
@@ -174,7 +177,8 @@ export function ConsoleFooter() {
           <img src="/brand/kit/wordmark-reversed.svg" width={200} height={56} alt="Gully Labs, Web3 and DeFi development" loading="lazy" />
           <span className="tagline">{FOOTER_TAGLINE}</span>
           <a className="gt-badge" href="/" aria-label="Powered by Gully Labs">
-            <img src="/brand/kit/powered-by-clear-white.svg" width={160} height={48} alt="Powered by Gully Labs" loading="lazy" />
+            <img className="gl-on-dark" src="/brand/kit/powered-by-clear-white.svg" width={160} height={48} alt="Powered by Gully Labs" loading="lazy" />
+            <img className="gl-on-light" src="/brand/kit/powered-by-clear-navy.svg" width={160} height={48} alt="" aria-hidden="true" loading="lazy" />
           </a>
         </div>
         <nav aria-label="Footer">

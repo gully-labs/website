@@ -571,3 +571,51 @@ h1.uppercase, h2.uppercase, h3.uppercase, h4.uppercase { text-transform: none; l
 .gl-btn:hover::after { transform: translateX(120%); transition: transform .7s ease; }
 @media (prefers-reduced-motion: reduce) { .gl-btn::after { display: none; } }
 @keyframes pb { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* ---- Gully Labs main site (gullylabs.xyz), round 4 of the design standard (2026-11-27) ----------------------------
+   The React pages on gullylabs.xyz wear the same Gully Labs kit tokens as the server-drawn pages (server/gl-tokens.mjs):
+   navy #0E1C38 / blue #3754A0 / light blue #6F8DDF / ground #F1F3F8, Figtree, Light / Dark / System. Scoped to
+   html.gl-main (set in main.tsx for the main host only), so HolderMaps, Security, the app, docs and pay keep their own
+   kits. A saved choice (localStorage gl-theme, set by /landing/fx.js) sets data-theme; no choice follows the device. */
+html.gl-main { --gl-head-bg: rgba(11, 23, 48, .88); }
+@media (prefers-color-scheme: light) {
+  html.gl-main:not([data-theme=dark]) {
+    color-scheme: light;
+    --color-bg: #F1F3F8; --color-bg-alt: #E9EDF5; --color-bg-footer: #E4E9F4;
+    --color-surface: #FFFFFF; --color-surface-deep: #F7F8FC; --color-surface-hover: #EEF1F8;
+    --color-line: #DDE3EF; --color-line-strong: #CBD3E6; --color-line-hover: #3754A0; --color-grid: #E8ECF4; --color-axis: #5B6782;
+    --color-ink: #0E1C38; --color-ink-2: #26365A; --color-muted: #46557A; --color-dim: #4F5E80; --color-faint: #55648A;
+    --color-gold: #3754A0; --color-gold-hover: #2A4588; --color-gold-line: #B8C5E6;
+    --color-green: #0A7A57; --color-success-bg: #E3F5EE; --color-success-line: #9ED9C2;
+    --color-bar: #3754A0; --color-mascot-bg: #E4E9F4; --color-error: #B8321F; --color-error-line: #F2C9C2;
+    --gl-bg: #F1F3F8; --gl-surface: #FFFFFF; --gl-ink: #FFFFFF; --gt-ink: #FFFFFF; --gl-cyan: #3754A0; --gl-violet: #3754A0; --gl-text: #0E1C38; --gl-text-muted: #46557A;
+    --gl-line: #DDE3EF; --gl-line-2: #CBD3E6; --gl-hover: #EEF1F8; --gl-grid: #E8ECF4; --gl-dim: #4F5E80;
+    --gl-gradient: linear-gradient(90deg, #3754A0 0%, #6F8DDF 100%);
+    --gt-bg: #F1F3F8; --gt-surface: #FFFFFF; --gt-raise: #EEF1F8; --gt-rule: #DDE3EF; --gt-rule-2: #CBD3E6; --gt-text: #0E1C38;
+    --gt-muted: #46557A; --gt-dim: #4F5E80; --gt-accent: #3754A0; --gt-accent-dim: rgba(55, 84, 160, .1); --gt-violet: #3754A0; --gt-coming: #3754A0;
+    --gl-head-bg: rgba(241, 243, 248, .9);
+  }
+}
+html.gl-main[data-theme=light] {
+  color-scheme: light;
+  --color-bg: #F1F3F8; --color-bg-alt: #E9EDF5; --color-bg-footer: #E4E9F4;
+  --color-surface: #FFFFFF; --color-surface-deep: #F7F8FC; --color-surface-hover: #EEF1F8;
+  --color-line: #DDE3EF; --color-line-strong: #CBD3E6; --color-line-hover: #3754A0; --color-grid: #E8ECF4; --color-axis: #5B6782;
+  --color-ink: #0E1C38; --color-ink-2: #26365A; --color-muted: #46557A; --color-dim: #4F5E80; --color-faint: #55648A;
+  --color-gold: #3754A0; --color-gold-hover: #2A4588; --color-gold-line: #B8C5E6;
+  --color-green: #0A7A57; --color-success-bg: #E3F5EE; --color-success-line: #9ED9C2;
+  --color-bar: #3754A0; --color-mascot-bg: #E4E9F4; --color-error: #B8321F; --color-error-line: #F2C9C2;
+  --gl-bg: #F1F3F8; --gl-surface: #FFFFFF; --gl-ink: #FFFFFF; --gt-ink: #FFFFFF; --gl-cyan: #3754A0; --gl-violet: #3754A0; --gl-text: #0E1C38; --gl-text-muted: #46557A;
+  --gl-line: #DDE3EF; --gl-line-2: #CBD3E6; --gl-hover: #EEF1F8; --gl-grid: #E8ECF4; --gl-dim: #4F5E80;
+  --gl-gradient: linear-gradient(90deg, #3754A0 0%, #6F8DDF 100%);
+  --gt-bg: #F1F3F8; --gt-surface: #FFFFFF; --gt-raise: #EEF1F8; --gt-rule: #DDE3EF; --gt-rule-2: #CBD3E6; --gt-text: #0E1C38;
+  --gt-muted: #46557A; --gt-dim: #4F5E80; --gt-accent: #3754A0; --gt-accent-dim: rgba(55, 84, 160, .1); --gt-violet: #3754A0; --gt-coming: #3754A0;
+  --gl-head-bg: rgba(241, 243, 248, .9);
+}
+html.gl-main .gl-head { background: var(--gl-head-bg); }
+html.gl-main body { background: var(--color-bg); color: var(--color-ink); }
+/* Kit logos: reversed on dark, colour on light (both byte-identical kit files; Wordmark theme="auto" and the console
+   chrome render one img each). !important: the console sheet sets display on its own images. */
+.gl-on-light { display: none !important; }
+@media (prefers-color-scheme: light) { html.gl-main:not([data-theme=dark]) .gl-on-light { display: block !important; } html.gl-main:not([data-theme=dark]) .gl-on-dark { display: none !important; } }
+html.gl-main[data-theme=light] .gl-on-light { display: block !important; } html.gl-main[data-theme=light] .gl-on-dark { display: none !important; }

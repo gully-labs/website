@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { NewTabMark } from '../components/LayoutLinks'
 import { newTab } from '../components/LayoutNav'
 import { Seo } from '../components/Seo'
-import { StatusBoard } from '../components/status/StatusBoard'
+import { StatusBoard, StatusGroupsChart } from '../components/status/StatusBoard'
 import { eyebrow } from '../components/ui'
 import { ChainChip } from '../components/ProjectRows'
 import { FALLBACK_CHAINS } from '../content/ecosystem'
@@ -24,8 +24,9 @@ export function StatusPage() {
       <Seo page="/status" />
       {/* A compact hero (D4-14): the live board starts within the first screen, as on /chains. */}
       <section className="relative overflow-hidden px-page pt-10 pb-8 max-[599px]:pt-8">
-        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(0,210,255,.12),transparent_62%)]" />
-        <div className="relative flex max-w-[860px] flex-col gap-4">
+        <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(111,141,223,.14),transparent_62%)]" />
+        <div className="relative grid items-start gap-6 min-[1180px]:grid-cols-[minmax(0,1fr)_minmax(360px,520px)]">
+        <div className="flex max-w-[860px] flex-col gap-4">
           <span className={eyebrow} style={rise(0)}>
             STATUS
           </span>
@@ -49,6 +50,10 @@ export function StatusPage() {
               <FileJson aria-hidden size={16} strokeWidth={1.75} className="text-gold" /> GET /api/status <NewTabMark size={13} />
             </a>
           </div>
+        </div>
+        <div className="max-[1179px]:hidden" style={rise(2)}>
+          <StatusGroupsChart />
+        </div>
         </div>
       </section>
       <section className="px-page pb-24" aria-label="Live status">

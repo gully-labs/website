@@ -168,7 +168,7 @@ function IntegrationTile({ i, n }: { i: Integration; n: number }) {
         <span className="text-[13px] leading-[1.5] text-muted">{i.use}</span>
       </a>
       <div className="flex flex-col px-3.5 pb-2.5">
-        <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="relative inline-flex min-h-8 w-fit items-center gap-1 rounded-btn font-mono text-[11px] text-faint transition-colors before:absolute before:-inset-x-2 before:-inset-y-1.5 before:content-[''] hover:text-gold">
+        <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="relative inline-flex min-h-11 w-fit items-center gap-1 rounded-btn font-mono text-[11px] text-faint transition-colors before:absolute before:-inset-x-2 before:-inset-y-1.5 before:content-[''] hover:text-gold">
           <Code2 size={13} aria-hidden />
           In code
         </button>

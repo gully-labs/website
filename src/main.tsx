@@ -15,7 +15,7 @@ import '@fontsource/poppins/700.css'
 import './index.css'
 import { ToastRoot } from './components/ui/ToastRoot'
 import { applyDocumentBrand } from './brand/products'
-import { isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost } from './site-host'
+import { isAdminHost, isAppHost, isDocsHost, isEmbedHost, isHolderMapsHost, isPayHost, isSecurityHost } from './site-host'
 import { installExternalLinks } from './lib/externalLinks'
 import { reloadForNewBuild } from './lib/staleBuild'
 import { initPwa } from './pwa/pwa'
@@ -29,6 +29,9 @@ window.addEventListener('vite:preloadError', (e) => {
 // holdermaps.xyz is HolderMaps' own app: the whole page takes its kit palette (src/index.css [data-product-brand]).
 // Everything else that is Gully Labs' own wears the parent kit; Gully Security and the checkouts keep their own look.
 applyDocumentBrand(isHolderMapsHost() ? 'holdermaps' : isSecurityHost() || isPayHost() || isEmbedHost() ? null : 'gullylabs')
+// The main site (gullylabs.xyz) also takes Light / Dark / System (src/index.css html.gl-main; /landing/fx.js applies a saved
+// choice before the first paint). The app, docs and admin keep the navy theme until their own round.
+if (!isHolderMapsHost() && !isSecurityHost() && !isPayHost() && !isEmbedHost() && !isAppHost() && !isDocsHost() && !isAdminHost()) document.documentElement.classList.add('gl-main')
 
 // Owner rule: every link to another origin opens in a new tab (src/lib/externalLinks.ts), on every host.
 installExternalLinks()

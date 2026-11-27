@@ -25,8 +25,9 @@ const LIMIT = Number(arg('limit', '8'))
 /** --ignore-net: network-level failures (a filtered laptop network) are not page findings. The box run never sets it. */
 const IGNORE_NET = flag('ignore-net')
 /** Screens that fail the deploy. The rest are measured and printed (REPORT lines) until their redesign round brings
- *  them to zero; a screen joins BLOCKING after two clean runs (same rule as kre8's gate 3). */
-const BLOCKING = new Set(arg('blocking', 'home,projects').split(','))
+ *  them to zero; a screen joins BLOCKING after two clean runs (same rule as kre8's gate 3). 2026-11-27: downloads,
+ *  explain and ai-tools joined (clean on the live round-3 deploy gate and the round-4 candidate). */
+const BLOCKING = new Set(arg('blocking', 'home,projects,downloads,explain,ai-tools').split(','))
 /** The gated screens: every page of the site that is drawn on the server or is a public read view. `key` names the file. */
 export const SCREENS = [
   { key: 'home', path: '/' },
@@ -52,8 +53,9 @@ const screens = pick ? SCREENS.filter((s) => pick.split(',').includes(s.path) ||
 const widths = arg('widths', '390,768,1440,1920').split(',').map(Number)
 const themes = arg('themes', 'dark,light').split(',')
 const OWN = /(^|\.)gullylabs\.xyz$|^127\.0\.0\.1$|^localhost$/
-/** Live figures, charts and clocks change every minute: hidden (layout kept) before the pixel shot. */
-const MASK = '[data-b],[data-tk],[data-u],[data-sv-word],[data-sv-ms],[data-mask],.g,.cells,.cmap,.orbit,.spark,time,.toast,#toasts,.kpis b,.st,canvas,iframe,video{visibility:hidden!important}*,*:before,*:after{animation:none!important;transition:none!important;caret-color:transparent!important}'
+/** Live figures, charts and clocks change every minute: hidden (layout kept) before the pixel shot. [data-live] = the
+ *  ECharts frames of the React pages, tracker-kpis = the tracker figures, tbody td = live table rows. */
+const MASK = '[data-live],[data-live-area],[data-testid=tracker-kpis] *,tbody td,[data-b],[data-tk],[data-u],[data-sv-word],[data-sv-ms],[data-mask],.g,.cells,.cmap,.orbit,.spark,time,.toast,#toasts,.kpis b,.st,canvas,iframe,video{visibility:hidden!important}*,*:before,*:after{animation:none!important;transition:none!important;caret-color:transparent!important}'
 
 fs.mkdirSync(OUT, { recursive: true })
 const findings = []
@@ -141,11 +143,20 @@ function checkLayout({ phone }) {
   if (clipped.length) out.push({ rule: 'clipped', note: `${clipped.length} cut text boxes: ${clipped.slice(0, 3).join('; ')}` })
   // Blank regions inside the content column: sample the page every 32 px; a point is blank when it lands on a plain
   // layout box (no own words, no media, no border, no fill). 9 x 9 blank cells (288 px) in one rectangle fails.
-  const inner = [...document.querySelectorAll('main .w')]
-  const cols = (inner.length ? inner : [...document.querySelectorAll('main')]).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 200)
+  const inner = [...document.querySelectorAll('main .w, main .gt-wrap')]
+  // The content column: the page's own .w / .gt-wrap boxes; on pages without one (the React pages), the span of every
+  // box in <main> that carries words, so a centred column's side gutters are not counted as blank regions.
+  let cols = (inner.length ? inner : []).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 200)
+  if (!cols.length) {
+    const words = [...document.querySelectorAll('main *')].filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && vis(e)).map((e) => e.getBoundingClientRect())
+    cols = words.length ? [{ left: Math.min(...words.map((r) => r.left)), right: Math.max(...words.map((r) => r.right)) }] : [...document.querySelectorAll('main')].map((e) => e.getBoundingClientRect())
+  }
   const left = Math.max(0, Math.min(...cols.map((r) => r.left), W))
   const right = Math.min(W, Math.max(...cols.map((r) => r.right), 0))
-  const H = Math.min(de.scrollHeight, 9000)
+  // Only <main> is judged: the header and footer have their own layouts and gutters.
+  const mainEl = document.querySelector('main')
+  const mainTop = mainEl ? Math.max(0, mainEl.getBoundingClientRect().top + de.scrollTop) : 0
+  const H = Math.min(mainEl ? mainTop + mainEl.getBoundingClientRect().height : de.scrollHeight, 9000)
   const STEP = 32
   const nx = Math.floor((right - left) / STEP)
   const plain = (el) => {
@@ -162,7 +173,8 @@ function checkLayout({ phone }) {
     return true
   }
   const grid = []
-  for (let y = 0; y < H; y += STEP) {
+  const y0 = Math.floor(mainTop / STEP) * STEP
+  for (let y = y0; y < H; y += STEP) {
     window.scrollTo(0, Math.max(0, y - innerHeight / 2))
     const sy = y - de.scrollTop
     const row = []
@@ -179,7 +191,7 @@ function checkLayout({ phone }) {
     for (let c = 0; c <= nx; c++) {
       const h = c < nx ? hgt[c] : 0
       let start = c
-      while (st.length && st[st.length - 1][1] >= h) { const [i, hh] = st.pop(); const w = c - i; if (w >= 9 && hh >= 9 && w * hh > best.a) best = { a: w * hh, x: left + i * STEP, y: (r - hh + 1) * STEP, w: w * STEP, h: hh * STEP }; start = i }
+      while (st.length && st[st.length - 1][1] >= h) { const [i, hh] = st.pop(); const w = c - i; if (w >= 9 && hh >= 9 && w * hh > best.a) best = { a: w * hh, x: left + i * STEP, y: y0 + (r - hh + 1) * STEP, w: w * STEP, h: hh * STEP }; start = i }
       st.push([start, h])
     }
   }

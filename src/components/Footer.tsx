@@ -53,7 +53,7 @@ export function Footer() {
     <footer className="border-t border-line bg-bg-footer px-page pt-10 pb-20">
       <div className="grid gap-8 min-[1024px]:grid-cols-[minmax(220px,280px)_1fr] min-[1024px]:gap-16">
         <div className="flex flex-col items-start gap-3">
-          <Wordmark height={22} />
+          <Wordmark height={22} theme="auto" />
           <p className="m-0 max-w-[280px] text-[13px] leading-[1.5] text-dim">A blockchain development company building and releasing Web3 projects.</p>
           <button
             type="button"

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router'
 import * as NavigationMenu from '@radix-ui/react-navigation-menu'
 import { AppWindow, ChevronDown, Menu, Send, X } from 'lucide-react'
+import { ThemeToggle } from './ThemeToggle'
 import { launchApp, navGroups, navLinks, socialLinks, type NavEntry, type NavGroup } from '../content/site'
 import { EntryLink, NewTabMark } from './LayoutLinks'
 import { entryActive, groupActive, newTab } from './LayoutNav'
@@ -303,7 +304,7 @@ function MobileSheet({ onClose, returnFocus }: { onClose: () => void; returnFocu
       <div className="flex min-h-16 items-center justify-between gap-4 border-b border-line px-page py-2">
         <Link to={siteHref('/')} onClick={pick} className="inline-flex min-h-11 items-center rounded-btn text-ink" aria-label="Gully Labs home">
           {/* 24 px tall on narrow phones, so the wordmark, Launch app and Menu fit a 375 px screen. */}
-          <Wordmark height={28} />
+          <Wordmark height={28} theme="auto" />
         </Link>
         <button
           type="button"
@@ -408,11 +409,11 @@ export function Header() {
   const focusMenuButton = useCallback(() => requestAnimationFrame(() => menuButton.current?.focus()), [])
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-[rgba(6,5,13,.86)] backdrop-blur-[10px]">
+    <header className="gl-head sticky top-0 z-50 border-b border-line bg-[rgba(11,23,48,.88)] backdrop-blur-[10px]">
       <div className="flex min-h-16 items-center gap-3 px-page py-2 min-[1024px]:gap-6">
         <Link to={siteHref('/')} className="inline-flex min-h-11 flex-none items-center rounded-btn text-ink" aria-label="Gully Labs home">
           {/* 24 px tall on narrow phones, so the wordmark, Launch app and Menu fit a 375 px screen. */}
-          <Wordmark height={28} />
+          <Wordmark height={28} theme="auto" />
         </Link>
 
         <NavigationMenu.Root aria-label="Main" delayDuration={120} value={menu.value} onValueChange={menu.onValueChange} className="hidden min-[1024px]:block">
@@ -427,6 +428,7 @@ export function Header() {
         </NavigationMenu.Root>
 
         <div className="ml-auto flex items-center gap-2">
+          <ThemeToggle />
           <div className="hidden min-[1024px]:block">
             <LaunchApp />
           </div>
