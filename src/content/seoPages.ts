@@ -29,6 +29,18 @@ export const SEO_PAGES: Record<string, SeoEntry> = {
     title: 'Projects: everything else we build',
     description: 'Every Gully Labs project, read live: Gully Core, Gully Chain, kre8, Gully Pay, Gully ID, Gully RPC, HolderMaps, Gully Security, Gully Studio and Peddle.',
   },
+  '/downloads': {
+    title: 'Downloads: every Gully app, plugin and package',
+    description: 'Packages, plugins and apps for Gully Core, Gully Chain, Gully ID, Gully Pay, Swoop Ads, kre8 and Gully AI, with versions, checksums and what is coming soon.',
+  },
+  '/explain': {
+    title: 'Explain a transaction in plain words',
+    description: 'Paste a Gully Chain testnet transaction: Zayden, the Gully AI assistant, explains what it did, who paid and what moved, every figure read from the chain.',
+  },
+  '/ai-tools': {
+    title: 'Use Gully with AI tools',
+    description: 'Zayden the Gully AI assistant, the read-only Gully MCP server for Claude and Cursor, the Gully CLI and the editor extension: what works today and what is next.',
+  },
   '/tracker': {
     title: 'Stock token tracker: price vs fair price',
     description: 'Every tokenised stock on Robinhood Chain, BNB Chain and Solana against its fair price, with the gap, pool depth and feed time, read live.',

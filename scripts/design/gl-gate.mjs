@@ -41,6 +41,9 @@ export const SCREENS = [
   { key: 'holders', path: '/holders' },
   { key: 'ask', path: '/ask' },
   { key: 'terms', path: '/terms' },
+  { key: 'downloads', path: '/downloads' },
+  { key: 'explain', path: '/explain' },
+  { key: 'ai-tools', path: '/ai-tools' },
 ]
 /** --home /preview/landing: where the home page lives on a local server (the root path needs the built SPA there). */
 const HOME = arg('home', '/')

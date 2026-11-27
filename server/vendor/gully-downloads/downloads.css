@@ -1,0 +1,23 @@
+/* Gully downloads kit. Maps to the host's own tokens (--surface/--fg/--muted/--edge/--accent/--on-accent); fallbacks keep it readable standalone. */
+.gdl{--gdl-bg:var(--surface,#fff);--gdl-fg:var(--fg,#0e1c38);--gdl-mut:var(--muted,#4a5876);--gdl-edge:var(--edge,#d5dae6);--gdl-acc:var(--accent,#3754a0);--gdl-on:var(--on-accent,#fff);color:var(--gdl-fg)}
+[data-theme=dark] .gdl{--gdl-bg:var(--surface,#141a24);--gdl-fg:var(--fg,#eef1f7);--gdl-mut:var(--muted,#a3adc2);--gdl-edge:var(--edge,#2a3446);--gdl-acc:var(--accent,#8fa8ff);--gdl-on:var(--on-accent,#0b1020)}
+.gdl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px}
+.gdl-card{background:var(--gdl-bg);border:1px solid var(--gdl-edge);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:196px}
+.gdl-card header{display:flex;align-items:center;gap:10px}
+.gdl-card h3{margin:0;font-size:1rem;line-height:1.3;flex:1}
+.gdl-ico{display:grid;place-items:center;width:36px;height:36px;border-radius:8px;border:1px solid var(--gdl-edge);color:var(--gdl-mut)}
+.gdl-chip{font-size:.75rem;padding:2px 8px;border-radius:999px;border:1px solid var(--gdl-edge);white-space:nowrap}
+.gdl-live{color:var(--gdl-fg);border-color:var(--gdl-acc)}.gdl-beta{color:var(--gdl-fg)}.gdl-soon{color:var(--gdl-mut)}
+.gdl-meta,.gdl-card p{margin:0;font-size:.875rem;line-height:1.5}.gdl-meta{color:var(--gdl-mut)}
+.gdl-card a{color:var(--gdl-acc);text-underline-offset:2px}
+.gdl-action{min-height:52px;display:flex;align-items:center}
+.gdl-badge{display:inline-flex;align-items:center;min-height:44px;min-width:44px}.gdl-badge img{display:block;height:auto}
+.gdl-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:8px;background:var(--gdl-acc);color:var(--gdl-on)!important;text-decoration:none;font-weight:600}
+.gdl-tile{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 14px;border:1px dashed var(--gdl-edge);border-radius:8px;color:var(--gdl-mut);font-size:.875rem;line-height:1.3}
+.gdl-tile small{font-size:.75rem}.gdl-tile-g{display:grid;place-items:center}
+.gdl code{font-size:.8rem;overflow-wrap:anywhere}.gdl-sha span{color:var(--gdl-mut);font-size:.75rem}
+.gdl summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--gdl-acc);font-size:.875rem}
+.gdl-qr svg{width:148px;height:148px;background:#fff;padding:8px;border-radius:8px}
+.gdl-req,.gdl-priv{margin:16px 0 0;font-size:.875rem;color:var(--gdl-mut)}
+.gdl a:focus-visible,.gdl summary:focus-visible{outline:2px solid var(--gdl-acc);outline-offset:2px}
+@media (max-width:480px){.gdl-card{padding:14px}}

@@ -1,0 +1,257 @@
+{
+  "$comment": "Hub manifest: every Gully download, one source of truth. Per-product manifests use the same item shape (id, platform, state, url, version, sha256, size, minOS, releasedAt). Only npm versions confirmed with `npm view` on 2026-11-23 or listed live in CLAUDE.md are state live.",
+  "product": "gully",
+  "title": "Gully",
+  "groups": [
+    {
+      "id": "core",
+      "title": "Gully Core",
+      "items": [
+        {
+          "id": "core-sdk",
+          "platform": "npm",
+          "state": "live",
+          "name": "@gullylabs/core-sdk",
+          "url": "https://www.npmjs.com/package/@gullylabs/core-sdk",
+          "version": "0.3.1",
+          "install": "npm i @gullylabs/core-sdk",
+          "summary": "Typed client for Gully Core pools, vaults, locks and fees on every Gully Core chain.",
+          "docs": "https://docs.gullycore.xyz/"
+        },
+        {
+          "id": "core-cli",
+          "platform": "npm",
+          "state": "live",
+          "name": "@gullylabs/core-cli",
+          "url": "https://www.npmjs.com/package/@gullylabs/core-cli",
+          "version": "0.3.1",
+          "install": "npx @gullylabs/core-cli",
+          "summary": "Swap, pool, liquidity and fee commands from your terminal.",
+          "docs": "https://docs.gullycore.xyz/"
+        },
+        {
+          "id": "create-core-app",
+          "platform": "npm",
+          "state": "live",
+          "name": "@gullylabs/create-core-app",
+          "url": "https://www.npmjs.com/package/@gullylabs/create-core-app",
+          "version": "0.3.1",
+          "install": "npm create @gullylabs/core-app",
+          "summary": "Scaffold a launchpad or DEX site on Gully Core.",
+          "docs": "https://docs.gullycore.xyz/"
+        }
+      ]
+    },
+    {
+      "id": "chain",
+      "title": "Gully Chain and bridge",
+      "items": [
+        {
+          "id": "chain-sdk",
+          "platform": "npm",
+          "state": "live",
+          "name": "@gullylabs/chain",
+          "url": "https://www.npmjs.com/package/@gullylabs/chain",
+          "version": "0.3.1",
+          "install": "npm i @gullylabs/chain",
+          "summary": "Chain definitions and helpers for Gully Chain.",
+          "docs": "https://docs.gullychain.xyz/"
+        }
+      ]
+    },
+    {
+      "id": "id",
+      "title": "Gully ID and Gully Pay",
+      "items": [
+        {
+          "id": "id-sdk",
+          "platform": "npm",
+          "state": "live",
+          "name": "@gullylabs/id",
+          "url": "https://www.npmjs.com/package/@gullylabs/id",
+          "version": "0.1.0",
+          "install": "npm i @gullylabs/id",
+          "summary": "Sign in with Gully ID.",
+          "docs": "https://gullyid.xyz/developers"
+        },
+        {
+          "id": "pay-sdk",
+          "platform": "npm",
+          "state": "live",
+          "name": "@gullylabs/pay",
+          "url": "https://www.npmjs.com/package/@gullylabs/pay",
+          "version": "0.1.1",
+          "install": "npm i @gullylabs/pay",
+          "summary": "Accept payments through Gully Pay.",
+          "docs": "https://gullypay.xyz/"
+        },
+        {
+          "id": "id-ext",
+          "platform": "chrome",
+          "state": "soon",
+          "name": "Gully Lens for Chrome",
+          "willDo": "Explain a transaction, contract or signature in plain words before you sign. Read-only.",
+          "today": "Use the web wallet at gullyid.xyz; the extension is built and waiting for a store account.",
+          "docs": "https://gullyid.xyz/developers"
+        }
+      ]
+    },
+    {
+      "id": "swoop",
+      "title": "Swoop Ads",
+      "items": [
+        {
+          "id": "swoop-wp",
+          "platform": "wordpress",
+          "state": "live",
+          "name": "Swoop Ads for WordPress",
+          "file": true,
+          "url": "https://docs.swoopads.xyz/downloads/swoop-ads-wordpress-0.2.0.zip",
+          "version": "0.2.0",
+          "sha256": "960ac2a68e41ad41373e4778dd9f9480b1f7677ea6a6d46e451a4153b6bfffaa",
+          "minOS": "5.8",
+          "summary": "Swoop Spots and Swoop Check (a free human check) on your WordPress site. Install from the zip.",
+          "docs": "https://docs.swoopads.xyz/plugins/"
+        },
+        {
+          "id": "swoop-shopify",
+          "platform": "shopify",
+          "state": "live",
+          "name": "Swoop Ads for Shopify",
+          "file": true,
+          "url": "https://docs.swoopads.xyz/downloads/swoop-ads-shopify-extension-0.2.0.zip",
+          "version": "0.2.0",
+          "sha256": "f587a242b27c243b219e49d6fac4e843fc30f9ef7ac55b80eac232cc9ff09505",
+          "summary": "Theme extension for Shopify stores. Install from the zip.",
+          "docs": "https://docs.swoopads.xyz/plugins/"
+        },
+        {
+          "id": "swoop-gtm",
+          "platform": "gtm",
+          "state": "live",
+          "name": "Tag Manager template and recipes",
+          "file": true,
+          "url": "https://docs.swoopads.xyz/downloads/swoop-ads-gtm-and-recipes-0.1.0.zip",
+          "version": "0.1.0",
+          "sha256": "da9c255e4f5be2055282b0b290225853f78b6f243a834bf5b4e9ad857cf6cae6",
+          "summary": "Google Tag Manager template plus Zapier and Make recipes.",
+          "docs": "https://docs.swoopads.xyz/plugins/"
+        },
+        {
+          "id": "swoop-verify",
+          "platform": "github",
+          "state": "live",
+          "name": "Postback verifiers",
+          "file": true,
+          "url": "https://docs.swoopads.xyz/downloads/swoop-postback-verifiers-0.1.0.zip",
+          "version": "0.1.0",
+          "sha256": "cdb27b3cdb77bb0cbb6a39ce580ff8b9a8528971fbba3385e4d25cb8df7e83ef",
+          "summary": "Check Swoop postback signatures in PHP, Node and Python.",
+          "docs": "https://docs.swoopads.xyz/plugins/"
+        },
+        {
+          "id": "swoop-wp-dir",
+          "platform": "wordpress",
+          "state": "soon",
+          "name": "WordPress plugin directory",
+          "willDo": "One-click install and updates from the WordPress.org plugin directory.",
+          "today": "Install from the zip above.",
+          "docs": "https://docs.swoopads.xyz/plugins/"
+        }
+      ]
+    },
+    {
+      "id": "kre8",
+      "title": "kre8, kre8 Radio and kre8 Films",
+      "items": [
+        {
+          "id": "kre8-ios",
+          "platform": "ios",
+          "state": "soon",
+          "name": "kre8 for iPhone",
+          "willDo": "The kre8 app on your phone: watch, listen, tip and collect.",
+          "today": "kre8 works in your phone browser and installs from the web.",
+          "docs": "https://testnet.kre8.fun/downloads"
+        },
+        {
+          "id": "kre8-android",
+          "platform": "android",
+          "state": "soon",
+          "name": "kre8 for Android",
+          "willDo": "The kre8 app on your phone: watch, listen, tip and collect.",
+          "today": "kre8 works in your phone browser and installs from the web.",
+          "docs": "https://testnet.kre8.fun/downloads"
+        },
+        {
+          "id": "kre8-radio-ios",
+          "platform": "ios",
+          "state": "soon",
+          "name": "kre8 Radio for iPhone",
+          "willDo": "Creator radio stations and live shows, with background play and CarPlay.",
+          "today": "kre8 radio plays in the kre8 web app on testnet.",
+          "docs": "https://testnet.kre8.fun/radio"
+        },
+        {
+          "id": "kre8-radio-android",
+          "platform": "android",
+          "state": "soon",
+          "name": "kre8 Radio for Android",
+          "willDo": "Creator radio stations and live shows, with background play and Android Auto.",
+          "today": "kre8 radio plays in the kre8 web app on testnet.",
+          "docs": "https://testnet.kre8.fun/radio"
+        },
+        {
+          "id": "kre8-films-ios",
+          "platform": "ios",
+          "state": "soon",
+          "name": "kre8 Films for iPhone",
+          "willDo": "Creator premieres, members-only films and watch parties, with downloads to watch offline.",
+          "today": "Films play in the kre8 web app on testnet.",
+          "docs": "https://testnet.kre8.fun/watch"
+        },
+        {
+          "id": "kre8-films-android",
+          "platform": "android",
+          "state": "soon",
+          "name": "kre8 Films for Android and Android TV",
+          "willDo": "Creator premieres, members-only films and watch parties, on phones and TVs.",
+          "today": "Films play in the kre8 web app on testnet.",
+          "docs": "https://testnet.kre8.fun/watch"
+        }
+      ]
+    },
+    {
+      "id": "ai",
+      "title": "Gully AI and developer tools",
+      "items": [
+        {
+          "id": "gully-mcp",
+          "platform": "npm",
+          "state": "soon",
+          "name": "Gully MCP server",
+          "willDo": "Read-only Gully Chain, Gully Core and docs tools for AI assistants such as Claude and Cursor.",
+          "today": "Ask Zayden on gullyai.xyz or in the docs.",
+          "docs": "https://gullylabs.xyz/ai-tools"
+        },
+        {
+          "id": "gully-cli",
+          "platform": "npm",
+          "state": "soon",
+          "name": "Gully CLI",
+          "willDo": "One command line for Gully AI, Gully Core, chain reads and docs.",
+          "today": "Use @gullylabs/core-cli for Gully Core today.",
+          "docs": "https://gullylabs.xyz/ai-tools"
+        },
+        {
+          "id": "gully-vscode",
+          "platform": "vscode",
+          "state": "soon",
+          "name": "Gully Dev Copilot for VS Code",
+          "willDo": "Explain code and contracts, draft tests and check an integration, inside your editor.",
+          "today": "Ask Zayden on gullyai.xyz.",
+          "docs": "https://gullylabs.xyz/ai-tools"
+        }
+      ]
+    }
+  ]
+}
