@@ -1,0 +1,41 @@
+/* Gully UI Kit tokens. Every wrapper reads only these --gu-* custom properties; no component carries a colour.
+   A product defines its token set ONCE (on :root or a wrapper). By default each --gu-* follows the matching Gully Live UI
+   --gl-* token, so a product that already themes Live UI themes this kit too.
+
+   --gu-accent is the BRAND colour (buttons, chips). Charts use --gu-series-1..5 in that fixed order, never cycled; each
+   series row below passed the dataviz palette validator (lightness band, chroma floor, CVD + normal-vision separation,
+   3:1 on the chart surface) in the mode it is written for (2026-11-26). Status colours (--gu-up/down/warn) are never series. */
+:root {
+  --gu-family: var(--gl-family, Inter, system-ui, -apple-system, "Segoe UI", sans-serif);
+  --gu-family-num: var(--gl-family-num, "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace);
+  --gu-ink: var(--gl-ink, #0E1C38);
+  --gu-ink-2: var(--gl-ink-2, #33415F);
+  --gu-muted: var(--gl-muted, #5B6782);
+  --gu-surface: var(--gl-surface, #FFFFFF);
+  --gu-surface-2: var(--gl-surface-2, #F1F3F8);
+  --gu-line: var(--gl-line, #D9DFEC);
+  --gu-grid: var(--gl-grid, #E8ECF4);
+  --gu-accent: var(--gl-accent, #3754A0);
+  --gu-on-accent: var(--gl-on-accent, #FFFFFF);
+  --gu-series-1: var(--gl-series-1, #3754A0);
+  --gu-series-2: var(--gl-series-2, #C2410C);
+  --gu-series-3: var(--gl-series-3, #0E9F6E);
+  --gu-series-4: var(--gl-series-4, #B26B00);
+  --gu-series-5: var(--gl-series-5, #7B4DFF);
+  --gu-up: var(--gl-up, #0A8F66);
+  --gu-down: var(--gl-down, #D3213F);
+  --gu-warn: var(--gl-warn, #B26B00);
+  --gu-focus: var(--gl-focus, #3754A0);
+  --gu-radius: var(--gl-radius, 10px);
+  --gu-shadow: var(--gl-shadow, 0 10px 28px rgba(14, 28, 56, .14));
+  --gu-skeleton: color-mix(in srgb, var(--gu-surface-2) 70%, var(--gu-line));
+}
+
+/* Sample product sets (the gallery uses them; a product may copy its block). Put the class on <html>, the theme as
+   data-theme="light|dark" on <html>. */
+.gu-kit-swoop { --gu-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif; --gu-ink: #0F1222; --gu-ink-2: #2B3042; --gu-muted: #5B6275; --gu-surface: #FFFFFF; --gu-surface-2: #F0F2F5; --gu-line: #E2E5EB; --gu-grid: #EEF0F3; --gu-accent: #FF5A36; --gu-on-accent: #FFFFFF; --gu-series-1: #D9461F; --gu-series-2: #0A66C2; --gu-series-3: #B26B00; --gu-series-4: #7B4DFF; --gu-series-5: #0E9F6E; --gu-up: #0A8F66; --gu-down: #D3213F; --gu-warn: #B26B00; --gu-focus: #0A66C2; --gu-radius: 6px; }
+.gu-kit-swoop[data-theme="dark"] { --gu-ink: #E8EAF0; --gu-ink-2: #C3C7D3; --gu-muted: #9097A8; --gu-surface: #12151C; --gu-surface-2: #191D26; --gu-line: #232836; --gu-grid: #1A1E28; --gu-accent: #FF6A48; --gu-on-accent: #12151C; --gu-series-1: #E8573A; --gu-series-2: #3D8BE0; --gu-series-3: #C2861A; --gu-series-4: #8B67F0; --gu-series-5: #1AA676; --gu-up: #2FD39A; --gu-down: #FF5C73; --gu-warn: #F5B547; --gu-focus: #5AA9FF; --gu-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
+.gu-kit-chain { --gu-family: Inter, system-ui, sans-serif; --gu-ink: #0B0F14; --gu-ink-2: #2A3540; --gu-muted: #5E6B66; --gu-surface: #FFFFFF; --gu-surface-2: #EEF6F2; --gu-line: #D5E3DC; --gu-grid: #E6EFEA; --gu-accent: #10B981; --gu-on-accent: #0B0F14; --gu-series-1: #0E9F6E; --gu-series-2: #4C5BD4; --gu-series-3: #C2410C; --gu-series-4: #7B4DFF; --gu-series-5: #B26B00; --gu-up: #0A8F66; --gu-down: #D3213F; --gu-warn: #B26B00; --gu-focus: #0E9F6E; --gu-radius: 12px; }
+.gu-kit-chain[data-theme="dark"] { --gu-ink: #E8F2EE; --gu-ink-2: #C4D3CD; --gu-muted: #8FA39B; --gu-surface: #0B0F14; --gu-surface-2: #121A21; --gu-line: #1F2A33; --gu-grid: #16202A; --gu-accent: #10B981; --gu-on-accent: #0B0F14; --gu-series-1: #1AA676; --gu-series-2: #7584EE; --gu-series-3: #D57230; --gu-series-4: #8B67F0; --gu-series-5: #C2861A; --gu-up: #2FD39A; --gu-down: #FF5C73; --gu-warn: #F5B547; --gu-focus: #1AA676; --gu-shadow: 0 10px 30px rgba(0, 0, 0, .55); }
+.gu-kit-kre8 { --gu-family: Inter, system-ui, sans-serif; --gu-ink: #0D0F12; --gu-ink-2: #2C3038; --gu-muted: #5C6370; --gu-surface: #FFFFFF; --gu-surface-2: #F1F3F9; --gu-line: #DDE1EA; --gu-grid: #ECEEF4; --gu-accent: #4C63FF; --gu-on-accent: #FFFFFF; --gu-series-1: #4C63FF; --gu-series-2: #D9461F; --gu-series-3: #0E9F6E; --gu-series-4: #B26B00; --gu-series-5: #7B4DFF; --gu-up: #0A8F66; --gu-down: #D3213F; --gu-warn: #B26B00; --gu-focus: #4C63FF; --gu-radius: 14px; }
+.gu-kit-kre8[data-theme="dark"] { --gu-ink: #F2F4F8; --gu-ink-2: #C9CED8; --gu-muted: #9299A6; --gu-surface: #14171C; --gu-surface-2: #1B1F26; --gu-line: #262B34; --gu-grid: #1E2229; --gu-accent: #4C63FF; --gu-on-accent: #FFFFFF; --gu-series-1: #5F74FF; --gu-series-2: #E05A35; --gu-series-3: #1AA676; --gu-series-4: #C2861A; --gu-series-5: #8B67F0; --gu-up: #2FD39A; --gu-down: #FF5C73; --gu-warn: #F5B547; --gu-focus: #7C8DFF; --gu-shadow: 0 10px 30px rgba(0, 0, 0, .55); }
