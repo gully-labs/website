@@ -311,7 +311,7 @@
 /* console tabs (Chains, Pricing and other long pages) */
 .lc .ctabs{display:flex;flex-direction:column;gap:14px;scroll-margin-top:76px}
 .lc .ctabs-list{display:flex;flex-wrap:wrap;gap:6px;padding:4px;border:1px solid var(--gl-line);border-radius:999px;background:var(--gl-surface);width:max-content;max-width:100%}
-.lc .ctab{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid transparent;background:transparent;color:var(--gl-text-muted);font:600 14px var(--gl-font);cursor:pointer;transition:color .15s,background .15s,border-color .15s}
+.lc .ctab{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid transparent;background:transparent;color:var(--gl-text-muted);font:600 14px var(--gl-font);cursor:pointer;transition:color .15s,background .15s,border-color .15s}
 .lc .ctab .ic{width:18px;height:18px}
 .lc .ctab:hover{color:#fff}
 .lc .ctab[aria-selected="true"]{color:#fff;background:var(--gl-hover);border-color:var(--gl-blue)}

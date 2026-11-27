@@ -135,7 +135,7 @@
   color: var(--gt-text);
 }
 .gt-btn.sm {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 var(--gt-2);
   font-size: 13px;
 }
@@ -1558,7 +1558,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 16px;
   border: 1px solid transparent;
   border-radius: var(--gt-radius);
