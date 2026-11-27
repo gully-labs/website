@@ -52,8 +52,9 @@ const screens = pick ? SCREENS.filter((s) => pick.split(',').includes(s.path) ||
 const widths = arg('widths', '390,768,1440,1920').split(',').map(Number)
 const themes = arg('themes', 'dark,light').split(',')
 const OWN = /(^|\.)gullylabs\.xyz$|^127\.0\.0\.1$|^localhost$/
-/** Live figures, charts and clocks change every minute: hidden (layout kept) before the pixel shot. */
-const MASK = '[data-b],[data-tk],[data-u],[data-sv-word],[data-sv-ms],[data-mask],.g,.cells,.cmap,.orbit,.spark,time,.toast,#toasts,.kpis b,.st,canvas,iframe,video{visibility:hidden!important}*,*:before,*:after{animation:none!important;transition:none!important;caret-color:transparent!important}'
+/** Live figures, charts and clocks change every minute: hidden (layout kept) before the pixel shot. [data-live] = the
+ *  ECharts frames of the React pages, tracker-kpis = the tracker figures, tbody td = live table rows. */
+const MASK = '[data-live],[data-live-area],[data-testid=tracker-kpis] *,tbody td,[data-b],[data-tk],[data-u],[data-sv-word],[data-sv-ms],[data-mask],.g,.cells,.cmap,.orbit,.spark,time,.toast,#toasts,.kpis b,.st,canvas,iframe,video{visibility:hidden!important}*,*:before,*:after{animation:none!important;transition:none!important;caret-color:transparent!important}'
 
 fs.mkdirSync(OUT, { recursive: true })
 const findings = []

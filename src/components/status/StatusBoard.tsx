@@ -251,3 +251,35 @@ export function StatusBoard({ compact = false }: { compact?: boolean }) {
   )
 }
 
+
+/** The /status hero's second column (design round 4): each check group as a live bar, answering vs not, from the same
+    GET /api/status the board below reads (refreshed every 30 s). */
+export function StatusGroupsChart() {
+  const { data } = useStatus(30_000)
+  const rows = useMemo(() => {
+    if (!data) return []
+    return STATUS_GROUPS.map((g) => {
+      const list = data.components.filter((c) => c.group === g.id && c.state !== 'off')
+      return { label: g.label, up: list.filter((c) => c.state === 'up').length, other: list.filter((c) => c.state !== 'up').length }
+    }).filter((r) => r.up + r.other > 0)
+  }, [data])
+  const option = useMemo(
+    () => ({
+      grid: { left: 8, right: 16, top: 8, bottom: 8, containLabel: true },
+      xAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: C.grid } }, axisLabel: { color: C.faint } },
+      yAxis: { type: 'category', inverse: true, data: rows.map((r) => r.label), axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: C.ink2 } },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      series: [
+        { name: 'Answering', type: 'bar', stack: 's', barWidth: 12, data: rows.map((r) => r.up), itemStyle: { color: C.green, borderRadius: 2 } },
+        { name: 'Slow, down or unknown', type: 'bar', stack: 's', barWidth: 12, data: rows.map((r) => r.other), itemStyle: { color: C.error, borderRadius: 2 } },
+      ],
+    }),
+    [rows],
+  )
+  return (
+    <div className="flex min-w-0 flex-col gap-2 rounded-card border border-line bg-card-token p-card">
+      <span className="font-mono text-[12px] text-faint">CHECKS BY GROUP · LIVE</span>
+      <EChart option={option} height={Math.max(180, rows.length * 30 + 24)} label="Checks answering by group, live" />
+    </div>
+  )
+}

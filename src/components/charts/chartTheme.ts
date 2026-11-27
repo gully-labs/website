@@ -54,7 +54,25 @@ const HOLDERMAPS: Partial<typeof GULLY> = {
 }
 const onHolderMaps = typeof location !== 'undefined' && /^(www\.)?holdermaps\.xyz$/.test(location.hostname)
 
-export const C: Readonly<typeof GULLY> = { ...GULLY, ...(onHolderMaps ? HOLDERMAPS : {}) }
+/* The Gully Labs kit (2026-11, src/index.css :root[data-product-brand='gullylabs']): the navy the site, app, admin and docs
+   wear, and on the main site (html.gl-main) its light theme. Charts read the theme once, when their code loads. */
+const GULLYLABS: Partial<typeof GULLY> = {
+  bg: '#0b1730', gold: '#6f8ddf', goldHover: '#9db4ee', ink2: '#d6dce8', muted: '#c9d2e8', dim: '#aab6d0', faint: '#a9b5cf',
+  axis: '#8a97b5', grid: '#16264a', line: '#22345a', lineStrong: '#2f4470', lineHover: '#3f5789', surface: '#13233f', surfaceDeep: '#0e1c38',
+}
+const GULLYLABS_LIGHT: Partial<typeof GULLY> = {
+  bg: '#F1F3F8', gold: '#3754A0', goldHover: '#2A4588', ink: '#0E1C38', ink2: '#26365A', muted: '#46557A', dim: '#4F5E80', faint: '#55648A',
+  axis: '#5B6782', grid: '#E8ECF4', line: '#DDE3EF', lineStrong: '#CBD3E6', lineHover: '#3754A0', surface: '#FFFFFF', surfaceDeep: '#F7F8FC',
+  error: '#B8321F', green: '#0A7A57',
+}
+const docRoot = typeof document !== 'undefined' ? document.documentElement : null
+const onGullyLabs = !!docRoot && docRoot.dataset.productBrand === 'gullylabs'
+const lightTheme =
+  !!docRoot &&
+  docRoot.classList.contains('gl-main') &&
+  (docRoot.getAttribute('data-theme') === 'light' || (!docRoot.hasAttribute('data-theme') && typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: light)').matches))
+
+export const C: Readonly<typeof GULLY> = { ...GULLY, ...(onHolderMaps ? HOLDERMAPS : onGullyLabs ? (lightTheme ? { ...GULLYLABS, ...GULLYLABS_LIGHT } : GULLYLABS) : {}) }
 
 /** Categorical series colours, in order (the theme's palette). */
 export const PALETTE = [C.gold, C.blue, C.teal, C.violet, C.orange, C.lime, C.goldHover, C.faint] as const

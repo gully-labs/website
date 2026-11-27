@@ -47,7 +47,7 @@ export function About() {
     <>
       <Seo page="/about" />
 
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,440px),1fr))] items-center gap-[clamp(40px,5cqw,72px)] px-page pt-[72px] pb-24">
+      <section className="grid items-center gap-[clamp(40px,5cqw,72px)] px-page pt-[72px] pb-24 min-[900px]:grid-cols-[minmax(0,1fr)_minmax(0,min(44%,520px))]">
         <div className="flex flex-col gap-6">
           <span className={eyebrow} style={rise(0)}>
             ABOUT · GULLY LABS

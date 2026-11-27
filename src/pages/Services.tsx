@@ -14,7 +14,7 @@ export function Services() {
     <div className="lcp gt" ref={ref}>
       <Seo page="/services" />
       <section className="gt-hero gt-phero" aria-labelledby="s-h">
-        <div className="gt-wrap gt-one">
+        <div className="gt-wrap">
           <div className="gt-hero-copy rise">
             <span className="gt-k">
               <b>services</b> · {SERVICES.length} practices · one team
@@ -33,6 +33,20 @@ export function Services() {
               </a>
             </div>
           </div>
+          {/* The hero's second column (design round 4): every practice with its typical timeline, one tap to brief us. */}
+          <aside className="gt-hero-aside rise" aria-label="Practices and timelines">
+            <span className="gt-k"><b>practices</b> · typical timelines</span>
+            <ul>
+              {SERVICES.map((s) => (
+                <li key={s.key}>
+                  <a href={`?service=${s.key}#contact`}>
+                    <b>{s.title}</b>
+                    <span>{s.timeline}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </aside>
         </div>
       </section>
       <section className="gt-sec" aria-labelledby="services-h">
