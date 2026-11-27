@@ -1,0 +1,71 @@
+/* Gully UI Kit component styles. Colours only through --gu-* tokens (tokens.css). */
+.gu-frame { position: relative; display: flex; flex-direction: column; min-height: var(--gu-h, 240px); color: var(--gu-ink); font-family: var(--gu-family); }
+.gu-frame > .gu-plot { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; }
+.gu-frame[data-gu-state="loading"] > .gu-plot { border-radius: var(--gu-radius); background: linear-gradient(90deg, var(--gu-surface-2) 0%, var(--gu-skeleton) 50%, var(--gu-surface-2) 100%); background-size: 200% 100%; animation: gu-shimmer 1.4s linear infinite; }
+.gu-frame[data-gu-state="empty"] > .gu-plot, .gu-frame[data-gu-state="error"] > .gu-plot { display: none; }
+.gu-frame > .gu-note, .gu-note { margin: auto; padding: 16px; max-width: 34ch; text-align: center; color: var(--gu-muted); font-size: 14px; line-height: 1.45; }
+@keyframes gu-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .gu-frame[data-gu-state="loading"] > .gu-plot { animation: none; } }
+
+.gu-chip { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 999px; font: 700 11px/1 var(--gu-family); letter-spacing: .02em; background: var(--gu-surface-2); color: var(--gu-ink-2); white-space: nowrap; vertical-align: middle; }
+.gu-thin { background: color-mix(in srgb, var(--gu-warn) 16%, var(--gu-surface)); color: var(--gu-warn); cursor: help; }
+.gu-price-chips { display: flex; align-items: center; gap: 8px; min-height: 28px; padding: 0 2px 6px; }
+.gu-attr { margin-left: auto; font: 500 11px/1 var(--gu-family); color: var(--gu-muted); text-decoration: none; }
+.gu-attr:hover { text-decoration: underline; }
+.gu-price-title { font: 600 13px/1.2 var(--gu-family); color: var(--gu-ink); }
+.gu-num { font-family: var(--gu-family-num); font-variant-numeric: tabular-nums; }
+.gu-addr { font-family: var(--gu-family-num); color: var(--gu-ink-2); }
+.gu-up { color: var(--gu-up); } .gu-down { color: var(--gu-down); }
+
+/* drill-down crumbs */
+.gu-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 32px; font: 600 13px/1 var(--gu-family); }
+.gu-crumbs[hidden] { display: none; }
+.gu-crumb { border: 0; background: none; padding: 6px 8px; border-radius: 6px; color: var(--gu-accent); font: inherit; cursor: pointer; min-height: 32px; }
+.gu-crumb:hover { background: var(--gu-surface-2); }
+.gu-crumb-on { color: var(--gu-ink); cursor: default; }
+.gu-crumb-sep { color: var(--gu-muted); }
+@media (pointer: coarse) { .gu-crumb { min-height: 44px; } }
+
+/* tooltip, popover, menu (Floating UI positions them) */
+.gu-tip, .gu-pop { position: fixed; top: 0; left: 0; z-index: 1000; }
+.gu-tip { max-width: 260px; padding: 6px 9px; border-radius: 6px; background: var(--gu-ink); color: var(--gu-surface); font: 500 12px/1.4 var(--gu-family); pointer-events: none; box-shadow: var(--gu-shadow); }
+.gu-pop { min-width: 180px; max-width: min(360px, calc(100vw - 16px)); padding: 6px; border-radius: var(--gu-radius); background: var(--gu-surface); color: var(--gu-ink); border: 1px solid var(--gu-line); box-shadow: var(--gu-shadow); outline: none; }
+.gu-tip[hidden], .gu-pop[hidden] { display: none; }
+.gu-menu { display: flex; flex-direction: column; }
+.gu-menu-item { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: var(--gu-ink); font: 500 14px/1 var(--gu-family); text-align: left; text-decoration: none; cursor: pointer; }
+.gu-menu-item:hover, .gu-menu-item:focus-visible { background: var(--gu-surface-2); outline: none; }
+.gu-menu-item.gu-danger { color: var(--gu-down); }
+.gu-menu-item .gu-icon { color: var(--gu-muted); flex: none; }
+@media (pointer: coarse) { .gu-menu-item { min-height: 44px; } }
+:where(.gu-crumb, .gu-menu-item, .gu-pop):focus-visible { outline: 2px solid var(--gu-focus); outline-offset: 2px; }
+
+.gu-icon { flex: none; vertical-align: middle; }
+.gu-icon-wrap { display: inline-flex; }
+
+/* lottie + 3D hero stills */
+.gu-lottie > .gu-plot img, .gu-hero3d > .gu-plot img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.gu-hero3d { --gu-h: 320px; }
+.gu-hero3d[data-gu-mode="still"] > .gu-plot { border-radius: var(--gu-radius); background: radial-gradient(60% 70% at 70% 40%, color-mix(in srgb, var(--gu-series-1) 30%, transparent), transparent 70%), radial-gradient(50% 60% at 25% 70%, color-mix(in srgb, var(--gu-series-2) 22%, transparent), transparent 70%), var(--gu-surface-2); }
+.gu-hero3d canvas { display: block; }
+
+/* uPlot */
+.gu-frame .uplot { font-family: var(--gu-family); color: var(--gu-ink-2); }
+.gu-frame .u-legend { color: var(--gu-ink-2); font-size: 12px; }
+.gu-frame .u-legend .u-value { font-family: var(--gu-family-num); }
+.gu-frame .u-select { background: color-mix(in srgb, var(--gu-accent) 12%, transparent); }
+
+/* Tabulator: the vendor sheet sets layout, these set every colour */
+.gu-table .tabulator { background: var(--gu-surface); border: 1px solid var(--gu-line); border-radius: var(--gu-radius); font: 500 13px/1.35 var(--gu-family); color: var(--gu-ink); }
+.gu-table .tabulator .tabulator-header { background: var(--gu-surface); color: var(--gu-muted); border-bottom: 1px solid var(--gu-line); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
+.gu-table .tabulator .tabulator-header .tabulator-col { background: var(--gu-surface); border-right: 0; }
+.gu-table .tabulator .tabulator-header .tabulator-col:hover { background: var(--gu-surface-2); }
+.gu-table .tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-sorter .tabulator-arrow { border-bottom-color: var(--gu-muted); border-top-color: var(--gu-muted); }
+.gu-table .tabulator .tabulator-tableholder { background: var(--gu-surface); }
+.gu-table .tabulator .tabulator-tableholder .tabulator-table { background: var(--gu-surface); color: var(--gu-ink); }
+.gu-table .tabulator-row { background: var(--gu-surface); border-bottom: 1px solid var(--gu-line); min-height: 36px; }
+.gu-table .tabulator-row.tabulator-row-even { background: var(--gu-surface); }
+.gu-table .tabulator-row:hover, .gu-table .tabulator-row.tabulator-selectable:hover { background: var(--gu-surface-2); }
+.gu-table .tabulator-row .tabulator-cell { border-right: 0; padding: 9px 10px; }
+.gu-table .tabulator-row .tabulator-cell.tabulator-frozen { background: inherit; }
+.gu-table .tabulator .tabulator-placeholder .tabulator-placeholder-contents { color: var(--gu-muted); font-weight: 500; font-size: 14px; }
+@media (pointer: coarse) { .gu-table .tabulator-row { min-height: 44px; } }
