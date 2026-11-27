@@ -228,7 +228,7 @@ function balanceGroups(data: StatusBody, compact: boolean, n = 2): (typeof STATU
 }
 
 const WIDE = '(min-width: 1800px)'
-/** True at 1800 px and wider, where the board takes three columns. */
+/** True at 1800 px and wider, where the board is one column of full-width cards with rows three across. */
 function useWide(): boolean {
   return useSyncExternalStore(
     (cb) => {
@@ -244,16 +244,16 @@ function useWide(): boolean {
 
 export function StatusBoard({ compact = false }: { compact?: boolean }) {
   const { data, error, refresh } = useStatus(30_000)
-  const wide = useWide()
+  const wide = useWide() && !compact
   if (!data) return <Skeleton error={error} onRetry={refresh} />
   return (
     <div className="flex flex-col gap-6">
       <Overall data={data} />
       {error && <p className="m-0 font-mono text-[12px] text-error">{error} Showing the last answer.</p>}
       {/* Two balanced columns (design round 5): groups go to the shorter column by row count, so neither column ends far
-          above the other (the CSS columns this replaces left a blank region at 1440). One column under 960 px. */}
-      <div className={compact ? 'gap-4 columns-[320px]' : 'grid items-start gap-4 min-[960px]:grid-cols-2 min-[1800px]:grid-cols-3'}>
-        {balanceGroups(data, compact, wide ? 3 : 2).map((col, ci) => (
+          above the other (the CSS columns this replaces left a blank region at 1440). One column under 960 px; at 1800 px+ full-width cards with their rows three across. */}
+      <div className={compact ? 'gap-4 columns-[320px]' : 'grid items-start gap-4 min-[960px]:grid-cols-2 min-[1800px]:grid-cols-1'}>
+        {(wide ? [STATUS_GROUPS.filter((g) => data.components.some((c) => c.group === g.id))] : balanceGroups(data, compact)).map((col, ci) => (
           <div key={ci} className={compact ? 'contents' : 'flex min-w-0 flex-col gap-4'}>
             {col.map((g) => {
               const list = data.components.filter((c) => c.group === g.id)
@@ -264,7 +264,7 @@ export function StatusBoard({ compact = false }: { compact?: boolean }) {
                   <h3 className="m-0 mb-1 inline-flex items-center gap-2 font-display text-h4 font-bold uppercase">
                     <Icon aria-hidden size={16} strokeWidth={1.75} className="text-gold" /> {g.label}
                   </h3>
-                  <ul className="m-0 list-none p-0">
+                  <ul className={`m-0 list-none p-0 ${wide ? 'grid grid-cols-3 gap-x-8' : ''}`}>
                     {list.map((c) => (
                       <ComponentRow key={c.id} c={c} compact={compact} />
                     ))}
