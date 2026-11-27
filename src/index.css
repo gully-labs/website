@@ -588,7 +588,7 @@ html.gl-main { --gl-head-bg: rgba(11, 23, 48, .88); }
     --color-gold: #3754A0; --color-gold-hover: #2A4588; --color-gold-line: #B8C5E6;
     --color-green: #0A7A57; --color-success-bg: #E3F5EE; --color-success-line: #9ED9C2;
     --color-bar: #3754A0; --color-mascot-bg: #E4E9F4; --color-error: #B8321F; --color-error-line: #F2C9C2;
-    --gl-bg: #F1F3F8; --gl-surface: #FFFFFF; --gl-cyan: #3754A0; --gl-violet: #3754A0; --gl-text: #0E1C38; --gl-text-muted: #46557A;
+    --gl-bg: #F1F3F8; --gl-surface: #FFFFFF; --gl-ink: #FFFFFF; --gt-ink: #FFFFFF; --gl-cyan: #3754A0; --gl-violet: #3754A0; --gl-text: #0E1C38; --gl-text-muted: #46557A;
     --gl-line: #DDE3EF; --gl-line-2: #CBD3E6; --gl-hover: #EEF1F8; --gl-grid: #E8ECF4; --gl-dim: #4F5E80;
     --gl-gradient: linear-gradient(90deg, #3754A0 0%, #6F8DDF 100%);
     --gt-bg: #F1F3F8; --gt-surface: #FFFFFF; --gt-raise: #EEF1F8; --gt-rule: #DDE3EF; --gt-rule-2: #CBD3E6; --gt-text: #0E1C38;
@@ -605,7 +605,7 @@ html.gl-main[data-theme=light] {
   --color-gold: #3754A0; --color-gold-hover: #2A4588; --color-gold-line: #B8C5E6;
   --color-green: #0A7A57; --color-success-bg: #E3F5EE; --color-success-line: #9ED9C2;
   --color-bar: #3754A0; --color-mascot-bg: #E4E9F4; --color-error: #B8321F; --color-error-line: #F2C9C2;
-  --gl-bg: #F1F3F8; --gl-surface: #FFFFFF; --gl-cyan: #3754A0; --gl-violet: #3754A0; --gl-text: #0E1C38; --gl-text-muted: #46557A;
+  --gl-bg: #F1F3F8; --gl-surface: #FFFFFF; --gl-ink: #FFFFFF; --gt-ink: #FFFFFF; --gl-cyan: #3754A0; --gl-violet: #3754A0; --gl-text: #0E1C38; --gl-text-muted: #46557A;
   --gl-line: #DDE3EF; --gl-line-2: #CBD3E6; --gl-hover: #EEF1F8; --gl-grid: #E8ECF4; --gl-dim: #4F5E80;
   --gl-gradient: linear-gradient(90deg, #3754A0 0%, #6F8DDF 100%);
   --gt-bg: #F1F3F8; --gt-surface: #FFFFFF; --gt-raise: #EEF1F8; --gt-rule: #DDE3EF; --gt-rule-2: #CBD3E6; --gt-text: #0E1C38;
@@ -614,8 +614,8 @@ html.gl-main[data-theme=light] {
 }
 html.gl-main .gl-head { background: var(--gl-head-bg); }
 html.gl-main body { background: var(--color-bg); color: var(--color-ink); }
-/* Kit logos: reversed on dark, colour on light (both byte-identical kit files; Wordmark.tsx renders one img each). */
-.gl-on-light { display: none; }
-@media (prefers-color-scheme: light) { html.gl-main:not([data-theme=dark]) .gl-on-light { display: inline-block; } html.gl-main:not([data-theme=dark]) .gl-on-dark { display: none; } }
-html.gl-main[data-theme=light] .gl-on-light { display: inline-block; } html.gl-main[data-theme=light] .gl-on-dark { display: none; }
-html.gl-main[data-theme=dark] .gl-on-light { display: none; } html.gl-main[data-theme=dark] .gl-on-dark { display: inline-block; }
+/* Kit logos: reversed on dark, colour on light (both byte-identical kit files; Wordmark theme="auto" and the console
+   chrome render one img each). !important: the console sheet sets display on its own images. */
+.gl-on-light { display: none !important; }
+@media (prefers-color-scheme: light) { html.gl-main:not([data-theme=dark]) .gl-on-light { display: block !important; } html.gl-main:not([data-theme=dark]) .gl-on-dark { display: none !important; } }
+html.gl-main[data-theme=light] .gl-on-light { display: block !important; } html.gl-main[data-theme=light] .gl-on-dark { display: none !important; }
