@@ -514,7 +514,7 @@ function BotBubble({ m, muted, act }: { m: BotMsg; muted: boolean; act: (a: 'mut
           <div key={bi} className="flex flex-col gap-[3px]">
             {b.map((l, li) =>
               l.href ? (
-                <a key={li} href={l.href} className={`text-[12px] break-words underline-offset-2 hover:underline ${l.tone && l.tone !== 'plain' ? TONE[l.tone] : 'text-tg-link'} ${l.mono ? 'font-mono' : ''}`}>
+                <a key={li} href={l.href} className={`text-[12px] break-words max-[859px]:flex max-[859px]:min-h-11 max-[859px]:items-center underline-offset-2 hover:underline ${l.tone && l.tone !== 'plain' ? TONE[l.tone] : 'text-tg-link'} ${l.mono ? 'font-mono' : ''}`}>
                   {l.t}
                 </a>
               ) : (
