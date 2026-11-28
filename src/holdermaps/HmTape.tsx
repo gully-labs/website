@@ -22,7 +22,7 @@ export function Tape({ items, state }: { items: TopScanned['items'] | null; stat
     <ul className="hmt-tape-row" aria-hidden={dup || undefined}>
       {(items ?? []).map((x) => (
         <li key={`${x.chain}:${x.token}`}>
-          <Link to={holderHref(x.path)} tabIndex={dup ? -1 : undefined}>
+          <Link to={holderHref(x.path)} tabIndex={dup ? -1 : undefined} className="inline-flex items-center max-[859px]:min-h-11">
             <ChainLogo chain={x.chain} size={14} decorative />
             <b>{x.symbol ?? `${x.token.slice(0, 6)}…`}</b>
             <span>{x.chain === 'gully' ? 'Gully Chain' : (CHAIN_NAMES[x.chain] ?? x.chain)}</span>

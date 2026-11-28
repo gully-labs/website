@@ -144,7 +144,7 @@ function checkLayout({ phone }) {
   if (clipped.length) out.push({ rule: 'clipped', note: `${clipped.length} cut text boxes: ${clipped.slice(0, 3).join('; ')}` })
   // Blank regions inside the content column: sample the page every 32 px; a point is blank when it lands on a plain
   // layout box (no own words, no media, no border, no fill). 9 x 9 blank cells (288 px) in one rectangle fails.
-  const inner = [...document.querySelectorAll('main .w, main .gt-wrap')]
+  const inner = [...document.querySelectorAll('main .w, main .gt-wrap, main .hm-wrap')]
   // The content column: the page's own .w / .gt-wrap boxes; on pages without one (the React pages), the span of every
   // box in <main> that carries words, so a centred column's side gutters are not counted as blank regions.
   let cols = (inner.length ? inner : []).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 200)
@@ -165,6 +165,8 @@ function checkLayout({ phone }) {
     for (let e = el, d = 0; e && d < 3; e = e.parentElement, d++) {
       const t = e.tagName
       if (/^(IMG|SVG|CANVAS|VIDEO|PICTURE|INPUT|BUTTON|SELECT|TEXTAREA|IFRAME|path|rect|circle|text|g)$/i.test(t)) return false
+      // A chart that is still loading (ChartSkeleton, with its "Loading the chart…" words) holds its box: not blank space.
+      if (e.hasAttribute && e.hasAttribute('data-gl-skeleton')) return false
       const cs = getComputedStyle(e)
       if (d === 0 && [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) return false
       if (parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderLeftWidth) > 0) return false
