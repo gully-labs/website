@@ -27,7 +27,6 @@ const IGNORE_NET = flag('ignore-net')
 /** Screens that fail the deploy. The rest are measured and printed (REPORT lines) until their redesign round brings
  *  them to zero; a screen joins BLOCKING after two clean runs (same rule as kre8's gate 3). 2026-11-27: downloads,
  *  explain and ai-tools joined (clean on the live round-3 deploy gate and the round-4 candidate). */
-const BLOCKING = new Set(arg('blocking', 'home,projects,downloads,explain,ai-tools').split(','))
 /** The gated screens: every page of the site that is drawn on the server or is a public read view. `key` names the file. */
 export const SCREENS = [
   { key: 'home', path: '/' },
@@ -49,6 +48,8 @@ export const SCREENS = [
 /** --home /preview/landing: where the home page lives on a local server (the root path needs the built SPA there). */
 const HOME = arg('home', '/')
 const pick = arg('routes', '')
+// Every screen blocks (design round 5, 2026-11-27): pixel < 8 % vs design/reference and the layout rules. --blocking a,b narrows it.
+const BLOCKING = new Set(arg('blocking', SCREENS.map((s) => s.key).join(',')).split(','))
 const screens = pick ? SCREENS.filter((s) => pick.split(',').includes(s.path) || pick.split(',').includes(s.key)) : SCREENS
 const widths = arg('widths', '390,768,1440,1920').split(',').map(Number)
 const themes = arg('themes', 'dark,light').split(',')
