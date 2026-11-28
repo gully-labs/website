@@ -25,7 +25,7 @@ export function StatusPage() {
       {/* A compact hero (D4-14): the live board starts within the first screen, as on /chains. */}
       <section className="relative overflow-hidden px-page pt-10 pb-8 max-[599px]:pt-8">
         <div aria-hidden className="pointer-events-none absolute -top-40 right-[-10%] size-[620px] animate-glow rounded-full bg-[radial-gradient(circle,rgba(111,141,223,.14),transparent_62%)]" />
-        <div className="relative grid items-start gap-6 min-[1180px]:grid-cols-[minmax(0,1fr)_minmax(360px,520px)]">
+        <div className="relative grid items-start gap-6 min-[1180px]:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] min-[1800px]:grid-cols-[minmax(0,860px)_minmax(0,1fr)]">
         <div className="flex max-w-[860px] flex-col gap-4">
           <span className={eyebrow} style={rise(0)}>
             STATUS

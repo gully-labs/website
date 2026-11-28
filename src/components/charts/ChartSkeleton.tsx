@@ -10,7 +10,7 @@ const BARS = [42, 64, 38, 80, 56, 70, 48, 62]
 export function ChartSkeleton({ variant = 'bars', className = '' }: { variant?: SkeletonVariant; className?: string }) {
   const pulse = (i: number) => ({ animation: `gl-skeleton 1.6s ${(i * 0.08).toFixed(2)}s ease-in-out infinite` })
   return (
-    <div aria-hidden className={`pointer-events-none absolute inset-0 overflow-hidden rounded-input ${className}`}>
+    <div aria-hidden data-gl-skeleton="" className={`pointer-events-none absolute inset-0 overflow-hidden rounded-input ${className}`}>
       {variant === 'bars' && (
         <div className="flex size-full items-end gap-[5%] px-[4%] pb-3">
           {BARS.map((h, i) => (
@@ -20,8 +20,8 @@ export function ChartSkeleton({ variant = 'bars', className = '' }: { variant?: 
       )}
       {variant === 'line' && (
         <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="size-full" style={pulse(0)}>
-          <path d="M0,30 L12,26 L24,28 L36,18 L48,22 L60,12 L72,16 L84,8 L100,12 L100,40 L0,40 Z" fill="#181630" />
-          <path d="M0,30 L12,26 L24,28 L36,18 L48,22 L60,12 L72,16 L84,8 L100,12" fill="none" stroke="#242140" strokeWidth={2} vectorEffect="non-scaling-stroke" />
+          <path d="M0,30 L12,26 L24,28 L36,18 L48,22 L60,12 L72,16 L84,8 L100,12 L100,40 L0,40 Z" fill="var(--color-surface-deep, #181630)" />
+          <path d="M0,30 L12,26 L24,28 L36,18 L48,22 L60,12 L72,16 L84,8 L100,12" fill="none" stroke="var(--color-line, #242140)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
         </svg>
       )}
       {variant === 'ring' && (
@@ -29,6 +29,8 @@ export function ChartSkeleton({ variant = 'bars', className = '' }: { variant?: 
           <span className="aspect-square h-[84%] rounded-full border-[12px] border-line" style={pulse(0)} />
         </div>
       )}
+      {/* Words on the placeholder (design round 5): a chart that is still loading says so, never a silent empty box. */}
+      <span className="absolute top-2 left-3 font-mono text-[11px] text-faint">Loading the chart…</span>
     </div>
   )
 }
