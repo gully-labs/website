@@ -951,6 +951,14 @@
 .gt-hbars .l a:hover {
   color: var(--gt-accent);
 }
+/* phones: a bar's label link is a 44 px tap target (design gate tap rule; the Holder Map "most scanned" list) */
+@media (max-width: 767px) {
+  .gt-hbars .l a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
 .gt-hbars .b {
   height: 8px;
   background: var(--gt-raise);
