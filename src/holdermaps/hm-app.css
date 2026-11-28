@@ -480,3 +480,5 @@
   .hmt-crumbs .hmt-crumb-acts .hm-btn { min-height: 44px }
   .hm-switch > summary { height: 44px }
 }
+/* Links inside a bar label (most scanned maps) are 44 px tall on phones (design round 5). */
+@media (max-width: 859px) { .hm-bars .l a { display: inline-flex; align-items: center; min-height: 44px } }

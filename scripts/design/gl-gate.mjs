@@ -167,6 +167,9 @@ function checkLayout({ phone }) {
       if (/^(IMG|SVG|CANVAS|VIDEO|PICTURE|INPUT|BUTTON|SELECT|TEXTAREA|IFRAME|path|rect|circle|text|g)$/i.test(t)) return false
       // A chart that is still loading (ChartSkeleton, with its "Loading the chart…" words) holds its box: not blank space.
       if (e.hasAttribute && e.hasAttribute('data-gl-skeleton')) return false
+      // A drawn chart's surface (a box whose own child is its svg or canvas) is the chart, not blank space, even where
+      // the plot has no marks (elementFromPoint returns the box because the svg lets pointer events through).
+      if (e.querySelector && e.querySelector(':scope > svg, :scope > canvas')) return false
       const cs = getComputedStyle(e)
       if (d === 0 && [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) return false
       if (parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderLeftWidth) > 0) return false
