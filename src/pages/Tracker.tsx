@@ -179,6 +179,7 @@ export function Tracker() {
         {st.k === 'loading' && (
           // Holds the page's shape while the first read lands, so the footer never rises and drops.
           <div role="status" aria-label="Reading every feed and pool" className="flex min-h-[100svh] flex-col gap-4">
+            <p className="m-0 font-mono text-[12px] text-faint">Reading every feed and pool…</p>
             <div className="h-[86px] gl-skeleton rounded-card bg-surface" />
             <div className="h-[230px] gl-skeleton [animation-delay:.1s] rounded-card bg-surface" />
             <div className="grid grid-cols-3 gap-4 max-[1199px]:grid-cols-2 max-[759px]:grid-cols-1">

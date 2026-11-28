@@ -165,11 +165,14 @@ function checkLayout({ phone }) {
     for (let e = el, d = 0; e && d < 3; e = e.parentElement, d++) {
       const t = e.tagName
       if (/^(IMG|SVG|CANVAS|VIDEO|PICTURE|INPUT|BUTTON|SELECT|TEXTAREA|IFRAME|path|rect|circle|text|g)$/i.test(t)) return false
-      // A chart that is still loading (ChartSkeleton, with its "Loading the chart…" words) holds its box: not blank space.
-      if (e.hasAttribute && e.hasAttribute('data-gl-skeleton')) return false
-      // A drawn chart's surface (a box whose own child is its svg or canvas) is the chart, not blank space, even where
-      // the plot has no marks (elementFromPoint returns the box because the svg lets pointer events through).
-      if (e.querySelector && e.querySelector(':scope > svg, :scope > canvas')) return false
+      // A box that is still loading (ChartSkeleton, a .gl-skeleton placeholder, an ECharts host) holds its place: not blank space.
+      if (e.hasAttribute && (e.hasAttribute('data-gl-skeleton') || e.hasAttribute('data-chart') || e.classList.contains('gl-skeleton'))) return false
+      // A drawn chart's surface (a box mostly filled by its svg or canvas) is the chart, not blank space, even where the
+      // plot has no marks (elementFromPoint returns the box because the svg lets pointer events through).
+      if (d === 0 && e.querySelector) {
+        const m = e.querySelector('svg, canvas')
+        if (m) { const r = m.getBoundingClientRect(), b = e.getBoundingClientRect(); if (r.width * r.height > 0.5 * b.width * b.height) return false }
+      }
       const cs = getComputedStyle(e)
       if (d === 0 && [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) return false
       if (parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderLeftWidth) > 0) return false
