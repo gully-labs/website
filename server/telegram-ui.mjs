@@ -177,8 +177,10 @@ export function friendlyError(error, fallback = 'Something went wrong. Try again
 export function menuCaption(n) {
   const count = num(n) && n > 0 ? `${n} stock tokens` : 'Stock tokens'
   return [
+    '👋 <b>Welcome to Gully Labs</b>: Web3 and DeFi tools you can use today.',
     '<b>Gully Labs</b> · see if stock tokens trade above or below the real share price.',
     `📈 ${count} on Robinhood Chain, BNB Chain and Solana · 🔔 alerts right here · 🤖 Gully AI answers.`,
+    '👥 Holder Map shows who holds a token; 🛡 Gully Security scans contracts.',
     '',
     '<i>Information only, not investment advice.</i>',
   ].join('\n')

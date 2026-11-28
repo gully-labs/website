@@ -37,7 +37,8 @@
 // One chat per account; a newer link replaces the older one.
 //
 // /start without a code sends the banner (an H.264 MP4 animation, public/brand/telegram/banner.mp4, with
-// banner.gif as the fallback, both the 2026 Gully Labs kit's social/og-image-1200x630.png, encoded as a still clip at its own size) with the
+// banner.gif as the fallback: the Gully Labs kit logotype + owl mascot, animated, 960x540, 4.5 s loop, built by
+// gully-protocol design/bot-banners-2026-11-28/tools/build.py from the kit files only) with the
 // main menu. Telegram's file_id for it is kept in DATA_DIR/telegram.json after the first upload, keyed on
 // the file's hash, and reused until the file changes. Screens: Stocks (chain → ticker grid → card
 // with a 24h sparkline → alert stepper), Top gaps, Movers (24h/1h), My alerts (pause, resume, mute, test, delete), Gully AI (force_reply)
@@ -408,6 +409,8 @@ export async function startTelegram({ attempt = 0 } = {}) {
     if (!r.ok) cmds = { ok: false, error: `${body.scope?.type ?? 'default'}: ${r.error}` }
   }
   const menuBtn = await tg('setChatMenuButton', { menu_button: menuButton() })
+  // public texts + kit avatar; a failure is logged and never blocks the bot
+  await syncProfile().catch((e) => console.error(`telegram: profile: ${redact(e?.message ?? e)}`))
   const name = await botUsername()
   if (!hook.ok) console.error(`telegram: setWebhook failed: ${hook.error}`)
   if (!cmds.ok) console.error(`telegram: setMyCommands failed: ${cmds.error}`)
@@ -573,8 +576,8 @@ const alertsCall = (address, method, p, body) => callRoute(handleAlerts, method,
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 // The MP4 first: Telegram shows an MP4 as sent, while it re-encodes an uploaded GIF (the old 640×320 one came back at 320×160).
 const BANNER_FILES = [
-  { name: 'banner.mp4', type: 'video/mp4', upload: 'gully-labs.mp4', width: 1200, height: 630, is: (b) => b.subarray(4, 8).toString('latin1') === 'ftyp' },
-  { name: 'banner.gif', type: 'image/gif', upload: 'gully-labs.gif', width: 1200, height: 630, is: (b) => b.subarray(0, 3).toString('latin1') === 'GIF' },
+  { name: 'banner.mp4', type: 'video/mp4', upload: 'gully-labs.mp4', width: 960, height: 540, is: (b) => b.subarray(4, 8).toString('latin1') === 'ftyp' },
+  { name: 'banner.gif', type: 'image/gif', upload: 'gully-labs.gif', width: 480, height: 270, is: (b) => b.subarray(0, 3).toString('latin1') === 'GIF' },
 ]
 /** The banner to upload: { buf, sha, type, upload, width, height }, or null. `sha` keys the cached file_id, so a rebuilt banner is uploaded again. */
 function bannerFile() {
@@ -590,6 +593,61 @@ function bannerFile() {
     }
   }
   return null
+}
+
+/* ------------------------------------------------------ bot profile --- */
+
+// The bot's public texts and profile photo (owner 2026-11-28: every bot has a welcome and a marketing message).
+// Bot API limits: description 512, short description 120 (scripts/test-telegram.mjs checks them).
+export const BOT_DESCRIPTION = [
+  'Gully Labs builds Web3 and DeFi tools.',
+  '',
+  'In this bot: see whether stock tokens on Robinhood Chain, BNB Chain and Solana trade above or below the real share price, get alerts, check who holds a token with Holder Map, scan contracts with Gully Security and ask Zayden, Gully AI.',
+  '',
+  'Information only, not investment advice. Crypto assets are risky. gullylabs.xyz',
+].join('\n')
+export const BOT_SHORT_DESCRIPTION = 'Gully Labs: stock token tracker, alerts, Holder Map, Security and Gully AI. Information only.'
+
+/** The kit's Telegram avatar (Gully Labs kit social/telegram-pfp.png, byte-identical). */
+function avatarFile() {
+  const dirs = [process.env.DIST_DIR && path.join(process.env.DIST_DIR, 'brand/telegram'), path.join(HERE, '../public/brand/telegram'), path.join(HERE, 'dist/brand/telegram')].filter(Boolean)
+  for (const dir of dirs) {
+    try {
+      const buf = fs.readFileSync(path.join(dir, 'avatar-640.png'))
+      if (buf.subarray(1, 4).toString('latin1') === 'PNG') return buf
+    } catch {
+      /* next */
+    }
+  }
+  return null
+}
+
+/** Public texts at every start; the profile photo once per avatar file hash (Bot API 9.4 setMyProfilePhoto). Never throws. */
+async function syncProfile() {
+  const out = {}
+  const d = await tg('setMyDescription', { description: BOT_DESCRIPTION })
+  const s = await tg('setMyShortDescription', { short_description: BOT_SHORT_DESCRIPTION })
+  out.description = d.ok
+  out.shortDescription = s.ok
+  if (!d.ok || !s.ok) console.error(`telegram: description ${d.ok ? 'ok' : d.error} / short ${s.ok ? 'ok' : s.error}`)
+  const buf = avatarFile()
+  if (!buf) out.photo = 'no file'
+  else {
+    const hash = sha256(buf).slice(0, 16)
+    if (db.profilePhoto === hash) out.photo = 'unchanged'
+    else {
+      const f = new FormData()
+      f.set('photo', JSON.stringify({ type: 'static', photo: 'attach://avatar' }))
+      f.set('avatar', new Blob([buf], { type: 'image/png' }), 'gully-labs.png')
+      const r = await tg('setMyProfilePhoto', f)
+      if (r.ok) {
+        db.profilePhoto = hash
+        save()
+      } else console.error(`telegram: setMyProfilePhoto failed: ${r.error}`)
+      out.photo = r.ok ? 'set' : 'failed'
+    }
+  }
+  return out
 }
 
 /** /start: the animated banner with its caption and the main menu. Falls back to a text menu. */

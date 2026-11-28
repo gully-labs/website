@@ -260,7 +260,15 @@ try {
   const menuButton = calls.find((c) => c.method === 'setChatMenuButton')?.body.menu_button
   check('startup: the chat menu button lists the commands (type commands), so users see them', menuButton?.type === 'commands' && Object.keys(menuButton).length === 1, JSON.stringify(menuButton))
   check('startup: getMe read the bot name', calls.some((c) => c.method === 'getMe'))
+  const descCall = calls.find((c) => c.method === 'setMyDescription')
+  const shortCall = calls.find((c) => c.method === 'setMyShortDescription')
+  check('startup: public texts set within the Bot API limits (description 512, short 120)', descCall?.body.description === tg.BOT_DESCRIPTION && tg.BOT_DESCRIPTION.length <= 512 && shortCall?.body.short_description === tg.BOT_SHORT_DESCRIPTION && tg.BOT_SHORT_DESCRIPTION.length <= 120 && /not investment advice/.test(tg.BOT_DESCRIPTION), `${tg.BOT_DESCRIPTION.length}/${tg.BOT_SHORT_DESCRIPTION.length}`)
+  check('startup: no hype words in the public texts', !/(moon|gem|100x|guaranteed|lambo)/i.test(tg.BOT_DESCRIPTION + tg.BOT_SHORT_DESCRIPTION))
+  const photoCalls = () => calls.filter((c) => c.method === 'setMyProfilePhoto')
+  const AVATAR = fs.readFileSync(path.join(import.meta.dirname, '../public/brand/telegram/avatar-640.png'))
+  check('startup: the kit avatar is set with setMyProfilePhoto (static photo, attach://avatar, byte size of the kit file)', photoCalls().length === 1 && photoCalls()[0].body.photo === JSON.stringify({ type: 'static', photo: 'attach://avatar' }) && photoCalls()[0].body.avatar?.size === AVATAR.length, JSON.stringify(photoCalls()[0]?.body))
   check('startup is idempotent (a second run succeeds)', (await tg.startTelegram()).ok)
+  check('startup: the avatar is uploaded once per file (not again on a second start)', photoCalls().length === 1)
   const ch1 = await dev.call('/api/alerts/channels')
   check('with a token: channels say Telegram is on, with the bot name', ch1.data.telegram.enabled === true && ch1.data.telegram.bot === BOT)
 
@@ -295,10 +303,10 @@ try {
   /* ------------------------------------------------------- /start banner --- */
   await say(privateChat(800), '/start')
   const an1 = calls.filter((c) => c.method === 'sendAnimation' && c.body.chat_id === '800').at(-1)
-  check('/start sends an animation (sendAnimation), uploaded as the 1200×630 kit MP4 the first time', !!an1 && an1.body.multipart === true && an1.body.animation?.file === true && an1.body.animation.type === 'video/mp4' && an1.body.animation.name === 'gully-labs.mp4' && an1.body.animation.size === BANNER_MP4.length && an1.body.animation.size < 1_048_576 && an1.body.width === '1200' && an1.body.height === '630', JSON.stringify({ ...an1?.body.animation, w: an1?.body.width, h: an1?.body.height }))
+  check('/start sends an animation (sendAnimation), uploaded as the 960×540 kit MP4 the first time', !!an1 && an1.body.multipart === true && an1.body.animation?.file === true && an1.body.animation.type === 'video/mp4' && an1.body.animation.name === 'gully-labs.mp4' && an1.body.animation.size === BANNER_MP4.length && an1.body.animation.size < 1_048_576 && an1.body.width === '960' && an1.body.height === '540', JSON.stringify({ ...an1?.body.animation, w: an1?.body.width, h: an1?.body.height }))
   check('a file_id cached for an older banner file is not reused', an1?.body.animation !== 'STALE_GIF_FILE_ID' && calls.every((c) => c.body.animation !== 'STALE_GIF_FILE_ID'))
   const cap1 = an1?.body.caption ?? ''
-  check('the caption: Gully Labs, the live count of stock tokens, alerts, Gully AI, not advice', cap1.startsWith('<b>Gully Labs</b> · see if stock tokens trade above or below the real share price.') && cap1.includes(`📈 ${ROWS.length} stock tokens on Robinhood Chain, BNB Chain and Solana`) && cap1.includes('🔔 alerts right here') && cap1.includes('🤖 Gully AI answers') && cap1.includes('Information only, not investment advice.') && cap1.length < 1024 && an1.body.parse_mode === 'HTML', cap1)
+  check('the caption: welcome, Gully Labs, the live count of stock tokens, alerts, Gully AI, Holder Map + Security, not advice', cap1.startsWith('👋 <b>Welcome to Gully Labs</b>: Web3 and DeFi tools you can use today.') && cap1.includes('<b>Gully Labs</b> · see if stock tokens trade above or below the real share price.') && cap1.includes('Holder Map shows who holds a token') && cap1.includes(`📈 ${ROWS.length} stock tokens on Robinhood Chain, BNB Chain and Solana`) && cap1.includes('🔔 alerts right here') && cap1.includes('🤖 Gully AI answers') && cap1.includes('Information only, not investment advice.') && cap1.length < 1024 && an1.body.parse_mode === 'HTML', cap1)
   const menuKb = an1?.body.reply_markup?.inline_keyboard ?? []
   check('the banner carries the main menu: 📱 Open app, then 10 buttons in 5 rows (no launches since 2026-11-08)', menuKb.length === 6 && flat(menuKb).length === 11 && JSON.stringify(flat(menuKb).map((b) => b.text)) === JSON.stringify(['📱 Open app', '📈 Stocks', '🔥 Top gaps', '🚀 Movers', '🔔 My alerts', '🤖 Gully AI', '👥 Holder Map', '🛡 Security', '💼 App dashboard ↗', '🧭 More', '⚙️ Settings']))
   check('📱 Open app is an inline web_app button to the Mini App (private chat)', menuKb[0]?.[0]?.web_app?.url === 'https://gullylabs.xyz/tg' && menuKb[0][0].callback_data === undefined && menuKb[0][0].url === undefined)
